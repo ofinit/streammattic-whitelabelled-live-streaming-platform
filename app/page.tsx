@@ -1,0 +1,174 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
+import { BrandedLogo } from "@/components/branding/branded-logo"
+import { useBranding } from "@/lib/branding-context"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, Palette } from "lucide-react"
+import Link from "next/link"
+
+export default function LoginPage() {
+  const router = useRouter()
+  const { login, isLoading, switchRole } = useAuth()
+  const { branding, isWhiteLabel, reseller } = useBranding()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    const success = await login(email, password)
+    if (success) {
+      // Redirect based on role
+      if (email === "admin@streammattic.com") {
+        router.push("/admin")
+      } else if (email.includes("livestream.pro") || email.includes("streamhub")) {
+        router.push("/reseller")
+      } else {
+        router.push("/dashboard")
+      }
+    } else {
+      setError("Invalid email or password")
+    }
+  }
+
+  const handleDemoLogin = (role: "admin" | "reseller" | "user") => {
+    switchRole(role)
+    switch (role) {
+      case "admin":
+        router.push("/admin")
+        break
+      case "reseller":
+        router.push("/reseller")
+        break
+      case "user":
+        router.push("/dashboard")
+        break
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center space-y-2">
+          <BrandedLogo size="lg" showText={false} />
+          <h1 className="text-2xl font-bold text-foreground">{branding.brandName}</h1>
+          <p className="text-muted-foreground text-center">
+            {isWhiteLabel ? `Welcome to ${branding.brandName}` : "White-Label Live Streaming Platform - Pay Per Event"}
+          </p>
+        </div>
+
+        {/* Login Form */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle>Sign in to your account</CardTitle>
+            <CardDescription>Enter your credentials to access the dashboard</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-secondary border-0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-secondary border-0"
+                />
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign in
+              </Button>
+            </form>
+
+            {!isWhiteLabel && (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with demo</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <Button variant="outline" onClick={() => handleDemoLogin("admin")} className="border-border">
+                    Admin
+                  </Button>
+                  <Button variant="outline" onClick={() => handleDemoLogin("reseller")} className="border-border">
+                    Reseller
+                  </Button>
+                  <Button variant="outline" onClick={() => handleDemoLogin("user")} className="border-border">
+                    User
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {!isWhiteLabel && (
+          <Card className="border-border bg-card/50">
+            <CardContent className="p-4">
+              <p className="mb-2 text-sm font-medium text-foreground">Demo Credentials</p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>
+                  <span className="text-foreground">Admin:</span> admin@streammattic.com
+                </p>
+                <p>
+                  <span className="text-foreground">Reseller:</span> john@livestream.pro
+                </p>
+                <p>
+                  <span className="text-foreground">User:</span> alice@example.com
+                </p>
+                <p className="text-muted-foreground/70">Any password works for demo</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isWhiteLabel && (
+          <div className="text-center">
+            <Link href="/demo/white-label">
+              <Button variant="ghost" size="sm" className="text-muted-foreground">
+                <Palette className="h-4 w-4 mr-2" />
+                Try White-Label Demo
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* Show reseller info when in white-label mode */}
+        {isWhiteLabel && reseller && (
+          <div className="text-center text-sm text-muted-foreground">
+            <p>Powered by StreamMattic</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

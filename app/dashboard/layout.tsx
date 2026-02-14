@@ -1,0 +1,51 @@
+"use client"
+
+import type React from "react"
+
+import { useEffect } from "react"
+import { useRouter, usePathname } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
+import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
+
+function UserDashboardLayoutInner({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
+  const { isCollapsed } = useSidebar()
+
+  const isDemoPage = pathname?.startsWith("/dashboard/events/new/demo-")
+
+  useEffect(() => {
+    if (isDemoPage) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      router.push("/")
+    } else if (user?.role !== "user") {
+      router.push("/")
+    }
+  }, [isAuthenticated, user, router, isDemoPage])
+
+  if (!isDemoPage && (!isAuthenticated || user?.role !== "user")) {
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {!isDemoPage && <ImpersonationBanner />}
+      <Sidebar />
+      <main className={`transition-all duration-300 ${isCollapsed ? "pl-16" : "pl-64"}`}>{children}</main>
+    </div>
+  )
+}
+
+export default function UserDashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <UserDashboardLayoutInner>{children}</UserDashboardLayoutInner>
+    </SidebarProvider>
+  )
+}

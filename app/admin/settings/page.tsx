@@ -17,6 +17,7 @@ export default function AdminSettingsPage() {
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+    username: user?.email?.split("@")[0] || "",
     email: user?.email || "",
     phone: "",
   })
@@ -107,6 +108,17 @@ export default function AdminSettingsPage() {
                     className="bg-secondary border-0"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={profileData.username}
+                  onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                  className="bg-secondary border-0"
+                  placeholder="admin_username"
+                />
+                <p className="text-xs text-muted-foreground">Used for your admin profile identifier</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

@@ -6,10 +6,31 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StreamHealthBadge } from "./stream-health-badge"
-import { streamingService, type StreamStatus } from "@/lib/streaming-service"
 import { mockEvents } from "@/lib/mock-data"
 import type { LiveEvent } from "@/lib/types"
+
+// Stream status shape matching the old StreamStatus interface (still mock data for now)
+interface StreamStatus {
+  isLive: boolean
+  viewers: number
+  peakViewers: number
+  startTime?: Date
+  duration?: number
+  bitrate?: number
+  resolution?: string
+  fps?: number
+  health: "excellent" | "good" | "fair" | "poor"
+}
 import { Radio, Eye, Clock, ExternalLink, StopCircle, RefreshCw } from "lucide-react"
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m ${secs}s`
+  if (minutes > 0) return `${minutes}m ${secs}s`
+  return `${secs}s`
+}
 
 interface LiveStreamItemProps {
   event: LiveEvent
@@ -37,7 +58,7 @@ function LiveStreamItem({ event, status, onStop, onView }: LiveStreamItemProps) 
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {status.duration ? streamingService.formatDuration(status.duration) : "0s"}
+              {status.duration ? formatDuration(status.duration) : "0s"}
             </span>
           </div>
         </div>
@@ -67,12 +88,24 @@ export function LiveStreamsMonitor({ refreshInterval = 5000 }: LiveStreamsMonito
   const fetchLiveStreams = async () => {
     try {
       const liveEvents = mockEvents.filter((e) => e.status === "live")
-      const streamsWithStatus = await Promise.all(
-        liveEvents.map(async (event) => {
-          const status = await streamingService.getStreamStatus(event)
-          return { event, status }
-        }),
-      )
+      const streamsWithStatus = liveEvents.map((event) => {
+        const baseViewers = event.currentViewers
+        const variance = Math.floor(Math.random() * 10) - 5
+        const viewers = Math.max(0, baseViewers + variance)
+        const health = (["excellent", "good", "good", "fair"] as const)[Math.floor(Math.random() * 4)]
+        const status: StreamStatus = {
+          isLive: true,
+          viewers,
+          peakViewers: Math.max(viewers, event.maxViewers),
+          startTime: event.startedAt || new Date(),
+          duration: event.startedAt ? Math.floor((Date.now() - event.startedAt.getTime()) / 1000) : 0,
+          bitrate: 4500 + Math.floor(Math.random() * 1000),
+          resolution: "1920x1080",
+          fps: 30,
+          health,
+        }
+        return { event, status }
+      })
       setLiveStreams(streamsWithStatus.filter((s) => s.status.isLive))
     } catch (error) {
       console.error("Failed to fetch live streams:", error)

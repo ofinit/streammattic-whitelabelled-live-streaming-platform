@@ -42,6 +42,50 @@ export interface StreamingBackendInfo {
     rtmpUrl: string
     playbackUrl: string
   }
+  /** Default server config values for the settings form */
+  defaultConfig: {
+    name: string
+    host: string
+    rtmpPort: number
+    httpPort: number
+    apiKey: string
+    rtmpBaseUrl: string
+    playbackBaseUrl: string
+  }
+  /** Backend-specific help texts for settings form tooltips */
+  helpTexts: {
+    apiHost: string
+    apiHostLink?: string
+    apiHostLinkLabel?: string
+    rtmpPort: string
+    httpPort: string
+    apiKey: string
+    apiKeyLink?: string
+    apiKeyLinkLabel?: string
+    rtmpUrl: string
+    rtmpUrlLink?: string
+    rtmpUrlLinkLabel?: string
+    playbackUrl: string
+    playbackUrlLink?: string
+    playbackUrlLinkLabel?: string
+    hlsSegment: string
+    transcoding: string
+    transcodingLink?: string
+    transcodingLinkLabel?: string
+    streamAuth: string
+    tokenAuth: string
+    tokenAuthLink?: string
+    tokenAuthLinkLabel?: string
+    tokenSecret: string
+    ipWhitelist: string
+    geoRestriction: string
+    geoRestrictionLink?: string
+    geoRestrictionLinkLabel?: string
+    storagePath: string
+    testConnection: string
+  }
+  /** Features not supported by this backend (hidden in UI) */
+  unsupportedFeatures?: string[]
 }
 
 export interface CreateStreamOptions {
@@ -121,6 +165,46 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       rtmpUrl: "NIMBLE_RTMP_URL",
       playbackUrl: "NIMBLE_PLAYBACK_URL",
     },
+    defaultConfig: {
+      name: "Primary Nimble Server",
+      host: "",
+      rtmpPort: 1935,
+      httpPort: 8082,
+      apiKey: "",
+      rtmpBaseUrl: "",
+      playbackBaseUrl: "",
+    },
+    helpTexts: {
+      apiHost: "The hostname or IP of your Nimble Streamer server. Find this in your server provider's dashboard (e.g., AWS EC2 Public IPv4, DigitalOcean Droplet IP, or your custom domain pointing to the server).",
+      apiHostLink: "https://wmspanel.com/nimble/install",
+      apiHostLinkLabel: "Installation Guide",
+      rtmpPort: "Default RTMP port is 1935. Find or change this in Nimble Streamer Admin Panel > Global Settings > RTMP Interfaces. Only change if your server uses a non-standard port.",
+      httpPort: "The management API port for Nimble Streamer. Default is 8082. Find this in /etc/nimble/nimble.conf under 'management_listen_interfaces'. Ensure this port is open in your firewall.",
+      apiKey: "Your Nimble Streamer management API key. Generate this in Nimble Admin Panel > Global Settings > Management API > API Key. If using WMSPanel, find it at wmspanel.com > Account > API Keys.",
+      apiKeyLink: "https://wmspanel.com/api",
+      apiKeyLinkLabel: "WMSPanel API Docs",
+      rtmpUrl: "The base URL encoders use to push RTMP streams. Format: rtmp://{your-server-ip}/live. The '/live' is the Nimble application name. Create applications in Nimble Admin > Live Streams > RTMP Applications.",
+      rtmpUrlLink: "https://wmspanel.com/nimble/live",
+      rtmpUrlLinkLabel: "RTMP Setup Guide",
+      playbackUrl: "The base URL viewers use to watch streams via HLS/DASH. If using Nimble directly, this is your server's HTTP output address. If using a CDN (CloudFront, Cloudflare), use the CDN distribution URL.",
+      playbackUrlLink: "https://wmspanel.com/nimble/cdn",
+      playbackUrlLinkLabel: "CDN Setup Guide",
+      hlsSegment: "Duration of each HLS segment. Default: 4s. Lower values (2s) reduce latency but increase server load. For low-latency, use 2s with Low Latency Mode enabled. Find in Nimble Admin > Live Streams > HLS Settings.",
+      transcoding: "When ON, all new streams are automatically transcoded using the profiles below. Requires FFmpeg installed on the server. Check via SSH: 'ffmpeg -version'.",
+      transcodingLink: "https://wmspanel.com/nimble/transcoding",
+      transcodingLinkLabel: "Transcoding Guide",
+      streamAuth: "When ON, publishers must provide valid credentials to push a stream. Prevents unauthorized streaming to your server. Configure in Nimble Admin > Live Streams > RTMP Authentication. Recommended: Always ON in production.",
+      tokenAuth: "When ON, playback URLs require a signed token to prevent hotlinking. Nimble validates the token using the secret below. Configure in Nimble Admin > Security > Hotlink Protection.",
+      tokenAuthLink: "https://wmspanel.com/nimble/security",
+      tokenAuthLinkLabel: "Hotlink Protection Docs",
+      tokenSecret: "A secret key used to sign playback tokens. Generate a strong random string (32+ chars). Must match the value in Nimble Admin > Security > Hotlink Protection > Secret Key. Generate via: openssl rand -hex 32",
+      ipWhitelist: "When ON, only specific IP addresses can publish streams. Add your encoder/studio IPs. Find your IP at whatismyip.com. Configure in Nimble Admin > Security > IP Access Control.",
+      geoRestriction: "When ON, restrict playback to specific countries. Uses GeoIP lookup on viewer IPs. Requires MaxMind GeoLite2 database. Configure in Nimble Admin > Security > Geo Restrictions.",
+      geoRestrictionLink: "https://dev.maxmind.com/geoip/geolite2-free-geolocation-data",
+      geoRestrictionLinkLabel: "MaxMind GeoIP Setup",
+      storagePath: "Server directory where recordings are saved. This is a path ON THE NIMBLE SERVER, not your local machine. Ensure it exists and Nimble has write permission: 'mkdir -p /recordings && chown nimble:nimble /recordings'.",
+      testConnection: "Nimble Streamer server is reachable and responding",
+    },
   },
   srs: {
     type: "srs",
@@ -145,6 +229,41 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       rtmpUrl: "SRS_RTMP_URL",
       playbackUrl: "SRS_PLAYBACK_URL",
     },
+    defaultConfig: {
+      name: "Primary SRS Server",
+      host: "",
+      rtmpPort: 1935,
+      httpPort: 1985,
+      apiKey: "",
+      rtmpBaseUrl: "",
+      playbackBaseUrl: "",
+    },
+    helpTexts: {
+      apiHost: "The hostname or IP of your SRS server. SRS exposes its HTTP API on port 1985 by default. Verify by visiting http://{your-server}:1985/api/v1/versions in a browser.",
+      apiHostLink: "https://ossrs.io/lts/en-us/docs/v5/doc/getting-started",
+      apiHostLinkLabel: "SRS Getting Started",
+      rtmpPort: "Default RTMP port is 1935. Change in srs.conf under 'listen'. Only modify if you run multiple instances or have port conflicts.",
+      httpPort: "SRS HTTP API port. Default is 1985. Change in srs.conf under 'http_api { listen }'. This port is used for the management API, not HLS delivery.",
+      apiKey: "SRS does not require an API key by default. If you've configured HTTP API authentication via 'http_api { auth }' in srs.conf, enter the token here. Otherwise, leave empty.",
+      rtmpUrl: "The base URL encoders use to push RTMP streams. Format: rtmp://{your-server}/live. The '/live' is the SRS vhost application. Defined in srs.conf under 'vhost __defaultVhost__ { }'.",
+      rtmpUrlLink: "https://ossrs.io/lts/en-us/docs/v5/doc/rtmp",
+      rtmpUrlLinkLabel: "SRS RTMP Docs",
+      playbackUrl: "The base URL for HLS playback. SRS serves HLS on the HTTP server port (default 8080). Format: http://{your-server}:8080. If using a CDN, enter the CDN URL instead.",
+      playbackUrlLink: "https://ossrs.io/lts/en-us/docs/v5/doc/delivery-hls",
+      playbackUrlLinkLabel: "SRS HLS Delivery",
+      hlsSegment: "Duration of each HLS segment. Default: 10s in SRS. Change in srs.conf under 'hls { hls_fragment }'. Lower values (2-4s) reduce latency. Recommended: 4s for live events.",
+      transcoding: "SRS supports FFmpeg-based transcoding. Configure transcoding engines in srs.conf under 'transcode'. Requires FFmpeg installed on the server.",
+      transcodingLink: "https://ossrs.io/lts/en-us/docs/v5/doc/ffmpeg",
+      transcodingLinkLabel: "SRS Transcoding Docs",
+      streamAuth: "SRS supports on_publish HTTP callbacks for stream authentication. Configure in srs.conf under 'http_hooks { on_publish }'. The callback URL receives stream details for validation.",
+      tokenAuth: "SRS supports token-based playback via HTTP callbacks. Configure 'on_play' hooks in srs.conf to validate viewer tokens before allowing playback.",
+      tokenSecret: "A secret key for signing playback tokens. SRS validates tokens via HTTP callback. Generate via: openssl rand -hex 32. Configure the validation endpoint in your on_play hook.",
+      ipWhitelist: "SRS supports IP-based access control via security rules in srs.conf. Configure under 'security { allow publish; deny publish; }' to restrict who can push streams.",
+      geoRestriction: "SRS does not have built-in geo-restriction. Implement at the CDN/reverse proxy level (Cloudflare, Nginx) or via on_play HTTP callbacks with a GeoIP lookup.",
+      storagePath: "Server directory where DVR recordings are saved. Configure in srs.conf under 'dvr { dvr_path }'. Default: ./objs/nginx/html. Ensure SRS has write permission.",
+      testConnection: "SRS server is reachable and responding",
+    },
+    unsupportedFeatures: ["geoRestriction"],
   },
   nginx_rtmp: {
     type: "nginx_rtmp",
@@ -169,6 +288,41 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       rtmpUrl: "NGINX_RTMP_URL",
       playbackUrl: "NGINX_RTMP_PLAYBACK_URL",
     },
+    defaultConfig: {
+      name: "Primary Nginx-RTMP Server",
+      host: "",
+      rtmpPort: 1935,
+      httpPort: 8080,
+      apiKey: "",
+      rtmpBaseUrl: "",
+      playbackBaseUrl: "",
+    },
+    helpTexts: {
+      apiHost: "The hostname or IP of your Nginx server. Nginx-RTMP exposes stats via an HTTP endpoint (e.g., http://{server}/stat). Configure the stat page in nginx.conf under 'rtmp_stat'.",
+      apiHostLink: "https://github.com/arut/nginx-rtmp-module/wiki/Directives#rtmp_stat",
+      apiHostLinkLabel: "Nginx-RTMP Stats Docs",
+      rtmpPort: "Default RTMP port is 1935. Change in nginx.conf under the 'rtmp { server { listen } }' block. Only change if you have port conflicts.",
+      httpPort: "The Nginx HTTP port serving HLS files and the stat page. Default is 8080 (or 80). Change in the 'http { server { listen } }' block in nginx.conf.",
+      apiKey: "Nginx-RTMP does not have a built-in API key. If you've added HTTP basic auth or a custom auth layer to the stat page, enter credentials here. Otherwise, leave empty.",
+      rtmpUrl: "The base URL for RTMP ingest. Format: rtmp://{your-server}/live. The '/live' is the application name defined in nginx.conf under 'rtmp { server { application live { } } }'.",
+      rtmpUrlLink: "https://github.com/arut/nginx-rtmp-module/wiki/Directives#application",
+      rtmpUrlLinkLabel: "Nginx-RTMP Application Docs",
+      playbackUrl: "Nginx-RTMP converts RTMP to HLS files served via Nginx HTTP. Format: http://{your-server}:8080/hls. The HLS root directory is set via 'hls_path' in nginx.conf.",
+      playbackUrlLink: "https://github.com/arut/nginx-rtmp-module/wiki/Directives#hls",
+      playbackUrlLinkLabel: "Nginx-RTMP HLS Docs",
+      hlsSegment: "HLS segment duration in seconds. Set via 'hls_fragment' in nginx.conf (default: 5s). Lower values reduce latency. Example: 'hls_fragment 4s;' in your application block.",
+      transcoding: "Nginx-RTMP supports exec-based transcoding. Add 'exec ffmpeg ...' directives in your application block to transcode to multiple bitrates. Requires FFmpeg installed.",
+      transcodingLink: "https://github.com/arut/nginx-rtmp-module/wiki/Directives#exec",
+      transcodingLinkLabel: "Nginx-RTMP Exec Docs",
+      streamAuth: "Nginx-RTMP supports on_publish HTTP callbacks. Add 'on_publish http://localhost/auth;' in your application block. Return 2xx to allow, 3xx to redirect, others to deny.",
+      tokenAuth: "Nginx-RTMP supports on_play callbacks for playback authentication. Add 'on_play http://localhost/auth;' to validate viewer tokens or sessions before allowing playback.",
+      tokenSecret: "A secret key for signing playback tokens. Nginx-RTMP validates tokens via the on_play callback. Generate via: openssl rand -hex 32",
+      ipWhitelist: "Use 'allow publish' and 'deny publish' directives in the application block to restrict by IP. Example: 'allow publish 192.168.1.0/24; deny publish all;'.",
+      geoRestriction: "Nginx-RTMP does not have built-in geo-restriction. Use the Nginx GeoIP module (ngx_http_geoip_module) or handle at the CDN level.",
+      storagePath: "Directory for recording RTMP streams. Set via 'record_path' in the application block. Example: 'record_path /recordings;'. Ensure Nginx has write permission.",
+      testConnection: "Nginx-RTMP server is reachable and responding",
+    },
+    unsupportedFeatures: ["geoRestriction"],
   },
   mediamtx: {
     type: "mediamtx",
@@ -193,5 +347,40 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       rtmpUrl: "MEDIAMTX_RTMP_URL",
       playbackUrl: "MEDIAMTX_PLAYBACK_URL",
     },
+    defaultConfig: {
+      name: "Primary MediaMTX Server",
+      host: "",
+      rtmpPort: 1935,
+      httpPort: 9997,
+      apiKey: "",
+      rtmpBaseUrl: "",
+      playbackBaseUrl: "",
+    },
+    helpTexts: {
+      apiHost: "The hostname or IP of your MediaMTX server. MediaMTX exposes its REST API on port 9997 by default. Verify by visiting http://{your-server}:9997/v3/paths/list in a browser.",
+      apiHostLink: "https://github.com/bluenviron/mediamtx#table-of-contents",
+      apiHostLinkLabel: "MediaMTX Documentation",
+      rtmpPort: "Default RTMP port is 1935. Change in mediamtx.yml under 'rtmpAddress'. Example: 'rtmpAddress: :1935'. Only change if you have port conflicts.",
+      httpPort: "MediaMTX REST API port. Default is 9997. Change in mediamtx.yml under 'apiAddress'. Example: 'apiAddress: :9997'. This is separate from the HLS port (8888).",
+      apiKey: "MediaMTX does not require an API key by default. If you've configured API authentication in mediamtx.yml under 'api { credentials }', enter the username:password or token here.",
+      rtmpUrl: "The base URL for RTMP ingest. Format: rtmp://{your-server}/live. MediaMTX auto-creates paths on first publish. No application pre-configuration needed.",
+      rtmpUrlLink: "https://github.com/bluenviron/mediamtx#publish-to-the-server",
+      rtmpUrlLinkLabel: "MediaMTX Publishing Guide",
+      playbackUrl: "MediaMTX serves HLS on port 8888 by default. Format: http://{your-server}:8888. Change via 'hlsAddress' in mediamtx.yml. If using a CDN, enter the CDN URL.",
+      playbackUrlLink: "https://github.com/bluenviron/mediamtx#hls",
+      playbackUrlLinkLabel: "MediaMTX HLS Docs",
+      hlsSegment: "HLS segment duration. Set via 'hlsSegmentDuration' in mediamtx.yml (default: 1s for low-latency). Increase to 4s for better compatibility with older players.",
+      transcoding: "MediaMTX does not have built-in transcoding. Use FFmpeg as an external process to re-publish transcoded streams. Or use 'runOnReady' hooks to trigger FFmpeg automatically.",
+      transcodingLink: "https://github.com/bluenviron/mediamtx#on-demand-publishing",
+      transcodingLinkLabel: "MediaMTX Hooks Docs",
+      streamAuth: "MediaMTX supports internal authentication via mediamtx.yml and external auth via HTTP hooks (runOnConnect). Configure users under 'paths: { all_others: { publishUser, publishPass } }'.",
+      tokenAuth: "MediaMTX supports read authentication. Configure 'readUser' and 'readPass' per-path in mediamtx.yml, or use 'externalAuthenticationURL' for token-based validation via HTTP.",
+      tokenSecret: "A secret key for signing playback tokens. When using externalAuthenticationURL, MediaMTX sends credentials to your endpoint for validation. Generate via: openssl rand -hex 32",
+      ipWhitelist: "MediaMTX supports IP-based filtering via 'publishIPs' and 'readIPs' per-path in mediamtx.yml. Example: 'publishIPs: [192.168.1.0/24]'.",
+      geoRestriction: "MediaMTX does not have built-in geo-restriction. Implement at the CDN/reverse proxy level (Cloudflare, Nginx) or via externalAuthenticationURL with GeoIP lookup.",
+      storagePath: "Configure recording via 'record' and 'recordPath' per-path in mediamtx.yml. Default: './recordings'. Ensure MediaMTX has write permission to the directory.",
+      testConnection: "MediaMTX server is reachable and responding",
+    },
+    unsupportedFeatures: ["geoRestriction"],
   },
 }

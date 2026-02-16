@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { streamingService, type ServerStats } from "@/lib/streaming-service"
+import useSWR from "swr"
 import {
   Server,
   Cpu,
@@ -23,32 +23,17 @@ interface ServerStatsPanelProps {
   refreshInterval?: number
 }
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
 export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelProps) {
-  const [stats, setStats] = useState<ServerStats | null>(null)
-  const [isHealthy, setIsHealthy] = useState(true)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, isLoading } = useSWR("/api/streaming/stats", fetcher, {
+    refreshInterval,
+    revalidateOnFocus: false,
+  })
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [serverStats, health] = await Promise.all([
-          streamingService.getServerStats(),
-          streamingService.healthCheck(),
-        ])
-        setStats(serverStats)
-        setIsHealthy(health)
-      } catch (error) {
-        console.error("Failed to fetch server stats:", error)
-        setIsHealthy(false)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchStats()
-    const interval = setInterval(fetchStats, refreshInterval)
-    return () => clearInterval(interval)
-  }, [refreshInterval])
+  const stats = data?.stats ?? null
+  const isHealthy = data?.healthy ?? false
+  const backendName = data?.backendName ?? "Streaming Server"
 
   const formatUptime = (seconds: number): string => {
     const days = Math.floor(seconds / 86400)
@@ -76,7 +61,7 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Server className="h-5 w-5 text-primary" />
-            Nimble Streamer Server
+            {backendName} Server
           </CardTitle>
           <Badge
             variant="outline"

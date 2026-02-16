@@ -24,10 +24,16 @@ import {
   Save,
   RefreshCw,
 } from "lucide-react"
-import type { TranscodingProfile } from "@/lib/types"
+import type { TranscodingProfile, StreamingBackendType } from "@/lib/types"
+import { BACKEND_INFO } from "@/lib/streaming"
+import type { StreamingBackendInfo } from "@/lib/streaming"
 
 export default function StreamingSettingsPage() {
   const router = useRouter()
+
+  // Active streaming backend
+  const [activeBackend, setActiveBackend] = useState<StreamingBackendType>("nimble")
+  const backendInfo: StreamingBackendInfo = BACKEND_INFO[activeBackend]
 
   // Server connection
   const [serverConfig, setServerConfig] = useState({
@@ -135,7 +141,7 @@ export default function StreamingSettingsPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Server Settings</h1>
-            <p className="text-muted-foreground">Configure Nimble Streamer server connection and streaming defaults</p>
+            <p className="text-muted-foreground">Configure {backendInfo.name} server connection and streaming defaults</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -158,6 +164,85 @@ export default function StreamingSettingsPage() {
         </div>
       </div>
 
+      {/* Streaming Backend Selector */}
+      <Card className="border-primary/30 bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Server className="h-5 w-5 text-primary" />
+            Streaming Backend
+          </CardTitle>
+          <CardDescription>
+            Choose your streaming server. Free alternatives available alongside Nimble Streamer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            {(Object.keys(BACKEND_INFO) as StreamingBackendType[]).map((key) => {
+              const info = BACKEND_INFO[key]
+              const isActive = activeBackend === key
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveBackend(key)}
+                  className={`relative flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all ${
+                    isActive
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border bg-card hover:border-primary/50 hover:bg-muted/30"
+                  }`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="font-semibold text-sm text-foreground">{info.name}</span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        info.isFree
+                          ? "bg-green-500/10 text-green-500 border-green-500/30 text-xs"
+                          : "bg-yellow-500/10 text-yellow-500 border-yellow-500/30 text-xs"
+                      }
+                    >
+                      {info.isFree ? "Free" : "$50/mo"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{info.description}</p>
+                  {isActive && (
+                    <div className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-primary" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Active backend info */}
+          <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-sm text-foreground">{backendInfo.name}</h4>
+              <a
+                href={backendInfo.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Documentation
+              </a>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">{backendInfo.cost}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {backendInfo.features.map((feature) => (
+                <Badge key={feature} variant="outline" className="text-xs bg-transparent border-border text-muted-foreground">
+                  {feature}
+                </Badge>
+              ))}
+            </div>
+            <Separator className="my-3" />
+            <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+              <div>Default Ports: RTMP {backendInfo.defaultPorts.rtmp}, HTTP {backendInfo.defaultPorts.http}, API {backendInfo.defaultPorts.api}</div>
+              <div>Env vars: {backendInfo.envVars.apiUrl}, {backendInfo.envVars.rtmpUrl}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Server Connection */}
       <Card className="border-border bg-card">
         <CardHeader>
@@ -165,7 +250,7 @@ export default function StreamingSettingsPage() {
             <Server className="h-5 w-5 text-primary" />
             Server Connection
           </CardTitle>
-          <CardDescription>Configure the connection to your Nimble Streamer server</CardDescription>
+          <CardDescription>Configure the connection to your {backendInfo.name} server</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">

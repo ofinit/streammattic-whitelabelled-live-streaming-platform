@@ -77,10 +77,11 @@ export function AddDomainDialog({ open, onOpenChange, onAdd }: AddDomainDialogPr
           <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
             <p className="font-medium">After adding your domain:</p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-1">
-              <li>You will receive DNS records to add to your domain registrar</li>
-              <li>Add the A record pointing to our server IP</li>
-              <li>Add the TXT record for verification</li>
-              <li>Click "Verify" once DNS has propagated (up to 48 hours)</li>
+              <li>You will receive DNS records to add at your domain registrar</li>
+              <li>For subdomains (e.g., live.example.com): Add a CNAME pointing to Vercel</li>
+              <li>For root domains (e.g., example.com): Add an A record pointing to Vercel</li>
+              <li>Add the TXT record for domain ownership verification</li>
+              <li>Click "Verify Now" once DNS has propagated (usually 5-30 minutes)</li>
             </ol>
           </div>
 

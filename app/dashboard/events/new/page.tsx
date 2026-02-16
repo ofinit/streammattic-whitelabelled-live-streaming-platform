@@ -9,17 +9,28 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare } from "lucide-react"
-import { mockEventTemplates, mockYouTubeChannels } from "@/lib/mock-data"
+import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare, Loader2, Wallet, AlertTriangle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { mockEventTemplates, mockYouTubeChannels, mockUsers, mockResellers } from "@/lib/mock-data"
 import type { StreamTypeKey } from "@/lib/types"
 import { toast } from "@/hooks/use-toast"
 import { StreamTypeSelector } from "@/components/events/stream-type-selector"
 import { SimulcastSelector } from "@/components/events/simulcast-selector"
 import { YouTubeChannelSelector } from "@/components/youtube/youtube-channel-selector"
+import { useAuth } from "@/lib/auth-context"
+import {
+  calculateEventPrice,
+  formatCurrency,
+  validateCascade,
+  type AncestorInfo,
+} from "@/lib/cascade-wallet-service"
 
 export default function ScheduleEventPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [cascadeError, setCascadeError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -66,15 +77,110 @@ export default function ScheduleEventPage() {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
   }
 
-  const handleSubmit = () => {
-    const newEventId = `evt-${Date.now()}`
+  // Calculate price preview
+  const pricePreview = formData.streamType
+    ? calculateEventPrice(
+        formData.streamType as StreamTypeKey,
+        formData.simulcastDestinations,
+        "user",
+      )
+    : null
 
-    toast({
-      title: "Event created successfully!",
-      description: `${formData.title} has been scheduled`,
-    })
+  // Validate cascade before submission
+  const validateCascadeForSubmit = () => {
+    if (!formData.streamType) return null
 
-    router.push(`/dashboard/events/${newEventId}`)
+    // Build ancestor chain: User -> Reseller -> Admin
+    const currentUser = mockUsers[0] // In production, use actual auth user
+    const parentReseller = mockResellers.find((r) => r.id === currentUser.resellerId)
+
+    const chain: AncestorInfo[] = [
+      { id: currentUser.id, name: currentUser.name, type: "user", walletBalance: currentUser.walletBalance, parentId: currentUser.resellerId },
+    ]
+
+    if (parentReseller) {
+      chain.push({
+        id: parentReseller.id,
+        name: parentReseller.name,
+        type: "reseller",
+        walletBalance: parentReseller.walletBalance,
+        parentId: parentReseller.parentResellerId,
+      })
+
+      // Check for parent reseller (sub-reseller chain)
+      if (parentReseller.parentResellerId) {
+        const grandParent = mockResellers.find((r) => r.id === parentReseller.parentResellerId)
+        if (grandParent) {
+          chain.push({
+            id: grandParent.id,
+            name: grandParent.name,
+            type: "reseller",
+            walletBalance: grandParent.walletBalance,
+          })
+        }
+      }
+    }
+
+    // Admin at the top
+    chain.push({ id: "admin-1", name: "Platform Admin", type: "admin", walletBalance: 999999 })
+
+    return validateCascade(chain, formData.streamType as StreamTypeKey, formData.simulcastDestinations)
+  }
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setCascadeError(null)
+
+    try {
+      // 1. Validate cascade wallet balances
+      const cascadeResult = validateCascadeForSubmit()
+      if (cascadeResult && !cascadeResult.isValid) {
+        setCascadeError(cascadeResult.failureReason || "Insufficient wallet balance in the chain")
+        setIsSubmitting(false)
+        return
+      }
+
+      // 2. Create stream on Nimble server (for RTMP streams)
+      const newEventId = `evt-${Date.now()}`
+      let streamData = null
+
+      if (formData.streamType === "rtmp") {
+        const streamRes = await fetch("/api/stream/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId: newEventId,
+            eventTitle: formData.title,
+            enableRecording: formData.enableDvr,
+            enableTranscoding: true,
+          }),
+        })
+
+        if (streamRes.ok) {
+          const result = await streamRes.json()
+          streamData = result.stream
+        }
+      }
+
+      // 3. Event created successfully
+      toast({
+        title: "Event created successfully!",
+        description: streamData
+          ? `${formData.title} has been scheduled. Stream key generated.`
+          : `${formData.title} has been scheduled`,
+      })
+
+      // Navigate to stream control room
+      router.push(`/dashboard/events/${newEventId}/stream`)
+    } catch (error) {
+      toast({
+        title: "Failed to create event",
+        description: (error as Error).message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const selectedTemplate = mockEventTemplates.find((t) => t.id === formData.templateId)
@@ -529,6 +635,43 @@ export default function ScheduleEventPage() {
                   )}
                 </dl>
               </Card>
+
+              {/* Pricing Card */}
+              {pricePreview && (
+                <Card className="p-6 border-primary/30 bg-primary/5">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-primary" />
+                    Event Cost
+                  </h3>
+                  <dl className="mt-4 space-y-2">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Stream Type:</dt>
+                      <dd className="font-medium">{formatCurrency(pricePreview.streamPrice)}</dd>
+                    </div>
+                    {pricePreview.simulcastPrice > 0 && (
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Simulcast ({formData.simulcastDestinations.length} destinations):</dt>
+                        <dd className="font-medium">{formatCurrency(pricePreview.simulcastPrice)}</dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t pt-2 mt-2">
+                      <dt className="font-semibold">Total:</dt>
+                      <dd className="text-lg font-bold text-primary">{formatCurrency(pricePreview.total)}</dd>
+                    </div>
+                  </dl>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    This amount will be deducted from your wallet upon event creation.
+                  </p>
+                </Card>
+              )}
+
+              {/* Cascade Error Alert */}
+              {cascadeError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{cascadeError}</AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
         )}
@@ -546,7 +689,18 @@ export default function ScheduleEventPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit}>Create Event</Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Event...
+                </>
+              ) : pricePreview ? (
+                `Create Event (${formatCurrency(pricePreview.total)})`
+              ) : (
+                "Create Event"
+              )}
+            </Button>
           )}
         </div>
       </div>

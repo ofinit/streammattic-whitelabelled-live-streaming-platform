@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import type { LiveEvent } from "@/lib/types"
 import { format } from "date-fns"
+import { useRouter } from "next/navigation"
 
 interface EventCardProps {
   event: LiveEvent
@@ -31,6 +32,12 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCardProps) {
+  const router = useRouter()
+
+  const openControlRoom = () => {
+    router.push(`/dashboard/events/${event.id}/stream`)
+  }
+
   const getStreamIcon = () => {
     switch (event.streamType) {
       case "youtube":
@@ -147,18 +154,18 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
 
         <div className="flex gap-2">
           {event.status === "draft" || event.status === "scheduled" ? (
-            <Button size="sm" className="flex-1" onClick={() => onStart?.(event)}>
+            <Button size="sm" className="flex-1" onClick={openControlRoom}>
               <Play className="h-4 w-4 mr-1" />
               Go Live
             </Button>
           ) : event.status === "live" ? (
-            <Button size="sm" variant="destructive" className="flex-1" onClick={() => onStop?.(event)}>
+            <Button size="sm" variant="destructive" className="flex-1" onClick={openControlRoom}>
               <Square className="h-4 w-4 mr-1" />
-              End Stream
+              Control Room
             </Button>
           ) : (
-            <Button size="sm" variant="outline" className="flex-1 bg-transparent" disabled>
-              Completed
+            <Button size="sm" variant="outline" className="flex-1 bg-transparent" onClick={openControlRoom}>
+              View Details
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => onEdit?.(event)}>

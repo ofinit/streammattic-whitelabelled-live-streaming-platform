@@ -828,6 +828,8 @@ export interface StreamHealthIssue {
   message: string
 }
 
+export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx"
+
 export interface NimbleServerConfig {
   id: string
   name: string
@@ -840,6 +842,7 @@ export interface NimbleServerConfig {
   maxStreams: number
   currentStreams: number
   region?: string
+  backendType?: StreamingBackendType
 }
 
 export interface StreamPublishAuth {

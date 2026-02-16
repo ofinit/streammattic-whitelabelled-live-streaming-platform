@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { mockEvents } from "@/lib/mock-data"
 import { Radio, Eye, Users, Activity, Settings } from "lucide-react"
+import { getActiveBackendType, BACKEND_INFO } from "@/lib/streaming"
 
 export default function AdminStreamingPage() {
   const router = useRouter()
+  const backendType = getActiveBackendType()
+  const backendInfo = BACKEND_INFO[backendType]
   const liveEvents = mockEvents.filter((e) => e.status === "live")
   const totalViewers = liveEvents.reduce((sum, e) => sum + e.currentViewers, 0)
   const totalBandwidth = liveEvents.length * 4.5 // Mock: 4.5 Mbps per stream
@@ -21,8 +24,13 @@ export default function AdminStreamingPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Streaming Server</h1>
-          <p className="text-muted-foreground">Monitor Nimble Streamer server and live streams</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-foreground">Streaming Server</h1>
+            <Badge variant="outline" className={backendInfo.isFree ? "bg-green-500/10 text-green-500 border-green-500/30" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/30"}>
+              {backendInfo.name}{backendInfo.isFree ? " (Free)" : ""}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">Monitor {backendInfo.name} server and live streams</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="border-border bg-transparent" onClick={() => router.push("/admin/streaming/settings")}>

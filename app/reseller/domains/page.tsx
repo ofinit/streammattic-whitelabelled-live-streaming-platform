@@ -10,6 +10,8 @@ import { DNSInstructionsDialog } from "@/components/domains/dns-instructions-dia
 import { mockDomains } from "@/lib/mock-data"
 import type { Domain } from "@/lib/types"
 
+const MAX_DOMAINS = 3
+
 export default function ResellerDomainsPage() {
   const [domains, setDomains] = useState<Domain[]>(mockDomains.filter((d) => d.userId === "reseller-1"))
   const [showAddDialog, setShowAddDialog] = useState(false)
@@ -17,6 +19,7 @@ export default function ResellerDomainsPage() {
 
   const verifiedCount = domains.filter((d) => d.verificationStatus === "verified").length
   const pendingCount = domains.filter((d) => d.verificationStatus === "pending").length
+  const canAddMore = domains.length < MAX_DOMAINS
 
   const handleAddDomain = (domainName: string) => {
     const newDomain: Domain = {
@@ -66,10 +69,13 @@ export default function ResellerDomainsPage() {
           <h1 className="text-2xl font-bold">Domain Management</h1>
           <p className="text-muted-foreground">Configure custom domains for your white-label platform</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Domain
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{domains.length}/{MAX_DOMAINS} domains</span>
+          <Button onClick={() => setShowAddDialog(true)} disabled={!canAddMore}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Domain
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -127,7 +133,8 @@ export default function ResellerDomainsPage() {
           {domains.length === 0 ? (
             <div className="text-center py-12">
               <Globe className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground mb-4">No custom domains added yet</p>
+              <p className="text-muted-foreground mb-2">No custom domains added yet</p>
+              <p className="text-xs text-muted-foreground mb-4">You can add up to {MAX_DOMAINS} custom domains</p>
               <Button onClick={() => setShowAddDialog(true)}>Add Your First Domain</Button>
             </div>
           ) : (

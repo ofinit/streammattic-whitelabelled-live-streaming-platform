@@ -3,11 +3,21 @@ import { autoConfigureDomain } from "@/lib/cloudflare-dns"
 
 export async function POST(req: Request) {
   try {
-    const { domain, verificationToken, cfApiToken, cfZoneId } = await req.json()
+    const cfApiToken = process.env.CLOUDFLARE_API_TOKEN
+    const cfZoneId = process.env.CLOUDFLARE_ZONE_ID
 
-    if (!domain || !verificationToken || !cfApiToken || !cfZoneId) {
+    if (!cfApiToken || !cfZoneId) {
       return NextResponse.json(
-        { error: "Missing required fields: domain, verificationToken, cfApiToken, cfZoneId" },
+        { error: "Cloudflare is not configured. Ask your platform admin to set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID." },
+        { status: 503 }
+      )
+    }
+
+    const { domain, verificationToken } = await req.json()
+
+    if (!domain || !verificationToken) {
+      return NextResponse.json(
+        { error: "Missing required fields: domain, verificationToken" },
         { status: 400 }
       )
     }

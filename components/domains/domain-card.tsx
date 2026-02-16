@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Globe, CheckCircle, Clock, AlertCircle, Trash, Star, RefreshCw, Copy, Cloud, Loader2 } from "lucide-react"
-import type { Domain, CloudflareConfig } from "@/lib/types"
+import type { Domain } from "@/lib/types"
 import { format } from "date-fns"
 import { useState } from "react"
 
@@ -14,19 +14,16 @@ interface DomainCardProps {
   onSetPrimary?: (domain: Domain) => void
   onRemove?: (domain: Domain) => void
   showInstructions?: (domain: Domain) => void
-  cloudflareConfig?: CloudflareConfig | null
+  cfAvailable?: boolean
   onDomainUpdate?: (domain: Domain) => void
 }
 
-export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstructions, cloudflareConfig, onDomainUpdate }: DomainCardProps) {
+export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstructions, cfAvailable, onDomainUpdate }: DomainCardProps) {
   const [configuring, setConfiguring] = useState(false)
   const [cfError, setCfError] = useState("")
   const [cfSuccess, setCfSuccess] = useState(false)
 
-  const isCfConnected = cloudflareConfig?.isConnected === true
-
   const handleAutoConfigureDns = async () => {
-    if (!cloudflareConfig) return
     setConfiguring(true)
     setCfError("")
     setCfSuccess(false)
@@ -38,8 +35,6 @@ export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstr
         body: JSON.stringify({
           domain: domain.domain,
           verificationToken: domain.verificationToken,
-          cfApiToken: cloudflareConfig.apiToken,
-          cfZoneId: cloudflareConfig.zoneId,
         }),
       })
 
@@ -139,7 +134,7 @@ export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstr
         {domain.verificationStatus === "pending" && (
           <div className="space-y-2 mb-3">
             {/* Auto-configure via Cloudflare */}
-            {isCfConnected && !cfSuccess && !domain.dnsConfiguredVia && (
+            {cfAvailable && !cfSuccess && !domain.dnsConfiguredVia && (
               <div className="bg-[#f48120]/5 border border-[#f48120]/20 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -160,7 +155,7 @@ export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstr
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  One click to create DNS records on your Cloudflare zone ({cloudflareConfig?.zoneName})
+                  One click to automatically create DNS records for this domain
                 </p>
               </div>
             )}
@@ -191,7 +186,7 @@ export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstr
             {!cfSuccess && (
               <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
                 <p className="text-sm text-yellow-600">
-                  {isCfConnected && !domain.dnsConfiguredVia
+                  {cfAvailable && !domain.dnsConfiguredVia
                     ? "Or configure DNS manually using the instructions below."
                     : "DNS verification pending. Please add the required DNS records to verify your domain."}
                 </p>

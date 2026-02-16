@@ -6,26 +6,24 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Copy, Check, Cloud, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { useState } from "react"
-import type { Domain, DNSRecord, CloudflareConfig } from "@/lib/types"
+import type { Domain, DNSRecord } from "@/lib/types"
 
 interface DNSInstructionsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   domain: Domain | null
-  cloudflareConfig?: CloudflareConfig | null
+  cfAvailable?: boolean
   onDomainUpdate?: (domain: Domain) => void
 }
 
-export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareConfig, onDomainUpdate }: DNSInstructionsDialogProps) {
+export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable, onDomainUpdate }: DNSInstructionsDialogProps) {
   const [copied, setCopied] = useState<string | null>(null)
   const [configuring, setConfiguring] = useState(false)
   const [cfSuccess, setCfSuccess] = useState(false)
   const [cfError, setCfError] = useState("")
 
-  const isCfConnected = cloudflareConfig?.isConnected === true
-
   const handleAutoConfigureDns = async () => {
-    if (!cloudflareConfig || !domain) return
+    if (!domain) return
     setConfiguring(true)
     setCfError("")
     setCfSuccess(false)
@@ -37,8 +35,6 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareCo
         body: JSON.stringify({
           domain: domain.domain,
           verificationToken: domain.verificationToken,
-          cfApiToken: cloudflareConfig.apiToken,
-          cfZoneId: cloudflareConfig.zoneId,
         }),
       })
       const data = await res.json()
@@ -98,7 +94,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareCo
 
         <div className="space-y-4">
           {/* Cloudflare Auto-Configure */}
-          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+          {cfAvailable && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
             <div className="rounded-lg border border-[#f48120]/30 bg-[#f48120]/5 p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -108,7 +104,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareCo
                 <Badge variant="outline" className="text-[#f48120] border-[#f48120]/30 text-xs">Recommended</Badge>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Your Cloudflare account ({cloudflareConfig?.zoneName}) is connected. Click below to automatically create the required DNS records.
+                Click below to automatically create the required DNS records via Cloudflare. No setup needed.
               </p>
               {cfSuccess ? (
                 <div className="flex items-center gap-2 text-sm text-green-600">
@@ -148,7 +144,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareCo
           )}
 
           {/* Separator if both sections shown */}
-          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+          {cfAvailable && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">or configure manually</span>

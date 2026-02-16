@@ -3,18 +3,61 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Check } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Copy, Check, Cloud, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { useState } from "react"
-import type { Domain, DNSRecord } from "@/lib/types"
+import type { Domain, DNSRecord, CloudflareConfig } from "@/lib/types"
 
 interface DNSInstructionsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   domain: Domain | null
+  cloudflareConfig?: CloudflareConfig | null
+  onDomainUpdate?: (domain: Domain) => void
 }
 
-export function DNSInstructionsDialog({ open, onOpenChange, domain }: DNSInstructionsDialogProps) {
+export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareConfig, onDomainUpdate }: DNSInstructionsDialogProps) {
   const [copied, setCopied] = useState<string | null>(null)
+  const [configuring, setConfiguring] = useState(false)
+  const [cfSuccess, setCfSuccess] = useState(false)
+  const [cfError, setCfError] = useState("")
+
+  const isCfConnected = cloudflareConfig?.isConnected === true
+
+  const handleAutoConfigureDns = async () => {
+    if (!cloudflareConfig || !domain) return
+    setConfiguring(true)
+    setCfError("")
+    setCfSuccess(false)
+
+    try {
+      const res = await fetch("/api/domains/cloudflare/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: domain.domain,
+          verificationToken: domain.verificationToken,
+          cfApiToken: cloudflareConfig.apiToken,
+          cfZoneId: cloudflareConfig.zoneId,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setCfSuccess(true)
+        onDomainUpdate?.({
+          ...domain,
+          dnsConfiguredVia: "cloudflare",
+          cfRecordIds: data.records?.map((r: { id: string }) => r.id) || [],
+        })
+      } else {
+        setCfError(data.error || "Failed to configure DNS records")
+      }
+    } catch {
+      setCfError("Network error. Please try again.")
+    } finally {
+      setConfiguring(false)
+    }
+  }
 
   if (!domain) return null
 
@@ -54,6 +97,65 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain }: DNSInstruc
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Cloudflare Auto-Configure */}
+          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+            <div className="rounded-lg border border-[#f48120]/30 bg-[#f48120]/5 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Cloud className="h-5 w-5 text-[#f48120]" />
+                  <h4 className="font-medium text-foreground">Auto-Configure via Cloudflare</h4>
+                </div>
+                <Badge variant="outline" className="text-[#f48120] border-[#f48120]/30 text-xs">Recommended</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Your Cloudflare account ({cloudflareConfig?.zoneName}) is connected. Click below to automatically create the required DNS records.
+              </p>
+              {cfSuccess ? (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  DNS records configured. Close this dialog and click "Verify Now" to complete.
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleAutoConfigureDns}
+                    disabled={configuring}
+                    className="bg-[#f48120] hover:bg-[#f48120]/90 text-white"
+                  >
+                    {configuring ? (
+                      <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Configuring DNS</>
+                    ) : (
+                      <><Cloud className="h-4 w-4 mr-1" /> Auto-Configure DNS Records</>
+                    )}
+                  </Button>
+                  {cfError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive mt-2">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      {cfError}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Already configured via CF */}
+          {domain.dnsConfiguredVia === "cloudflare" && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/5 p-3">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <p className="text-sm text-green-600">DNS records were auto-configured via Cloudflare.</p>
+            </div>
+          )}
+
+          {/* Separator if both sections shown */}
+          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+            <div className="flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-xs text-muted-foreground">or configure manually</span>
+              <Separator className="flex-1" />
+            </div>
+          )}
+
           <p className="text-sm text-muted-foreground">
             Add the following DNS records at your domain registrar ({isSubdomain ? "subdomain" : "root domain"} setup). 
             These records connect your domain to Vercel and verify ownership.

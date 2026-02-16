@@ -19,7 +19,7 @@ import {
   HardDrive,
   Plus,
   Trash2,
-  TestTubeDiagonal,
+  FlaskConical,
   Save,
   RefreshCw,
 } from "lucide-react"
@@ -219,7 +219,7 @@ export default function StreamingSettingsPage() {
             </div>
             <div className="flex items-end">
               <Button variant="outline" className="w-full border-border bg-transparent" onClick={handleTestConnection} disabled={isTesting}>
-                {isTesting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <TestTubeDiagonal className="mr-2 h-4 w-4" />}
+                {isTesting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" />}
                 {isTesting ? "Testing..." : "Test Connection"}
               </Button>
             </div>

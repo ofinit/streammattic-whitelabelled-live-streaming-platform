@@ -1,60 +1,55 @@
 "use client"
 
+import useSWR from "swr"
 import { Header } from "@/components/dashboard/header"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { DataTable } from "@/components/dashboard/data-table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
-import { mockResellerStats, mockUsers, mockOrders, mockEvents } from "@/lib/mock-data"
-import { Users, Radio, Wallet, AlertTriangle, Plus, Eye, UserPlus, TrendingDown } from "lucide-react"
-import type { EndUser, Order, LiveEvent } from "@/lib/types"
+import { Users, Radio, Wallet, AlertTriangle, Plus, Eye, UserPlus, AlertCircle } from "lucide-react"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function ResellerDashboard() {
   const { user } = useAuth()
-  const stats = mockResellerStats
 
-  const missedSales = [
-    {
-      id: "ms-1",
-      userName: "Alice Johnson",
-      packageName: "Starter Package",
-      userPrice: 999,
-      resellerRequired: 600,
-      resellerBalance: 400,
-      shortfall: 200,
-      lostProfit: 399,
-      timestamp: new Date(),
-    },
-    {
-      id: "ms-2",
-      userName: "Bob Smith",
-      streamType: "RTMP Event",
-      userPrice: 1500,
-      resellerRequired: 1000,
-      resellerBalance: 800,
-      shortfall: 200,
-      lostProfit: 500,
-      timestamp: new Date(),
-    },
-  ]
+  // Use a demo reseller ID for now (will use real auth later)
+  const resellerId = user?.id || "b0000000-0000-0000-0000-000000000001"
 
-  const lowBalanceWarning = stats.walletBalance < 5000
+  const { data, error, isLoading } = useSWR(
+    `/api/reseller/dashboard?resellerId=${resellerId}`,
+    fetcher,
+    { refreshInterval: 30000 }
+  )
+
+  const stats = data?.stats
+  const users = data?.users ?? []
+  const orders = data?.orders ?? []
+  const events = data?.events ?? []
+
+  const walletBalance = Number(stats?.walletBalance ?? 0)
+  const lowBalanceWarning = walletBalance < 5000
+
+  const liveOrScheduledEvents = events.filter(
+    (e: Record<string, unknown>) => e.status === "live" || e.status === "scheduled"
+  )
 
   const userColumns = [
     {
       key: "name",
       header: "User",
-      render: (item: EndUser) => (
+      render: (item: Record<string, unknown>) => (
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
-            {item.name.charAt(0)}
+            {(item.name as string).charAt(0)}
           </div>
           <div>
-            <p className="font-medium text-foreground">{item.name}</p>
-            <p className="text-sm text-muted-foreground">{item.email}</p>
+            <p className="font-medium text-foreground">{item.name as string}</p>
+            <p className="text-sm text-muted-foreground">{item.email as string}</p>
           </div>
         </div>
       ),
@@ -62,37 +57,32 @@ export default function ResellerDashboard() {
     {
       key: "status",
       header: "Status",
-      render: (item: EndUser) => <StatusBadge status={item.status} />,
+      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
     },
     {
-      key: "totalEvents",
-      header: "Events",
-      render: (item: EndUser) => <span className="text-foreground">{item.totalEvents}</span>,
-    },
-    {
-      key: "walletBalance",
-      header: "Balance",
-      render: (item: EndUser) => (
-        <span className="font-mono text-foreground">₹{item.walletBalance.toLocaleString()}</span>
-      ),
+      key: "eventsRemaining",
+      header: "Events Left",
+      render: (item: Record<string, unknown>) => <span className="text-foreground">{item.eventsRemaining as number ?? 0}</span>,
     },
   ]
 
   const orderColumns = [
     {
-      key: "id",
-      header: "Order ID",
-      render: (item: Order) => <span className="font-mono text-sm text-foreground">{item.id}</span>,
+      key: "orderNumber",
+      header: "Order",
+      render: (item: Record<string, unknown>) => <span className="font-mono text-sm text-foreground">{item.orderNumber as string}</span>,
     },
     {
-      key: "totalPrice",
+      key: "total",
       header: "Amount",
-      render: (item: Order) => <span className="font-mono text-foreground">₹{item.totalPrice}</span>,
+      render: (item: Record<string, unknown>) => (
+        <span className="font-mono text-foreground">₹{Number(item.total).toLocaleString()}</span>
+      ),
     },
     {
       key: "status",
       header: "Status",
-      render: (item: Order) => <StatusBadge status={item.status} />,
+      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
     },
   ]
 
@@ -100,41 +90,60 @@ export default function ResellerDashboard() {
     {
       key: "title",
       header: "Event",
-      render: (item: LiveEvent) => (
+      render: (item: Record<string, unknown>) => (
         <div>
-          <p className="font-medium text-foreground">{item.title}</p>
-          <p className="text-sm text-muted-foreground capitalize">{item.streamType}</p>
+          <p className="font-medium text-foreground">{item.title as string}</p>
+          <p className="text-sm text-muted-foreground capitalize">{(item.streamType as string)?.replace("_", " ")}</p>
         </div>
       ),
     },
     {
       key: "status",
       header: "Status",
-      render: (item: LiveEvent) => <StatusBadge status={item.status} />,
+      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
     },
     {
       key: "currentViewers",
       header: "Viewers",
-      render: (item: LiveEvent) => (
+      render: (item: Record<string, unknown>) => (
         <div className="flex items-center gap-2">
           <Eye className="h-4 w-4 text-muted-foreground" />
-          <span className="text-foreground">{item.currentViewers}</span>
+          <span className="text-foreground">{item.currentViewers as number ?? 0}</span>
         </div>
       ),
     },
   ]
+
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
+        <div className="p-6">
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="flex items-center gap-3 p-6">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="font-medium text-destructive">Failed to load dashboard data</p>
+                <p className="text-sm text-muted-foreground">Please check your connection and try again.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">
       <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
 
       <div className="space-y-6 p-6">
-        {lowBalanceWarning && (
+        {!isLoading && lowBalanceWarning && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Low Wallet Balance Warning</AlertTitle>
             <AlertDescription>
-              Your wallet balance is ₹{stats.walletBalance.toLocaleString()}. Recommended minimum: ₹5,000 for smooth
+              Your wallet balance is ₹{walletBalance.toLocaleString()}. Recommended minimum: ₹5,000 for smooth
               operations. Low balance may block sales from your users.
               <Button variant="outline" size="sm" className="ml-4 bg-transparent">
                 Add Funds Now
@@ -145,51 +154,31 @@ export default function ResellerDashboard() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard title="Wallet Balance" value={`₹${stats.walletBalance.toLocaleString()}`} icon={Wallet} />
-          <StatsCard
-            title="Total Users"
-            value={stats.totalUsers}
-            change={stats.userGrowth}
-            changeLabel="vs last month"
-            icon={Users}
-          />
-          <StatsCard title="Active Events" value={stats.activeEvents} icon={Radio} />
-          <StatsCard
-            title="Missed Sales (24h)"
-            value={missedSales.length}
-            icon={TrendingDown}
-            iconColor="text-destructive"
-          />
-        </div>
-
-        {missedSales.length > 0 && (
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                Missed Sales - Insufficient Funds
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {missedSales.map((sale) => (
-                <div key={sale.id} className="border-l-4 border-destructive pl-4 space-y-2">
-                  <p className="font-medium">
-                    User "{sale.userName}" tried to{" "}
-                    {sale.packageName ? `buy ${sale.packageName}` : `create ${sale.streamType}`}
-                  </p>
-                  <div className="text-sm space-y-1">
-                    <p>You needed: ₹{sale.resellerRequired}</p>
-                    <p>You had: ₹{sale.resellerBalance}</p>
-                    <p className="font-bold text-destructive">Your profit lost: ₹{sale.lostProfit}</p>
-                  </div>
-                  <Button size="sm" variant="destructive">
-                    Add ₹{sale.shortfall} to Wallet
-                  </Button>
-                </div>
+          {isLoading ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="border-border bg-card">
+                  <CardContent className="p-6">
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-8 w-32" />
+                  </CardContent>
+                </Card>
               ))}
-            </CardContent>
-          </Card>
-        )}
+            </>
+          ) : (
+            <>
+              <StatsCard title="Wallet Balance" value={`₹${walletBalance.toLocaleString()}`} icon={Wallet} />
+              <StatsCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
+              <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} />
+              <StatsCard
+                title="Monthly Revenue"
+                value={`₹${Number(stats?.monthlyRevenue ?? 0).toLocaleString()}`}
+                icon={Wallet}
+                iconColor="text-emerald-500"
+              />
+            </>
+          )}
+        </div>
 
         {/* Quick Actions */}
         <div className="flex gap-4">
@@ -209,7 +198,6 @@ export default function ResellerDashboard() {
 
         {/* Tables Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* My Users */}
           <Card className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">My Users</CardTitle>
@@ -218,14 +206,18 @@ export default function ResellerDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              <DataTable
-                columns={userColumns}
-                data={mockUsers.filter((u) => u.resellerId === "reseller-1").slice(0, 3)}
-              />
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : users.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No users yet</p>
+              ) : (
+                <DataTable columns={userColumns} data={users.slice(0, 3)} />
+              )}
             </CardContent>
           </Card>
 
-          {/* Recent Orders */}
           <Card className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Recent Orders</CardTitle>
@@ -234,7 +226,15 @@ export default function ResellerDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              <DataTable columns={orderColumns} data={mockOrders.slice(0, 3)} />
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : orders.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No orders yet</p>
+              ) : (
+                <DataTable columns={orderColumns} data={orders.slice(0, 3)} />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -248,10 +248,15 @@ export default function ResellerDashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <DataTable
-              columns={eventColumns}
-              data={mockEvents.filter((e) => e.status === "live" || e.status === "scheduled").slice(0, 5)}
-            />
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            ) : liveOrScheduledEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No active events</p>
+            ) : (
+              <DataTable columns={eventColumns} data={liveOrScheduledEvents.slice(0, 5)} />
+            )}
           </CardContent>
         </Card>
       </div>

@@ -6,26 +6,24 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Copy, Check, Cloud, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { useState } from "react"
-import type { Domain, DNSRecord, CloudflareConfig } from "@/lib/types"
+import type { Domain, DNSRecord } from "@/lib/types"
 
 interface DNSInstructionsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   domain: Domain | null
-  cloudflareConfig?: CloudflareConfig | null
+  cfAvailable?: boolean
   onDomainUpdate?: (domain: Domain) => void
 }
 
-export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareConfig, onDomainUpdate }: DNSInstructionsDialogProps) {
+export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable, onDomainUpdate }: DNSInstructionsDialogProps) {
   const [copied, setCopied] = useState<string | null>(null)
   const [configuring, setConfiguring] = useState(false)
   const [cfSuccess, setCfSuccess] = useState(false)
   const [cfError, setCfError] = useState("")
 
-  const isCfConnected = cloudflareConfig?.isConnected === true
-
   const handleAutoConfigureDns = async () => {
-    if (!cloudflareConfig || !domain) return
+    if (!domain) return
     setConfiguring(true)
     setCfError("")
     setCfSuccess(false)
@@ -37,8 +35,6 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cloudflareCo
         body: JSON.stringify({
           domain: domain.domain,
           verificationToken: domain.verificationToken,
-          cfApiToken: cloudflareConfig.apiToken,
-          cfZoneId: cloudflareConfig.zoneId,
         }),
       })
       const data = await res.json()

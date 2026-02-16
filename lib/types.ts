@@ -213,6 +213,9 @@ export interface LiveEvent {
   rtmpUrl?: string
   hlsUrl?: string
   youtubeUrl?: string
+  youtubeChannelName?: string
+  youtubeBroadcastId?: string
+  youtubeStreamId?: string
   embedCode?: string
   status: EventStatus
   scheduledAt?: Date

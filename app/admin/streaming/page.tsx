@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { ServerStatsPanel } from "@/components/streaming/server-stats-panel"
 import { LiveStreamsMonitor } from "@/components/streaming/live-streams-monitor"
 import { StatsCard } from "@/components/dashboard/stats-card"
@@ -10,6 +11,7 @@ import { mockEvents } from "@/lib/mock-data"
 import { Radio, Eye, Users, Activity, Settings } from "lucide-react"
 
 export default function AdminStreamingPage() {
+  const router = useRouter()
   const liveEvents = mockEvents.filter((e) => e.status === "live")
   const totalViewers = liveEvents.reduce((sum, e) => sum + e.currentViewers, 0)
   const totalBandwidth = liveEvents.length * 4.5 // Mock: 4.5 Mbps per stream
@@ -23,7 +25,7 @@ export default function AdminStreamingPage() {
           <p className="text-muted-foreground">Monitor Nimble Streamer server and live streams</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="border-border bg-transparent">
+          <Button variant="outline" className="border-border bg-transparent" onClick={() => router.push("/admin/streaming/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             Server Settings
           </Button>

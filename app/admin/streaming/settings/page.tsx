@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
+import { HelpTip } from "@/components/ui/help-tip"
 import {
   ArrowLeft,
   Server,
@@ -169,7 +170,7 @@ export default function StreamingSettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="server-name">Server Name</Label>
+              <Label htmlFor="server-name">Server Name <HelpTip text="A friendly name to identify this server. You can set any name you prefer." /></Label>
               <Input
                 id="server-name"
                 value={serverConfig.name}
@@ -178,7 +179,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="server-host">API Host</Label>
+              <Label htmlFor="server-host">API Host <HelpTip text="The hostname or IP of your Nimble Streamer server. Find this in your server provider's dashboard (e.g., AWS EC2 Public IPv4, DigitalOcean Droplet IP, or your custom domain pointing to the server)." link="https://wmspanel.com/nimble/install" linkLabel="Installation Guide" /></Label>
               <Input
                 id="server-host"
                 value={serverConfig.host}
@@ -188,7 +189,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rtmp-port">RTMP Port</Label>
+              <Label htmlFor="rtmp-port">RTMP Port <HelpTip text="Default RTMP port is 1935. Find or change this in Nimble Streamer Admin Panel > Global Settings > RTMP Interfaces. Only change if your server uses a non-standard port." /></Label>
               <Input
                 id="rtmp-port"
                 type="number"
@@ -198,7 +199,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="http-port">HTTP API Port</Label>
+              <Label htmlFor="http-port">HTTP API Port <HelpTip text="The management API port for Nimble Streamer. Default is 8082. Find this in /etc/nimble/nimble.conf under 'management_listen_interfaces'. Ensure this port is open in your firewall." /></Label>
               <Input
                 id="http-port"
                 type="number"
@@ -208,7 +209,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="api-key">API Key</Label>
+              <Label htmlFor="api-key">API Key <HelpTip text="Your Nimble Streamer management API key. Generate this in Nimble Admin Panel > Global Settings > Management API > API Key. If using WMSPanel, find it at wmspanel.com > Account > API Keys." link="https://wmspanel.com/api" linkLabel="WMSPanel API Docs" /></Label>
               <Input
                 id="api-key"
                 type="password"
@@ -229,7 +230,7 @@ export default function StreamingSettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="rtmp-base">RTMP Ingest URL</Label>
+              <Label htmlFor="rtmp-base">RTMP Ingest URL <HelpTip text="The base URL encoders use to push RTMP streams. Format: rtmp://{your-server-ip-or-domain}/live. The '/live' is the Nimble application name. Create applications in Nimble Admin > Live Streams > RTMP Applications." link="https://wmspanel.com/nimble/live" linkLabel="RTMP Setup Guide" /></Label>
               <Input
                 id="rtmp-base"
                 value={serverConfig.rtmpBaseUrl}
@@ -240,7 +241,7 @@ export default function StreamingSettingsPage() {
               <p className="text-xs text-muted-foreground">Base URL used for RTMP stream ingest</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="playback-base">Playback Base URL</Label>
+              <Label htmlFor="playback-base">Playback Base URL <HelpTip text="The base URL viewers use to watch streams via HLS/DASH. If using Nimble directly, this is your server's HTTP output address. If using a CDN (CloudFront, Cloudflare), use the CDN distribution URL." link="https://wmspanel.com/nimble/cdn" linkLabel="CDN Setup Guide" /></Label>
               <Input
                 id="playback-base"
                 value={serverConfig.playbackBaseUrl}
@@ -266,7 +267,7 @@ export default function StreamingSettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="max-bitrate">Max Bitrate (kbps)</Label>
+              <Label htmlFor="max-bitrate">Max Bitrate (kbps) <HelpTip text="Maximum allowed bitrate for incoming streams. Recommended: 720p = 2500-4000 kbps, 1080p = 4500-8000 kbps, 4K = 15000-25000 kbps. Set based on your server's upload capacity." /></Label>
               <Input
                 id="max-bitrate"
                 type="number"
@@ -276,7 +277,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="max-res">Max Resolution</Label>
+              <Label htmlFor="max-res">Max Resolution <HelpTip text="Maximum resolution accepted from incoming streams. Streams exceeding this will be rejected. Match this to your highest transcoding profile tier." /></Label>
               <Select
                 value={streamDefaults.maxResolution}
                 onValueChange={(v) => setStreamDefaults({ ...streamDefaults, maxResolution: v })}
@@ -293,7 +294,7 @@ export default function StreamingSettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="keyframe">Keyframe Interval (s)</Label>
+              <Label htmlFor="keyframe">Keyframe Interval (s) <HelpTip text="How often keyframes are inserted (in seconds). Recommended: 2s. Must match the encoder's setting (OBS > Output > Keyframe Interval). YouTube/Facebook require 2s." /></Label>
               <Input
                 id="keyframe"
                 type="number"
@@ -306,7 +307,7 @@ export default function StreamingSettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="hls-segment">HLS Segment Duration (s)</Label>
+              <Label htmlFor="hls-segment">HLS Segment Duration (s) <HelpTip text="Duration of each HLS segment. Default: 4s. Lower values (2s) reduce latency but increase server load. For low-latency, use 2s with Low Latency Mode enabled. Find in Nimble Admin > Live Streams > HLS Settings." /></Label>
               <Input
                 id="hls-segment"
                 type="number"
@@ -316,7 +317,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hls-playlist">HLS Playlist Length</Label>
+              <Label htmlFor="hls-playlist">HLS Playlist Length <HelpTip text="Number of segments in the HLS playlist. Default: 6. More segments = longer buffer (more stability) but higher latency. Latency ~ Segment Duration x Playlist Length (e.g., 4s x 6 = ~24s)." /></Label>
               <Input
                 id="hls-playlist"
                 type="number"
@@ -332,7 +333,7 @@ export default function StreamingSettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Default Recording</Label>
+                <Label>Default Recording <HelpTip text="When ON, all new streams are automatically recorded to disk. Recordings are saved to the Storage Path defined in Recording Settings below." /></Label>
                 <p className="text-xs text-muted-foreground">Automatically record all new streams</p>
               </div>
               <Switch
@@ -342,7 +343,7 @@ export default function StreamingSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Default Transcoding</Label>
+                <Label>Default Transcoding <HelpTip text="When ON, all new streams are automatically transcoded using the profiles below. Requires FFmpeg installed on the server. Check via SSH: 'ffmpeg -version'." link="https://wmspanel.com/nimble/transcoding" linkLabel="Transcoding Guide" /></Label>
                 <p className="text-xs text-muted-foreground">Enable adaptive bitrate transcoding by default</p>
               </div>
               <Switch
@@ -352,7 +353,7 @@ export default function StreamingSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Low Latency Mode</Label>
+                <Label>Low Latency Mode <HelpTip text="Reduces stream latency to ~3-5s (vs default ~15-30s). May cause buffering on slow connections. Best with HLS Segment Duration = 2s and Playlist Length = 3. Not recommended for 500+ viewers." /></Label>
                 <p className="text-xs text-muted-foreground">Reduce stream latency (may affect stability)</p>
               </div>
               <Switch
@@ -362,7 +363,7 @@ export default function StreamingSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Adaptive Bitrate</Label>
+                <Label>Adaptive Bitrate <HelpTip text="Enables ABR (Adaptive Bitrate Streaming). Viewers automatically switch between quality levels based on their connection speed. Requires Transcoding Profiles to be configured below. Recommended: Keep ON for public streams." /></Label>
                 <p className="text-xs text-muted-foreground">Enable ABR for viewers with varying connection speeds</p>
               </div>
               <Switch
@@ -382,7 +383,7 @@ export default function StreamingSettingsPage() {
               <Tv className="h-5 w-5 text-primary" />
               Transcoding Profiles
             </CardTitle>
-            <CardDescription>Configure quality tiers for adaptive bitrate streaming</CardDescription>
+            <CardDescription>Configure quality tiers for adaptive bitrate streaming <HelpTip text="Each profile re-encodes the stream at a different resolution/bitrate. Requires FFmpeg on the server and increases CPU usage per profile. Recommended minimum: 3 profiles (1080p, 720p, 360p)." link="https://wmspanel.com/nimble/transcoding" linkLabel="FFmpeg + Transcoding Guide" /></CardDescription>
           </div>
           <Button variant="outline" size="sm" className="border-border bg-transparent" onClick={addProfile}>
             <Plus className="mr-2 h-4 w-4" />
@@ -458,7 +459,7 @@ export default function StreamingSettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Require Stream Authentication</Label>
+              <Label>Require Stream Authentication <HelpTip text="When ON, publishers must provide valid credentials to push a stream. Prevents unauthorized streaming to your server. Configure in Nimble Admin > Live Streams > RTMP Authentication. Recommended: Always ON in production." /></Label>
               <p className="text-xs text-muted-foreground">Publishers must authenticate before streaming</p>
             </div>
             <Switch
@@ -468,7 +469,7 @@ export default function StreamingSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <Label>Token-Based Playback Auth</Label>
+              <Label>Token-Based Playback Auth <HelpTip text="When ON, playback URLs require a signed token to prevent hotlinking. Nimble validates the token using the secret below. Configure in Nimble Admin > Security > Hotlink Protection." link="https://wmspanel.com/nimble/security" linkLabel="Hotlink Protection Docs" /></Label>
               <p className="text-xs text-muted-foreground">Require tokens for playback URLs (prevents hotlinking)</p>
             </div>
             <Switch
@@ -480,7 +481,7 @@ export default function StreamingSettingsPage() {
           {security.tokenBasedAuth && (
             <div className="grid gap-4 md:grid-cols-2 pl-0 mt-2">
               <div className="space-y-2">
-                <Label htmlFor="token-secret">Token Secret</Label>
+                <Label htmlFor="token-secret">Token Secret <HelpTip text="A secret key used to sign playback tokens. Generate a strong random string (32+ chars). Must match the value in Nimble Admin > Security > Hotlink Protection > Secret Key. Generate via: openssl rand -hex 32" /></Label>
                 <Input
                   id="token-secret"
                   type="password"
@@ -490,7 +491,7 @@ export default function StreamingSettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="token-expiry">Token Expiry (seconds)</Label>
+                <Label htmlFor="token-expiry">Token Expiry (seconds) <HelpTip text="How long a playback token remains valid. Default: 3600 (1 hour). Lower = more secure but tokens expire faster. Recommended: 3600 for live streams, 86400 for VOD." /></Label>
                 <Input
                   id="token-expiry"
                   type="number"
@@ -506,7 +507,7 @@ export default function StreamingSettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label>IP Whitelist</Label>
+              <Label>IP Whitelist <HelpTip text="When ON, only specific IP addresses can publish streams. Add your encoder/studio IPs. Find your IP at whatismyip.com. Configure in Nimble Admin > Security > IP Access Control." /></Label>
               <p className="text-xs text-muted-foreground">Only allow publishing from specific IP addresses</p>
             </div>
             <Switch
@@ -530,7 +531,7 @@ export default function StreamingSettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label>Geo Restriction</Label>
+              <Label>Geo Restriction <HelpTip text="When ON, restrict playback to specific countries. Uses GeoIP lookup on viewer IPs. Requires MaxMind GeoLite2 database. Configure in Nimble Admin > Security > Geo Restrictions." link="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data" linkLabel="MaxMind GeoIP Setup" /></Label>
               <p className="text-xs text-muted-foreground">Restrict playback to specific countries</p>
             </div>
             <Switch
@@ -566,7 +567,7 @@ export default function StreamingSettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Enable Recording</Label>
+              <Label>Enable Recording <HelpTip text="Master switch for stream recording. When ON, streams can be recorded to disk. Ensure sufficient disk space: 1 hour of 1080p recording ~ 3-5 GB. Check space via SSH: 'df -h'." /></Label>
               <p className="text-xs text-muted-foreground">Allow streams to be recorded on the server</p>
             </div>
             <Switch
@@ -579,7 +580,7 @@ export default function StreamingSettingsPage() {
             <>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="rec-format">Recording Format</Label>
+                  <Label htmlFor="rec-format">Recording Format <HelpTip text="MP4: Best compatibility, playable everywhere. FLV: Legacy format, faster to write. MPEG-TS: Good for long recordings (crash-resilient). Recommended: MP4 for most use cases." /></Label>
                   <Select value={recording.format} onValueChange={(v) => setRecording({ ...recording, format: v })}>
                     <SelectTrigger className="bg-secondary border-0">
                       <SelectValue />
@@ -592,7 +593,7 @@ export default function StreamingSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rec-path">Storage Path</Label>
+                  <Label htmlFor="rec-path">Storage Path <HelpTip text="Server directory where recordings are saved. This is a path ON THE NIMBLE SERVER, not your local machine. Ensure it exists and Nimble has write permission: 'mkdir -p /recordings && chown nimble:nimble /recordings'." /></Label>
                   <Input
                     id="rec-path"
                     value={recording.storagePath}
@@ -601,7 +602,7 @@ export default function StreamingSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rec-max">Max Duration (min)</Label>
+                  <Label htmlFor="rec-max">Max Duration (min) <HelpTip text="Maximum recording duration per stream in minutes. Default: 480 (8 hours). Set to 0 for unlimited. Plan storage: 1 hour @ 1080p/6Mbps ~ 2.7 GB." /></Label>
                   <Input
                     id="rec-max"
                     type="number"
@@ -614,7 +615,7 @@ export default function StreamingSettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Auto-Delete Recordings</Label>
+                  <Label>Auto-Delete Recordings <HelpTip text="When ON, old recordings are automatically deleted after the specified number of days. Helps manage disk space. Deleted recordings cannot be recovered." /></Label>
                   <p className="text-xs text-muted-foreground">Automatically delete recordings after a set period</p>
                 </div>
                 <Switch
@@ -625,7 +626,7 @@ export default function StreamingSettingsPage() {
 
               {recording.autoDelete && (
                 <div className="space-y-2 max-w-xs">
-                  <Label htmlFor="auto-delete-days">Delete After (days)</Label>
+                  <Label htmlFor="auto-delete-days">Delete After (days) <HelpTip text="Number of days to keep recordings before auto-deletion. Default: 90 days. Set based on your storage capacity and retention requirements." /></Label>
                   <Input
                     id="auto-delete-days"
                     type="number"

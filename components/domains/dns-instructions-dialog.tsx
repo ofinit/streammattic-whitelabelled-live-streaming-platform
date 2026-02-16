@@ -94,7 +94,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
 
         <div className="space-y-4">
           {/* Cloudflare Auto-Configure */}
-          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+          {cfAvailable && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
             <div className="rounded-lg border border-[#f48120]/30 bg-[#f48120]/5 p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -104,7 +104,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
                 <Badge variant="outline" className="text-[#f48120] border-[#f48120]/30 text-xs">Recommended</Badge>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Your Cloudflare account ({cloudflareConfig?.zoneName}) is connected. Click below to automatically create the required DNS records.
+                Click below to automatically create the required DNS records via Cloudflare. No setup needed.
               </p>
               {cfSuccess ? (
                 <div className="flex items-center gap-2 text-sm text-green-600">
@@ -144,7 +144,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
           )}
 
           {/* Separator if both sections shown */}
-          {isCfConnected && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
+          {cfAvailable && domain.verificationStatus === "pending" && !domain.dnsConfiguredVia && (
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
               <span className="text-xs text-muted-foreground">or configure manually</span>

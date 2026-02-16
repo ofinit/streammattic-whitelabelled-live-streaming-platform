@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { DomainCard } from "@/components/domains/domain-card"
 import { AddDomainDialog } from "@/components/domains/add-domain-dialog"
 import { DNSInstructionsDialog } from "@/components/domains/dns-instructions-dialog"
-import { CloudflareConnectDialog } from "@/components/domains/cloudflare-connect-dialog"
 import { mockDomains } from "@/lib/mock-data"
-import type { Domain, CloudflareConfig } from "@/lib/types"
+import type { Domain } from "@/lib/types"
+import useSWR from "swr"
 
 const MAX_DOMAINS = 3
 
@@ -18,12 +18,15 @@ export default function ResellerDomainsPage() {
   const [domains, setDomains] = useState<Domain[]>(mockDomains.filter((d) => d.userId === "reseller-1"))
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [instructionsDomain, setInstructionsDomain] = useState<Domain | null>(null)
-  const [showCfDialog, setShowCfDialog] = useState(false)
-  const [cloudflareConfig, setCloudflareConfig] = useState<CloudflareConfig | null>(null)
+
+  // Check if platform-level Cloudflare is configured (server-side env var)
+  const { data: cfStatus } = useSWR("/api/domains/cloudflare/status", (url: string) =>
+    fetch(url).then((r) => r.json()).catch(() => ({ available: false }))
+  )
+  const cfAvailable = cfStatus?.available === true
 
   const handleDomainUpdate = (updatedDomain: Domain) => {
     setDomains(domains.map((d) => (d.id === updatedDomain.id ? updatedDomain : d)))
-    // Also update instructionsDomain if it's the same domain
     if (instructionsDomain?.id === updatedDomain.id) {
       setInstructionsDomain(updatedDomain)
     }
@@ -82,18 +85,12 @@ export default function ResellerDomainsPage() {
           <p className="text-muted-foreground">Configure custom domains for your white-label platform</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant={cloudflareConfig?.isConnected ? "outline" : "secondary"}
-            onClick={() => setShowCfDialog(true)}
-            className={cloudflareConfig?.isConnected ? "border-[#f48120]/30 text-[#f48120] hover:bg-[#f48120]/5" : ""}
-          >
-            <Cloud className="h-4 w-4 mr-2" />
-            {cloudflareConfig?.isConnected ? (
-              <>Cloudflare <Badge variant="outline" className="ml-1 text-xs bg-green-500/10 text-green-500 border-green-500/30">Connected</Badge></>
-            ) : (
-              "Connect Cloudflare"
-            )}
-          </Button>
+          {cfAvailable && (
+            <Badge variant="outline" className="border-[#f48120]/30 text-[#f48120] bg-[#f48120]/5 gap-1">
+              <Cloud className="h-3 w-3" />
+              Auto-DNS Enabled
+            </Badge>
+          )}
           <span className="text-sm text-muted-foreground">{domains.length}/{MAX_DOMAINS}</span>
           <Button onClick={() => setShowAddDialog(true)} disabled={!canAddMore}>
             <Plus className="h-4 w-4 mr-2" />
@@ -171,7 +168,7 @@ export default function ResellerDomainsPage() {
                   onSetPrimary={handleSetPrimary}
                   onRemove={handleRemove}
                   showInstructions={setInstructionsDomain}
-                  cloudflareConfig={cloudflareConfig}
+                  cfAvailable={cfAvailable}
                   onDomainUpdate={handleDomainUpdate}
                 />
               ))}
@@ -186,16 +183,8 @@ export default function ResellerDomainsPage() {
         open={!!instructionsDomain}
         onOpenChange={(open) => !open && setInstructionsDomain(null)}
         domain={instructionsDomain}
-        cloudflareConfig={cloudflareConfig}
+        cfAvailable={cfAvailable}
         onDomainUpdate={handleDomainUpdate}
-      />
-
-      <CloudflareConnectDialog
-        open={showCfDialog}
-        onOpenChange={setShowCfDialog}
-        currentConfig={cloudflareConfig}
-        onSave={setCloudflareConfig}
-        onDisconnect={() => setCloudflareConfig(null)}
       />
     </div>
   )

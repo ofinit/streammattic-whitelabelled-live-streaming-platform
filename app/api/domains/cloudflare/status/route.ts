@@ -5,6 +5,6 @@ export async function GET() {
   const cfZoneId = process.env.CLOUDFLARE_ZONE_ID
 
   return NextResponse.json({
-    configured: Boolean(cfApiToken && cfZoneId),
+    available: Boolean(cfApiToken && cfZoneId),
   })
 }

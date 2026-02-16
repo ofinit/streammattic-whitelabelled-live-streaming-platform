@@ -499,15 +499,6 @@ export interface DNSRecord {
   ttl: number
 }
 
-// Cloudflare integration config (per reseller)
-export interface CloudflareConfig {
-  apiToken: string
-  zoneId: string
-  zoneName: string
-  isConnected: boolean
-  connectedAt?: Date
-}
-
 // Payment
 export interface Payment {
   id: string

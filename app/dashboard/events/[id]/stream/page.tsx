@@ -34,6 +34,8 @@ import {
 import { StreamPlayer } from "@/components/stream/stream-player"
 import { StreamStatsPanel } from "@/components/stream/stream-stats-panel"
 import { RtmpInfoPanel } from "@/components/stream/rtmp-info-panel"
+import { YouTubeInfoPanel } from "@/components/stream/youtube-info-panel"
+import { EmbedInfoPanel } from "@/components/stream/embed-info-panel"
 import { ViewerChart } from "@/components/stream/viewer-chart"
 import { mockEvents } from "@/lib/mock-data"
 import { getMockStreamStats } from "@/lib/nimble-service"
@@ -383,6 +385,46 @@ export default function StreamControlRoomPage() {
                     title: "Stream key regenerated",
                     description: "Update your encoder with the new key",
                   })
+                }}
+              />
+            )}
+
+            {/* YouTube Live API Panel */}
+            {event.streamType === "youtube_api" && (
+              <YouTubeInfoPanel
+                broadcastId={`broadcast_${eventId}`}
+                streamId={`stream_${eventId}`}
+                rtmpUrl="rtmp://a.rtmp.youtube.com/live2"
+                streamKey={stream?.streamKey || null}
+                channelName={event.youtubeChannelName || "Connected Channel"}
+                broadcastStatus={isLive ? "live" : isCompleted ? "complete" : "created"}
+                healthStatus={isLive ? "good" : "noData"}
+                youtubeUrl={event.youtubeUrl}
+              />
+            )}
+
+            {/* YouTube Embed Panel */}
+            {event.streamType === "youtube_embed" && (
+              <EmbedInfoPanel
+                embedUrl={event.youtubeUrl || null}
+                embedType="youtube_embed"
+                isLive={isLive}
+                onUpdateUrl={(url) => {
+                  setEvent((prev) => prev ? { ...prev, youtubeUrl: url } : prev)
+                  toast({ title: "YouTube URL updated" })
+                }}
+              />
+            )}
+
+            {/* Third Party Embed Panel */}
+            {(event.streamType === "embedded" || event.streamType === "third_party") && (
+              <EmbedInfoPanel
+                embedUrl={event.hlsUrl || null}
+                embedType="third_party"
+                isLive={isLive}
+                onUpdateUrl={(url) => {
+                  setEvent((prev) => prev ? { ...prev, hlsUrl: url } : prev)
+                  toast({ title: "Embed URL updated" })
                 }}
               />
             )}

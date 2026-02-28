@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
-import { Radio, Wallet, AlertTriangle, Plus, Eye, AlertCircle } from "lucide-react"
+import { Radio, Wallet, AlertTriangle, Plus, Eye, AlertCircle, Calendar } from "lucide-react"
+import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -27,7 +28,6 @@ export default function ResellerDashboard() {
   )
 
   const stats = data?.stats
-  const orders = data?.orders ?? []
   const events = data?.events ?? []
 
   const walletBalance = Number(stats?.walletBalance ?? 0)
@@ -36,26 +36,6 @@ export default function ResellerDashboard() {
   const liveOrScheduledEvents = events.filter(
     (e: Record<string, unknown>) => e.status === "live" || e.status === "scheduled"
   )
-
-  const orderColumns = [
-    {
-      key: "orderNumber",
-      header: "Order",
-      render: (item: Record<string, unknown>) => <span className="font-mono text-sm text-foreground">{item.orderNumber as string}</span>,
-    },
-    {
-      key: "total",
-      header: "Amount",
-      render: (item: Record<string, unknown>) => (
-        <span className="font-mono text-foreground">₹{Number(item.total).toLocaleString()}</span>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
-    },
-  ]
 
   const eventColumns = [
     {
@@ -115,9 +95,9 @@ export default function ResellerDashboard() {
             <AlertTitle>Low Wallet Balance Warning</AlertTitle>
             <AlertDescription>
               Your wallet balance is ₹{walletBalance.toLocaleString()}. Recommended minimum: ₹5,000 for smooth
-              operations. Low balance may block sales.
-              <Button variant="outline" size="sm" className="ml-4 bg-transparent">
-                Add Funds Now
+              operations. Low balance may block event creation.
+              <Button variant="outline" size="sm" className="ml-4 bg-transparent" asChild>
+                <Link href="/reseller/wallet">Add Funds Now</Link>
               </Button>
             </AlertDescription>
           </Alert>
@@ -141,55 +121,33 @@ export default function ResellerDashboard() {
               <StatsCard title="Wallet Balance" value={`₹${walletBalance.toLocaleString()}`} icon={Wallet} />
               <StatsCard title="Total Events" value={stats?.totalEvents ?? 0} icon={Radio} />
               <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} iconColor="text-red-500" />
-              <StatsCard
-                title="Monthly Revenue"
-                value={`₹${Number(stats?.monthlyRevenue ?? 0).toLocaleString()}`}
-                icon={Wallet}
-                iconColor="text-emerald-500"
-              />
+              <StatsCard title="Scheduled Events" value={liveOrScheduledEvents.filter((e: Record<string, unknown>) => e.status === "scheduled").length} icon={Calendar} iconColor="text-blue-500" />
             </>
           )}
         </div>
 
         {/* Quick Actions */}
         <div className="flex gap-4">
-          <Button className="bg-primary hover:bg-primary/90">
-            <Wallet className="mr-2 h-4 w-4" />
-            Top Up Wallet
+          <Button className="bg-primary hover:bg-primary/90" asChild>
+            <Link href="/reseller/wallet">
+              <Wallet className="mr-2 h-4 w-4" />
+              Top Up Wallet
+            </Link>
           </Button>
-          <Button variant="outline" className="border-border bg-transparent">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Package
+          <Button variant="outline" className="border-border bg-transparent" asChild>
+            <Link href="/reseller/events">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Event
+            </Link>
           </Button>
         </div>
-
-        {/* Tables Grid */}
-        <Card className="border-border bg-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Orders</CardTitle>
-            <Button size="sm" variant="ghost" className="text-primary">
-              View All
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-              </div>
-            ) : orders.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No orders yet</p>
-            ) : (
-              <DataTable columns={orderColumns} data={orders.slice(0, 3)} />
-            )}
-          </CardContent>
-        </Card>
 
         {/* Active Events */}
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Active Events</CardTitle>
-            <Button size="sm" variant="ghost" className="text-primary">
-              View All Events
+            <Button size="sm" variant="ghost" className="text-primary" asChild>
+              <Link href="/reseller/events">View All Events</Link>
             </Button>
           </CardHeader>
           <CardContent>

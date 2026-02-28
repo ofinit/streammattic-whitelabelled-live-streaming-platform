@@ -72,15 +72,12 @@ const adminNav: NavItem[] = [
 
 const resellerNav: NavItem[] = [
   { title: "Dashboard", href: "/reseller", icon: LayoutDashboard },
-  { title: "Packages", href: "/reseller/packages", icon: Package },
   { title: "Events", href: "/reseller/events", icon: Radio },
   { title: "Event Calendar", href: "/reseller/calendar", icon: Calendar },
   { title: "Wallet", href: "/reseller/wallet", icon: Wallet },
-  { title: "Orders", href: "/reseller/orders", icon: ShoppingCart, badge: 3 },
   { title: "Analytics", href: "/reseller/analytics", icon: BarChart3 },
   { title: "Branding", href: "/reseller/branding", icon: Paintbrush },
   { title: "Domains", href: "/reseller/domains", icon: Globe },
-  { title: "Payment Gateways", href: "/reseller/payments", icon: CreditCard },
   { title: "Notifications", href: "/reseller/notifications", icon: Bell },
   { title: "Integrations", href: "/reseller/settings/integrations", icon: Plug },
   { title: "Settings", href: "/reseller/settings", icon: Settings },

@@ -42,12 +42,12 @@ export default function ResellerWalletPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Cascade Debits</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Platform Usage</CardTitle>
             <ArrowUpRight className="h-5 w-5 text-red-500" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-500">-₹4,800</p>
-            <p className="text-sm text-muted-foreground">Paid to platform</p>
+            <p className="text-sm text-muted-foreground">Streaming costs</p>
           </CardContent>
         </Card>
       </div>
@@ -100,7 +100,7 @@ export default function ResellerWalletPage() {
             <Clock className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium text-foreground">Understanding Cascade Debits</p>
+            <p className="font-medium text-foreground">Understanding Platform Debits</p>
             <p className="text-sm text-muted-foreground mt-1">
               When events are created or streaming services are used, your wallet is automatically debited for the
               platform cost. Top up your wallet regularly to ensure uninterrupted event creation.

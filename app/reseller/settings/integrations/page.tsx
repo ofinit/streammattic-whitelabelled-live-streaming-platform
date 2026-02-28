@@ -91,7 +91,7 @@ export default function ResellerIntegrationsPage() {
         title="Integrations"
         description="Manage your YouTube API credentials for white-label branding"
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl space-y-6">
           {/* Status Overview */}
           <Card className="border-border bg-card">

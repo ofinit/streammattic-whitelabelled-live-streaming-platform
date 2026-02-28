@@ -52,7 +52,7 @@ export default function AdminGSTSettingsPage() {
         }
       />
 
-      <div className="p-6 space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-3xl">
         {saveSuccess && (
           <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-4 flex items-center gap-3">
             <div className="text-emerald-600">✓</div>

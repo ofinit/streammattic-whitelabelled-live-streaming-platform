@@ -30,7 +30,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col">
       <Header title="Notifications" subtitle="Stay updated with your activity" />
-      <main className="flex-1 p-6">
+      <main className="flex-1">
         <Tabs defaultValue="all" className="w-full">
           <TabsList>
             <TabsTrigger value="all">All ({notifications.length})</TabsTrigger>

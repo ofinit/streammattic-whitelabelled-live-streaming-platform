@@ -37,7 +37,9 @@ function UserDashboardLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       {!isDemoPage && <ImpersonationBanner />}
       <Sidebar />
-      <main className={`transition-all duration-300 ${isCollapsed ? "pl-16" : "pl-64"}`}>{children}</main>
+      <main className={`transition-all duration-300 ${isCollapsed ? "pl-16" : "pl-64"}`}>
+        <div className="p-6">{children}</div>
+      </main>
     </div>
   )
 }

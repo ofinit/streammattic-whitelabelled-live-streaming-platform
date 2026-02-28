@@ -103,7 +103,7 @@ export default function YouTubeSettingsPage() {
     <div className="min-h-screen">
       <Header title="YouTube Channels" subtitle="Manage your connected YouTube channels for live streaming" />
 
-      <div className="p-6 space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-3xl">
         <Alert className="bg-muted/50 border-border">
           <Info className="h-4 w-4" />
           <AlertDescription>

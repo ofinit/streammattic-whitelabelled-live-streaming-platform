@@ -112,17 +112,15 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen">
         <Header title="Admin Dashboard" subtitle="Platform overview and management" />
-        <div className="p-6">
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardContent className="flex items-center gap-3 p-6">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <div>
-                <p className="font-medium text-destructive">Failed to load dashboard data</p>
-                <p className="text-sm text-muted-foreground">Please check your database connection and try again.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-center gap-3 p-6">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Failed to load dashboard data</p>
+              <p className="text-sm text-muted-foreground">Please check your database connection and try again.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -131,7 +129,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen">
       <Header title="Admin Dashboard" subtitle="Platform overview and management" />
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {isLoading ? (

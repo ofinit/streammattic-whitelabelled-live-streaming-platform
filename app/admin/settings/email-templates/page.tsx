@@ -17,7 +17,7 @@ export default function EmailTemplatesPage() {
   return (
     <div className="flex flex-col">
       <Header title="Email Templates" subtitle="Preview and manage email templates" />
-      <main className="flex-1 p-6">
+      <main className="flex-1">
         <div className="relative mb-6 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input

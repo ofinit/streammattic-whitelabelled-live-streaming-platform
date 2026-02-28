@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
     <div className="min-h-screen">
       <Header title="User Management" subtitle="Manage all platform users" />
 
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Filters */}
         <Card className="border-border bg-card">
           <CardContent className="p-4">

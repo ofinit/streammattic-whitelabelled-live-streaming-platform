@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import type { WalletTransaction } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, Package, Users } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, Package } from "lucide-react"
 
 interface TransactionListProps {
   transactions: WalletTransaction[]
@@ -16,7 +16,8 @@ interface TransactionListProps {
 const categoryLabels: Record<string, string> = {
   top_up: "Top Up",
   package_purchase: "Package Purchase",
-  cascade_debit: "Cascade Debit",
+  cascade_debit: "Platform Debit",
+  platform_debit: "Platform Debit",
   order_refund: "Refund",
   adjustment: "Adjustment",
   commission: "Commission",
@@ -25,7 +26,8 @@ const categoryLabels: Record<string, string> = {
 const categoryIcons: Record<string, React.ElementType> = {
   top_up: Wallet,
   package_purchase: Package,
-  cascade_debit: Users,
+  cascade_debit: ArrowUpRight,
+  platform_debit: ArrowUpRight,
   order_refund: RefreshCw,
   adjustment: RefreshCw,
   commission: ArrowDownLeft,
@@ -64,11 +66,6 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-medium text-foreground truncate">{txn.description}</p>
-                {txn.cascadeLevel !== undefined && (
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    L{txn.cascadeLevel}
-                  </Badge>
-                )}
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="text-xs">

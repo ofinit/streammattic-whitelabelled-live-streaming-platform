@@ -421,6 +421,38 @@ export async function deleteBroadcast(accessToken: string, broadcastId: string):
   return true
 }
 
+/**
+ * Poll YouTube liveStreams.list until the stream status is "active".
+ * The encoder (OBS/Wirecast) must be pushing to the RTMP URL before
+ * a broadcast can transition to "live". This polls every 3s up to timeoutMs.
+ */
+export async function waitForStreamReady(
+  accessToken: string,
+  streamId: string,
+  timeoutMs = 30000,
+): Promise<boolean> {
+  const pollInterval = 3000
+  const maxAttempts = Math.ceil(timeoutMs / pollInterval)
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await fetch(
+      `${YOUTUBE_API_BASE}/liveStreams?part=status&id=${streamId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    )
+
+    if (res.ok) {
+      const data = await res.json()
+      const status = data.items?.[0]?.status?.streamStatus
+      if (status === "active") return true
+    }
+
+    // Wait before next poll
+    await new Promise((resolve) => setTimeout(resolve, pollInterval))
+  }
+
+  return false
+}
+
 // ──────────────────────────────────────
 // Database helpers for channel management
 // ──────────────────────────────────────

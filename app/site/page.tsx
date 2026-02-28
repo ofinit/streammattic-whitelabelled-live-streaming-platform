@@ -54,6 +54,8 @@ function useLandingBranding(): Branding {
   return {
     ...mockBranding,
     ...branding,
+    heroImage: branding.heroImage || mockBranding.heroImage,
+    aboutImage: branding.aboutImage || mockBranding.aboutImage,
     services: branding.services || mockBranding.services,
     eventTypes: branding.eventTypes || mockBranding.eventTypes,
     stats: branding.stats || mockBranding.stats,
@@ -171,6 +173,18 @@ function HeroSection({ branding }: { branding: Branding }) {
 
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-6 pt-20 text-center">
+      {/* Hero background image */}
+      {branding.heroImage && (
+        <div className="absolute inset-0">
+          <img
+            src={branding.heroImage}
+            alt="Hero background"
+            className="h-full w-full object-cover"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0 bg-background/85" />
+        </div>
+      )}
       {/* Subtle gradient backdrop */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -470,7 +484,7 @@ function AboutSection({ branding }: { branding: Branding }) {
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border/50">
             <img
-              src="/placeholder.svg?height=600&width=800"
+              src={branding.aboutImage || "/placeholder.svg?height=600&width=800"}
               alt={`About ${branding.brandName}`}
               className="h-full w-full object-cover"
               crossOrigin="anonymous"

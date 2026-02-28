@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { mockEvents, mockUsers, mockResellers } from "@/lib/mock-data"
+import { mockEvents } from "@/lib/mock-data"
 import {
   CalendarIcon,
   List,
@@ -53,12 +53,11 @@ export default function ResellerCalendarPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const eventsPerPage = 10
 
-  // Get events for this reseller's scope
+  // Get events for this reseller
   const relevantEvents = useMemo(() => {
     if (!user) return []
-    // Reseller sees events from their direct assignments
-    const resellerUserIds = mockUsers.filter((u) => u.resellerId === user.id).map((u) => u.id)
-    return mockEvents.filter((e) => resellerUserIds.includes(e.userId) || e.resellerId === user.id)
+    // Reseller sees only their own events
+    return mockEvents.filter((e) => e.resellerId === user.id || e.userId === user.id)
   }, [user])
 
   // Filter events by date range
@@ -217,7 +216,7 @@ export default function ResellerCalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">{isSubReseller ? "From your users" : "From your hierarchy"}</p>
+            <p className="text-xs text-muted-foreground">Your events</p>
           </CardContent>
         </Card>
 

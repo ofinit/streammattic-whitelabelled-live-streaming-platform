@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
-import { Users, Radio, Wallet, AlertTriangle, Plus, Eye, UserPlus, AlertCircle } from "lucide-react"
+import { Radio, Wallet, AlertTriangle, Plus, Eye, AlertCircle } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -27,7 +27,6 @@ export default function ResellerDashboard() {
   )
 
   const stats = data?.stats
-  const users = data?.users ?? []
   const orders = data?.orders ?? []
   const events = data?.events ?? []
 
@@ -37,34 +36,6 @@ export default function ResellerDashboard() {
   const liveOrScheduledEvents = events.filter(
     (e: Record<string, unknown>) => e.status === "live" || e.status === "scheduled"
   )
-
-  const userColumns = [
-    {
-      key: "name",
-      header: "User",
-      render: (item: Record<string, unknown>) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
-            {(item.name as string).charAt(0)}
-          </div>
-          <div>
-            <p className="font-medium text-foreground">{item.name as string}</p>
-            <p className="text-sm text-muted-foreground">{item.email as string}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
-    },
-    {
-      key: "eventsRemaining",
-      header: "Events Left",
-      render: (item: Record<string, unknown>) => <span className="text-foreground">{item.eventsRemaining as number ?? 0}</span>,
-    },
-  ]
 
   const orderColumns = [
     {
@@ -168,8 +139,8 @@ export default function ResellerDashboard() {
           ) : (
             <>
               <StatsCard title="Wallet Balance" value={`₹${walletBalance.toLocaleString()}`} icon={Wallet} />
-              <StatsCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
-              <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} />
+              <StatsCard title="Total Events" value={stats?.totalEvents ?? 0} icon={Radio} />
+              <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} iconColor="text-red-500" />
               <StatsCard
                 title="Monthly Revenue"
                 value={`₹${Number(stats?.monthlyRevenue ?? 0).toLocaleString()}`}
@@ -183,10 +154,6 @@ export default function ResellerDashboard() {
         {/* Quick Actions */}
         <div className="flex gap-4">
           <Button className="bg-primary hover:bg-primary/90">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New User
-          </Button>
-          <Button variant="outline" className="border-border bg-transparent">
             <Wallet className="mr-2 h-4 w-4" />
             Top Up Wallet
           </Button>
@@ -197,47 +164,25 @@ export default function ResellerDashboard() {
         </div>
 
         {/* Tables Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="border-border bg-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">My Users</CardTitle>
-              <Button size="sm" variant="ghost" className="text-primary">
-                View All
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-              ) : users.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No users yet</p>
-              ) : (
-                <DataTable columns={userColumns} data={users.slice(0, 3)} />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Recent Orders</CardTitle>
-              <Button size="sm" variant="ghost" className="text-primary">
-                View All
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-              ) : orders.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No orders yet</p>
-              ) : (
-                <DataTable columns={orderColumns} data={orders.slice(0, 3)} />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border-border bg-card">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Recent Orders</CardTitle>
+            <Button size="sm" variant="ghost" className="text-primary">
+              View All
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            ) : orders.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No orders yet</p>
+            ) : (
+              <DataTable columns={orderColumns} data={orders.slice(0, 3)} />
+            )}
+          </CardContent>
+        </Card>
 
         {/* Active Events */}
         <Card className="border-border bg-card">

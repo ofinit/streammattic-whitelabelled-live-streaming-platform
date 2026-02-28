@@ -52,14 +52,13 @@ export const mockResellers: Reseller[] = [
     role: "reseller",
     status: "active",
     walletBalance: 15000,
-    totalUsers: 45,
     totalEvents: 234,
 
     createdAt: new Date("2024-02-15"),
     updatedAt: new Date(),
     branding: {
       id: "brand-1",
-      resellerId: "reseller-1",
+  
       platformName: "LiveStream Pro",
       primaryColor: "#10b981",
       secondaryColor: "#059669",
@@ -74,7 +73,6 @@ export const mockResellers: Reseller[] = [
     role: "reseller",
     status: "active",
     walletBalance: 8500,
-    totalUsers: 28,
     totalEvents: 156,
     createdAt: new Date("2024-03-01"),
     updatedAt: new Date(),
@@ -94,7 +92,6 @@ export const mockResellers: Reseller[] = [
     role: "reseller",
     status: "inactive",
     walletBalance: 2200,
-    totalUsers: 12,
     totalEvents: 67,
     createdAt: new Date("2024-04-10"),
     updatedAt: new Date(),
@@ -114,7 +111,6 @@ export const mockResellers: Reseller[] = [
     role: "reseller",
     status: "active",
     walletBalance: 5000,
-    totalUsers: 15,
     totalEvents: 89,
     createdAt: new Date("2024-05-20"),
     updatedAt: new Date(),
@@ -135,7 +131,6 @@ export const mockResellers: Reseller[] = [
     role: "reseller",
     status: "active",
     walletBalance: 7500,
-    totalUsers: 22,
     totalEvents: 45,
     createdAt: new Date("2024-06-10"),
     updatedAt: new Date(),
@@ -158,7 +153,6 @@ export const mockUsers: EndUser[] = [
     name: "Alice Johnson",
     role: "user",
     status: "active",
-    resellerId: "reseller-1",
     packageId: "pkg-2",
     packageExpiresAt: new Date("2025-02-15"),
     walletBalance: 500,
@@ -173,7 +167,6 @@ export const mockUsers: EndUser[] = [
     name: "Bob Smith",
     role: "user",
     status: "active",
-    resellerId: "reseller-1",
     packageId: "pkg-1",
     packageExpiresAt: new Date("2025-01-20"),
     walletBalance: 150,
@@ -188,7 +181,6 @@ export const mockUsers: EndUser[] = [
     name: "Charlie Brown",
     role: "user",
     status: "suspended",
-    resellerId: "reseller-2",
     walletBalance: 0,
     totalEvents: 3,
     eventsUsed: 3,
@@ -441,7 +433,6 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-1",
     userId: "user-1",
-    resellerId: "reseller-1",
     title: "Tech Conference 2024",
     description: "Annual technology conference featuring industry leaders",
     streamType: "rtmp",
@@ -462,7 +453,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-2",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "Product Launch Webinar",
     description: "Exclusive product launch event",
     streamType: "youtube",
@@ -482,7 +473,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-3",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "Music Festival Stream",
     description: "Live streaming from the music festival",
     streamType: "hls",
@@ -503,7 +494,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-4",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "January 2025 Kickoff",
     description: "Start the year with a live event",
     streamType: "rtmp",
@@ -525,7 +516,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-5",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "February Workshop",
     description: "Educational workshop on streaming",
     streamType: "youtube",
@@ -544,7 +535,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-6",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "March Music Concert",
     description: "Live music performance",
     streamType: "hls",
@@ -564,7 +555,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-7",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "April Product Demo",
     description: "New product demonstration",
     streamType: "rtmp",
@@ -584,7 +575,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-8",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "May Gaming Tournament",
     description: "Annual gaming competition",
     streamType: "youtube",
@@ -603,7 +594,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-9",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "June Summer Festival",
     description: "Summer celebration event",
     streamType: "hls",
@@ -624,7 +615,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-10",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "July Tech Talk",
     description: "Monthly tech discussion",
     streamType: "rtmp",
@@ -645,7 +636,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-11",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "August Webinar Series",
     description: "Educational webinar",
     streamType: "youtube",
@@ -665,7 +656,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-12",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "September Conference",
     description: "Fall conference and networking",
     streamType: "hls",
@@ -686,7 +677,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-13",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "January 2026 Launch",
     description: "New year product launch",
     streamType: "rtmp",
@@ -706,7 +697,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-14",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "March 2026 Expo",
     description: "Industry expo and showcase",
     streamType: "youtube",
@@ -725,7 +716,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-15",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "June 2026 Summit",
     description: "Mid-year business summit",
     streamType: "hls",
@@ -745,7 +736,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-16",
     userId: "user-2",
-    resellerId: "reseller-1",
+
     title: "September 2026 Festival",
     description: "Fall arts festival",
     streamType: "rtmp",
@@ -765,7 +756,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-17",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December 2026 Finale",
     description: "Year-end celebration",
     streamType: "youtube",
@@ -784,7 +775,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-18",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December Holiday Stream",
     description: "Holiday season kickoff",
     streamType: "rtmp",
@@ -805,7 +796,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-19",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December Product Showcase",
     description: "Showcasing new products",
     streamType: "youtube",
@@ -824,7 +815,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-20",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December Training Completed",
     description: "Staff training session finished",
     streamType: "hls",
@@ -845,7 +836,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-21",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December Live Workshop",
     description: "Interactive workshop session",
     streamType: "rtmp",
@@ -866,7 +857,7 @@ export const mockEvents: LiveEvent[] = [
   {
     id: "event-22",
     userId: "user-1",
-    resellerId: "reseller-1",
+
     title: "December Cancelled Event",
     description: "Event cancelled due to schedule conflict",
     streamType: "youtube",

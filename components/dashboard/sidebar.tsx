@@ -72,7 +72,6 @@ const adminNav: NavItem[] = [
 
 const resellerNav: NavItem[] = [
   { title: "Dashboard", href: "/reseller", icon: LayoutDashboard },
-  { title: "Users", href: "/reseller/users", icon: Users },
   { title: "Packages", href: "/reseller/packages", icon: Package },
   { title: "Events", href: "/reseller/events", icon: Radio },
   { title: "Event Calendar", href: "/reseller/calendar", icon: Calendar },

@@ -7,7 +7,6 @@ import { getDb, toCamelRows, toCamel } from "./db"
 export async function getUsers(filters?: {
   role?: string
   status?: string
-  parentResellerId?: string
   search?: string
   limit?: number
   offset?: number
@@ -24,10 +23,6 @@ export async function getUsers(filters?: {
   if (filters?.status) {
     conditions.push(`status = $${paramIdx++}`)
     params.push(filters.status)
-  }
-  if (filters?.parentResellerId) {
-    conditions.push(`parent_reseller_id = $${paramIdx++}`)
-    params.push(filters.parentResellerId)
   }
   if (filters?.search) {
     conditions.push(`(name ILIKE $${paramIdx} OR email ILIKE $${paramIdx})`)
@@ -60,7 +55,7 @@ export async function getUserByEmail(email: string) {
   return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
-export async function getUserCount(filters?: { role?: string; status?: string; parentResellerId?: string }) {
+export async function getUserCount(filters?: { role?: string; status?: string }) {
   const sql = getDb()
   const conditions: string[] = []
   const params: unknown[] = []
@@ -74,11 +69,6 @@ export async function getUserCount(filters?: { role?: string; status?: string; p
     conditions.push(`status = $${paramIdx++}`)
     params.push(filters.status)
   }
-  if (filters?.parentResellerId) {
-    conditions.push(`parent_reseller_id = $${paramIdx++}`)
-    params.push(filters.parentResellerId)
-  }
-
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
   const rows = await sql(`SELECT COUNT(*)::int AS count FROM users ${where}`, params)
   return (rows[0] as { count: number }).count

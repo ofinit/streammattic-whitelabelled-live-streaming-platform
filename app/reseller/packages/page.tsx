@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { mockPackages, mockUsers, mockCustomPrices } from "@/lib/mock-data"
+import { mockPackages } from "@/lib/mock-data"
 import type { Package, CustomPrice } from "@/lib/types"
 import { PackageCard } from "@/components/packages/package-card"
 import { PackageFormDialog } from "@/components/packages/package-form-dialog"
@@ -26,17 +26,11 @@ import { toast } from "sonner"
 
 export default function ResellerPackagesPage() {
   const [packages, setPackages] = useState(mockPackages.filter((p) => p.isActive))
-  const [customPrices, setCustomPrices] = useState<CustomPrice[]>(mockCustomPrices)
   const [purchasePkg, setPurchasePkg] = useState<Package | null>(null)
-  const [showPricingDialog, setShowPricingDialog] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<string>("")
-  const [selectedPackage, setSelectedPackage] = useState<string>("")
-  const [customPrice, setCustomPrice] = useState<string>("")
   const [showPackageForm, setShowPackageForm] = useState(false)
   const [editingPackage, setEditingPackage] = useState<Package | null>(null)
   const [search, setSearch] = useState("")
 
-  const myUsers = mockUsers.filter((u) => u.resellerId === "reseller-1")
   const walletBalance = 15000
 
   const filteredPackages = packages.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -72,44 +66,6 @@ export default function ResellerPackagesPage() {
     setEditingPackage(null)
   }
 
-  const handleSetCustomPrice = () => {
-    if (!selectedUser || !selectedPackage || !customPrice) return
-
-    const pkg = packages.find((p) => p.id === selectedPackage)
-    const price = Number(customPrice)
-
-    if (pkg && price < pkg.basePriceReseller) {
-      toast.error(`Price cannot be less than your cost (₹${pkg.basePriceReseller})`)
-      return
-    }
-
-    const newPrice: CustomPrice = {
-      id: `cp-${Date.now()}`,
-      packageId: selectedPackage,
-      ownerId: selectedUser,
-      setById: "reseller-1",
-      price,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-
-    setCustomPrices((prev) => {
-      const existing = prev.findIndex((p) => p.packageId === selectedPackage && p.ownerId === selectedUser)
-      if (existing >= 0) {
-        const updated = [...prev]
-        updated[existing] = newPrice
-        return updated
-      }
-      return [...prev, newPrice]
-    })
-
-    toast.success("Custom price set successfully")
-    setShowPricingDialog(false)
-    setSelectedUser("")
-    setSelectedPackage("")
-    setCustomPrice("")
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,10 +74,7 @@ export default function ResellerPackagesPage() {
           <p className="text-muted-foreground">Manage packages and set custom pricing for your users</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowPricingDialog(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            Set Custom Pricing
-          </Button>
+
           <Button onClick={() => setShowPackageForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Create Package
@@ -144,7 +97,7 @@ export default function ResellerPackagesPage() {
       <Tabs defaultValue="packages">
         <TabsList>
           <TabsTrigger value="packages">Available Packages ({packages.length})</TabsTrigger>
-          <TabsTrigger value="pricing">Custom Pricing ({customPrices.length})</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="packages" className="mt-6">
@@ -166,51 +119,7 @@ export default function ResellerPackagesPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="pricing" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                User Custom Prices
-              </CardTitle>
-              <CardDescription>Custom prices you have set for your users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {customPrices.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">No custom prices set yet.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Package</TableHead>
-                      <TableHead>Base Price</TableHead>
-                      <TableHead>Custom Price</TableHead>
-                      <TableHead>Margin</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customPrices.map((cp) => {
-                      const user = myUsers.find((u) => u.id === cp.ownerId)
-                      const pkg = packages.find((p) => p.id === cp.packageId)
-                      if (!user || !pkg) return null
-                      const margin = cp.price - pkg.basePriceReseller
-                      return (
-                        <TableRow key={cp.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{pkg.name}</TableCell>
-                          <TableCell>₹{pkg.basePriceReseller}</TableCell>
-                          <TableCell>₹{cp.price}</TableCell>
-                          <TableCell className="text-green-500">+₹{margin}</TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
 
       <PurchaseDialog
@@ -232,76 +141,7 @@ export default function ResellerPackagesPage() {
         onSubmit={handlePackageSubmit}
       />
 
-      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Set Custom Price</DialogTitle>
-            <DialogDescription>Set a custom package price for one of your users.</DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select User</Label>
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a user..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {myUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Select Package</Label>
-              <Select value={selectedPackage} onValueChange={setSelectedPackage}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a package..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {packages.map((pkg) => (
-                    <SelectItem key={pkg.id} value={pkg.id}>
-                      {pkg.name} (Your cost: ₹{pkg.basePriceReseller})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Custom Price (₹)</Label>
-              <Input
-                type="number"
-                value={customPrice}
-                onChange={(e) => setCustomPrice(e.target.value)}
-                placeholder="Enter price..."
-              />
-              {selectedPackage && (
-                <p className="text-xs text-muted-foreground">
-                  Minimum: ₹{packages.find((p) => p.id === selectedPackage)?.basePriceReseller}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPricingDialog(false)} type="button">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSetCustomPrice}
-              disabled={!selectedUser || !selectedPackage || !customPrice}
-              type="button"
-            >
-              Set Price
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

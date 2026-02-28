@@ -33,8 +33,6 @@ export interface User {
   avatar?: string
   createdAt: Date
   updatedAt: Date
-  parentId?: string // For reseller's users
-  resellerId?: string // Which reseller this user belongs to
 }
 
 // Reseller extends User with branding
@@ -43,7 +41,6 @@ export interface Reseller extends User {
   branding: ResellerBranding
   domain?: CustomDomain
   walletBalance: number
-  totalUsers: number
   totalEvents: number
 }
 
@@ -53,10 +50,9 @@ export interface Admin extends User {
   permissions: string[]
 }
 
-// Regular User (under a reseller)
+// Regular User (managed by admin)
 export interface EndUser extends User {
   role: "user"
-  resellerId: string
   packageId?: string
   packageExpiresAt?: Date
   walletBalance: number

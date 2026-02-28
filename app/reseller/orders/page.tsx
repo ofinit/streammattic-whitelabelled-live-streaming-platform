@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { mockOrders, mockUsers } from "@/lib/mock-data"
+import { mockOrders } from "@/lib/mock-data"
 import type { Order } from "@/lib/types"
 import { OrderCard } from "@/components/orders/order-card"
 import { RejectDialog } from "@/components/orders/reject-dialog"
@@ -11,9 +11,8 @@ import { Search } from "lucide-react"
 import { toast } from "sonner"
 
 export default function ResellerOrdersPage() {
-  // Filter orders for users under this reseller
-  const myUserIds = mockUsers.filter((u) => u.resellerId === "reseller-1").map((u) => u.id)
-  const [orders, setOrders] = useState(mockOrders.filter((o) => myUserIds.includes(o.userId)))
+  // Reseller sees their own orders
+  const [orders, setOrders] = useState(mockOrders.filter((o) => o.resellerId === "reseller-1"))
   const [search, setSearch] = useState("")
   const [rejectOrder, setRejectOrder] = useState<Order | null>(null)
 

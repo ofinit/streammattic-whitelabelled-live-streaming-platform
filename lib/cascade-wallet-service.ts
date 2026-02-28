@@ -2,8 +2,9 @@
  * Cascade Wallet Service
  *
  * Handles hierarchical wallet debits for pay-per-event pricing.
- * When a user creates an event, the system debits wallets up the hierarchy:
- * User -> Sub-Reseller -> Reseller -> Admin
+ * 2-tier model: User/Reseller -> Admin
+ * - Users pay userPrice, Admin keeps the difference from adminCost
+ * - Resellers pay resellerPrice, Admin keeps the difference from adminCost
  */
 
 import type {
@@ -24,25 +25,21 @@ export const defaultStreamTypePricing: StreamTypePricing = {
   rtmp: {
     adminCost: 500,
     resellerPrice: 700,
-    subResellerPrice: 1000,
     userPrice: 1500,
   },
   youtube_api: {
     adminCost: 300,
     resellerPrice: 400,
-    subResellerPrice: 650,
     userPrice: 1000,
   },
   youtube_embed: {
     adminCost: 100,
     resellerPrice: 150,
-    subResellerPrice: 300,
     userPrice: 500,
   },
   third_party: {
     adminCost: 50,
     resellerPrice: 100,
-    subResellerPrice: 250,
     userPrice: 400,
   },
 }
@@ -52,19 +49,16 @@ export const defaultSimulcastPricing: SimulcastPricing = {
   youtube: {
     adminCost: 30,
     resellerPrice: 40,
-    subResellerPrice: 50,
     userPrice: 75,
   },
   facebook: {
     adminCost: 30,
     resellerPrice: 40,
-    subResellerPrice: 50,
     userPrice: 75,
   },
   customRtmp: {
     adminCost: 50,
     resellerPrice: 60,
-    subResellerPrice: 75,
     userPrice: 100,
   },
 }
@@ -72,7 +66,7 @@ export const defaultSimulcastPricing: SimulcastPricing = {
 // Get price for stream type at given level
 export function getStreamTypePrice(
   streamType: StreamTypeKey,
-  level: "admin" | "reseller" | "sub_reseller" | "user",
+  level: "admin" | "reseller" | "user",
   customPricing?: StreamTypePricing,
 ): number {
   const pricing = customPricing || defaultStreamTypePricing
@@ -83,8 +77,6 @@ export function getStreamTypePrice(
       return streamPricing.adminCost
     case "reseller":
       return streamPricing.resellerPrice
-    case "sub_reseller":
-      return streamPricing.subResellerPrice
     case "user":
       return streamPricing.userPrice
     default:
@@ -95,7 +87,7 @@ export function getStreamTypePrice(
 // Get price for simulcast destination at given level
 export function getSimulcastPrice(
   destination: "youtube" | "facebook" | "custom_rtmp",
-  level: "admin" | "reseller" | "sub_reseller" | "user",
+  level: "admin" | "reseller" | "user",
   customPricing?: SimulcastPricing,
 ): number {
   const pricing = customPricing || defaultSimulcastPricing
@@ -106,8 +98,6 @@ export function getSimulcastPrice(
       return destPricing.adminCost
     case "reseller":
       return destPricing.resellerPrice
-    case "sub_reseller":
-      return destPricing.subResellerPrice
     case "user":
       return destPricing.userPrice
     default:
@@ -115,11 +105,11 @@ export function getSimulcastPrice(
   }
 }
 
-// Calculate total event price for a user
+// Calculate total event price for a user or reseller
 export function calculateEventPrice(
   streamType: StreamTypeKey,
   simulcastDestinations: ("youtube" | "facebook" | "custom_rtmp")[],
-  level: "admin" | "reseller" | "sub_reseller" | "user",
+  level: "admin" | "reseller" | "user",
   customStreamPricing?: StreamTypePricing,
   customSimulcastPricing?: SimulcastPricing,
 ): { streamPrice: number; simulcastPrice: number; total: number } {
@@ -137,35 +127,33 @@ export function calculateEventPrice(
   }
 }
 
-// Build ancestor chain for cascade
+// Build ancestor chain for cascade (2-tier: entity -> admin)
 export interface AncestorInfo {
   id: string
   name: string
   type: UserRole
   walletBalance: number
-  parentId?: string
 }
 
 export function buildAncestorChain(
   userId: string,
-  // In real app, this would be a database lookup
   getUserById: (id: string) => AncestorInfo | null,
 ): AncestorInfo[] {
   const chain: AncestorInfo[] = []
-  let currentId: string | undefined = userId
 
-  while (currentId) {
-    const user = getUserById(currentId)
-    if (!user) break
+  // Get the initiating entity (user or reseller)
+  const entity = getUserById(userId)
+  if (!entity) return chain
+  chain.push(entity)
 
-    chain.push(user)
-    currentId = user.parentId
-  }
+  // Always add admin as the top level
+  const admin = getUserById("admin-1")
+  if (admin) chain.push(admin)
 
   return chain
 }
 
-// Validate cascade - check if all levels have sufficient balance
+// Validate cascade - check if entity has sufficient balance
 export function validateCascade(
   ancestorChain: AncestorInfo[],
   streamType: StreamTypeKey,
@@ -183,17 +171,9 @@ export function validateCascade(
     const entity = ancestorChain[i]
     const isAdmin = entity.type === "admin"
 
-    // Determine price level based on entity type
-    let priceLevel: "admin" | "reseller" | "sub_reseller" | "user"
-    if (entity.type === "user") {
-      priceLevel = "user"
-    } else if (entity.type === "reseller") {
-      // Check if this reseller has a parent reseller (making it a sub-reseller)
-      const hasParentReseller = ancestorChain.slice(i + 1).some((a) => a.type === "reseller")
-      priceLevel = hasParentReseller ? "sub_reseller" : "reseller"
-    } else {
-      priceLevel = "admin"
-    }
+    // Determine price level
+    const priceLevel: "admin" | "reseller" | "user" =
+      entity.type === "user" ? "user" : entity.type === "reseller" ? "reseller" : "admin"
 
     // Calculate price at this level
     const { total: requiredAmount } = calculateEventPrice(
@@ -204,15 +184,11 @@ export function validateCascade(
       customSimulcastPricing,
     )
 
-    // Calculate profit (difference between what they receive and what they pay)
+    // Calculate profit (admin earns the difference)
     let profitAmount = 0
-    if (i > 0 && !isAdmin) {
-      const childLevel = levels[i - 1]
-      profitAmount = childLevel.requiredAmount - requiredAmount
-    } else if (isAdmin && i > 0) {
-      // Admin receives revenue without wallet debit
-      const resellerLevel = levels[i - 1]
-      profitAmount = resellerLevel.requiredAmount // Admin's revenue
+    if (isAdmin && i > 0) {
+      const entityLevel = levels[i - 1]
+      profitAmount = entityLevel.requiredAmount - requiredAmount
     }
 
     const hasEnough = isAdmin || entity.walletBalance >= requiredAmount
@@ -248,11 +224,10 @@ export function validateCascade(
   }
 }
 
-// Execute cascade debit (mock implementation)
+// Execute cascade debit
 export function executeCascadeDebit(
   validation: CascadeValidation,
   request: CascadeDebitRequest,
-  // In real app, this would update database
   onDebit: (entityId: string, amount: number, description: string) => WalletTransaction,
 ): CascadeDebitResult {
   if (!validation.isValid) {
@@ -267,9 +242,8 @@ export function executeCascadeDebit(
   const transactions: CascadeTransactionResult[] = []
   let totalDebited = 0
 
-  // Process debits from bottom to top (user -> reseller -> admin)
+  // Process debits (only the entity pays -- admin receives)
   for (const level of validation.levels) {
-    // Skip admin (admin receives, doesn't pay)
     if (level.entityType === "admin") continue
 
     const description = `${request.description} - ${level.entityName}`

@@ -71,7 +71,7 @@ export default function ResellerDomainsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold">Custom Domain</h1>
         <p className="text-muted-foreground">Link a custom domain for your white-label platform</p>

@@ -543,6 +543,8 @@ export interface Branding {
   preferredGateway?: PaymentGateway
   hasGatewayConfig: boolean
   // Landing page fields
+  heroImage?: string
+  aboutImage?: string
   services?: BrandingService[]
   eventTypes?: BrandingEventType[]
   stats?: BrandingStat[]

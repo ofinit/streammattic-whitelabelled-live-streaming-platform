@@ -1634,6 +1634,8 @@ export const mockBranding: Branding = {
   refundPolicy: "Refund policy content goes here...",
   preferredGateway: "razorpay",
   hasGatewayConfig: true,
+  heroImage: "https://v3b.fal.media/files/b/0a9050f0/SroZCGJykTGOESyeDyNWY.jpg",
+  aboutImage: "https://v3b.fal.media/files/b/0a9050f0/f-_58kA7Ac84zxbTd1RV1.jpg",
   services: [
     {
       id: "svc-1",
@@ -1665,10 +1667,10 @@ export const mockBranding: Branding = {
     },
   ],
   eventTypes: [
-    { id: "evt-1", title: "Weddings", image: "/placeholder.svg?height=400&width=600", enabled: true },
-    { id: "evt-2", title: "Corporate Events", image: "/placeholder.svg?height=400&width=600", enabled: true },
-    { id: "evt-3", title: "Birthdays & Parties", image: "/placeholder.svg?height=400&width=600", enabled: true },
-    { id: "evt-4", title: "Private Events", image: "/placeholder.svg?height=400&width=600", enabled: true },
+    { id: "evt-1", title: "Weddings", image: "https://v3b.fal.media/files/b/0a9050ef/2giwMCCfP_4xgUx-x_8R7.jpg", enabled: true },
+    { id: "evt-2", title: "Corporate Events", image: "https://v3b.fal.media/files/b/0a9050ef/EPt7_h-st_Ufv6UEiqi2r.jpg", enabled: true },
+    { id: "evt-3", title: "Birthdays & Parties", image: "https://v3b.fal.media/files/b/0a9050ef/iej-KDKYRRGhXoUuRXVIb.jpg", enabled: true },
+    { id: "evt-4", title: "Private Events", image: "https://v3b.fal.media/files/b/0a9050ef/WXGsOEOs8P0RB9yANOz0p.jpg", enabled: true },
   ],
   stats: [
     { id: "stat-1", value: "500+", label: "Events Covered" },
@@ -1699,12 +1701,12 @@ export const mockBranding: Branding = {
     },
   ],
   galleryImages: [
-    { id: "gal-1", src: "/placeholder.svg?height=400&width=600", title: "Sharma Wedding", category: "Weddings" },
-    { id: "gal-2", src: "/placeholder.svg?height=400&width=600", title: "TechCon 2024", category: "Corporate Events" },
-    { id: "gal-3", src: "/placeholder.svg?height=400&width=600", title: "Arjun's 1st Birthday", category: "Birthdays & Parties" },
-    { id: "gal-4", src: "/placeholder.svg?height=400&width=600", title: "Gupta Reception", category: "Weddings" },
-    { id: "gal-5", src: "/placeholder.svg?height=400&width=600", title: "Annual Meetup 2024", category: "Corporate Events" },
-    { id: "gal-6", src: "/placeholder.svg?height=400&width=600", title: "Housewarming Ceremony", category: "Private Events" },
+    { id: "gal-1", src: "https://v3b.fal.media/files/b/0a9050ef/PHKIxrRtt2ndiQLO-CE2z.jpg", title: "Sharma Wedding", category: "Weddings" },
+    { id: "gal-2", src: "https://v3b.fal.media/files/b/0a9050ef/EEOvAyZeZyqM8oS9s-ZgG.jpg", title: "TechCon 2024", category: "Corporate Events" },
+    { id: "gal-3", src: "https://v3b.fal.media/files/b/0a9050ef/s68MxjjRBL_DILOM1GS1r.jpg", title: "Arjun's 1st Birthday", category: "Birthdays & Parties" },
+    { id: "gal-4", src: "https://v3b.fal.media/files/b/0a9050ef/SNJHCSk3mduvB89ABrIFk.jpg", title: "Gupta Reception", category: "Weddings" },
+    { id: "gal-5", src: "https://v3b.fal.media/files/b/0a9050f0/1_bhTw0SsVMjO4l_luR-x.jpg", title: "Annual Meetup 2024", category: "Corporate Events" },
+    { id: "gal-6", src: "https://v3b.fal.media/files/b/0a9050f0/AKJJzIfGmtMbiXRaaslA3.jpg", title: "Housewarming Ceremony", category: "Private Events" },
   ],
   createdAt: new Date("2024-02-15"),
   updatedAt: new Date(),

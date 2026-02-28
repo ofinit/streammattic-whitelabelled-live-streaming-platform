@@ -32,7 +32,7 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video", 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
     if (!canAffordAi) {
-      setError(`Insufficient balance. You need ${aiPrice !== null ? (aiPrice / 100).toFixed(0) : "?"} INR.`)
+      setError(`Insufficient balance. You need ₹${aiPrice !== null ? (aiPrice / 100).toFixed(0) : "?"}.`)
       return
     }
     setGenerating(true)
@@ -205,7 +205,7 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video", 
                 {aiPrice !== null && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Wallet className="h-3 w-3" />
-                    Cost: {(aiPrice / 100).toFixed(0)} INR per image
+                    Cost: ₹{(aiPrice / 100).toFixed(0)} per image
                   </span>
                 )}
               </div>
@@ -218,7 +218,7 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video", 
               />
               {!canAffordAi && aiPrice !== null && (
                 <p className="text-xs text-destructive">
-                  Insufficient wallet balance ({(walletBalance / 100).toFixed(0)} INR). Top up at least {(aiPrice / 100).toFixed(0)} INR to use AI generation.
+                  Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹{(aiPrice / 100).toFixed(0)} to use AI generation.
                 </p>
               )}
               <Button
@@ -235,7 +235,7 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video", 
                 ) : (
                   <>
                     <Wand2 className="mr-2 h-4 w-4" />
-                    Generate Image{aiPrice !== null ? ` (${(aiPrice / 100).toFixed(0)} INR)` : ""}
+                    Generate Image{aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
                   </>
                 )}
               </Button>
@@ -287,11 +287,11 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-card px-3 py-1.5">
               <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">{(walletBalance / 100).toFixed(0)} INR</span>
+              <span className="text-sm font-medium text-foreground">₹{(walletBalance / 100).toFixed(0)}</span>
             </div>
             {aiPrice !== null && (
               <span className="text-xs text-muted-foreground">
-                AI generation: {(aiPrice / 100).toFixed(0)} INR / image
+                AI generation: ₹{(aiPrice / 100).toFixed(0)} / image
               </span>
             )}
           </div>

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (typeof walletBalance === "number" && walletBalance < AI_IMAGE_GENERATION_PRICE) {
       return NextResponse.json(
         {
-          error: `Insufficient wallet balance. AI image generation costs ${(AI_IMAGE_GENERATION_PRICE / 100).toFixed(0)} INR. Please top up your wallet.`,
+          error: `Insufficient wallet balance. AI image generation costs ₹${(AI_IMAGE_GENERATION_PRICE / 100).toFixed(0)}. Please top up your wallet.`,
           code: "INSUFFICIENT_BALANCE",
           requiredAmount: AI_IMAGE_GENERATION_PRICE,
         },

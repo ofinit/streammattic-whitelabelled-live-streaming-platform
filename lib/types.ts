@@ -589,12 +589,14 @@ export interface YouTubeChannel {
   channelId: string
   channelTitle: string
   channelThumbnail?: string
-  accessToken: string
-  refreshToken: string
-  tokenExpiresAt: Date
+  subscriberCount?: number
+  videoCount?: number
+  /** Token status from API -- never exposes actual tokens to client */
+  tokenStatus: "valid" | "expired"
+  tokenExpiresAt?: string
   isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 // YouTube Broadcast linked to an event

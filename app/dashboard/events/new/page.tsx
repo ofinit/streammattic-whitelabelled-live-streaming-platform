@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare, Loader2, Wallet, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { mockEventTemplates, mockYouTubeChannels, mockUsers, mockResellers } from "@/lib/mock-data"
+import { mockEventTemplates, mockUsers, mockResellers } from "@/lib/mock-data"
 import type { StreamTypeKey } from "@/lib/types"
 import { toast } from "@/hooks/use-toast"
 import { StreamTypeSelector } from "@/components/events/stream-type-selector"
@@ -339,9 +339,17 @@ export default function ScheduleEventPage() {
                 <div>
                   <Label>YouTube Channel *</Label>
                   <YouTubeChannelSelector
-                    value={formData.youtubeChannelId}
-                    onChange={(channelId) => setFormData({ ...formData, youtubeChannelId: channelId })}
-                    channels={mockYouTubeChannels}
+                    ownerId="user-1"
+                    ownerType="user"
+                    selectedChannelId={formData.youtubeChannelId || null}
+                    onSelectChannel={(channelId) => setFormData({ ...formData, youtubeChannelId: channelId || "" })}
+                    broadcastSettings={{
+                      privacyStatus: "unlisted",
+                      enableDvr: true,
+                      enableAutoStart: true,
+                      enableAutoStop: true,
+                    }}
+                    onSettingsChange={() => {}}
                   />
                 </div>
               )}

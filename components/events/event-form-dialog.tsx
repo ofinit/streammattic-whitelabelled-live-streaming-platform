@@ -556,14 +556,12 @@ export function EventFormDialog({ open, onOpenChange, event, onSave }: EventForm
 
               {formData.streamType === "youtube_api" && (
                 <YouTubeChannelSelector
-                  channels={youtubeChannels}
+                  ownerId="user-1"
+                  ownerType="user"
                   selectedChannelId={selectedYouTubeChannel}
                   onSelectChannel={setSelectedYouTubeChannel}
                   broadcastSettings={youtubeBroadcastSettings}
                   onSettingsChange={setYoutubeBroadcastSettings}
-                  onChannelConnected={(channel) => {
-                    setYoutubeChannels([...youtubeChannels, channel])
-                  }}
                 />
               )}
 

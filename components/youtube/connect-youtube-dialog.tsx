@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -9,42 +9,83 @@ import { Loader2, Youtube, Shield, Video, Settings } from "lucide-react"
 interface ConnectYouTubeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess: (channelData: {
-    channelId: string
-    channelTitle: string
-    channelThumbnail: string
-    accessToken: string
-    refreshToken: string
-  }) => void
+  ownerId: string
+  ownerType: "admin" | "reseller" | "user"
+  returnUrl?: string
+  onSuccess?: () => void
 }
 
-export function ConnectYouTubeDialog({ open, onOpenChange, onSuccess }: ConnectYouTubeDialogProps) {
+export function ConnectYouTubeDialog({
+  open,
+  onOpenChange,
+  ownerId,
+  ownerType,
+  returnUrl,
+  onSuccess,
+}: ConnectYouTubeDialogProps) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState("")
+
+  // Listen for the OAuth callback redirect message
+  const handleOAuthComplete = useCallback(() => {
+    // After the popup completes, check URL params for success/error
+    const params = new URLSearchParams(window.location.search)
+    const connected = params.get("yt_connected")
+    const ytError = params.get("yt_error")
+
+    if (connected) {
+      // Clean up URL params
+      const url = new URL(window.location.href)
+      url.searchParams.delete("yt_connected")
+      window.history.replaceState({}, "", url.toString())
+
+      setIsConnecting(false)
+      onOpenChange(false)
+      onSuccess?.()
+    } else if (ytError) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete("yt_error")
+      window.history.replaceState({}, "", url.toString())
+
+      setError(ytError)
+      setIsConnecting(false)
+    }
+  }, [onOpenChange, onSuccess])
+
+  useEffect(() => {
+    // Check on mount in case we just returned from OAuth redirect
+    handleOAuthComplete()
+  }, [handleOAuthComplete])
 
   const handleConnect = async () => {
     setIsConnecting(true)
     setError("")
 
     try {
-      // In production, this would open a popup or redirect to Google OAuth
-      // For demo, we simulate the OAuth flow
-      await new Promise((r) => setTimeout(r, 2000))
+      // Request the OAuth URL from our backend
+      const res = await fetch("/api/auth/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerId,
+          ownerType,
+          returnUrl: returnUrl || window.location.pathname,
+        }),
+      })
 
-      // Simulate successful OAuth
-      const mockChannelData = {
-        channelId: `UC${Math.random().toString(36).substring(2, 15)}`,
-        channelTitle: "My YouTube Channel",
-        channelThumbnail: "/youtube-channel-avatar.png",
-        accessToken: `ya29.mock_${Date.now()}`,
-        refreshToken: `1//mock_refresh_${Date.now()}`,
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to start OAuth flow")
       }
 
-      onSuccess(mockChannelData)
-      onOpenChange(false)
+      const { url } = await res.json()
+
+      // Redirect to Google OAuth consent screen (same tab)
+      // After consent, Google redirects to /api/auth/youtube/callback
+      // which processes tokens and redirects back to returnUrl with yt_connected param
+      window.location.href = url
     } catch (err) {
-      setError("Failed to connect YouTube channel. Please try again.")
-    } finally {
+      setError((err as Error).message || "Failed to connect YouTube channel. Please try again.")
       setIsConnecting(false)
     }
   }

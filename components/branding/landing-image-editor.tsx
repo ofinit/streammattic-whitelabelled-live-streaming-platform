@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Wand2, Upload, Trash2, ImageIcon, RotateCcw } from "lucide-react"
+import { Loader2, Wand2, Upload, ImageIcon, Wallet } from "lucide-react"
 import type { Branding, BrandingEventType, BrandingGalleryImage } from "@/lib/types"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
@@ -15,43 +14,105 @@ interface ImageItemProps {
   currentSrc?: string
   onUpdate: (newSrc: string) => void
   aspectRatio?: string
+  aiPrice: number | null
+  walletBalance: number
 }
 
-function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video" }: ImageItemProps) {
+function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video", aiPrice, walletBalance }: ImageItemProps) {
   const [generating, setGenerating] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [prompt, setPrompt] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [urlInput, setUrlInput] = useState("")
+  const [error, setError] = useState("")
+  const [dragActive, setDragActive] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const canAffordAi = aiPrice !== null && walletBalance >= aiPrice
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return
+    if (!canAffordAi) {
+      setError(`Insufficient balance. You need ${aiPrice !== null ? (aiPrice / 100).toFixed(0) : "?"} INR.`)
+      return
+    }
     setGenerating(true)
+    setError("")
     try {
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, walletBalance }),
       })
       const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+        return
+      }
       if (data.imageUrl) {
         onUpdate(data.imageUrl)
         setDialogOpen(false)
         setPrompt("")
+        setError("")
       }
     } catch {
-      console.error("Failed to generate image")
+      setError("Failed to generate image. Please try again.")
     } finally {
       setGenerating(false)
     }
   }
 
-  const handleUrlSubmit = () => {
-    if (urlInput.trim()) {
-      onUpdate(urlInput.trim())
-      setUrlInput("")
-      setDialogOpen(false)
+  const handleFileUpload = async (file: File) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if (!allowedTypes.includes(file.type)) {
+      setError("Invalid file type. Allowed: JPG, PNG, WebP, GIF")
+      return
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError("File too large. Maximum size is 4MB.")
+      return
+    }
+
+    setUploading(true)
+    setError("")
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+      if (data.url) {
+        onUpdate(data.url)
+        setDialogOpen(false)
+        setError("")
+      }
+    } catch {
+      setError("Failed to upload image. Please try again.")
+    } finally {
+      setUploading(false)
     }
   }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragActive(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFileUpload(file)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragActive(true)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDragActive(false)
+  }, [])
 
   return (
     <div className="space-y-2">
@@ -71,48 +132,61 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video" }
         )}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); setError(""); }}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="w-full">
-            <Wand2 className="mr-2 h-4 w-4" />
+            <ImageIcon className="mr-2 h-4 w-4" />
             Update Image
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update {label}</DialogTitle>
-            <DialogDescription>Generate a new image with AI or provide a URL</DialogDescription>
+            <DialogDescription>Upload your own image or generate one with AI</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 pt-2">
-            {/* AI Generate */}
+            {/* File Upload */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Generate with AI</Label>
-              <Textarea
-                placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
-              <Button
-                onClick={handleGenerate}
-                disabled={generating || !prompt.trim()}
-                className="w-full"
-                style={{ backgroundColor: "hsl(152 76% 46%)" }}
+              <Label className="text-sm font-medium">Upload Image (Free)</Label>
+              <div
+                className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+                  dragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border/50 hover:border-border"
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => fileInputRef.current?.click()}
               >
-                {generating ? (
+                {uploading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
                   </>
                 ) : (
                   <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Generate Image
+                    <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
+                    <p className="text-sm font-medium text-foreground">
+                      Drop an image here or click to browse
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      JPG, PNG, WebP, GIF up to 4MB
+                    </p>
                   </>
                 )}
-              </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileUpload(file)
+                  }}
+                />
+              </div>
             </div>
 
             <div className="relative">
@@ -124,20 +198,52 @@ function ImageItem({ label, currentSrc, onUpdate, aspectRatio = "aspect-video" }
               </div>
             </div>
 
-            {/* URL Input */}
+            {/* AI Generate */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Image URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://example.com/image.jpg"
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                />
-                <Button onClick={handleUrlSubmit} disabled={!urlInput.trim()} variant="outline">
-                  <Upload className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Generate with AI</Label>
+                {aiPrice !== null && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Wallet className="h-3 w-3" />
+                    Cost: {(aiPrice / 100).toFixed(0)} INR per image
+                  </span>
+                )}
               </div>
+              <Textarea
+                placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              {!canAffordAi && aiPrice !== null && (
+                <p className="text-xs text-destructive">
+                  Insufficient wallet balance ({(walletBalance / 100).toFixed(0)} INR). Top up at least {(aiPrice / 100).toFixed(0)} INR to use AI generation.
+                </p>
+              )}
+              <Button
+                onClick={handleGenerate}
+                disabled={generating || !prompt.trim() || !canAffordAi}
+                className="w-full"
+                style={{ backgroundColor: "hsl(152 76% 46%)" }}
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate Image{aiPrice !== null ? ` (${(aiPrice / 100).toFixed(0)} INR)` : ""}
+                  </>
+                )}
+              </Button>
             </div>
+
+            {error && (
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -151,12 +257,24 @@ interface LandingImageEditorProps {
 }
 
 export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageEditorProps) {
+  const [aiPrice, setAiPrice] = useState<number | null>(null)
+  // Use mock wallet balance from branding context (in a real app, this comes from wallet API)
+  const walletBalance = 15000 // mock: 150 INR in paisa
+
+  useEffect(() => {
+    fetch("/api/generate-image")
+      .then((res) => res.json())
+      .then((data) => setAiPrice(data.price ?? null))
+      .catch(() => setAiPrice(null))
+  }, [])
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Landing Page Images</CardTitle>
         <CardDescription>
-          Update images on your landing page using AI generation or custom URLs
+          Upload your own images or generate with AI. Uploads are free. AI generation costs{" "}
+          {aiPrice !== null ? `${(aiPrice / 100).toFixed(0)} INR` : "..."} per image from your wallet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
@@ -168,12 +286,16 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
               label="Hero Background"
               currentSrc={branding.heroImage}
               onUpdate={(src) => onBrandingUpdate({ heroImage: src })}
+              aiPrice={aiPrice}
+              walletBalance={walletBalance}
             />
             <ImageItem
               label="About Section"
               currentSrc={branding.aboutImage}
               onUpdate={(src) => onBrandingUpdate({ aboutImage: src })}
               aspectRatio="aspect-[4/3]"
+              aiPrice={aiPrice}
+              walletBalance={walletBalance}
             />
           </div>
         </div>
@@ -194,6 +316,8 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
                     onBrandingUpdate({ eventTypes: updated })
                   }}
                   aspectRatio="aspect-[4/3]"
+                  aiPrice={aiPrice}
+                  walletBalance={walletBalance}
                 />
               ))}
             </div>
@@ -216,6 +340,8 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
                     onBrandingUpdate({ galleryImages: updated })
                   }}
                   aspectRatio="aspect-[3/2]"
+                  aiPrice={aiPrice}
+                  walletBalance={walletBalance}
                 />
               ))}
             </div>

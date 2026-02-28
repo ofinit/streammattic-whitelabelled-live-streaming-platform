@@ -104,21 +104,7 @@ export default function ScheduleEventPage() {
         name: parentReseller.name,
         type: "reseller",
         walletBalance: parentReseller.walletBalance,
-        parentId: parentReseller.parentResellerId,
       })
-
-      // Check for parent reseller (sub-reseller chain)
-      if (parentReseller.parentResellerId) {
-        const grandParent = mockResellers.find((r) => r.id === parentReseller.parentResellerId)
-        if (grandParent) {
-          chain.push({
-            id: grandParent.id,
-            name: grandParent.name,
-            type: "reseller",
-            walletBalance: grandParent.walletBalance,
-          })
-        }
-      }
     }
 
     // Admin at the top

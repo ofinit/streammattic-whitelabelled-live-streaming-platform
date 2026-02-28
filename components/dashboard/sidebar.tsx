@@ -72,8 +72,6 @@ const adminNav: NavItem[] = [
 
 const resellerNav: NavItem[] = [
   { title: "Dashboard", href: "/reseller", icon: LayoutDashboard },
-  { title: "Resellers", href: "/reseller/resellers", icon: Building2 }, // Moved Resellers menu right below Dashboard
-  { title: "Users", href: "/reseller/users", icon: Users },
   { title: "Packages", href: "/reseller/packages", icon: Package },
   { title: "Events", href: "/reseller/events", icon: Radio },
   { title: "Event Calendar", href: "/reseller/calendar", icon: Calendar },
@@ -84,6 +82,7 @@ const resellerNav: NavItem[] = [
   { title: "Domains", href: "/reseller/domains", icon: Globe },
   { title: "Payment Gateways", href: "/reseller/payments", icon: CreditCard },
   { title: "Notifications", href: "/reseller/notifications", icon: Bell },
+  { title: "Integrations", href: "/reseller/settings/integrations", icon: Plug },
   { title: "Settings", href: "/reseller/settings", icon: Settings },
 ]
 

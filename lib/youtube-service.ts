@@ -13,12 +13,29 @@ const YOUTUBE_SCOPES = [
 
 /**
  * Get Google OAuth credentials.
- * Reads from platform_settings DB first (admin-configured), then falls back to env vars.
+ * Resolution chain: Reseller override (if resellerId provided) > Admin platform_settings > Env vars.
  */
-async function getGoogleCredentials(): Promise<{ clientId: string; clientSecret: string }> {
+export async function getGoogleCredentials(resellerId?: string): Promise<{ clientId: string; clientSecret: string }> {
   const sql = getDb()
 
-  // Try DB first (admin-configured via settings UI)
+  // 1. Try reseller-specific override first
+  if (resellerId) {
+    const resellerRows = await sql`
+      SELECT key, value FROM platform_settings
+      WHERE key IN (${`google_client_id:${resellerId}`}, ${`google_client_secret:${resellerId}`})
+    `
+    const resellerSettings: Record<string, string> = {}
+    for (const row of resellerRows as { key: string; value: string }[]) {
+      const baseKey = (row.key as string).split(":")[0]
+      const val = typeof row.value === "string" ? row.value : JSON.stringify(row.value)
+      resellerSettings[baseKey] = val.replace(/^"|"$/g, "")
+    }
+    if (resellerSettings.google_client_id && resellerSettings.google_client_secret) {
+      return { clientId: resellerSettings.google_client_id, clientSecret: resellerSettings.google_client_secret }
+    }
+  }
+
+  // 2. Try admin platform-level settings
   const rows = await sql`
     SELECT key, value FROM platform_settings
     WHERE key IN ('google_client_id', 'google_client_secret')
@@ -26,10 +43,10 @@ async function getGoogleCredentials(): Promise<{ clientId: string; clientSecret:
   const dbSettings: Record<string, string> = {}
   for (const row of rows as { key: string; value: string }[]) {
     const val = typeof row.value === "string" ? row.value : JSON.stringify(row.value)
-    // Strip surrounding quotes if the value was stored as JSON string
     dbSettings[row.key] = val.replace(/^"|"$/g, "")
   }
 
+  // 3. Fall back to env vars
   const clientId = dbSettings.google_client_id || process.env.GOOGLE_CLIENT_ID
   const clientSecret = dbSettings.google_client_secret || process.env.GOOGLE_CLIENT_SECRET
 
@@ -453,7 +470,7 @@ export async function waitForStreamReady(
   return false
 }
 
-// ──────────────────────────────────���───
+// ─────────────────────────���────────���───
 // Database helpers for channel management
 // ──────────────────────────────────────
 

@@ -33,8 +33,6 @@ export interface User {
   avatar?: string
   createdAt: Date
   updatedAt: Date
-  parentId?: string // For reseller's users
-  resellerId?: string // Which reseller this user belongs to
 }
 
 // Reseller extends User with branding
@@ -43,10 +41,7 @@ export interface Reseller extends User {
   branding: ResellerBranding
   domain?: CustomDomain
   walletBalance: number
-  totalUsers: number
   totalEvents: number
-  parentResellerId?: string // If this reseller is under another reseller
-  totalSubResellers?: number
 }
 
 // Admin extends User
@@ -55,10 +50,9 @@ export interface Admin extends User {
   permissions: string[]
 }
 
-// Regular User (under a reseller)
+// Regular User (managed by admin)
 export interface EndUser extends User {
   role: "user"
-  resellerId: string
   packageId?: string
   packageExpiresAt?: Date
   walletBalance: number
@@ -311,13 +305,10 @@ export interface AdminStats {
 
 export interface ResellerStats {
   walletBalance: number
-  totalUsers: number
-  activeUsers: number
   totalEvents: number
   activeEvents: number
   pendingOrders: number
   monthlyRevenue: number
-  userGrowth: number
 }
 
 export interface UserStats {
@@ -362,12 +353,11 @@ export interface StreamTypePricing {
   third_party: StreamTypePriceLevel
 }
 
-export interface StreamTypePriceLevel {
+  export interface StreamTypePriceLevel {
   adminCost: number // Platform cost (what admin pays)
   resellerPrice: number // What reseller pays to admin
-  subResellerPrice: number // What sub-reseller pays to reseller
   userPrice: number // What end user pays
-}
+  }
 
 export interface SimulcastPricing {
   youtube: SimulcastPriceLevel
@@ -375,12 +365,11 @@ export interface SimulcastPricing {
   customRtmp: SimulcastPriceLevel
 }
 
-export interface SimulcastPriceLevel {
+  export interface SimulcastPriceLevel {
   adminCost: number
   resellerPrice: number
-  subResellerPrice: number
   userPrice: number
-}
+  }
 
 // Custom pricing per user
 export interface CustomPrice {

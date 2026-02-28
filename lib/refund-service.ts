@@ -5,7 +5,7 @@
  * Key principles:
  * - Admin has NO wallet (not part of cascade)
  * - ALL refunds require manual admin approval (no automatic refunds)
- * - Cascade reversal credits back resellers/sub-resellers/users (in reverse order)
+ * - Cascade reversal credits back resellers/users (in reverse order)
  * - Each level loses their profit/commission on refund
  */
 
@@ -173,7 +173,7 @@ export function executeCascadeReversal(refundId: string, adminId: string): Casca
   // Build reversal transactions (reverse order: reseller first, then user)
   const reversalTransactions: CascadeReversalTransaction[] = []
 
-  // Sort by cascade level (descending) to credit reseller/sub-reseller first
+  // Sort by cascade level (descending) to credit reseller first
   const sortedTransactions = originalTransactions.sort((a, b) => (b.cascadeLevel || 0) - (a.cascadeLevel || 0))
 
   for (const originalTx of sortedTransactions) {

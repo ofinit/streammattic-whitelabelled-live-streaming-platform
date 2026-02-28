@@ -77,16 +77,6 @@ export default function AdminResellersPage() {
       render: (item: Reseller) => <StatusBadge status={item.status} />,
     },
     {
-      key: "totalUsers",
-      header: "Users",
-      render: (item: Reseller) => (
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span className="text-foreground">{item.totalUsers}</span>
-        </div>
-      ),
-    },
-    {
       key: "walletBalance",
       header: "Balance",
       render: (item: Reseller) => (

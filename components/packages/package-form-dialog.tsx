@@ -109,7 +109,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateStreamTypePrice = (
     streamType: keyof StreamTypePricing,
-    level: "adminCost" | "resellerPrice" | "subResellerPrice" | "userPrice",
+    level: "adminCost" | "resellerPrice" | "userPrice",
     value: number,
   ) => {
     setFormData((prev) => ({
@@ -126,7 +126,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateSimulcastPrice = (
     destination: keyof SimulcastPricing,
-    level: "adminCost" | "resellerPrice" | "subResellerPrice" | "userPrice",
+    level: "adminCost" | "resellerPrice" | "userPrice",
     value: number,
   ) => {
     setFormData((prev) => ({
@@ -316,7 +316,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Video className="h-4 w-4" />
                           RTMP Server
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -332,17 +332,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               type="number"
                               value={formData.streamTypePricing?.rtmp.resellerPrice}
                               onChange={(e) => updateStreamTypePrice("rtmp", "resellerPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.rtmp.subResellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("rtmp", "subResellerPrice", Number(e.target.value))
-                              }
                               className="h-8"
                             />
                           </div>
@@ -364,7 +353,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Youtube className="h-4 w-4" />
                           YouTube API
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -383,17 +372,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               value={formData.streamTypePricing?.youtube_api.resellerPrice}
                               onChange={(e) =>
                                 updateStreamTypePrice("youtube_api", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_api.subResellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_api", "subResellerPrice", Number(e.target.value))
                               }
                               className="h-8"
                             />
@@ -418,7 +396,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Play className="h-4 w-4" />
                           YouTube Embed
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -437,17 +415,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               value={formData.streamTypePricing?.youtube_embed.resellerPrice}
                               onChange={(e) =>
                                 updateStreamTypePrice("youtube_embed", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_embed.subResellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_embed", "subResellerPrice", Number(e.target.value))
                               }
                               className="h-8"
                             />
@@ -472,7 +439,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Globe className="h-4 w-4" />
                           Third Party Embed
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -491,17 +458,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               value={formData.streamTypePricing?.third_party.resellerPrice}
                               onChange={(e) =>
                                 updateStreamTypePrice("third_party", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.third_party.subResellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("third_party", "subResellerPrice", Number(e.target.value))
                               }
                               className="h-8"
                             />
@@ -535,7 +491,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Youtube className="h-4 w-4 text-red-500" />
                           YouTube Live
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -551,17 +507,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               type="number"
                               value={formData.simulcastPricing?.youtube.resellerPrice}
                               onChange={(e) => updateSimulcastPrice("youtube", "resellerPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.youtube.subResellerPrice}
-                              onChange={(e) =>
-                                updateSimulcastPrice("youtube", "subResellerPrice", Number(e.target.value))
-                              }
                               className="h-8"
                             />
                           </div>
@@ -583,7 +528,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Facebook className="h-4 w-4 text-blue-600" />
                           Facebook Live
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -600,17 +545,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               value={formData.simulcastPricing?.facebook.resellerPrice}
                               onChange={(e) =>
                                 updateSimulcastPrice("facebook", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.facebook.subResellerPrice}
-                              onChange={(e) =>
-                                updateSimulcastPrice("facebook", "subResellerPrice", Number(e.target.value))
                               }
                               className="h-8"
                             />
@@ -633,7 +567,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                           <Radio className="h-4 w-4 text-purple-500" />
                           Custom RTMP
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <Label className="text-xs text-muted-foreground">Admin Cost</Label>
                             <Input
@@ -650,17 +584,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               value={formData.simulcastPricing?.customRtmp.resellerPrice}
                               onChange={(e) =>
                                 updateSimulcastPrice("customRtmp", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Sub-Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.customRtmp.subResellerPrice}
-                              onChange={(e) =>
-                                updateSimulcastPrice("customRtmp", "subResellerPrice", Number(e.target.value))
                               }
                               className="h-8"
                             />

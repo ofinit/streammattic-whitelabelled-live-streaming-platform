@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import {
   getResellerDashboardStats,
-  getUsers,
   getOrders,
   getEvents,
 } from "@/lib/db-queries"
@@ -14,16 +13,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [stats, users, orders, events] = await Promise.all([
+    const [stats, orders, events] = await Promise.all([
       getResellerDashboardStats(resellerId),
-      getUsers({ parentResellerId: resellerId, role: "user", limit: 5 }),
       getOrders({ resellerId, limit: 5 }),
       getEvents({ resellerId, limit: 10 }),
     ])
 
     return NextResponse.json({
       stats,
-      users,
       orders,
       events,
     })

@@ -54,7 +54,7 @@ export const mockResellers: Reseller[] = [
     walletBalance: 15000,
     totalUsers: 45,
     totalEvents: 234,
-    totalSubResellers: 2,
+
     createdAt: new Date("2024-02-15"),
     updatedAt: new Date(),
     branding: {
@@ -76,7 +76,6 @@ export const mockResellers: Reseller[] = [
     walletBalance: 8500,
     totalUsers: 28,
     totalEvents: 156,
-    totalSubResellers: 0,
     createdAt: new Date("2024-03-01"),
     updatedAt: new Date(),
     branding: {
@@ -97,7 +96,6 @@ export const mockResellers: Reseller[] = [
     walletBalance: 2200,
     totalUsers: 12,
     totalEvents: 67,
-    totalSubResellers: 0,
     createdAt: new Date("2024-04-10"),
     updatedAt: new Date(),
     branding: {
@@ -118,8 +116,6 @@ export const mockResellers: Reseller[] = [
     walletBalance: 5000,
     totalUsers: 15,
     totalEvents: 89,
-    totalSubResellers: 0,
-    parentResellerId: "reseller-1",
     createdAt: new Date("2024-05-20"),
     updatedAt: new Date(),
     branding: {
@@ -141,8 +137,6 @@ export const mockResellers: Reseller[] = [
     walletBalance: 7500,
     totalUsers: 22,
     totalEvents: 45,
-    totalSubResellers: 0,
-    parentResellerId: "reseller-1",
     createdAt: new Date("2024-06-10"),
     updatedAt: new Date(),
     branding: {
@@ -305,25 +299,21 @@ export const mockPackages: Package[] = [
       rtmp: {
         adminCost: 500,
         resellerPrice: 700,
-        subResellerPrice: 1000,
         userPrice: 1500,
       },
       youtube_api: {
         adminCost: 300,
         resellerPrice: 400,
-        subResellerPrice: 650,
         userPrice: 1000,
       },
       youtube_embed: {
         adminCost: 100,
         resellerPrice: 150,
-        subResellerPrice: 300,
         userPrice: 500,
       },
       third_party: {
         adminCost: 50,
         resellerPrice: 100,
-        subResellerPrice: 250,
         userPrice: 400,
       },
     },
@@ -331,19 +321,16 @@ export const mockPackages: Package[] = [
       youtube: {
         adminCost: 30,
         resellerPrice: 40,
-        subResellerPrice: 50,
         userPrice: 75,
       },
       facebook: {
         adminCost: 30,
         resellerPrice: 40,
-        subResellerPrice: 50,
         userPrice: 75,
       },
       customRtmp: {
         adminCost: 50,
         resellerPrice: 60,
-        subResellerPrice: 75,
         userPrice: 100,
       },
     },

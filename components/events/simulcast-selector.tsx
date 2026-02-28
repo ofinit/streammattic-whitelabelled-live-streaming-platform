@@ -11,7 +11,7 @@ interface SimulcastSelectorProps {
   value: ("youtube" | "facebook" | "custom_rtmp")[]
   onChange: (value: ("youtube" | "facebook" | "custom_rtmp")[]) => void
   showPricing?: boolean
-  userLevel?: "admin" | "reseller" | "sub_reseller" | "user"
+  userLevel?: "admin" | "reseller" | "user"
 }
 
 const simulcastOptions: {

@@ -53,27 +53,13 @@ export default function ResellerCalendarPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const eventsPerPage = 10
 
-  // Determine if user is sub-reseller
-  const currentReseller = mockResellers.find((r) => r.id === user?.id)
-  const isSubReseller = !!currentReseller?.parentResellerId
-
-  // Get events based on reseller hierarchy
+  // Get events for this reseller's scope
   const relevantEvents = useMemo(() => {
     if (!user) return []
-
-    if (isSubReseller) {
-      // Sub-reseller: only events from their direct users
-      const theirUsers = mockUsers.filter((u) => u.resellerId === user.id)
-      return mockEvents.filter((e) => theirUsers.some((u) => u.id === e.userId))
-    } else {
-      // Parent reseller: events from their users + sub-resellers' users
-      const subResellers = mockResellers.filter((r) => r.parentResellerId === user.id)
-      const relevantUserIds = mockUsers
-        .filter((u) => u.resellerId === user.id || subResellers.some((sr) => sr.id === u.resellerId))
-        .map((u) => u.id)
-      return mockEvents.filter((e) => relevantUserIds.includes(e.userId))
-    }
-  }, [user, isSubReseller])
+    // Reseller sees events from their direct assignments
+    const resellerUserIds = mockUsers.filter((u) => u.resellerId === user.id).map((u) => u.id)
+    return mockEvents.filter((e) => resellerUserIds.includes(e.userId) || e.resellerId === user.id)
+  }, [user])
 
   // Filter events by date range
   const filteredEvents = useMemo(() => {
@@ -218,7 +204,7 @@ export default function ResellerCalendarPage() {
       <div>
         <h1 className="text-3xl font-bold">Event Calendar</h1>
         <p className="text-muted-foreground">
-          {isSubReseller ? "View events from your users" : "View events from your users and sub-resellers"}
+          {"View your streaming events"}
         </p>
       </div>
 

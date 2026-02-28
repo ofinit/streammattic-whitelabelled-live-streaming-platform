@@ -113,7 +113,7 @@ export default function UserDashboard() {
     <div className="min-h-screen">
       <Header title="Dashboard" subtitle={`Welcome back, ${user?.name}`} />
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard title="Wallet Balance" value={`₹${stats.walletBalance.toLocaleString()}`} icon={Wallet} />

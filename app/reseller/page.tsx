@@ -69,17 +69,15 @@ export default function ResellerDashboard() {
     return (
       <div className="min-h-screen">
         <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
-        <div className="p-6">
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardContent className="flex items-center gap-3 p-6">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <div>
-                <p className="font-medium text-destructive">Failed to load dashboard data</p>
-                <p className="text-sm text-muted-foreground">Please check your connection and try again.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-center gap-3 p-6">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Failed to load dashboard data</p>
+              <p className="text-sm text-muted-foreground">Please check your connection and try again.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -88,7 +86,7 @@ export default function ResellerDashboard() {
     <div className="min-h-screen">
       <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         {!isLoading && lowBalanceWarning && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />

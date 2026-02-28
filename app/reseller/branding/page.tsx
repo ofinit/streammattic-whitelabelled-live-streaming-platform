@@ -18,7 +18,7 @@ export default function ResellerBrandingPage() {
   return (
     <div className="flex flex-col">
       <Header title="Branding" subtitle="Customize your white-label platform" />
-      <main className="flex-1 p-6">
+      <main className="flex-1">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <BrandingForm branding={branding} onSave={handleSave} />

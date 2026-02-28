@@ -67,7 +67,7 @@ export default function ResellerSettingsPage() {
     <div className="min-h-screen">
       <Header title="Settings" subtitle="Manage your account settings" />
 
-      <div className="p-6 space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-2xl">
         {/* Profile Settings */}
         <Card className="border-border bg-card">
           <CardHeader>

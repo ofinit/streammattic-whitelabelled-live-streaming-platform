@@ -128,7 +128,7 @@ export default function AdminResellersPage() {
     <div className="min-h-screen">
       <Header title="Reseller Management" subtitle="Manage platform resellers" />
 
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Filters */}
         <Card className="border-border bg-card">
           <CardContent className="p-4">

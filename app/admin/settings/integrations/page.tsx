@@ -89,7 +89,7 @@ export default function IntegrationsSettingsPage() {
     <div className="min-h-screen">
       <Header title="Integrations" subtitle="Configure third-party service credentials" />
 
-      <div className="p-6 space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-2xl">
         {/* YouTube / Google OAuth */}
         <Card className="border-border bg-card">
           <CardHeader>

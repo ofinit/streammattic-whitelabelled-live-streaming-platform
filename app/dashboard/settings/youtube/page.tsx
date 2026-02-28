@@ -5,97 +5,97 @@ import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Youtube, Plus, Info } from "lucide-react"
-import type { YouTubeChannel } from "@/lib/types"
+import { Youtube, Plus, Info, Loader2 } from "lucide-react"
 import { YouTubeChannelCard } from "@/components/youtube/youtube-channel-card"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { useToast } from "@/hooks/use-toast"
+import useSWR from "swr"
 
-// Mock initial channels
-const initialChannels: YouTubeChannel[] = [
-  {
-    id: "yt-1",
-    ownerId: "user-1",
-    ownerType: "user",
-    channelId: "UC_x5XG1OV2P6uZZ5FSM9Ttw",
-    channelTitle: "My Live Streaming Channel",
-    channelThumbnail: "/youtube-channel-avatar.png",
-    accessToken: "ya29.mock_token_1",
-    refreshToken: "1//mock_refresh_1",
-    tokenExpiresAt: new Date(Date.now() + 3600000),
-    isActive: true,
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date(),
-  },
-]
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+// TODO: Replace with real auth context values
+const OWNER_ID = "user-1"
+const OWNER_TYPE = "user" as const
 
 export default function YouTubeSettingsPage() {
-  const [channels, setChannels] = useState<YouTubeChannel[]>(initialChannels)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
   const { toast } = useToast()
 
-  const handleRefreshToken = async (channelId: string) => {
+  const { data, isLoading, mutate } = useSWR(
+    `/api/youtube/channels?ownerId=${OWNER_ID}&ownerType=${OWNER_TYPE}`,
+    fetcher
+  )
+
+  const channels = data?.channels ?? []
+
+  const handleRefreshToken = async (channelDbId: string) => {
     toast({
       title: "Refreshing token...",
       description: "Please wait while we refresh your YouTube access.",
     })
 
-    // Simulate token refresh
-    await new Promise((r) => setTimeout(r, 1500))
+    try {
+      const res = await fetch("/api/youtube/channels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "token-refresh", channelDbId }),
+      })
 
-    setChannels(
-      channels.map((c) =>
-        c.id === channelId ? { ...c, tokenExpiresAt: new Date(Date.now() + 3600000), updatedAt: new Date() } : c,
-      ),
-    )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to refresh token")
+      }
 
-    toast({
-      title: "Token refreshed",
-      description: "Your YouTube channel access has been renewed.",
-    })
-  }
+      await mutate()
 
-  const handleDisconnect = async (channelId: string) => {
-    const channel = channels.find((c) => c.id === channelId)
-
-    // Simulate disconnect
-    await new Promise((r) => setTimeout(r, 500))
-
-    setChannels(channels.filter((c) => c.id !== channelId))
-
-    toast({
-      title: "Channel disconnected",
-      description: `${channel?.channelTitle} has been removed from your account.`,
-    })
-  }
-
-  const handleConnectSuccess = (data: {
-    channelId: string
-    channelTitle: string
-    channelThumbnail: string
-    accessToken: string
-    refreshToken: string
-  }) => {
-    const newChannel: YouTubeChannel = {
-      id: `yt-${Date.now()}`,
-      ownerId: "user-1",
-      ownerType: "user",
-      channelId: data.channelId,
-      channelTitle: data.channelTitle,
-      channelThumbnail: data.channelThumbnail,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-      tokenExpiresAt: new Date(Date.now() + 3600000),
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      toast({
+        title: "Token refreshed",
+        description: "Your YouTube channel access has been renewed.",
+      })
+    } catch (err) {
+      toast({
+        title: "Refresh failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      })
     }
+  }
 
-    setChannels([...channels, newChannel])
+  const handleDisconnect = async (channelDbId: string) => {
+    const channel = channels.find((c: Record<string, string>) => c.id === channelDbId)
 
+    try {
+      const res = await fetch("/api/youtube/channels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "disconnect", channelDbId }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Failed to disconnect")
+      }
+
+      await mutate()
+
+      toast({
+        title: "Channel disconnected",
+        description: `${channel?.channelTitle || "Channel"} has been removed from your account.`,
+      })
+    } catch (err) {
+      toast({
+        title: "Disconnect failed",
+        description: (err as Error).message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleConnectSuccess = () => {
+    mutate()
     toast({
       title: "Channel connected",
-      description: `${data.channelTitle} has been linked to your account.`,
+      description: "Your YouTube channel has been linked to your account.",
     })
   }
 
@@ -133,7 +133,11 @@ export default function YouTubeSettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {channels.length === 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : channels.length === 0 ? (
               <div className="text-center py-8">
                 <Youtube className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="font-medium text-foreground mb-1">No channels connected</h3>
@@ -146,7 +150,7 @@ export default function YouTubeSettingsPage() {
                 </Button>
               </div>
             ) : (
-              channels.map((channel) => (
+              channels.map((channel: Record<string, string>) => (
                 <YouTubeChannelCard
                   key={channel.id}
                   channel={channel}
@@ -168,7 +172,7 @@ export default function YouTubeSettingsPage() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
                   1
                 </span>
-                <span>Click "Connect Channel" and sign in with your Google account</span>
+                <span>{"Click \"Connect Channel\" and sign in with your Google account"}</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
@@ -180,7 +184,7 @@ export default function YouTubeSettingsPage() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
                   3
                 </span>
-                <span>When creating an event, select "YouTube API" and choose your channel</span>
+                <span>{"When creating an event, select \"YouTube API\" and choose your channel"}</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
@@ -196,6 +200,9 @@ export default function YouTubeSettingsPage() {
       <ConnectYouTubeDialog
         open={showConnectDialog}
         onOpenChange={setShowConnectDialog}
+        ownerId={OWNER_ID}
+        ownerType={OWNER_TYPE}
+        returnUrl="/dashboard/settings/youtube"
         onSuccess={handleConnectSuccess}
       />
     </div>

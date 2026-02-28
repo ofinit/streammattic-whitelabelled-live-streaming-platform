@@ -8,6 +8,7 @@ import { Copy, Check, ExternalLink, Youtube, RefreshCw } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface YouTubeInfoPanelProps {
+  channelDbId: string
   broadcastId: string | null
   streamId: string | null
   rtmpUrl: string | null
@@ -19,16 +20,19 @@ interface YouTubeInfoPanelProps {
 }
 
 export function YouTubeInfoPanel({
+  channelDbId,
   broadcastId,
   streamId,
   rtmpUrl,
   streamKey,
   channelName,
   broadcastStatus,
-  healthStatus = "noData",
+  healthStatus: initialHealth = "noData",
   youtubeUrl,
 }: YouTubeInfoPanelProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [healthStatus, setHealthStatus] = useState(initialHealth)
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false)
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -168,11 +172,33 @@ export function YouTubeInfoPanel({
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() =>
-              toast({ title: "Checking health...", description: "Fetching YouTube stream health" })
-            }
+            disabled={!streamId || isCheckingHealth}
+            onClick={async () => {
+              if (!streamId) return
+              setIsCheckingHealth(true)
+              try {
+                const res = await fetch("/api/stream/youtube", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "health",
+                    channelDbId,
+                    streamId,
+                  }),
+                })
+                const data = await res.json()
+                if (data.health?.status) {
+                  setHealthStatus(data.health.status)
+                  toast({ title: "Health updated", description: `Stream health: ${data.health.status}` })
+                }
+              } catch {
+                toast({ title: "Failed to check health", variant: "destructive" })
+              } finally {
+                setIsCheckingHealth(false)
+              }
+            }}
           >
-            <RefreshCw className="h-3 w-3 mr-1" />
+            <RefreshCw className={`h-3 w-3 mr-1 ${isCheckingHealth ? "animate-spin" : ""}`} />
             Check Health
           </Button>
         </div>

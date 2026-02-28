@@ -10,13 +10,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Youtube, AlertCircle } from "lucide-react"
-import type { YouTubeChannel } from "@/lib/types"
 import { ConnectYouTubeDialog } from "./connect-youtube-dialog"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+interface ChannelData {
+  id: string
+  channelId: string
+  channelTitle: string
+  channelThumbnail?: string | null
+  subscriberCount?: number
+  tokenStatus: "valid" | "expired"
+  isActive: boolean
+}
 
 interface YouTubeChannelSelectorProps {
-  channels: YouTubeChannel[]
+  ownerId: string
+  ownerType: "admin" | "reseller" | "user"
   selectedChannelId: string | null
-  onSelectChannel: (channelId: string | null) => void
+  onSelectChannel: (channelDbId: string | null) => void
   broadcastSettings: {
     privacyStatus: "public" | "unlisted" | "private"
     enableDvr: boolean
@@ -29,45 +42,28 @@ interface YouTubeChannelSelectorProps {
     enableAutoStart: boolean
     enableAutoStop: boolean
   }) => void
-  onChannelConnected: (channel: YouTubeChannel) => void
 }
 
 export function YouTubeChannelSelector({
-  channels,
+  ownerId,
+  ownerType,
   selectedChannelId,
   onSelectChannel,
   broadcastSettings,
   onSettingsChange,
-  onChannelConnected,
 }: YouTubeChannelSelectorProps) {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
 
-  const selectedChannel = channels.find((c) => c.id === selectedChannelId)
+  const { data, mutate } = useSWR(
+    `/api/youtube/channels?ownerId=${ownerId}&ownerType=${ownerType}`,
+    fetcher
+  )
 
-  const handleConnectSuccess = (data: {
-    channelId: string
-    channelTitle: string
-    channelThumbnail: string
-    accessToken: string
-    refreshToken: string
-  }) => {
-    const newChannel: YouTubeChannel = {
-      id: `yt-${Date.now()}`,
-      ownerId: "current-user",
-      ownerType: "user",
-      channelId: data.channelId,
-      channelTitle: data.channelTitle,
-      channelThumbnail: data.channelThumbnail,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-      tokenExpiresAt: new Date(Date.now() + 3600000),
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    onChannelConnected(newChannel)
-    onSelectChannel(newChannel.id)
-  }
+  const channels: ChannelData[] = (data?.channels ?? []).filter(
+    (c: ChannelData) => c.isActive
+  )
+
+  const selectedChannel = channels.find((c) => c.id === selectedChannelId)
 
   if (channels.length === 0) {
     return (
@@ -92,7 +88,9 @@ export function YouTubeChannelSelector({
         <ConnectYouTubeDialog
           open={showConnectDialog}
           onOpenChange={setShowConnectDialog}
-          onSuccess={handleConnectSuccess}
+          ownerId={ownerId}
+          ownerType={ownerType}
+          onSuccess={() => mutate()}
         />
       </div>
     )
@@ -118,8 +116,13 @@ export function YouTubeChannelSelector({
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-medium text-sm">{channel.channelTitle}</p>
-                  <p className="text-xs text-muted-foreground">{channel.channelId.substring(0, 16)}...</p>
+                  <p className="text-xs text-muted-foreground">
+                    {channel.subscriberCount?.toLocaleString() || 0} subscribers
+                  </p>
                 </div>
+                {channel.tokenStatus === "expired" && (
+                  <Badge variant="destructive" className="text-xs">Token Expired</Badge>
+                )}
                 {selectedChannelId === channel.id && <Badge className="bg-primary">Selected</Badge>}
               </CardContent>
             </Card>
@@ -203,7 +206,9 @@ export function YouTubeChannelSelector({
       <ConnectYouTubeDialog
         open={showConnectDialog}
         onOpenChange={setShowConnectDialog}
-        onSuccess={handleConnectSuccess}
+        ownerId={ownerId}
+        ownerType={ownerType}
+        onSuccess={() => mutate()}
       />
     </div>
   )

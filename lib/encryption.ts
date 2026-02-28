@@ -4,15 +4,53 @@ const ALGORITHM = "aes-256-gcm"
 const IV_LENGTH = 16
 const AUTH_TAG_LENGTH = 16
 
+/** Cache the encryption key in memory once resolved */
+let _cachedKey: Buffer | null = null
+
+/**
+ * Get encryption key from env var (sync, for encrypt/decrypt).
+ * For DB-sourced key, call initEncryptionKeyFromDb() first.
+ */
 function getEncryptionKey(): Buffer {
+  if (_cachedKey) return _cachedKey
+
   const key = process.env.ENCRYPTION_KEY
   if (!key) {
-    throw new Error("ENCRYPTION_KEY environment variable is not set. Generate one: openssl rand -hex 32")
+    throw new Error("ENCRYPTION_KEY is not configured. Set it in Admin > Settings > Integrations or as an environment variable. Generate one: openssl rand -hex 32")
   }
   if (key.length !== 64) {
     throw new Error("ENCRYPTION_KEY must be a 64-character hex string (32 bytes). Generate one: openssl rand -hex 32")
   }
-  return Buffer.from(key, "hex")
+  _cachedKey = Buffer.from(key, "hex")
+  return _cachedKey
+}
+
+/**
+ * Initialize the encryption key from the platform_settings DB table.
+ * Falls back to env var if not in DB. Call once before encrypt/decrypt in API routes.
+ */
+export async function initEncryptionKeyFromDb(): Promise<void> {
+  if (_cachedKey) return
+
+  try {
+    // Dynamic import to avoid circular deps with db.ts
+    const { getPlatformSetting } = await import("./db-queries")
+    const dbKey = await getPlatformSetting("encryption_key")
+    const keyStr = typeof dbKey === "string" ? dbKey.replace(/^"|"$/g, "") : null
+
+    if (keyStr && keyStr.length === 64) {
+      _cachedKey = Buffer.from(keyStr, "hex")
+      return
+    }
+  } catch {
+    // DB not available -- fall through to env var
+  }
+
+  // Fall back to env var
+  const envKey = process.env.ENCRYPTION_KEY
+  if (envKey && envKey.length === 64) {
+    _cachedKey = Buffer.from(envKey, "hex")
+  }
 }
 
 /**

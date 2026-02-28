@@ -11,15 +11,43 @@ const YOUTUBE_SCOPES = [
   "https://www.googleapis.com/auth/youtube.readonly",
 ].join(" ")
 
+/**
+ * Get Google OAuth credentials.
+ * Reads from platform_settings DB first (admin-configured), then falls back to env vars.
+ */
+async function getGoogleCredentials(): Promise<{ clientId: string; clientSecret: string }> {
+  const sql = getDb()
+
+  // Try DB first (admin-configured via settings UI)
+  const rows = await sql`
+    SELECT key, value FROM platform_settings
+    WHERE key IN ('google_client_id', 'google_client_secret')
+  `
+  const dbSettings: Record<string, string> = {}
+  for (const row of rows as { key: string; value: string }[]) {
+    const val = typeof row.value === "string" ? row.value : JSON.stringify(row.value)
+    // Strip surrounding quotes if the value was stored as JSON string
+    dbSettings[row.key] = val.replace(/^"|"$/g, "")
+  }
+
+  const clientId = dbSettings.google_client_id || process.env.GOOGLE_CLIENT_ID
+  const clientSecret = dbSettings.google_client_secret || process.env.GOOGLE_CLIENT_SECRET
+
+  if (!clientId) throw new Error("Google Client ID is not configured. Set it in Admin > Settings > Integrations or via GOOGLE_CLIENT_ID environment variable.")
+  if (!clientSecret) throw new Error("Google Client Secret is not configured. Set it in Admin > Settings > Integrations or via GOOGLE_CLIENT_SECRET environment variable.")
+
+  return { clientId, clientSecret }
+}
+
 function getGoogleClientId(): string {
   const id = process.env.GOOGLE_CLIENT_ID
-  if (!id) throw new Error("GOOGLE_CLIENT_ID environment variable is not set")
+  if (!id) throw new Error("GOOGLE_CLIENT_ID is not set. Configure in Admin > Settings > Integrations.")
   return id
 }
 
 function getGoogleClientSecret(): string {
   const secret = process.env.GOOGLE_CLIENT_SECRET
-  if (!secret) throw new Error("GOOGLE_CLIENT_SECRET environment variable is not set")
+  if (!secret) throw new Error("GOOGLE_CLIENT_SECRET is not set. Configure in Admin > Settings > Integrations.")
   return secret
 }
 
@@ -32,8 +60,8 @@ function getRedirectUri(): string {
 // ──────────────────────────────────────
 
 /** Build the Google OAuth consent screen URL */
-export function getYouTubeOAuthUrl(redirectUri: string, state: string): string {
-  const clientId = getGoogleClientId()
+export async function getYouTubeOAuthUrl(redirectUri: string, state: string): Promise<string> {
+  const { clientId } = await getGoogleCredentials()
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -52,13 +80,14 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   refreshToken: string
   expiresIn: number
 }> {
+  const { clientId, clientSecret } = await getGoogleCredentials()
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: getGoogleClientId(),
-      client_secret: getGoogleClientSecret(),
+      client_id: clientId,
+      client_secret: clientSecret,
       redirect_uri: getRedirectUri(),
       grant_type: "authorization_code",
     }),
@@ -83,14 +112,15 @@ export async function refreshAccessToken(encryptedRefreshToken: string): Promise
   expiresIn: number
 }> {
   const refreshToken = decrypt(encryptedRefreshToken)
+  const { clientId, clientSecret } = await getGoogleCredentials()
 
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       refresh_token: refreshToken,
-      client_id: getGoogleClientId(),
-      client_secret: getGoogleClientSecret(),
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: "refresh_token",
     }),
   })

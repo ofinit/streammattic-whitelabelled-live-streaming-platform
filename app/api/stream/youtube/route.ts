@@ -8,6 +8,7 @@ import {
   waitForStreamReady,
 } from "@/lib/youtube-service"
 import { getDb, toCamel } from "@/lib/db"
+import { initEncryptionKeyFromDb } from "@/lib/encryption"
 
 /**
  * POST /api/stream/youtube
@@ -19,6 +20,7 @@ import { getDb, toCamel } from "@/lib/db"
  */
 export async function POST(request: Request) {
   try {
+    await initEncryptionKeyFromDb()
     const body = await request.json()
     const { action, channelDbId } = body
 

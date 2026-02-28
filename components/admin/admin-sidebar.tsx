@@ -14,6 +14,7 @@ import {
   DollarSign,
   CreditCard,
   Receipt,
+  Plug,
 } from "lucide-react"
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const menuItems = [
   { icon: RefreshCw, label: "Refunds", href: "/admin/refunds" },
   { icon: DollarSign, label: "Wallet Adjustments", href: "/admin/wallet-adjustments" },
   { icon: Receipt, label: "GST Settings", href: "/admin/settings/gst" },
+  { icon: Plug, label: "Integrations", href: "/admin/settings/integrations" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 

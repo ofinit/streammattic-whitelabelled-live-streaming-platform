@@ -5,13 +5,14 @@ import {
   getChannelInfo,
   revokeAccess,
 } from "@/lib/youtube-service"
-import { decrypt } from "@/lib/encryption"
+import { decrypt, initEncryptionKeyFromDb } from "@/lib/encryption"
 
 /**
  * GET /api/youtube/channels?ownerId=xxx&ownerType=admin|reseller|user
  * Returns all connected YouTube channels for an owner (without tokens).
  */
 export async function GET(request: Request) {
+  await initEncryptionKeyFromDb()
   const url = new URL(request.url)
   const ownerId = url.searchParams.get("ownerId")
   const ownerType = url.searchParams.get("ownerType")
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+  await initEncryptionKeyFromDb()
+  const body = await request.json()
     const { action, channelDbId } = body
 
     if (!channelDbId) {

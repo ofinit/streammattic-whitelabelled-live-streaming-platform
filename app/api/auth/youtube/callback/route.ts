@@ -3,7 +3,7 @@ import {
   exchangeCodeForTokens,
   getChannelInfo,
 } from "@/lib/youtube-service"
-import { encrypt } from "@/lib/encryption"
+import { encrypt, initEncryptionKeyFromDb } from "@/lib/encryption"
 import { getDb } from "@/lib/db"
 
 /**
@@ -13,6 +13,7 @@ import { getDb } from "@/lib/db"
  * encrypts tokens, stores in DB, and redirects back to the app.
  */
 export async function GET(request: Request) {
+  await initEncryptionKeyFromDb()
   const url = new URL(request.url)
   const code = url.searchParams.get("code")
   const state = url.searchParams.get("state")

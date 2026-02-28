@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Save, Upload, ExternalLink, Palette, Globe, FileText, CreditCard } from "lucide-react"
+import { Save, Upload, ExternalLink, Palette, Globe, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,10 +47,7 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Legal</span>
           </TabsTrigger>
-          <TabsTrigger value="payment" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Payment</span>
-          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -361,50 +358,7 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="payment" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Gateway</CardTitle>
-              <CardDescription>Configure your payment gateway credentials</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="preferredGateway">Preferred Gateway</Label>
-                <Select
-                  value={formData.preferredGateway || "razorpay"}
-                  onValueChange={(value: any) => setFormData({ ...formData, preferredGateway: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gateway" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="razorpay">Razorpay</SelectItem>
-                    <SelectItem value="instamojo">Instamojo</SelectItem>
-                    <SelectItem value="cashfree">Cashfree</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="gatewayApiKey">API Key / Key ID</Label>
-                  <Input id="gatewayApiKey" type="password" placeholder="Enter your API key" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gatewayApiSecret">API Secret / Key Secret</Label>
-                  <Input id="gatewayApiSecret" type="password" placeholder="Enter your API secret" />
-                </div>
-              </div>
-
-              {formData.hasGatewayConfig && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-green-500">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-sm">Payment gateway is configured</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       <div className="flex justify-end">

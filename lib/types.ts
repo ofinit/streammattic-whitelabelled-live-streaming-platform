@@ -112,6 +112,7 @@ export type TransactionCategory =
   | "compensation" // Compensation for service issues
   | "correction" // Corrections for errors
   | "goodwill" // Goodwill credits
+  | "ai_image_generation" // AI image generation charge
 
 // Enhanced Wallet Transaction with cascade support
 export interface WalletTransaction {
@@ -266,9 +267,10 @@ export interface PlatformSettings {
   maxEventsPerUser: number
   maxViewersPerEvent: number
   maintenanceMode: boolean
+  imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
   createdAt: Date
   updatedAt: Date
-}
+  }
 
 // Notification
 export interface Notification {

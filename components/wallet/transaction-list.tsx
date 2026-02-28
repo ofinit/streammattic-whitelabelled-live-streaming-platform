@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import type { WalletTransaction } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, Package } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, Package, Wand2 } from "lucide-react"
 
 interface TransactionListProps {
   transactions: WalletTransaction[]
@@ -21,6 +21,8 @@ const categoryLabels: Record<string, string> = {
   order_refund: "Refund",
   adjustment: "Adjustment",
   commission: "Commission",
+  ai_image_generation: "AI Image Generation",
+  goodwill: "Goodwill Credit",
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -31,6 +33,8 @@ const categoryIcons: Record<string, React.ElementType> = {
   order_refund: RefreshCw,
   adjustment: RefreshCw,
   commission: ArrowDownLeft,
+  ai_image_generation: Wand2,
+  goodwill: RefreshCw,
 }
 
 export function TransactionList({ transactions, showUser = false }: TransactionListProps) {

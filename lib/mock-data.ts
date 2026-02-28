@@ -962,6 +962,20 @@ export const mockTransactions: WalletTransaction[] = [
     referenceType: "ADMIN_ADJUSTMENT",
     createdAt: new Date("2024-12-01T16:00:00"),
   },
+  {
+    id: "txn-res-5",
+    walletId: "wallet-reseller-1",
+    userId: "reseller-1",
+    type: "debit",
+    category: "ai_image_generation",
+    amount: 500,
+    balanceBefore: 20000,
+    balanceAfter: 19500,
+    description: "AI Image Generation - Hero Background",
+    referenceId: "img-gen-1",
+    referenceType: "AI_IMAGE",
+    createdAt: new Date("2025-01-10T09:15:00"),
+  },
   // User transactions
   {
     id: "txn-user-1",

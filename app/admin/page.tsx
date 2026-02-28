@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Building2, Users, Radio, DollarSign, TrendingUp, Eye, Plus, TrendingDown, AlertCircle } from "lucide-react"
+import { Building2, Users, Radio, DollarSign, TrendingUp, Eye, Plus, UserCheck, AlertCircle } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -174,10 +174,10 @@ export default function AdminDashboard() {
             <>
               <StatsCard title="Total Events" value={stats?.totalEvents ?? 0} icon={Radio} />
               <StatsCard
-                title="Pending Orders"
-                value={stats?.pendingOrders ?? 0}
-                icon={TrendingDown}
-                iconColor="text-yellow-500"
+                title="Active Resellers"
+                value={stats?.activeResellers ?? 0}
+                icon={UserCheck}
+                iconColor="text-emerald-500"
               />
               <StatsCard
                 title="Monthly Revenue"

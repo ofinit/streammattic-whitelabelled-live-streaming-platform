@@ -300,7 +300,7 @@ export interface AdminStats {
   totalUsers: number
   totalEvents: number
   activeEvents: number
-  pendingOrders: number
+  activeResellers: number
   revenueGrowth: number
   userGrowth: number
 }
@@ -309,7 +309,7 @@ export interface ResellerStats {
   walletBalance: number
   totalEvents: number
   activeEvents: number
-  pendingOrders: number
+  activeUsers: number
   monthlyRevenue: number
 }
 

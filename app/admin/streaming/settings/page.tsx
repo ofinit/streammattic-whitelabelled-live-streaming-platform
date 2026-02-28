@@ -35,16 +35,18 @@ export default function StreamingSettingsPage() {
   const [activeBackend, setActiveBackend] = useState<StreamingBackendType>("nimble")
   const backendInfo: StreamingBackendInfo = BACKEND_INFO[activeBackend]
 
-  // Server connection
-  const [serverConfig, setServerConfig] = useState({
-    name: "Primary Nimble Server",
-    host: "nimble-api.streammattic.com",
-    rtmpPort: 1935,
-    httpPort: 8082,
-    apiKey: "••••••••••••••••",
-    rtmpBaseUrl: "rtmp://stream.streammattic.com/live",
-    playbackBaseUrl: "https://cdn.streammattic.com",
-  })
+  // Server connection - defaults from active backend
+  const [serverConfig, setServerConfig] = useState(() => ({ ...backendInfo.defaultConfig }))
+
+  // Reset server config when backend changes
+  const handleBackendChange = (key: StreamingBackendType) => {
+    setActiveBackend(key)
+    const newInfo = BACKEND_INFO[key]
+    setServerConfig({ ...newInfo.defaultConfig })
+  }
+
+  // Helper: check if feature is unsupported by current backend
+  const isUnsupported = (feature: string) => backendInfo.unsupportedFeatures?.includes(feature) ?? false
 
   // Streaming defaults
   const [streamDefaults, setStreamDefaults] = useState({
@@ -100,7 +102,7 @@ export default function StreamingSettingsPage() {
     await new Promise((resolve) => setTimeout(resolve, 2000))
     setConnectionStatus("connected")
     setIsTesting(false)
-    toast({ title: "Connection successful", description: "Nimble Streamer server is reachable and responding" })
+    toast({ title: "Connection successful", description: backendInfo.helpTexts.testConnection })
   }
 
   const handleSave = async () => {
@@ -184,7 +186,7 @@ export default function StreamingSettingsPage() {
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setActiveBackend(key)}
+                  onClick={() => handleBackendChange(key)}
                   className={`relative flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all ${
                     isActive
                       ? "border-primary bg-primary/5 ring-1 ring-primary"
@@ -264,17 +266,17 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="server-host">API Host <HelpTip text="The hostname or IP of your Nimble Streamer server. Find this in your server provider's dashboard (e.g., AWS EC2 Public IPv4, DigitalOcean Droplet IP, or your custom domain pointing to the server)." link="https://wmspanel.com/nimble/install" linkLabel="Installation Guide" /></Label>
+              <Label htmlFor="server-host">API Host <HelpTip text={backendInfo.helpTexts.apiHost} link={backendInfo.helpTexts.apiHostLink} linkLabel={backendInfo.helpTexts.apiHostLinkLabel} /></Label>
               <Input
                 id="server-host"
                 value={serverConfig.host}
                 onChange={(e) => setServerConfig({ ...serverConfig, host: e.target.value })}
                 className="bg-secondary border-0"
-                placeholder="nimble-api.example.com"
+                placeholder={`${backendInfo.name.toLowerCase().replace(/[^a-z]/g, '-')}.example.com`}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rtmp-port">RTMP Port <HelpTip text="Default RTMP port is 1935. Find or change this in Nimble Streamer Admin Panel > Global Settings > RTMP Interfaces. Only change if your server uses a non-standard port." /></Label>
+              <Label htmlFor="rtmp-port">RTMP Port <HelpTip text={backendInfo.helpTexts.rtmpPort} /></Label>
               <Input
                 id="rtmp-port"
                 type="number"
@@ -284,7 +286,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="http-port">HTTP API Port <HelpTip text="The management API port for Nimble Streamer. Default is 8082. Find this in /etc/nimble/nimble.conf under 'management_listen_interfaces'. Ensure this port is open in your firewall." /></Label>
+              <Label htmlFor="http-port">HTTP API Port <HelpTip text={backendInfo.helpTexts.httpPort} /></Label>
               <Input
                 id="http-port"
                 type="number"
@@ -294,7 +296,7 @@ export default function StreamingSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="api-key">API Key <HelpTip text="Your Nimble Streamer management API key. Generate this in Nimble Admin Panel > Global Settings > Management API > API Key. If using WMSPanel, find it at wmspanel.com > Account > API Keys." link="https://wmspanel.com/api" linkLabel="WMSPanel API Docs" /></Label>
+              <Label htmlFor="api-key">API Key <HelpTip text={backendInfo.helpTexts.apiKey} link={backendInfo.helpTexts.apiKeyLink} linkLabel={backendInfo.helpTexts.apiKeyLinkLabel} /></Label>
               <Input
                 id="api-key"
                 type="password"
@@ -315,7 +317,7 @@ export default function StreamingSettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="rtmp-base">RTMP Ingest URL <HelpTip text="The base URL encoders use to push RTMP streams. Format: rtmp://{your-server-ip-or-domain}/live. The '/live' is the Nimble application name. Create applications in Nimble Admin > Live Streams > RTMP Applications." link="https://wmspanel.com/nimble/live" linkLabel="RTMP Setup Guide" /></Label>
+              <Label htmlFor="rtmp-base">RTMP Ingest URL <HelpTip text={backendInfo.helpTexts.rtmpUrl} link={backendInfo.helpTexts.rtmpUrlLink} linkLabel={backendInfo.helpTexts.rtmpUrlLinkLabel} /></Label>
               <Input
                 id="rtmp-base"
                 value={serverConfig.rtmpBaseUrl}
@@ -326,7 +328,7 @@ export default function StreamingSettingsPage() {
               <p className="text-xs text-muted-foreground">Base URL used for RTMP stream ingest</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="playback-base">Playback Base URL <HelpTip text="The base URL viewers use to watch streams via HLS/DASH. If using Nimble directly, this is your server's HTTP output address. If using a CDN (CloudFront, Cloudflare), use the CDN distribution URL." link="https://wmspanel.com/nimble/cdn" linkLabel="CDN Setup Guide" /></Label>
+              <Label htmlFor="playback-base">Playback Base URL <HelpTip text={backendInfo.helpTexts.playbackUrl} link={backendInfo.helpTexts.playbackUrlLink} linkLabel={backendInfo.helpTexts.playbackUrlLinkLabel} /></Label>
               <Input
                 id="playback-base"
                 value={serverConfig.playbackBaseUrl}
@@ -392,7 +394,7 @@ export default function StreamingSettingsPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="hls-segment">HLS Segment Duration (s) <HelpTip text="Duration of each HLS segment. Default: 4s. Lower values (2s) reduce latency but increase server load. For low-latency, use 2s with Low Latency Mode enabled. Find in Nimble Admin > Live Streams > HLS Settings." /></Label>
+              <Label htmlFor="hls-segment">HLS Segment Duration (s) <HelpTip text={backendInfo.helpTexts.hlsSegment} /></Label>
               <Input
                 id="hls-segment"
                 type="number"
@@ -428,7 +430,7 @@ export default function StreamingSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Default Transcoding <HelpTip text="When ON, all new streams are automatically transcoded using the profiles below. Requires FFmpeg installed on the server. Check via SSH: 'ffmpeg -version'." link="https://wmspanel.com/nimble/transcoding" linkLabel="Transcoding Guide" /></Label>
+                <Label>Default Transcoding <HelpTip text={backendInfo.helpTexts.transcoding} link={backendInfo.helpTexts.transcodingLink} linkLabel={backendInfo.helpTexts.transcodingLinkLabel} /></Label>
                 <p className="text-xs text-muted-foreground">Enable adaptive bitrate transcoding by default</p>
               </div>
               <Switch
@@ -468,7 +470,7 @@ export default function StreamingSettingsPage() {
               <Tv className="h-5 w-5 text-primary" />
               Transcoding Profiles
             </CardTitle>
-            <CardDescription>Configure quality tiers for adaptive bitrate streaming <HelpTip text="Each profile re-encodes the stream at a different resolution/bitrate. Requires FFmpeg on the server and increases CPU usage per profile. Recommended minimum: 3 profiles (1080p, 720p, 360p)." link="https://wmspanel.com/nimble/transcoding" linkLabel="FFmpeg + Transcoding Guide" /></CardDescription>
+            <CardDescription>Configure quality tiers for adaptive bitrate streaming <HelpTip text="Each profile re-encodes the stream at a different resolution/bitrate. Requires FFmpeg on the server and increases CPU usage per profile. Recommended minimum: 3 profiles (1080p, 720p, 360p)." link={backendInfo.helpTexts.transcodingLink} linkLabel={backendInfo.helpTexts.transcodingLinkLabel} /></CardDescription>
           </div>
           <Button variant="outline" size="sm" className="border-border bg-transparent" onClick={addProfile}>
             <Plus className="mr-2 h-4 w-4" />
@@ -544,7 +546,7 @@ export default function StreamingSettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Require Stream Authentication <HelpTip text="When ON, publishers must provide valid credentials to push a stream. Prevents unauthorized streaming to your server. Configure in Nimble Admin > Live Streams > RTMP Authentication. Recommended: Always ON in production." /></Label>
+              <Label>Require Stream Authentication <HelpTip text={backendInfo.helpTexts.streamAuth} /></Label>
               <p className="text-xs text-muted-foreground">Publishers must authenticate before streaming</p>
             </div>
             <Switch
@@ -554,7 +556,7 @@ export default function StreamingSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <Label>Token-Based Playback Auth <HelpTip text="When ON, playback URLs require a signed token to prevent hotlinking. Nimble validates the token using the secret below. Configure in Nimble Admin > Security > Hotlink Protection." link="https://wmspanel.com/nimble/security" linkLabel="Hotlink Protection Docs" /></Label>
+              <Label>Token-Based Playback Auth <HelpTip text={backendInfo.helpTexts.tokenAuth} link={backendInfo.helpTexts.tokenAuthLink} linkLabel={backendInfo.helpTexts.tokenAuthLinkLabel} /></Label>
               <p className="text-xs text-muted-foreground">Require tokens for playback URLs (prevents hotlinking)</p>
             </div>
             <Switch
@@ -566,7 +568,7 @@ export default function StreamingSettingsPage() {
           {security.tokenBasedAuth && (
             <div className="grid gap-4 md:grid-cols-2 pl-0 mt-2">
               <div className="space-y-2">
-                <Label htmlFor="token-secret">Token Secret <HelpTip text="A secret key used to sign playback tokens. Generate a strong random string (32+ chars). Must match the value in Nimble Admin > Security > Hotlink Protection > Secret Key. Generate via: openssl rand -hex 32" /></Label>
+                <Label htmlFor="token-secret">Token Secret <HelpTip text={backendInfo.helpTexts.tokenSecret} /></Label>
                 <Input
                   id="token-secret"
                   type="password"
@@ -592,7 +594,7 @@ export default function StreamingSettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label>IP Whitelist <HelpTip text="When ON, only specific IP addresses can publish streams. Add your encoder/studio IPs. Find your IP at whatismyip.com. Configure in Nimble Admin > Security > IP Access Control." /></Label>
+              <Label>IP Whitelist <HelpTip text={backendInfo.helpTexts.ipWhitelist} /></Label>
               <p className="text-xs text-muted-foreground">Only allow publishing from specific IP addresses</p>
             </div>
             <Switch
@@ -614,28 +616,32 @@ export default function StreamingSettingsPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Geo Restriction <HelpTip text="When ON, restrict playback to specific countries. Uses GeoIP lookup on viewer IPs. Requires MaxMind GeoLite2 database. Configure in Nimble Admin > Security > Geo Restrictions." link="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data" linkLabel="MaxMind GeoIP Setup" /></Label>
-              <p className="text-xs text-muted-foreground">Restrict playback to specific countries</p>
-            </div>
-            <Switch
-              checked={security.geoRestriction}
-              onCheckedChange={(v) => setSecurity({ ...security, geoRestriction: v })}
-            />
-          </div>
+          {!isUnsupported("geoRestriction") && (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Geo Restriction <HelpTip text={backendInfo.helpTexts.geoRestriction} link={backendInfo.helpTexts.geoRestrictionLink} linkLabel={backendInfo.helpTexts.geoRestrictionLinkLabel} /></Label>
+                  <p className="text-xs text-muted-foreground">Restrict playback to specific countries</p>
+                </div>
+                <Switch
+                  checked={security.geoRestriction}
+                  onCheckedChange={(v) => setSecurity({ ...security, geoRestriction: v })}
+                />
+              </div>
 
-          {security.geoRestriction && (
-            <div className="space-y-2">
-              <Label htmlFor="allowed-countries">Allowed Countries (ISO codes, comma separated)</Label>
-              <Input
-                id="allowed-countries"
-                value={security.allowedCountries}
-                onChange={(e) => setSecurity({ ...security, allowedCountries: e.target.value })}
-                className="bg-secondary border-0"
-                placeholder="IN, US, GB, CA"
-              />
-            </div>
+              {security.geoRestriction && (
+                <div className="space-y-2">
+                  <Label htmlFor="allowed-countries">Allowed Countries (ISO codes, comma separated)</Label>
+                  <Input
+                    id="allowed-countries"
+                    value={security.allowedCountries}
+                    onChange={(e) => setSecurity({ ...security, allowedCountries: e.target.value })}
+                    className="bg-secondary border-0"
+                    placeholder="IN, US, GB, CA"
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -678,7 +684,7 @@ export default function StreamingSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rec-path">Storage Path <HelpTip text="Server directory where recordings are saved. This is a path ON THE NIMBLE SERVER, not your local machine. Ensure it exists and Nimble has write permission: 'mkdir -p /recordings && chown nimble:nimble /recordings'." /></Label>
+                  <Label htmlFor="rec-path">Storage Path <HelpTip text={backendInfo.helpTexts.storagePath} /></Label>
                   <Input
                     id="rec-path"
                     value={recording.storagePath}

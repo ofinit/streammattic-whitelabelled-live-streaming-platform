@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use `lib/streaming/index.ts` and the provider abstraction instead.
+ * This file contains legacy mock data and will be removed in a future cleanup.
+ * New code should import from `@/lib/streaming` which supports all backends
+ * (Nimble, SRS, Nginx-RTMP, MediaMTX).
+ */
 // Mock Nimble Streamer Service for frontend simulation
 // In production, this would call the actual NestJS backend API
 

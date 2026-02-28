@@ -8,10 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Copy, Check, Eye, EyeOff, RefreshCw, Shield, AlertTriangle } from "lucide-react"
-import type { NimbleStream } from "@/lib/types"
+import type { Stream } from "@/lib/streaming/types"
+import { BACKEND_INFO, type StreamingBackendType } from "@/lib/streaming/types"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json()).catch(() => null)
 
 interface RtmpInfoPanelProps {
-  stream: NimbleStream | null
+  stream: Stream | null
   eventId: string
   onRegenerateKey?: () => void
 }
@@ -20,15 +24,24 @@ export function RtmpInfoPanel({ stream, eventId, onRegenerateKey }: RtmpInfoPane
   const [showStreamKey, setShowStreamKey] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
+  // Get active backend info for dynamic fallback URLs
+  const { data: backendData } = useSWR("/api/streaming/backend-info", fetcher)
+  const backendType = (backendData?.type as StreamingBackendType) ?? "nimble"
+  const backendInfo = BACKEND_INFO[backendType]
+
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text)
     setCopiedField(field)
     setTimeout(() => setCopiedField(null), 2000)
   }
 
-  const rtmpUrl = stream?.rtmpUrl || `rtmp://stream.streammattic.com/live/event-${eventId}`
+  // Fallback URLs use env var names as hints rather than hardcoded Nimble URLs
+  const fallbackRtmpUrl = `rtmp://{your-server}:${backendInfo.defaultPorts.rtmp}/live/event-${eventId}`
+  const fallbackHlsUrl = `http://{your-server}:${backendInfo.defaultPorts.http}/live/event-${eventId}/playlist.m3u8`
+
+  const rtmpUrl = stream?.rtmpUrl || fallbackRtmpUrl
   const streamKey = stream?.streamKey || "Stream key will be generated when event is created"
-  const hlsPlayback = stream?.hlsPlaybackUrl || `https://cdn.streammattic.com/event-${eventId}/live/playlist.m3u8`
+  const hlsPlayback = stream?.hlsPlaybackUrl || fallbackHlsUrl
 
   return (
     <Card>

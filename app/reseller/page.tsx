@@ -115,7 +115,7 @@ export default function ResellerDashboard() {
             <AlertTitle>Low Wallet Balance Warning</AlertTitle>
             <AlertDescription>
               Your wallet balance is ₹{walletBalance.toLocaleString()}. Recommended minimum: ₹5,000 for smooth
-              operations. Low balance may block sales from your users.
+              operations. Low balance may block sales.
               <Button variant="outline" size="sm" className="ml-4 bg-transparent">
                 Add Funds Now
               </Button>

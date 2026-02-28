@@ -30,9 +30,17 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
   const [copied, setCopied] = useState<string | null>(null)
 
   const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${reseller.id}`
+
+  // TODO: In production, fetch these from PlatformSettings via API
+  const VERCEL_A_RECORD_IP = "76.76.21.21"
+  const cnameTarget = "cname.vercel-dns.com" // Will come from admin Platform Domain settings
+
+  // Root/apex domains can't use CNAME, so we need an A record + CNAME for www
+  const displayDomain = domain || "yourbrand.com"
   const dnsRecords = [
-    { type: "CNAME", name: domain || "live.yourbrand.com", value: "proxy.streammattic.com", purpose: "Routes traffic to StreamMattic" },
-    { type: "TXT", name: `_verify.${domain || "live.yourbrand.com"}`, value: verificationToken, purpose: "Verifies domain ownership" },
+    { type: "A", name: displayDomain, value: VERCEL_A_RECORD_IP, purpose: "Points root domain to platform" },
+    { type: "CNAME", name: `www.${displayDomain}`, value: cnameTarget, purpose: "Points www to platform" },
+    { type: "TXT", name: `_verify.${displayDomain}`, value: verificationToken, purpose: "Verifies domain ownership" },
   ]
 
   const handleSave = async () => {
@@ -118,7 +126,7 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
             <div className="flex gap-2">
               <Input
                 id="domain-input"
-                placeholder="e.g. live.clientbrand.com"
+                placeholder="e.g. clientbrand.com"
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
               />
@@ -127,7 +135,7 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              The reseller{"'"}s white-label platform will be accessible at this domain.
+              Enter the root domain (e.g. clientbrand.com). Both the root domain and www will be configured.
             </p>
           </div>
 

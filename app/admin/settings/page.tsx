@@ -39,10 +39,21 @@ export default function AdminSettingsPage() {
     allowRegistration: true,
     requireEmailVerification: true,
   })
+  const [domainSettings, setDomainSettings] = useState({
+    platformDomain: "",
+    resellerCnameTarget: "cname.vercel-dns.com",
+  })
+  const [domainSaved, setDomainSaved] = useState(false)
+
+  const handleDomainSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setDomainSaved(true)
+    setTimeout(() => setDomainSaved(false), 3000)
+  }
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Updating profile:", profileData)
+    // In production, this would call the profile update API
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -250,6 +261,65 @@ export default function AdminSettingsPage() {
                 }
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Platform Domain */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Platform Domain</CardTitle>
+                <CardDescription>Set your primary platform domain. Reseller DNS records will reference this.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleDomainSave} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="platformDomain">Primary Platform Domain</Label>
+                <Input
+                  id="platformDomain"
+                  placeholder="e.g. myplatform.io"
+                  value={domainSettings.platformDomain}
+                  onChange={(e) => setDomainSettings({ ...domainSettings, platformDomain: e.target.value })}
+                  className="bg-secondary border-0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The main domain your admin panel and platform runs on.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnameTarget">Reseller CNAME Target</Label>
+                <Input
+                  id="cnameTarget"
+                  placeholder="cname.vercel-dns.com"
+                  value={domainSettings.resellerCnameTarget}
+                  onChange={(e) => setDomainSettings({ ...domainSettings, resellerCnameTarget: e.target.value })}
+                  className="bg-secondary border-0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {"Resellers' www CNAME records will point here. Default: cname.vercel-dns.com (Vercel). Change only if using a custom proxy or CDN."}
+                </p>
+              </div>
+              <Separator />
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <p className="text-xs font-medium text-foreground">Reseller DNS Records Preview</p>
+                <p className="text-xs text-muted-foreground">
+                  When you configure a reseller domain (e.g. clientbrand.com), they will need:
+                </p>
+                <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
+                  <p>A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; 76.76.21.21</p>
+                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.resellerCnameTarget || "cname.vercel-dns.com"}</p>
+                  <p>TXT &nbsp;&nbsp;&nbsp; _verify.clientbrand.com &rarr; (auto-generated)</p>
+                </div>
+              </div>
+              {domainSaved && <p className="text-sm text-emerald-500">Platform domain settings saved!</p>}
+              <Button type="submit" disabled={!domainSettings.platformDomain.trim()}>Save Domain Settings</Button>
+            </form>
           </CardContent>
         </Card>
 

@@ -22,11 +22,6 @@ export function WalletCard({ summary, showTopUp = false, onTopUp }: WalletCardPr
         <div className="flex items-end justify-between">
           <div>
             <p className="text-3xl font-bold text-foreground">₹{(summary.balance / 100).toLocaleString("en-IN")}</p>
-            {summary.pendingAmount > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                +₹{(summary.pendingAmount / 100).toLocaleString("en-IN")} pending
-              </p>
-            )}
           </div>
           {showTopUp && (
             <Button onClick={onTopUp} size="sm" className="gap-2">

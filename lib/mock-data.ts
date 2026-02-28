@@ -1151,7 +1151,7 @@ export const mockResellerWalletSummary: WalletSummary = {
   balance: 15000,
   totalCredits: 21500,
   totalDebits: 6500,
-  pendingAmount: 1500,
+  pendingAmount: 0,
   lastTransaction: mockTransactions[5],
 }
 

@@ -268,6 +268,8 @@ export interface PlatformSettings {
   maxViewersPerEvent: number
   maintenanceMode: boolean
   imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
+  platformDomain: string // admin's primary platform domain, e.g. "myplatform.io"
+  resellerCnameTarget: string // CNAME target for reseller www records, e.g. "cname.vercel-dns.com"
   createdAt: Date
   updatedAt: Date
   }

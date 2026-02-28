@@ -31,11 +31,15 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
 
   const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${reseller.id}`
 
+  // TODO: In production, fetch these from PlatformSettings via API
+  const VERCEL_A_RECORD_IP = "76.76.21.21"
+  const cnameTarget = "cname.vercel-dns.com" // Will come from admin Platform Domain settings
+
   // Root/apex domains can't use CNAME, so we need an A record + CNAME for www
   const displayDomain = domain || "yourbrand.com"
   const dnsRecords = [
-    { type: "A", name: displayDomain, value: "76.76.21.21", purpose: "Points root domain to StreamMattic" },
-    { type: "CNAME", name: `www.${displayDomain}`, value: "proxy.streammattic.com", purpose: "Points www to StreamMattic" },
+    { type: "A", name: displayDomain, value: VERCEL_A_RECORD_IP, purpose: "Points root domain to platform" },
+    { type: "CNAME", name: `www.${displayDomain}`, value: cnameTarget, purpose: "Points www to platform" },
     { type: "TXT", name: `_verify.${displayDomain}`, value: verificationToken, purpose: "Verifies domain ownership" },
   ]
 

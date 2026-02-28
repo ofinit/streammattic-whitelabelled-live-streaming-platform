@@ -117,7 +117,7 @@ export default function ResellerAnalyticsPage() {
           <CardContent>
             <ChartContainer
               config={{
-                events: { label: "Events", color: "hsl(var(--chart-1))" },
+                events: { label: "Events", color: "var(--chart-1)" },
               }}
               className="h-[300px]"
             >
@@ -145,7 +145,7 @@ export default function ResellerAnalyticsPage() {
           <CardContent>
             <ChartContainer
               config={{
-                streamHours: { label: "Stream Hours", color: "hsl(var(--chart-2))" },
+                streamHours: { label: "Stream Hours", color: "var(--chart-2)" },
               }}
               className="h-[300px]"
             >
@@ -169,7 +169,7 @@ export default function ResellerAnalyticsPage() {
           <CardContent>
             <ChartContainer
               config={{
-                count: { label: "Events", color: "hsl(var(--chart-3))" },
+                count: { label: "Events", color: "var(--chart-3)" },
               }}
               className="h-[250px]"
             >

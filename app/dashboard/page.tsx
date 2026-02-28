@@ -24,9 +24,7 @@ export default function UserDashboard() {
   const [topUpOpen, setTopUpOpen] = useState(false)
 
   const handleTopUp = async (amount: number, gateway: string) => {
-    console.log("[v0] Top-up initiated:", { amount, gateway })
     // In production, this would call the payment gateway API
-    // For now, just close the dialog
     setTopUpOpen(false)
   }
 
@@ -91,7 +89,7 @@ export default function UserDashboard() {
     {
       key: "amount",
       header: "Amount",
-      render: (item: Order) => <span className="font-mono text-foreground">₹{item.amount}</span>,
+      render: (item: Order) => <span className="font-mono text-foreground">₹{(item.totalPrice / 100).toLocaleString("en-IN")}</span>,
     },
     {
       key: "status",

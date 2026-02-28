@@ -264,14 +264,8 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
   useEffect(() => {
     fetch("/api/generate-image")
       .then((res) => res.json())
-      .then((data) => {
-        console.log("[v0] AI price fetched:", data)
-        setAiPrice(data.price ?? null)
-      })
-      .catch((err) => {
-        console.log("[v0] AI price fetch failed:", err)
-        setAiPrice(null)
-      })
+      .then((data) => setAiPrice(data.price ?? null))
+      .catch(() => setAiPrice(null))
   }, [])
 
   return (

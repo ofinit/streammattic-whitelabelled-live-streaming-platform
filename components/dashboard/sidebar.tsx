@@ -77,7 +77,6 @@ const resellerNav: NavItem[] = [
   { title: "Wallet", href: "/reseller/wallet", icon: Wallet },
   { title: "Analytics", href: "/reseller/analytics", icon: BarChart3 },
   { title: "Branding", href: "/reseller/branding", icon: Paintbrush },
-  { title: "Domains", href: "/reseller/domains", icon: Globe },
   { title: "Notifications", href: "/reseller/notifications", icon: Bell },
   { title: "Integrations", href: "/reseller/settings/integrations", icon: Plug },
   { title: "Settings", href: "/reseller/settings", icon: Settings },

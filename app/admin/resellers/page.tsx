@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { mockResellers } from "@/lib/mock-data"
-import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube } from "lucide-react"
 import type { Reseller } from "@/lib/types"
+import { ResellerDomainDialog } from "@/components/admin/reseller-domain-dialog"
+import { ResellerYouTubeDialog } from "@/components/admin/reseller-youtube-dialog"
 
 export default function AdminResellersPage() {
   const { impersonate } = useAuth()
@@ -27,6 +29,8 @@ export default function AdminResellersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingReseller, setEditingReseller] = useState<Reseller | null>(null)
+  const [domainReseller, setDomainReseller] = useState<Reseller | null>(null)
+  const [youtubeReseller, setYoutubeReseller] = useState<Reseller | null>(null)
 
   const filteredResellers = mockResellers.filter((reseller) => {
     const matchesSearch =
@@ -107,6 +111,15 @@ export default function AdminResellersPage() {
               Add Funds
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setDomainReseller(item)}>
+              <Globe className="mr-2 h-4 w-4" />
+              Manage Domain
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setYoutubeReseller(item)}>
+              <Youtube className="mr-2 h-4 w-4" />
+              YouTube API
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {item.status === "active" ? (
               <DropdownMenuItem className="text-destructive">
                 <Ban className="mr-2 h-4 w-4" />
@@ -181,6 +194,22 @@ export default function AdminResellersPage() {
           mode="edit"
           initialData={editingReseller}
           onSubmit={handleEdit}
+        />
+      )}
+
+      {domainReseller && (
+        <ResellerDomainDialog
+          open={!!domainReseller}
+          onOpenChange={(open) => !open && setDomainReseller(null)}
+          reseller={domainReseller}
+        />
+      )}
+
+      {youtubeReseller && (
+        <ResellerYouTubeDialog
+          open={!!youtubeReseller}
+          onOpenChange={(open) => !open && setYoutubeReseller(null)}
+          reseller={youtubeReseller}
         />
       )}
     </div>

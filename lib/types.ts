@@ -542,8 +542,50 @@ export interface Branding {
   refundPolicy?: string
   preferredGateway?: PaymentGateway
   hasGatewayConfig: boolean
+  // Landing page fields
+  services?: BrandingService[]
+  eventTypes?: BrandingEventType[]
+  stats?: BrandingStat[]
+  testimonials?: BrandingTestimonial[]
+  galleryImages?: BrandingGalleryImage[]
   createdAt: Date
   updatedAt: Date
+}
+
+export interface BrandingService {
+  id: string
+  title: string
+  description: string
+  icon: string // lucide icon name
+  enabled: boolean
+}
+
+export interface BrandingEventType {
+  id: string
+  title: string
+  image?: string
+  enabled: boolean
+}
+
+export interface BrandingStat {
+  id: string
+  value: string
+  label: string
+}
+
+export interface BrandingTestimonial {
+  id: string
+  quote: string
+  name: string
+  eventType: string
+  location: string
+}
+
+export interface BrandingGalleryImage {
+  id: string
+  src: string
+  title: string
+  category: string
 }
 
 // Email Template Type

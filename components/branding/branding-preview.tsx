@@ -1,21 +1,44 @@
 "use client"
 
-import { Monitor, Smartphone } from "lucide-react"
+import { Monitor, Smartphone, Camera, Film, Radio, Plane, Star, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import type { Branding } from "@/lib/types"
+import type { Branding, BrandingService } from "@/lib/types"
+import { mockBranding } from "@/lib/mock-data"
+import Link from "next/link"
+
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  Camera,
+  Film,
+  Radio,
+  Plane,
+}
 
 interface BrandingPreviewProps {
   branding: Branding
 }
 
 export function BrandingPreview({ branding }: BrandingPreviewProps) {
+  const services = (branding.services || mockBranding.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
+  const stats = branding.stats || mockBranding.stats || []
+  const testimonial = (branding.testimonials || mockBranding.testimonials || [])[0]
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Live Preview</CardTitle>
-        <CardDescription>See how your branding looks</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Live Preview</CardTitle>
+            <CardDescription>See how your landing page looks</CardDescription>
+          </div>
+          <Link href="/site" target="_blank">
+            <Button variant="outline" size="sm">
+              <ExternalLink className="mr-2 h-3.5 w-3.5" />
+              Open Full Page
+            </Button>
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="desktop">
@@ -45,37 +68,106 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
               </div>
 
               {/* Preview Content */}
-              <div className="bg-background p-6" style={{ minHeight: 300 }}>
+              <div className="bg-background overflow-y-auto" style={{ maxHeight: 500 }}>
                 {/* Header */}
-                <div
-                  className="flex items-center justify-between border-b pb-4 mb-6"
-                  style={{ borderColor: branding.themeColor + "33" }}
-                >
+                <div className="flex items-center justify-between border-b border-border/40 px-6 py-3">
                   <div className="flex items-center gap-3">
                     {branding.companyLogo ? (
-                      <img src={branding.companyLogo || "/placeholder.svg"} alt="Logo" className="h-8" />
+                      <img src={branding.companyLogo || "/placeholder.svg"} alt="Logo" className="h-6" />
                     ) : (
-                      <div className="font-bold text-xl" style={{ color: branding.themeColor }}>
+                      <div className="font-bold text-base" style={{ color: branding.themeColor }}>
                         {branding.brandName}
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">Events</span>
-                    <span className="text-sm text-muted-foreground">Pricing</span>
-                    <Button size="sm" style={{ backgroundColor: branding.themeColor }}>
+                    <span className="text-xs text-muted-foreground">Services</span>
+                    <span className="text-xs text-muted-foreground">Gallery</span>
+                    <span className="text-xs text-muted-foreground">About</span>
+                    <span className="rounded px-2.5 py-1 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                      Contact Us
+                    </span>
+                    <span className="rounded border border-border px-2.5 py-1 text-xs text-foreground">
                       Login
-                    </Button>
+                    </span>
                   </div>
                 </div>
 
                 {/* Hero */}
-                <div className="text-center py-8">
-                  <h1 className="text-3xl font-bold mb-2">{branding.metaTitle || branding.brandName}</h1>
-                  <p className="text-muted-foreground mb-6">
-                    {branding.metaDescription || "Professional live streaming for your events"}
+                <div className="px-6 py-12 text-center">
+                  <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    Photography & Videography
                   </p>
-                  <Button style={{ backgroundColor: branding.themeColor }}>Get Started</Button>
+                  <h1 className="text-2xl font-bold mb-2 text-foreground">{branding.metaTitle || branding.brandName}</h1>
+                  <p className="text-xs text-muted-foreground mb-6 max-w-sm mx-auto">
+                    {branding.metaDescription || "Professional photography, videography and live streaming services."}
+                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                      WhatsApp Us
+                    </span>
+                    <span className="rounded border border-border px-3 py-1.5 text-xs text-foreground">
+                      View Our Work
+                    </span>
+                  </div>
+                  {/* Stats */}
+                  {stats.length > 0 && (
+                    <div className="mt-8 flex items-center justify-center gap-10">
+                      {stats.map((stat) => (
+                        <div key={stat.id} className="text-center">
+                          <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                          <div className="text-[10px] text-muted-foreground">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Services Mini */}
+                {services.length > 0 && (
+                  <div className="px-6 pb-8">
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-widest text-center" style={{ color: branding.themeColor }}>
+                      What We Offer
+                    </p>
+                    <h2 className="text-base font-bold text-foreground text-center mb-4">Our Services</h2>
+                    <div className="grid grid-cols-4 gap-2">
+                      {services.map((service: BrandingService) => {
+                        const Icon = iconMap[service.icon] || Camera
+                        return (
+                          <div key={service.id} className="rounded-lg border border-border/50 bg-card p-3 text-center">
+                            <Icon className="mx-auto mb-1.5 h-4 w-4" style={{ color: branding.themeColor }} />
+                            <p className="text-[10px] font-medium text-foreground">{service.title}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Testimonial Mini */}
+                {testimonial && (
+                  <div className="px-6 pb-8">
+                    <div className="rounded-xl border border-border/50 bg-card/50 p-5 text-center">
+                      <div className="mb-2 flex items-center justify-center gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="h-3 w-3 fill-current" style={{ color: branding.themeColor }} />
+                        ))}
+                      </div>
+                      <p className="text-xs text-foreground leading-relaxed italic">
+                        &ldquo;{testimonial.quote.substring(0, 100)}...&rdquo;
+                      </p>
+                      <p className="mt-2 text-[10px] text-muted-foreground">
+                        -- {testimonial.name}, {testimonial.location}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Mini */}
+                <div className="border-t border-border/40 px-6 py-4 text-center">
+                  <p className="text-[10px] text-muted-foreground">
+                    &copy; {new Date().getFullYear()} {branding.brandName}. All rights reserved.
+                  </p>
                 </div>
               </div>
             </div>
@@ -90,27 +182,64 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                 </div>
 
                 {/* Preview Content */}
-                <div className="bg-background p-4" style={{ minHeight: 400 }}>
+                <div className="bg-background overflow-y-auto" style={{ maxHeight: 500 }}>
                   {/* Header */}
-                  <div
-                    className="flex items-center justify-between border-b pb-3 mb-4"
-                    style={{ borderColor: branding.themeColor + "33" }}
-                  >
-                    <div className="font-bold" style={{ color: branding.themeColor }}>
+                  <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+                    <div className="font-bold text-sm" style={{ color: branding.themeColor }}>
                       {branding.brandName}
                     </div>
-                    <Button size="sm" variant="ghost" style={{ color: branding.themeColor }}>
-                      Menu
-                    </Button>
+                    <span className="text-xs text-muted-foreground">Menu</span>
                   </div>
 
                   {/* Hero */}
-                  <div className="text-center py-6">
-                    <h1 className="text-xl font-bold mb-2">{branding.brandName}</h1>
-                    <p className="text-sm text-muted-foreground mb-4">Professional live streaming</p>
-                    <Button size="sm" style={{ backgroundColor: branding.themeColor }}>
-                      Get Started
-                    </Button>
+                  <div className="px-4 py-8 text-center">
+                    <p className="mb-2 text-[9px] font-medium uppercase tracking-widest text-muted-foreground">
+                      Photography & Videography
+                    </p>
+                    <h1 className="text-lg font-bold mb-2 text-foreground">{branding.brandName}</h1>
+                    <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">
+                      {branding.metaDescription || "Professional photography and live streaming services."}
+                    </p>
+                    <span className="inline-block rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                      Contact Us
+                    </span>
+
+                    {/* Stats */}
+                    {stats.length > 0 && (
+                      <div className="mt-6 flex items-center justify-center gap-6">
+                        {stats.slice(0, 3).map((stat) => (
+                          <div key={stat.id} className="text-center">
+                            <div className="text-base font-bold text-foreground">{stat.value}</div>
+                            <div className="text-[9px] text-muted-foreground">{stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Services Mini */}
+                  {services.length > 0 && (
+                    <div className="px-4 pb-6">
+                      <h2 className="text-xs font-bold text-foreground text-center mb-3">Our Services</h2>
+                      <div className="grid grid-cols-2 gap-2">
+                        {services.slice(0, 4).map((service: BrandingService) => {
+                          const Icon = iconMap[service.icon] || Camera
+                          return (
+                            <div key={service.id} className="rounded-lg border border-border/50 bg-card p-2.5 text-center">
+                              <Icon className="mx-auto mb-1 h-3.5 w-3.5" style={{ color: branding.themeColor }} />
+                              <p className="text-[9px] font-medium text-foreground">{service.title}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Mini */}
+                  <div className="border-t border-border/40 px-4 py-3 text-center">
+                    <p className="text-[9px] text-muted-foreground">
+                      &copy; {new Date().getFullYear()} {branding.brandName}
+                    </p>
                   </div>
                 </div>
 

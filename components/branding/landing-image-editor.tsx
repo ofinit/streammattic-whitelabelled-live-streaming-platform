@@ -264,18 +264,38 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
   useEffect(() => {
     fetch("/api/generate-image")
       .then((res) => res.json())
-      .then((data) => setAiPrice(data.price ?? null))
-      .catch(() => setAiPrice(null))
+      .then((data) => {
+        console.log("[v0] AI price fetched:", data)
+        setAiPrice(data.price ?? null)
+      })
+      .catch((err) => {
+        console.log("[v0] AI price fetch failed:", err)
+        setAiPrice(null)
+      })
   }, [])
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Landing Page Images</CardTitle>
-        <CardDescription>
-          Upload your own images or generate with AI. Uploads are free. AI generation costs{" "}
-          {aiPrice !== null ? `${(aiPrice / 100).toFixed(0)} INR` : "..."} per image from your wallet.
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>Landing Page Images</CardTitle>
+            <CardDescription className="mt-1">
+              Upload your own images for free, or generate with AI from your wallet balance.
+            </CardDescription>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-card px-3 py-1.5">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">{(walletBalance / 100).toFixed(0)} INR</span>
+            </div>
+            {aiPrice !== null && (
+              <span className="text-xs text-muted-foreground">
+                AI generation: {(aiPrice / 100).toFixed(0)} INR / image
+              </span>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-8">
         {/* Hero & About */}

@@ -1124,13 +1124,10 @@ export const mockAdminStats: AdminStats = {
 
 export const mockResellerStats: ResellerStats = {
   walletBalance: 15000,
-  totalUsers: 45,
-  activeUsers: 38,
   totalEvents: 234,
   activeEvents: 5,
   pendingOrders: 3,
   monthlyRevenue: 28500,
-  userGrowth: 12.8,
 }
 
 export const mockUserStats: UserStats = {

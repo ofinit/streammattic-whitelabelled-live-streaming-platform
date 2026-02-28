@@ -91,8 +91,6 @@ export async function getResellerWithStats(resellerId: string) {
   const rows = await sql`
     SELECT
       u.*,
-      (SELECT COUNT(*)::int FROM users WHERE parent_reseller_id = u.id AND role = 'user') AS total_users,
-      (SELECT COUNT(*)::int FROM users WHERE parent_reseller_id = u.id AND role = 'user' AND status = 'active') AS active_users,
       (SELECT COUNT(*)::int FROM events WHERE reseller_id = u.id) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE reseller_id = u.id AND status = 'live') AS live_events,
       (SELECT COALESCE(w.balance, 0)::numeric FROM wallets w WHERE w.user_id = u.id) AS wallet_balance
@@ -388,8 +386,6 @@ export async function getResellerDashboardStats(resellerId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM users WHERE parent_reseller_id = ${resellerId} AND role = 'user') AS total_users,
-      (SELECT COUNT(*)::int FROM users WHERE parent_reseller_id = ${resellerId} AND role = 'user' AND status = 'active') AS active_users,
       (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId}) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId} AND status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId} AND status = 'scheduled') AS scheduled_events,

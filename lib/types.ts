@@ -305,13 +305,10 @@ export interface AdminStats {
 
 export interface ResellerStats {
   walletBalance: number
-  totalUsers: number
-  activeUsers: number
   totalEvents: number
   activeEvents: number
   pendingOrders: number
   monthlyRevenue: number
-  userGrowth: number
 }
 
 export interface UserStats {

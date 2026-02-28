@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
@@ -31,7 +31,6 @@ import {
   Video,
   Calendar,
   CheckCircle,
-  Users,
   Eye,
   Clock,
   Plus,
@@ -75,14 +74,6 @@ export default function ResellerEventsPage() {
   const completedEvents = events.filter((e: Record<string, unknown>) => e.status === "completed")
 
   const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.currentViewers) || 0), 0)
-
-  const getUserInitials = (name: string) => {
-    return (name || "U")
-      .split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-  }
 
   const handleCreateEvent = () => {
     setEditingEvent(undefined)
@@ -163,18 +154,6 @@ export default function ResellerEventsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                {getUserInitials(event.userName as string || "User")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-right">
-              <p className="text-sm font-medium">{event.userName as string || "User"}</p>
-              <p className="text-xs text-muted-foreground">User</p>
-            </div>
-          </div>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -213,7 +192,7 @@ export default function ResellerEventsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Events Management</h1>
-          <p className="text-muted-foreground">Create and manage events for your users</p>
+          <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
         <Button onClick={handleCreateEvent}>
           <Plus className="h-4 w-4 mr-2" />
@@ -267,7 +246,7 @@ export default function ResellerEventsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Events</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Video className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalCount}</div>
@@ -282,7 +261,7 @@ export default function ResellerEventsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search events or users..."
+            placeholder="Search events..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"

@@ -228,7 +228,7 @@ export default function ResellerCalendarPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((stats.completed / stats.total) * 100)}% of total
+              {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% of total
             </p>
           </CardContent>
         </Card>

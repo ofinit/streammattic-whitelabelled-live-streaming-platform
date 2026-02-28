@@ -30,7 +30,6 @@ export default function ResellerSettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [notifications, setNotifications] = useState({
     email: true,
-    newUser: true,
     lowBalance: true,
     eventReminders: true,
   })
@@ -224,17 +223,6 @@ export default function ResellerSettingsPage() {
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">New User Alerts</p>
-                <p className="text-sm text-muted-foreground">Get notified when new users sign up</p>
-              </div>
-              <Switch
-                checked={notifications.newUser}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, newUser: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="font-medium text-foreground">Low Balance Warnings</p>
                 <p className="text-sm text-muted-foreground">Alert when your wallet balance is low</p>
               </div>
@@ -247,7 +235,7 @@ export default function ResellerSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">Event Reminders</p>
-                <p className="text-sm text-muted-foreground">Get notified before your users events start</p>
+                <p className="text-sm text-muted-foreground">Get notified before your events start</p>
               </div>
               <Switch
                 checked={notifications.eventReminders}

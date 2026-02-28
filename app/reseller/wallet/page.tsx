@@ -37,7 +37,7 @@ export default function ResellerWalletPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-emerald-500">+₹12,500</p>
-            <p className="text-sm text-muted-foreground">From 8 orders</p>
+            <p className="text-sm text-muted-foreground">Total credits</p>
           </CardContent>
         </Card>
         <Card>
@@ -102,8 +102,8 @@ export default function ResellerWalletPage() {
           <div>
             <p className="font-medium text-foreground">Understanding Cascade Debits</p>
             <p className="text-sm text-muted-foreground mt-1">
-              When your users purchase packages, your wallet is automatically debited for the cost price. The difference
-              between what the user pays and your cost is your profit margin.
+              When events are created or streaming services are used, your wallet is automatically debited for the
+              platform cost. Top up your wallet regularly to ensure uninterrupted event creation.
             </p>
           </div>
         </CardContent>

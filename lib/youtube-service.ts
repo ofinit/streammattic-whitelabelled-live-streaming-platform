@@ -2,9 +2,9 @@ import type { YouTubeStreamHealth } from "./types"
 import { encrypt, decrypt } from "./encryption"
 import { getDb, toCamel } from "./db"
 
-const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
-const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
-const GOOGLE_OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
+const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3" as const
+const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token" as const
+const GOOGLE_OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke" as const
 
 const YOUTUBE_SCOPES = [
   "https://www.googleapis.com/auth/youtube.force-ssl",
@@ -453,7 +453,7 @@ export async function waitForStreamReady(
   return false
 }
 
-// ──────────────────────────────────────
+// ──────────────────────────────────���───
 // Database helpers for channel management
 // ──────────────────────────────────────
 

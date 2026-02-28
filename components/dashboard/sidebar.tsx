@@ -29,6 +29,7 @@ import {
   Mail,
   Server,
   Youtube,
+  Plug,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react"
@@ -65,6 +66,7 @@ const adminNav: NavItem[] = [
   { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { title: "Payment Gateways", href: "/admin/payments", icon: CreditCard },
   { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },
+  { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 

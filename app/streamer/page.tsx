@@ -105,9 +105,8 @@ export default function StreamerDashboard() {
     },
   ]
 
-  const packageProgress = stats.packageName
-    ? ((stats.totalEvents - stats.eventsRemaining) / stats.totalEvents) * 100
-    : 0
+  const totalCredits = Object.values(stats.streamTypeCredits).reduce((sum, c) => sum + c, 0)
+  const hasCredits = totalCredits > 0
 
   return (
     <div className="min-h-screen">
@@ -124,44 +123,42 @@ export default function StreamerDashboard() {
 
         {/* Package Status & Quick Actions */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Current Package */}
+          {/* Stream Credits */}
           <Card className="border-border bg-card lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
-                Current Package
+                Stream Credits
               </CardTitle>
               <CardDescription>
-                {stats.packageName
-                  ? `Your ${stats.packageName} package expires on ${stats.packageExpiry?.toLocaleDateString()}`
-                  : "No active package"}
+                {hasCredits
+                  ? `You have ${totalCredits} credits remaining across stream types`
+                  : "No credits purchased yet"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {stats.packageName ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Events Used</span>
-                    <span className="text-sm font-medium text-foreground">
-                      {stats.totalEvents - stats.eventsRemaining} / {stats.totalEvents}
-                    </span>
-                  </div>
-                  <Progress value={packageProgress} className="h-2" />
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{stats.eventsRemaining} events remaining</span>
+              {hasCredits ? (
+                <div className="space-y-3">
+                  {Object.entries(stats.streamTypeCredits).map(([key, count]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground capitalize">{key.replace("_", " ")}</span>
+                      <span className="text-sm font-medium text-foreground">{count} credits</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-end pt-2">
                     <Button size="sm" variant="outline" className="border-border bg-transparent" asChild>
-                      <Link href="/streamer/packages">Upgrade Package</Link>
+                      <Link href="/streamer/packages">Buy More Credits</Link>
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Package className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <p className="mb-4 text-muted-foreground">No active package</p>
+                  <p className="mb-4 text-muted-foreground">No credits purchased yet</p>
                   <Button asChild>
                     <Link href="/streamer/packages">
                       <Plus className="mr-2 h-4 w-4" />
-                      Purchase Package
+                      Buy Credits
                     </Link>
                   </Button>
                 </div>

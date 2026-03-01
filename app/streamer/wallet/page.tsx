@@ -7,7 +7,7 @@ import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { mockTransactions, mockStreamerWalletSummary } from "@/lib/mock-data"
-import { Package, Calendar, AlertCircle } from "lucide-react"
+import { CreditCard, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function StreamerWalletPage() {
@@ -44,22 +44,22 @@ export default function StreamerWalletPage() {
         <WalletCard summary={mockStreamerWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Package</CardTitle>
-            <Package className="h-5 w-5 text-primary" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Credits</CardTitle>
+            <CreditCard className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold">Professional</p>
-            <p className="text-sm text-muted-foreground">12 events remaining</p>
+            <p className="text-xl font-bold">18</p>
+            <p className="text-sm text-muted-foreground">Across all stream types</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Package Expires</CardTitle>
-            <Calendar className="h-5 w-5 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Purchases</CardTitle>
+            <CreditCard className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold">Feb 15, 2025</p>
-            <p className="text-sm text-muted-foreground">76 days remaining</p>
+            <p className="text-xl font-bold">3</p>
+            <p className="text-sm text-muted-foreground">In the last 30 days</p>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +88,7 @@ export default function StreamerWalletPage() {
               <CardTitle>Purchases</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={streamerTransactions.filter((t) => t.category === "package_purchase")} />
+              <TransactionList transactions={streamerTransactions.filter((t) => t.category === "credit_purchase" || t.category === "service_charge")} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
-import { CascadeFlow } from "@/components/wallet/cascade-flow"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
 import { mockStudios, mockStreamers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
@@ -76,7 +75,7 @@ export default function AdminWalletsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Wallet Management</h1>
-        <p className="text-muted-foreground">Manage platform wallets and view cascade transactions</p>
+        <p className="text-muted-foreground">Manage platform wallets and transactions</p>
       </div>
 
       {/* Summary Cards */}
@@ -118,7 +117,6 @@ export default function AdminWalletsPage() {
         <TabsList>
           <TabsTrigger value="wallets">All Wallets</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="cascade">Cascade Flow</TabsTrigger>
         </TabsList>
 
         <TabsContent value="wallets" className="space-y-4">
@@ -211,45 +209,7 @@ export default function AdminWalletsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="cascade" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <CascadeFlow
-              packageName="Professional Package"
-              streamerPrice={249900}
-              studioCost={100000}
-              userName="Alice Johnson"
-              studioName="LiveStream Pro"
-            />
-            <Card>
-              <CardHeader>
-                <CardTitle>How Cascade Works</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-muted-foreground">
-                <p>When a streamer purchases a package, money flows through the hierarchy:</p>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>
-                    <strong>Streamer pays full price</strong> - Debited from streamer wallet
-                  </li>
-                  <li>
-                    <strong>Studio pays cost</strong> - Debited from studio wallet (keeps margin)
-                  </li>
-                  <li>
-                    <strong>Admin pays base cost</strong> - Debited from admin wallet (keeps margin)
-                  </li>
-                </ol>
-                <p>Each level only pays what they owe to their parent, keeping the difference as profit.</p>
-                <div className="rounded-lg bg-muted/50 p-4 mt-4">
-                  <p className="font-medium text-foreground">Example:</p>
-                  <ul className="mt-2 space-y-1">
-                    <li>Streamer Price: ₹2,499</li>
-                    <li>Studio Cost: ₹1,000 → Studio Profit: ₹1,499</li>
-                    <li>Admin Cost: ₹600 → Admin Profit: ₹400</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+
       </Tabs>
 
       {/* Dialogs */}

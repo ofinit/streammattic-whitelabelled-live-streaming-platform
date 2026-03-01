@@ -11,7 +11,6 @@ interface SimulcastSelectorProps {
   value: ("youtube" | "facebook" | "custom_rtmp")[]
   onChange: (value: ("youtube" | "facebook" | "custom_rtmp")[]) => void
   showPricing?: boolean
-  userLevel?: "admin" | "studio" | "streamer"
 }
 
 const simulcastOptions: {
@@ -44,7 +43,7 @@ const simulcastOptions: {
   },
 ]
 
-export function SimulcastSelector({ value, onChange, showPricing = true, userLevel = "streamer" }: SimulcastSelectorProps) {
+export function SimulcastSelector({ value, onChange, showPricing = true }: SimulcastSelectorProps) {
   const toggleDestination = (id: "youtube" | "facebook" | "custom_rtmp") => {
     if (value.includes(id)) {
       onChange(value.filter((v) => v !== id))
@@ -67,7 +66,7 @@ export function SimulcastSelector({ value, onChange, showPricing = true, userLev
         {simulcastOptions.map((option) => {
           const Icon = option.icon
           const isSelected = value.includes(option.id)
-          const price = getSimulcastPrice(option.id === "custom_rtmp" ? "custom_rtmp" : option.id, userLevel)
+          const price = getSimulcastPrice(option.id)
 
           return (
             <Card
@@ -89,7 +88,7 @@ export function SimulcastSelector({ value, onChange, showPricing = true, userLev
                       </div>
                       <div className="flex items-center gap-3">
                         {showPricing && (
-                          <span className="text-sm font-medium text-primary">+{formatCurrency(price)}</span>
+                          <span className="text-sm font-medium text-primary">+{formatCurrency(price / 100)}</span>
                         )}
                         <Switch
                           id={option.id}

@@ -107,8 +107,8 @@ export default function StreamerAnalyticsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{mockStreamerStats.walletBalance.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Package: {mockStreamerStats.packageName}</p>
+            <div className="text-2xl font-bold">{"₹"}{mockStreamerStats.walletBalance.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">{Object.values(mockStreamerStats.streamTypeCredits).reduce((s, c) => s + c, 0)} credits remaining</p>
           </CardContent>
         </Card>
       </div>

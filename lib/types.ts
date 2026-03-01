@@ -892,7 +892,7 @@ export interface RefundRequest {
   // Reference tracking
   eventId?: string
   orderId?: string
-  packageId?: string
+  creditPurchaseId?: string
 
   // Financial details
   originalAmount: number

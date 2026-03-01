@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Package } from "@/lib/types"
+import type { StreamTypeKey } from "@/lib/types"
 import {
   Dialog,
   DialogContent,
@@ -16,36 +16,46 @@ import { Separator } from "@/components/ui/separator"
 import { Minus, Plus, Wallet, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+const streamTypeLabels: Record<StreamTypeKey, string> = {
+  rtmp: "RTMP Server",
+  youtube_api: "YouTube API",
+  youtube_embed: "YouTube Embed",
+  third_party: "Third Party",
+}
+
+interface CreditPurchaseItem {
+  id: string
+  streamType: StreamTypeKey
+  pricePerCredit: number
+  minQty: number
+  maxQty: number
+}
+
 interface PurchaseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  pkg: Package | null
-  effectivePrice?: number
+  item: CreditPurchaseItem | null
   walletBalance: number
-  onConfirm: (packageId: string, quantity: number) => void
+  onConfirm: (streamType: StreamTypeKey, quantity: number) => void
 }
 
 export function PurchaseDialog({
   open,
   onOpenChange,
-  pkg,
-  effectivePrice,
+  item,
   walletBalance,
   onConfirm,
 }: PurchaseDialogProps) {
   const [quantity, setQuantity] = useState(1)
 
-  if (!pkg) return null
+  if (!item) return null
 
-  const price = effectivePrice ?? pkg.price
-  const total = price * quantity
+  const total = item.pricePerCredit * quantity
   const hasInsufficientBalance = walletBalance < total
-  const minQty = pkg.minQty || 1
-  const maxQty = pkg.maxQty || 100
 
   const handleConfirm = () => {
     if (!hasInsufficientBalance) {
-      onConfirm(pkg.id, quantity)
+      onConfirm(item.streamType, quantity)
       onOpenChange(false)
       setQuantity(1)
     }
@@ -55,22 +65,24 @@ export function PurchaseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Purchase {pkg.name}</DialogTitle>
+          <DialogTitle>Purchase {streamTypeLabels[item.streamType]} Credits</DialogTitle>
           <DialogDescription>Select the quantity and confirm your purchase.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
-              <div className="font-medium">{pkg.name}</div>
-              <div className="text-sm text-muted-foreground">₹{price.toLocaleString()} / unit</div>
+              <div className="font-medium">{streamTypeLabels[item.streamType]}</div>
+              <div className="text-sm text-muted-foreground">
+                {"₹"}{(item.pricePerCredit / 100).toFixed(2)} / credit
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => setQuantity(Math.max(minQty, quantity - 1))}
-                disabled={quantity <= minQty}
+                onClick={() => setQuantity(Math.max(item.minQty, quantity - 1))}
+                disabled={quantity <= item.minQty}
               >
                 <Minus className="h-4 w-4" />
               </Button>
@@ -79,17 +91,17 @@ export function PurchaseDialog({
                 value={quantity}
                 onChange={(e) => {
                   const val = Number(e.target.value)
-                  if (val >= minQty && val <= maxQty) setQuantity(val)
+                  if (val >= item.minQty && val <= item.maxQty) setQuantity(val)
                 }}
                 className="w-16 text-center"
-                min={minQty}
-                max={maxQty}
+                min={item.minQty}
+                max={item.maxQty}
               />
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => setQuantity(Math.min(maxQty, quantity + 1))}
-                disabled={quantity >= maxQty}
+                onClick={() => setQuantity(Math.min(item.maxQty, quantity + 1))}
+                disabled={quantity >= item.maxQty}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -101,16 +113,16 @@ export function PurchaseDialog({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Unit Price</span>
-              <span>₹{price.toLocaleString()}</span>
+              <span>{"₹"}{(item.pricePerCredit / 100).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Quantity</span>
-              <span>×{quantity}</span>
+              <span>x{quantity}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-semibold">
               <span>Total</span>
-              <span>₹{total.toLocaleString()}</span>
+              <span>{"₹"}{(total / 100).toLocaleString("en-IN")}</span>
             </div>
           </div>
 
@@ -119,15 +131,14 @@ export function PurchaseDialog({
               <Wallet className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Wallet Balance</span>
             </div>
-            <span className="font-medium">₹{walletBalance.toLocaleString()}</span>
+            <span className="font-medium">{"₹"}{(walletBalance / 100).toLocaleString("en-IN")}</span>
           </div>
 
           {hasInsufficientBalance && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Insufficient wallet balance. Please top up ₹{(total - walletBalance).toLocaleString()} to complete this
-                purchase.
+                Insufficient wallet balance. Please top up {"₹"}{((total - walletBalance) / 100).toLocaleString("en-IN")} to complete this purchase.
               </AlertDescription>
             </Alert>
           )}

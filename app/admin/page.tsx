@@ -47,9 +47,9 @@ export default function AdminDashboard() {
       render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} />,
     },
     {
-      key: "eventsRemaining",
-      header: "Events Left",
-      render: (item: Record<string, unknown>) => <span className="text-foreground">{item.eventsRemaining as number ?? 0}</span>,
+      key: "walletBalance",
+      header: "Balance",
+      render: (item: Record<string, unknown>) => <span className="text-foreground">{"₹"}{((item.walletBalance as number ?? 0) / 100).toLocaleString("en-IN")}</span>,
     },
   ]
 

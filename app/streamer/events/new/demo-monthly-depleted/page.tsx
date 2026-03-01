@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 
 export default function DemoMonthlyDepletedPage() {
   const router = useRouter()
-  const demoState = demoUserStates.monthlyDepleted
+  const demoState = demoUserStates.noCredits
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -78,23 +78,23 @@ export default function DemoMonthlyDepletedPage() {
           </AlertDescription>
         </Alert>
 
-        {/* Package Depleted Warning */}
+        {/* No Credits Warning */}
         <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Your {demoState.package?.name} has 0 events remaining</AlertDescription>
+          <AlertDescription>You have no stream credits remaining. Purchase credits or pay per event from your wallet.</AlertDescription>
         </Alert>
 
-        {/* Package Status */}
+        {/* Credits Status */}
         <div className="mb-6 rounded-lg border border-destructive/50 bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm font-medium text-foreground">{demoState.package?.name}</p>
-              <p className="text-sm text-destructive">0 of {demoState.inventory?.totalQty} events remaining</p>
+              <p className="text-sm font-medium text-foreground">Stream Credits</p>
+              <p className="text-sm text-destructive">0 credits across all stream types</p>
             </div>
             <div className="flex gap-2">
               <Button variant="default" size="sm">
                 <Package className="mr-2 h-4 w-4" />
-                Upgrade Package
+                Buy Credits
               </Button>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function DemoMonthlyDepletedPage() {
           <DemoStreamTypeSelector
             value={selectedType}
             onChange={setSelectedType}
-            availableEvents={demoState.inventory?.availableQty ?? null}
+            availableEvents={0}
           />
 
           {/* Action Buttons */}
@@ -133,7 +133,7 @@ export default function DemoMonthlyDepletedPage() {
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => router.push("/streamer/packages")}>
                 <Package className="mr-2 h-4 w-4" />
-                Upgrade Package
+                Buy Credits
               </Button>
               <Button disabled>Pay Per Event (Demo mode)</Button>
             </div>

@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 
 export default function DemoMonthlyActivePage() {
   const router = useRouter()
-  const demoState = demoUserStates.monthlyActive
+  const demoState = demoUserStates.withCredits
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -23,7 +23,7 @@ export default function DemoMonthlyActivePage() {
     { id: 4, name: "Review", icon: Check },
   ]
 
-  const usagePercentage = demoState.inventory ? (demoState.inventory.usedQty / demoState.inventory.totalQty) * 100 : 0
+  const totalCredits = Object.values(demoState.credits).reduce((s, c) => s + c, 0)
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,20 +80,27 @@ export default function DemoMonthlyActivePage() {
           </AlertDescription>
         </Alert>
 
-        {/* Package Status */}
+        {/* Credits Status */}
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm font-medium text-foreground">{demoState.package?.name}</p>
+              <p className="text-sm font-medium text-foreground">Stream Credits</p>
               <p className="text-sm text-muted-foreground">
-                {demoState.inventory?.availableQty} of {demoState.inventory?.totalQty} events remaining
+                {totalCredits} credits remaining across all stream types
               </p>
             </div>
             <Button variant="outline" size="sm">
-              View Package
+              View Pricing
             </Button>
           </div>
-          <Progress value={usagePercentage} className="h-2" />
+          <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+            {Object.entries(demoState.credits).map(([key, count]) => (
+              <div key={key} className="flex justify-between">
+                <span className="capitalize">{key.replace("_", " ")}</span>
+                <span className="font-medium text-foreground">{count}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -106,7 +113,7 @@ export default function DemoMonthlyActivePage() {
           <DemoStreamTypeSelector
             value={selectedType}
             onChange={setSelectedType}
-            availableEvents={demoState.inventory?.availableQty ?? null}
+            availableEvents={totalCredits}
           />
 
           {/* Action Buttons */}

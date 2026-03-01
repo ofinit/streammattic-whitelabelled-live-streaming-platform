@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import type { WalletTransaction } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, Package, Wand2 } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, CreditCard, Wand2, Globe, Server } from "lucide-react"
 
 interface TransactionListProps {
   transactions: WalletTransaction[]
@@ -14,27 +14,32 @@ interface TransactionListProps {
 }
 
 const categoryLabels: Record<string, string> = {
-  top_up: "Top Up",
-  package_purchase: "Package Purchase",
-  cascade_debit: "Platform Debit",
-  platform_debit: "Platform Debit",
+  top_up: "Wallet Recharge",
+  credit_purchase: "Credit Purchase",
+  service_charge: "Service Charge",
   order_refund: "Refund",
   adjustment: "Adjustment",
-  commission: "Commission",
-  ai_image_generation: "AI Image Generation",
+  manual_adjustment: "Manual Adjustment",
+  payment_recovery: "Payment Recovery",
+  compensation: "Compensation",
+  correction: "Correction",
   goodwill: "Goodwill Credit",
+  ai_image_generation: "AI Image Generation",
+  whitelabel_hosting: "Whitelabel & Hosting",
+  domain_registration: "Domain Registration",
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
   top_up: Wallet,
-  package_purchase: Package,
-  cascade_debit: ArrowUpRight,
-  platform_debit: ArrowUpRight,
+  credit_purchase: CreditCard,
+  service_charge: Server,
   order_refund: RefreshCw,
   adjustment: RefreshCw,
-  commission: ArrowDownLeft,
+  manual_adjustment: RefreshCw,
   ai_image_generation: Wand2,
-  goodwill: RefreshCw,
+  whitelabel_hosting: Globe,
+  domain_registration: Globe,
+  goodwill: ArrowDownLeft,
 }
 
 export function TransactionList({ transactions, showUser = false }: TransactionListProps) {

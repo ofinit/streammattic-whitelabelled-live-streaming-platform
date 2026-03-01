@@ -1,147 +1,480 @@
 "use client"
 
 import { useState } from "react"
-import { mockPackages } from "@/lib/mock-data"
-import type { Package, CustomPrice } from "@/lib/types"
-import { PackageCard } from "@/components/packages/package-card"
-import { PackageFormDialog } from "@/components/packages/package-form-dialog"
-import { PurchaseDialog } from "@/components/orders/purchase-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Users, Plus, Search } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import {
+  Video,
+  Youtube,
+  MonitorPlay,
+  Globe,
+  Package,
+  PackageIcon,
+  CheckCircle,
+  Clock,
+  Zap,
+  Sparkles,
+  Crown,
+  Star,
+  ArrowRight,
+  IndianRupee,
+} from "lucide-react"
+import { mockUserInventory } from "@/lib/mock-data"
+import type { EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
+import { EventPackPurchaseDialog } from "@/components/packages/event-pack-purchase-dialog"
 import { toast } from "sonner"
 
-export default function ResellerPackagesPage() {
-  const [packages, setPackages] = useState(mockPackages.filter((p) => p.isActive))
-  const [purchasePkg, setPurchasePkg] = useState<Package | null>(null)
-  const [showPackageForm, setShowPackageForm] = useState(false)
-  const [editingPackage, setEditingPackage] = useState<Package | null>(null)
-  const [search, setSearch] = useState("")
+// Stream types with reseller + user prices (from admin config -- in production fetched from API)
+const streamTypes = [
+  { key: "rtmp" as ValidityStreamKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video, userPrice: 1200, resellerPrice: 600, enabled: true },
+  { key: "youtube_api" as ValidityStreamKey, label: "YouTube API", description: "Direct broadcast via API", icon: Youtube, userPrice: 800, resellerPrice: 400, enabled: true, recommended: true },
+  { key: "youtube_embed" as ValidityStreamKey, label: "YouTube Embed", description: "Embed an existing stream", icon: MonitorPlay, userPrice: 400, resellerPrice: 200, enabled: true },
+  { key: "third_party" as ValidityStreamKey, label: "Third Party", description: "External embed URL", icon: Globe, userPrice: 300, resellerPrice: 150, enabled: false },
+]
 
+// Event packs (from admin config)
+const availableEventPacks: EventPack[] = [
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, resellerPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, resellerPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, resellerPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, resellerPrice: 100000, enabled: true, sortOrder: 4 },
+]
+
+// Validity tiers (from admin config)
+const validityTiers: ValidityTier[] = [
+  { days: 60, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 300, resellerSurcharge: 150 },
+    youtube_api: { userSurcharge: 200, resellerSurcharge: 100 },
+    youtube_embed: { userSurcharge: 100, resellerSurcharge: 50 },
+    third_party: { userSurcharge: 80, resellerSurcharge: 40 },
+  }},
+  { days: 90, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 700, resellerSurcharge: 350 },
+    youtube_api: { userSurcharge: 500, resellerSurcharge: 250 },
+    youtube_embed: { userSurcharge: 250, resellerSurcharge: 125 },
+    third_party: { userSurcharge: 200, resellerSurcharge: 100 },
+  }},
+  { days: 180, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 1200, resellerSurcharge: 600 },
+    youtube_api: { userSurcharge: 1000, resellerSurcharge: 500 },
+    youtube_embed: { userSurcharge: 500, resellerSurcharge: 250 },
+    third_party: { userSurcharge: 400, resellerSurcharge: 200 },
+  }},
+  { days: 365, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 2500, resellerSurcharge: 1250 },
+    youtube_api: { userSurcharge: 2000, resellerSurcharge: 1000 },
+    youtube_embed: { userSurcharge: 1000, resellerSurcharge: 500 },
+    third_party: { userSurcharge: 800, resellerSurcharge: 400 },
+  }},
+]
+
+const packIcons: Record<string, typeof Zap> = {
+  "Starter Pack": Zap,
+  "Growth Pack": Sparkles,
+  "Pro Pack": Crown,
+  "Enterprise Pack": Star,
+}
+
+export default function ResellerPackagesPage() {
+  const [inventory] = useState(mockUserInventory.filter((i) => i.userId === "reseller-1"))
+  const [purchasePack, setPurchasePack] = useState<EventPack | null>(null)
   const walletBalance = 15000
 
-  const filteredPackages = packages.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-
-  const getEffectivePrice = (pkg: Package) => {
-    return pkg.basePriceReseller
+  const handlePurchase = (_packId: string, _validityDays: number) => {
+    toast.success("Order placed. Pending admin approval.")
+    setPurchasePack(null)
   }
 
-  const handlePurchase = (packageId: string, quantity: number) => {
-    toast.success(`Order placed for ${quantity}x package. Pending admin approval.`)
-  }
-
-  const handleEdit = (pkg: Package) => {
-    setEditingPackage(pkg)
-    setShowPackageForm(true)
-  }
-
-  const handlePackageSubmit = (data: Partial<Package>) => {
-    if (editingPackage) {
-      setPackages((prev) => prev.map((p) => (p.id === editingPackage.id ? { ...p, ...data } : p)))
-      toast.success("Package updated successfully")
-    } else {
-      const newPkg: Package = {
-        id: `pkg-${Date.now()}`,
-        ...data,
-        price: data.basePriceUser || 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Package
-      setPackages((prev) => [...prev, newPkg])
-      toast.success("Package created successfully")
-    }
-    setEditingPackage(null)
-  }
+  const enabledPacks = availableEventPacks.filter((p) => p.enabled)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Packages</h1>
-          <p className="text-muted-foreground">Manage packages and set custom pricing for your users</p>
-        </div>
-        <div className="flex gap-2">
-
-          <Button onClick={() => setShowPackageForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Package
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Packages & Pricing</h1>
+        <p className="text-muted-foreground">Per-event stream pricing, prepaid bundles, and your inventory</p>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search packages..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
-      <Tabs defaultValue="packages">
+      <Tabs defaultValue="pricing">
         <TabsList>
-          <TabsTrigger value="packages">Available Packages ({packages.length})</TabsTrigger>
-
+          <TabsTrigger value="pricing">Stream Pricing</TabsTrigger>
+          <TabsTrigger value="packs">Event Packs</TabsTrigger>
+          <TabsTrigger value="inventory">My Inventory</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="packages" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPackages.map((pkg, i) => (
-              <PackageCard
-                key={pkg.id}
-                pkg={pkg}
-                effectivePrice={getEffectivePrice(pkg)}
-                isPopular={i === 1}
-                isReseller
-                onEdit={handleEdit}
-                onPurchase={setPurchasePkg}
-              />
-            ))}
+        {/* Tab 1: Per-Event Stream Pricing */}
+        <TabsContent value="pricing" className="mt-6 space-y-6">
+          {/* Info banner */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-primary shrink-0" />
+              <span>Every event includes <span className="font-medium text-foreground">30 days</span> of validity. Extended durations are available at an additional surcharge.</span>
+            </div>
           </div>
-          {filteredPackages.length === 0 && (
-            <div className="py-12 text-center text-muted-foreground">No packages found.</div>
+
+          {/* Stream type cards */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {streamTypes.filter((st) => st.enabled).map((st) => {
+              const Icon = st.icon
+              const margin = st.userPrice - st.resellerPrice
+              return (
+                <Card key={st.key} className="relative border-border bg-card">
+                  {st.recommended && (
+                    <div className="absolute -top-2.5 left-4">
+                      <Badge className="bg-primary text-primary-foreground text-[10px]">Recommended</Badge>
+                    </div>
+                  )}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-base">{st.label}</CardTitle>
+                        <CardDescription className="text-xs">{st.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Reseller & User pricing side by side */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg bg-secondary/50 p-3">
+                        <p className="text-[10px] text-muted-foreground mb-1">Your Cost</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-xl font-bold text-primary">{"₹"}{(st.resellerPrice / 100).toFixed(2)}</span>
+                          <span className="text-xs text-muted-foreground">/event</span>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-secondary/50 p-3">
+                        <p className="text-[10px] text-muted-foreground mb-1">User Pays</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-xl font-bold">{"₹"}{(st.userPrice / 100).toFixed(2)}</span>
+                          <span className="text-xs text-muted-foreground">/event</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <IndianRupee className="h-3 w-3 text-primary" />
+                      <span className="text-primary font-medium">{"₹"}{(margin / 100).toFixed(2)} margin per event</span>
+                    </div>
+
+                    {/* Validity options */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Validity Surcharges</p>
+                      <div className="rounded-md bg-secondary/50 px-3 py-2 flex items-center justify-between text-sm">
+                        <span>30 days</span>
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">Included</Badge>
+                      </div>
+                      {validityTiers.filter((t) => t.enabled).map((tier) => {
+                        const surcharge = tier.surcharges[st.key]
+                        return (
+                          <div key={tier.days} className="rounded-md bg-secondary/30 px-3 py-2 flex items-center justify-between text-sm">
+                            <span>{tier.days} days</span>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-primary">+{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}</span>
+                              <span className="text-muted-foreground">user: +{"₹"}{(surcharge.userSurcharge / 100).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* How it works */}
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">How Per-Event Pricing Works</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
+                  <div>
+                    <p className="text-sm font-medium">Choose Stream Type</p>
+                    <p className="text-xs text-muted-foreground">Select RTMP, YouTube API, YouTube Embed, or Third Party when creating an event</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
+                  <div>
+                    <p className="text-sm font-medium">Select Validity</p>
+                    <p className="text-xs text-muted-foreground">30 days is included free. Choose 60-365 days for a surcharge</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
+                  <div>
+                    <p className="text-sm font-medium">Pay Per Event</p>
+                    <p className="text-xs text-muted-foreground">Amount is deducted from your wallet at reseller rate. You earn the margin when your users create events.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Save with packs CTA */}
+          {enabledPacks.length > 0 && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-3">
+                  <Package className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Save with Event Packs</p>
+                    <p className="text-xs text-muted-foreground">Buy events in bulk at discounted reseller rates</p>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => {
+                  const tabTrigger = document.querySelector('[data-value="packs"]') as HTMLButtonElement | null
+                  tabTrigger?.click()
+                }}>
+                  View Packs
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
+        {/* Tab 2: Event Packs */}
+        <TabsContent value="packs" className="mt-6 space-y-6">
+          {/* Info banner */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Package className="h-4 w-4 text-primary shrink-0" />
+              <span>Prepaid event bundles at discounted reseller rates. Events from packs can be used with <span className="font-medium text-foreground">any stream type</span>.</span>
+            </div>
+          </div>
 
+          {enabledPacks.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 font-semibold">No event packs available</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Event packs are not currently available for purchase</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {enabledPacks.map((pack, index) => {
+                const Icon = packIcons[pack.name] || Zap
+                const resellerPerEvent = pack.resellerPrice / pack.eventCount
+                const userPerEvent = pack.userPrice / pack.eventCount
+                const isPopular = index === 1
+                // Compare against cheapest reseller per-event stream price
+                const cheapestStream = Math.min(...streamTypes.filter((s) => s.enabled).map((s) => s.resellerPrice))
+                const savingsPercent = cheapestStream > 0 ? Math.round((1 - resellerPerEvent / cheapestStream) * 100) : 0
+                const marginPerEvent = userPerEvent - resellerPerEvent
+
+                return (
+                  <Card key={pack.id} className={`relative flex flex-col border-border bg-card ${isPopular ? "border-primary shadow-md" : ""}`}>
+                    {isPopular && (
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-primary text-primary-foreground text-[10px]">Best Value</Badge>
+                      </div>
+                    )}
+                    <CardHeader className="text-center pb-2">
+                      <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <CardTitle className="text-base">{pack.name}</CardTitle>
+                      <CardDescription className="text-xs">{pack.eventCount} events</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 space-y-4">
+                      {/* Dual pricing */}
+                      <div className="text-center space-y-1">
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span className="text-2xl font-bold text-primary">{"₹"}{(pack.resellerPrice / 100).toFixed(0)}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Your cost: {"₹"}{(resellerPerEvent / 100).toFixed(2)}/event</p>
+                        <p className="text-[10px] text-muted-foreground">User price: {"₹"}{(pack.userPrice / 100).toFixed(0)} ({"₹"}{(userPerEvent / 100).toFixed(2)}/event)</p>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-1.5">
+                        {savingsPercent > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                            Save {savingsPercent}%
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                          {"₹"}{(marginPerEvent / 100).toFixed(2)} margin/event
+                        </Badge>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-1.5 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-primary" />
+                          <span>{pack.eventCount} events included</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-primary" />
+                          <span>Works with any stream type</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-primary" />
+                          <span>30 days default validity</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-primary" />
+                          <span>Extended validity available</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <div className="p-4 pt-0">
+                      <Button className="w-full" variant={isPopular ? "default" : "outline"} onClick={() => setPurchasePack(pack)}>
+                        Purchase
+                      </Button>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Validity surcharges reference */}
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm">Extended Validity Surcharges</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Additional charges for extended event validity. Green values are your cost, gray values are what users pay.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted-foreground text-xs">
+                      <th className="text-left py-2 pr-4 font-medium">Duration</th>
+                      {streamTypes.filter((s) => s.enabled).map((st) => (
+                        <th key={st.key} className="text-right py-2 px-2 font-medium">{st.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t border-border/50">
+                      <td className="py-2 pr-4 font-medium">30 days</td>
+                      {streamTypes.filter((s) => s.enabled).map((st) => (
+                        <td key={st.key} className="text-right py-2 px-2 text-primary text-xs">Included</td>
+                      ))}
+                    </tr>
+                    {validityTiers.filter((t) => t.enabled).map((tier) => (
+                      <tr key={tier.days} className="border-t border-border/50">
+                        <td className="py-2 pr-4 font-medium">{tier.days} days</td>
+                        {streamTypes.filter((s) => s.enabled).map((st) => {
+                          const surcharge = tier.surcharges[st.key]
+                          return (
+                            <td key={st.key} className="text-right py-2 px-2">
+                              <div className="text-xs text-primary">+{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}</div>
+                              <div className="text-[10px] text-muted-foreground">user: +{"₹"}{(surcharge.userSurcharge / 100).toFixed(2)}</div>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: My Inventory */}
+        <TabsContent value="inventory" className="mt-6">
+          {inventory.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <PackageIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 font-semibold">No events purchased yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Purchase per-event streams or an event pack to get started</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {inventory.map((inv) => {
+                const usage = (inv.usedQty / inv.totalQty) * 100
+                return (
+                  <Card key={inv.id} className="border-border bg-card">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <PackageIcon className="h-4 w-4" />
+                            {inv.package?.name}
+                          </CardTitle>
+                          <CardDescription className="text-xs">{inv.package?.description}</CardDescription>
+                        </div>
+                        <Badge variant={inv.availableQty > 0 ? "default" : "secondary"}>
+                          {inv.availableQty > 0 ? "Active" : "Depleted"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Usage</span>
+                          <span>
+                            {inv.usedQty} / {inv.totalQty} events
+                          </span>
+                        </div>
+                        <Progress value={usage} />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div className="rounded-md bg-secondary/50 p-2">
+                          <div className="font-semibold">{inv.totalQty}</div>
+                          <div className="text-[10px] text-muted-foreground">Total</div>
+                        </div>
+                        <div className="rounded-md bg-secondary/50 p-2">
+                          <div className="font-semibold text-primary">{inv.availableQty}</div>
+                          <div className="text-[10px] text-muted-foreground">Available</div>
+                        </div>
+                        <div className="rounded-md bg-secondary/50 p-2">
+                          <div className="font-semibold">{inv.usedQty}</div>
+                          <div className="text-[10px] text-muted-foreground">Used</div>
+                        </div>
+                      </div>
+
+                      {inv.package?.features && (
+                        <div className="space-y-1">
+                          {inv.package.features.slice(0, 3).map((feature, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CheckCircle className="h-3 w-3 text-primary" />
+                              {feature}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
-      <PurchaseDialog
-        open={!!purchasePkg}
-        onOpenChange={(open) => !open && setPurchasePkg(null)}
-        pkg={purchasePkg}
-        effectivePrice={purchasePkg ? getEffectivePrice(purchasePkg) : undefined}
+      {/* Purchase Dialog */}
+      <EventPackPurchaseDialog
+        open={!!purchasePack}
+        onOpenChange={(open) => !open && setPurchasePack(null)}
+        pack={purchasePack}
+        validityTiers={validityTiers}
+        streamTypes={streamTypes}
         walletBalance={walletBalance}
+        isReseller
         onConfirm={handlePurchase}
       />
-
-      <PackageFormDialog
-        open={showPackageForm}
-        onOpenChange={(open) => {
-          setShowPackageForm(open)
-          if (!open) setEditingPackage(null)
-        }}
-        pkg={editingPackage}
-        onSubmit={handlePackageSubmit}
-      />
-
-
     </div>
   )
 }

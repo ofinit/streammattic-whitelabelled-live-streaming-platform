@@ -24,6 +24,7 @@ interface StreamTypeInfo {
   label: string
   icon: React.ElementType
   userPrice: number
+  resellerPrice?: number
   enabled: boolean
 }
 
@@ -34,6 +35,7 @@ interface EventPackPurchaseDialogProps {
   validityTiers: ValidityTier[]
   streamTypes: StreamTypeInfo[]
   walletBalance: number
+  isReseller?: boolean
   onConfirm: (packId: string, validityDays: number) => void
 }
 
@@ -44,23 +46,25 @@ export function EventPackPurchaseDialog({
   validityTiers,
   streamTypes,
   walletBalance,
+  isReseller = false,
   onConfirm,
 }: EventPackPurchaseDialogProps) {
   const [selectedValidity, setSelectedValidity] = useState(30)
 
   if (!pack) return null
 
-  const packBasePrice = pack.userPrice
+  const packBasePrice = isReseller ? pack.resellerPrice : pack.userPrice
   const perEvent = packBasePrice / pack.eventCount
 
-  // Calculate surcharge based on selected validity (use highest stream type surcharge as a flat estimate for packs)
+  // Calculate surcharge based on selected validity (use average across enabled stream types for packs)
   const enabledStreamTypes = streamTypes.filter((s) => s.enabled)
   let validitySurchargePerEvent = 0
   if (selectedValidity > 30) {
     const tier = validityTiers.find((t) => t.days === selectedValidity)
     if (tier) {
-      // For packs, use the average surcharge across enabled stream types
-      const surcharges = enabledStreamTypes.map((st) => tier.surcharges[st.key].userSurcharge)
+      const surcharges = enabledStreamTypes.map((st) =>
+        isReseller ? tier.surcharges[st.key].resellerSurcharge : tier.surcharges[st.key].userSurcharge
+      )
       validitySurchargePerEvent = surcharges.length > 0
         ? Math.round(surcharges.reduce((sum, s) => sum + s, 0) / surcharges.length)
         : 0
@@ -136,7 +140,7 @@ export function EventPackPurchaseDialog({
               {/* Extended tiers */}
               {validityTiers.filter((t) => t.enabled).map((tier) => {
                 const avgSurcharge = enabledStreamTypes.length > 0
-                  ? enabledStreamTypes.reduce((sum, st) => sum + tier.surcharges[st.key].userSurcharge, 0) / enabledStreamTypes.length
+                  ? enabledStreamTypes.reduce((sum, st) => sum + (isReseller ? tier.surcharges[st.key].resellerSurcharge : tier.surcharges[st.key].userSurcharge), 0) / enabledStreamTypes.length
                   : 0
                 const tierTotalSurcharge = Math.round(avgSurcharge) * pack.eventCount
 

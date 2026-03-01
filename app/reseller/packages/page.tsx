@@ -80,6 +80,7 @@ const packIcons: Record<string, typeof Zap> = {
 }
 
 export default function ResellerPackagesPage() {
+  const [activeTab, setActiveTab] = useState("pricing")
   const [inventory] = useState(mockUserInventory.filter((i) => i.userId === "reseller-1"))
   const [purchasePack, setPurchasePack] = useState<EventPack | null>(null)
   const walletBalance = 15000
@@ -98,7 +99,7 @@ export default function ResellerPackagesPage() {
         <p className="text-muted-foreground">Per-event stream pricing, prepaid bundles, and your inventory</p>
       </div>
 
-      <Tabs defaultValue="pricing">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="pricing">Stream Pricing</TabsTrigger>
           <TabsTrigger value="packs">Event Packs</TabsTrigger>
@@ -230,10 +231,7 @@ export default function ResellerPackagesPage() {
                     <p className="text-xs text-muted-foreground">Buy events in bulk at discounted reseller rates</p>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => {
-                  const tabTrigger = document.querySelector('[data-value="packs"]') as HTMLButtonElement | null
-                  tabTrigger?.click()
-                }}>
+                <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => setActiveTab("packs")}>
                   View Packs
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>

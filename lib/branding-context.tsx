@@ -150,18 +150,18 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [branding])
 
-  // For demo purposes - allows switching reseller context
-  const setDemoStudio = (resellerId: string | null) => {
-    if (!resellerId) {
+  // For demo purposes - allows switching studio context
+  const setDemoStudio = (studioId: string | null) => {
+    if (!studioId) {
       setStudio(null)
       setBranding(defaultBranding)
       return
     }
 
-    const foundStudio = mockStudios.find((r) => r.id === resellerId)
+    const foundStudio = mockStudios.find((r) => r.id === studioId)
     if (foundStudio) {
       setStudio(foundStudio)
-      setBranding(resellerToBranding(foundStudio))
+      setBranding(studioToBranding(foundStudio))
     }
   }
 
@@ -169,8 +169,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     <BrandingContext.Provider
       value={{
         branding,
-        reseller,
-        isWhiteLabel: !!reseller,
+        studio,
+        isWhiteLabel: !!studio,
         isLoading,
         currentDomain,
         setDemoStudio,

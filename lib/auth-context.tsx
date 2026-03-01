@@ -98,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (email === "admin@streammattic.com") {
       loggedInUser = mockAdmin
     } else {
-      const reseller = mockStudios.find((r) => r.email === email)
-      if (reseller) {
-        loggedInUser = reseller
+      const foundStudio = mockStudios.find((r) => r.email === email)
+      if (foundStudio) {
+        loggedInUser = foundStudio
       } else {
         const endUser = mockUsers.find((u) => u.email === email)
         if (endUser) {
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const impersonate = useCallback(
     (userId: string): string | null => {
-      // Only admin and resellers can impersonate
+      // Only admin and studios can impersonate
       if (user?.role !== "admin" && user?.role !== "studio") return null
 
       const targetUser = [...mockStudios, ...mockUsers].find((u) => u.id === userId)

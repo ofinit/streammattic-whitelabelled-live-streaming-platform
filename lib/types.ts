@@ -422,7 +422,7 @@ export interface EventValiditySettings {
   extendedTiers: ValidityTier[] // 60, 90, 180, 365
 }
 
-// Custom stream pricing override per user or reseller
+// Custom stream pricing override per user or studio
 // When set, overrides the master pricing from admin packages
 export interface CustomStreamPricing {
   id: string
@@ -453,7 +453,7 @@ export interface ValidityPrice {
   id: string
   packageId: string
   days: number
-  priceReseller: number
+  priceStudio: number
   priceUser: number
   isActive: boolean
 }

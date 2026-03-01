@@ -394,8 +394,21 @@ export interface EventPack {
 
 export interface EventPackSettings {
   packs: EventPack[]
-  expiryDays: number // 0 = never expires
+  enabled: boolean // master toggle for event packs
   streamTypeRestriction: "any" | (keyof StreamTypePricing)[]
+}
+
+// Event validity -- 30 days included free, extended durations have a surcharge
+export interface ValidityTier {
+  days: number
+  userSurcharge: number // in paisa, added on top of base event/pack price
+  resellerSurcharge: number
+  enabled: boolean
+}
+
+export interface EventValiditySettings {
+  defaultDays: 30 // always 30, not configurable
+  extendedTiers: ValidityTier[] // 60, 90, 180, 365
 }
 
 // Custom stream pricing override per user or reseller

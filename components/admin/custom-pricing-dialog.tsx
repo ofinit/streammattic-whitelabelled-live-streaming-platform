@@ -15,9 +15,9 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package } from "lucide-react"
+import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package, Clock } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StreamTypePricing, StreamTypePriceLevel, EventPack } from "@/lib/types"
+import type { StreamTypePricing, StreamTypePriceLevel, EventPack, ValidityTier } from "@/lib/types"
 
 // Master pricing defaults (same as admin packages page)
 const MASTER_PRICING: StreamTypePricing = {
@@ -39,6 +39,13 @@ const MASTER_EVENT_PACKS: EventPack[] = [
   { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, resellerPrice: 100000, enabled: true, sortOrder: 4 },
 ]
 
+const MASTER_VALIDITY_TIERS: ValidityTier[] = [
+  { days: 60, userSurcharge: 200, resellerSurcharge: 100, enabled: true },
+  { days: 90, userSurcharge: 500, resellerSurcharge: 250, enabled: true },
+  { days: 180, userSurcharge: 1000, resellerSurcharge: 500, enabled: true },
+  { days: 365, userSurcharge: 2000, resellerSurcharge: 1000, enabled: true },
+]
+
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
   { key: "youtube_api" as const, label: "YouTube API", description: "Direct broadcast", icon: Youtube, recommended: true },
@@ -54,7 +61,8 @@ interface CustomPricingDialogProps {
   existingCustomPricing?: Partial<StreamTypePricing>
   existingAnnualOverride?: { price: number; enabled: boolean } | null
   existingPackOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null) => void
+  existingValidityOverrides?: Record<number, { userSurcharge: number; resellerSurcharge: number }> | null
+  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null, validityOverrides?: Record<number, { userSurcharge: number; resellerSurcharge: number }> | null) => void
 }
 
 export function CustomPricingDialog({
@@ -65,11 +73,13 @@ export function CustomPricingDialog({
   existingCustomPricing,
   existingAnnualOverride,
   existingPackOverrides,
+  existingValidityOverrides,
   onSave,
 }: CustomPricingDialogProps) {
   const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
   const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
   const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
+  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }>>({})
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
 
@@ -125,10 +135,29 @@ export function CustomPricingDialog({
         }
       }
       setPackOverrides(packInit)
+      // Initialize validity overrides
+      const validityInit: Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }> = {}
+      for (const tier of MASTER_VALIDITY_TIERS) {
+        const custom = existingValidityOverrides?.[tier.days]
+        if (custom) {
+          validityInit[tier.days] = {
+            enabled: true,
+            userSurcharge: (custom.userSurcharge / 100).toString(),
+            resellerSurcharge: (custom.resellerSurcharge / 100).toString(),
+          }
+        } else {
+          validityInit[tier.days] = {
+            enabled: false,
+            userSurcharge: (tier.userSurcharge / 100).toString(),
+            resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
+          }
+        }
+      }
+      setValidityOverrides(validityInit)
       setNote("")
       setSaved(false)
     }
-  }, [open, existingCustomPricing, existingAnnualOverride, existingPackOverrides])
+  }, [open, existingCustomPricing, existingAnnualOverride, existingPackOverrides, existingValidityOverrides])
 
   const toggleOverride = (key: string, enabled: boolean) => {
     setOverrides((prev) => ({
@@ -188,7 +217,21 @@ export function CustomPricingDialog({
       }
     }
 
-    onSave(hasOverrides ? customPricing : undefined, note, annualResult, hasPackOverrides ? packResult : null)
+    // Build validity overrides
+    const validityResult: Record<number, { userSurcharge: number; resellerSurcharge: number }> = {}
+    let hasValidityOverrides = false
+    for (const tier of MASTER_VALIDITY_TIERS) {
+      const vo = validityOverrides[tier.days]
+      if (vo?.enabled) {
+        hasValidityOverrides = true
+        validityResult[tier.days] = {
+          userSurcharge: Math.round(Number(vo.userSurcharge) * 100),
+          resellerSurcharge: Math.round(Number(vo.resellerSurcharge) * 100),
+        }
+      }
+    }
+
+    onSave(hasOverrides ? customPricing : undefined, note, annualResult, hasPackOverrides ? packResult : null, hasValidityOverrides ? validityResult : null)
     setSaved(true)
     setTimeout(() => {
       setSaved(false)
@@ -216,9 +259,18 @@ export function CustomPricingDialog({
       }
     }
     setPackOverrides(packReset)
+    const validityReset: Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }> = {}
+    for (const tier of MASTER_VALIDITY_TIERS) {
+      validityReset[tier.days] = {
+        enabled: false,
+        userSurcharge: (tier.userSurcharge / 100).toString(),
+        resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
+      }
+    }
+    setValidityOverrides(validityReset)
   }
 
-  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled || Object.values(packOverrides).some((o) => o.enabled)
+  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled || Object.values(packOverrides).some((o) => o.enabled) || Object.values(validityOverrides).some((o) => o.enabled)
   // Determine the correct price column label based on target type
   const priceLabel = targetType === "reseller" ? "Reseller Price" : "User Price"
 
@@ -544,6 +596,105 @@ export function CustomPricingDialog({
                             {"₹"}{(masterPrice / 100 / pack.eventCount).toFixed(2)}/event
                           </p>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Event Validity Surcharge Overrides */}
+          <Separator />
+          <Card className={`transition-colors ${Object.values(validityOverrides).some((o) => o.enabled) ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${Object.values(validityOverrides).some((o) => o.enabled) ? "bg-amber-500/10" : "bg-muted"}`}>
+                  <Clock className={`h-4 w-4 ${Object.values(validityOverrides).some((o) => o.enabled) ? "text-amber-500" : "text-muted-foreground"}`} />
+                </div>
+                <div>
+                  <CardTitle className="text-sm">
+                    Event Validity Surcharges
+                    {Object.values(validityOverrides).some((o) => o.enabled) && (
+                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-xs">Override extended validity surcharges (30 days always free)</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {MASTER_VALIDITY_TIERS.map((tier) => {
+                const vo = validityOverrides[tier.days]
+                if (!vo) return null
+                const isOverridden = vo.enabled
+                const surchargeField = targetType === "reseller" ? "resellerSurcharge" : "userSurcharge"
+                const masterSurcharge = targetType === "reseller" ? tier.resellerSurcharge : tier.userSurcharge
+
+                return (
+                  <div key={tier.days} className={`rounded-lg border p-3 transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-sm font-medium">{tier.days} days</span>
+                        {isOverridden && (
+                          <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Override</span>
+                        <Switch
+                          checked={isOverridden}
+                          onCheckedChange={(checked) =>
+                            setValidityOverrides((prev) => ({
+                              ...prev,
+                              [tier.days]: {
+                                ...prev[tier.days],
+                                enabled: checked,
+                                ...(!checked
+                                  ? {
+                                      userSurcharge: (tier.userSurcharge / 100).toString(),
+                                      resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
+                                    }
+                                  : {}),
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{targetType === "reseller" ? "Reseller Surcharge" : "User Surcharge"}</Label>
+                        {isOverridden ? (
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={vo[surchargeField]}
+                              onChange={(e) =>
+                                setValidityOverrides((prev) => ({
+                                  ...prev,
+                                  [tier.days]: { ...prev[tier.days], [surchargeField]: e.target.value },
+                                }))
+                              }
+                              className="pl-7 bg-secondary border-0 h-8 text-sm"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                            +{"₹"}{(masterSurcharge / 100).toFixed(2)}
+                            <span className="ml-auto text-[10px]">master</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Master Surcharge</Label>
+                        <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                          +{"₹"}{(masterSurcharge / 100).toFixed(2)}
+                          <span className="ml-auto text-[10px]">reference</span>
+                        </div>
                       </div>
                     </div>
                   </div>

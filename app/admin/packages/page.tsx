@@ -44,7 +44,7 @@ export default function AdminPricingPage() {
     enabled: true,
   })
 
-  const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({})
+  const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({ rtmp: true })
   const [saved, setSaved] = useState(false)
 
   // Stream type pricing updates
@@ -133,7 +133,7 @@ export default function AdminPricingPage() {
             </div>
             <div>
               <CardTitle>Stream Type Pricing</CardTitle>
-              <CardDescription>Set base price per event and volume discount tiers. Single price for all users (no cascade).</CardDescription>
+              <CardDescription>Set base price per event. Click any stream type row to expand and configure volume discount tiers for bulk purchases.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -168,6 +168,11 @@ export default function AdminPricingPage() {
                             </div>
                             <p className="text-xs text-muted-foreground">{description}</p>
                           </div>
+                          {config.volumeDiscountTiers.length > 0 && !isExpanded && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-2 shrink-0">
+                              {config.volumeDiscountTiers.length} tier{config.volumeDiscountTiers.length !== 1 ? "s" : ""}
+                            </Badge>
+                          )}
                         </button>
                       </CollapsibleTrigger>
 

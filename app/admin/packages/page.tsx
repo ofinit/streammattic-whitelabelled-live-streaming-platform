@@ -23,10 +23,10 @@ type StreamPricingState = Record<string, StreamTypePriceLevel>
 
 export default function AdminPackagesPage() {
   const [streamPricing, setStreamPricing] = useState<StreamPricingState>({
-    rtmp: { userPrice: 1200, studioPrice: 600, enabled: true },
-    youtube_api: { userPrice: 800, studioPrice: 350, enabled: true },
-    youtube_embed: { userPrice: 400, studioPrice: 120, enabled: true },
-    third_party: { userPrice: 300, studioPrice: 80, enabled: false },
+    rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
+    youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
+    youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
+    third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
   })
 
   const [studioSubscription, setStudioSubscription] = useState({
@@ -36,10 +36,10 @@ export default function AdminPackagesPage() {
 
   const [eventPacksEnabled, setEventPacksEnabled] = useState(true)
   const [eventPacks, setEventPacks] = useState<EventPack[]>([
-    { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-    { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-    { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-    { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
+    { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+    { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+    { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+    { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
   ])
 
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
@@ -80,7 +80,7 @@ export default function AdminPackagesPage() {
         id: newId,
         name: "",
         eventCount: 0,
-        userPrice: 0,
+        streamerPrice: 0,
         studioPrice: 0,
         enabled: true,
         sortOrder: prev.length + 1,
@@ -200,8 +200,8 @@ export default function AdminPackagesPage() {
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={pricing.userPrice / 100}
-                          onBlur={(e) => updateStreamPrice(key, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          defaultValue={pricing.streamerPrice / 100}
+                          onBlur={(e) => updateStreamPrice(key, "streamerPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pricing.enabled}
                         />
@@ -289,7 +289,7 @@ export default function AdminPackagesPage() {
 
           <div className="space-y-3">
             {eventPacks.map((pack) => {
-              const perEventUser = pack.eventCount > 0 ? pack.userPrice / pack.eventCount : 0
+              const perEventUser = pack.eventCount > 0 ? pack.streamerPrice / pack.eventCount : 0
               const perEventStudio = pack.eventCount > 0 ? pack.studioPrice / pack.eventCount : 0
               return (
                 <div
@@ -333,8 +333,8 @@ export default function AdminPackagesPage() {
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={pack.userPrice / 100}
-                          onBlur={(e) => updatePack(pack.id, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          defaultValue={pack.streamerPrice / 100}
+                          onBlur={(e) => updatePack(pack.id, "streamerPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pack.enabled}
                         />

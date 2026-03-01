@@ -21,7 +21,6 @@ import {
   Crown,
   Star,
   ArrowRight,
-  IndianRupee,
 } from "lucide-react"
 import { mockUserInventory } from "@/lib/mock-data"
 import type { EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
@@ -120,7 +119,6 @@ export default function ResellerPackagesPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {streamTypes.filter((st) => st.enabled).map((st) => {
               const Icon = st.icon
-              const margin = st.userPrice - st.resellerPrice
               return (
                 <Card key={st.key} className="relative border-border bg-card">
                   {st.recommended && (
@@ -140,26 +138,12 @@ export default function ResellerPackagesPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Reseller & User pricing side by side */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-lg bg-secondary/50 p-3">
-                        <p className="text-[10px] text-muted-foreground mb-1">Your Cost</p>
-                        <div className="flex items-baseline gap-0.5">
-                          <span className="text-xl font-bold text-primary">{"₹"}{(st.resellerPrice / 100).toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground">/event</span>
-                        </div>
+                    {/* Reseller pricing */}
+                    <div className="rounded-lg bg-secondary/50 p-3">
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-2xl font-bold text-primary">{"₹"}{(st.resellerPrice / 100).toFixed(2)}</span>
+                        <span className="text-xs text-muted-foreground">/event</span>
                       </div>
-                      <div className="rounded-lg bg-secondary/50 p-3">
-                        <p className="text-[10px] text-muted-foreground mb-1">User Pays</p>
-                        <div className="flex items-baseline gap-0.5">
-                          <span className="text-xl font-bold">{"₹"}{(st.userPrice / 100).toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground">/event</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <IndianRupee className="h-3 w-3 text-primary" />
-                      <span className="text-primary font-medium">{"₹"}{(margin / 100).toFixed(2)} margin per event</span>
                     </div>
 
                     {/* Validity options */}
@@ -174,10 +158,7 @@ export default function ResellerPackagesPage() {
                         return (
                           <div key={tier.days} className="rounded-md bg-secondary/30 px-3 py-2 flex items-center justify-between text-sm">
                             <span>{tier.days} days</span>
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="text-primary">+{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}</span>
-                              <span className="text-muted-foreground">user: +{"₹"}{(surcharge.userSurcharge / 100).toFixed(2)}</span>
-                            </div>
+                            <span className="text-xs text-primary">+{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}</span>
                           </div>
                         )
                       })}
@@ -213,7 +194,7 @@ export default function ResellerPackagesPage() {
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
                   <div>
                     <p className="text-sm font-medium">Pay Per Event</p>
-                    <p className="text-xs text-muted-foreground">Amount is deducted from your wallet at reseller rate. You earn the margin when your users create events.</p>
+                    <p className="text-xs text-muted-foreground">Amount is deducted from your wallet at your reseller rate when the event is created</p>
                   </div>
                 </div>
               </div>
@@ -228,7 +209,7 @@ export default function ResellerPackagesPage() {
                   <Package className="h-5 w-5 text-primary" />
                   <div>
                     <p className="font-medium text-sm">Save with Event Packs</p>
-                    <p className="text-xs text-muted-foreground">Buy events in bulk at discounted reseller rates</p>
+                    <p className="text-xs text-muted-foreground">Buy events in bulk and save up to 60% per event</p>
                   </div>
                 </div>
                 <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => setActiveTab("packs")}>
@@ -246,7 +227,7 @@ export default function ResellerPackagesPage() {
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <div className="flex items-center gap-2 text-sm">
               <Package className="h-4 w-4 text-primary shrink-0" />
-              <span>Prepaid event bundles at discounted reseller rates. Events from packs can be used with <span className="font-medium text-foreground">any stream type</span>.</span>
+              <span>Prepaid event bundles at discounted rates. Events from packs can be used with <span className="font-medium text-foreground">any stream type</span>.</span>
             </div>
           </div>
 
@@ -263,12 +244,10 @@ export default function ResellerPackagesPage() {
               {enabledPacks.map((pack, index) => {
                 const Icon = packIcons[pack.name] || Zap
                 const resellerPerEvent = pack.resellerPrice / pack.eventCount
-                const userPerEvent = pack.userPrice / pack.eventCount
                 const isPopular = index === 1
                 // Compare against cheapest reseller per-event stream price
                 const cheapestStream = Math.min(...streamTypes.filter((s) => s.enabled).map((s) => s.resellerPrice))
                 const savingsPercent = cheapestStream > 0 ? Math.round((1 - resellerPerEvent / cheapestStream) * 100) : 0
-                const marginPerEvent = userPerEvent - resellerPerEvent
 
                 return (
                   <Card key={pack.id} className={`relative flex flex-col border-border bg-card ${isPopular ? "border-primary shadow-md" : ""}`}>
@@ -298,20 +277,16 @@ export default function ResellerPackagesPage() {
                             {"₹"}{(resellerPerEvent / 100).toFixed(2)} per event
                           </span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">User price: {"₹"}{(pack.userPrice / 100).toFixed(0)} ({"₹"}{(userPerEvent / 100).toFixed(2)}/event)</p>
                       </div>
 
-                      <div className="flex flex-col items-center gap-1.5">
-                        {savingsPercent > 0 && (
+                      {savingsPercent > 0 && (
+                        <div className="flex justify-center">
                           <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-center">
                             <span className="text-sm font-semibold text-emerald-500">Save {savingsPercent}%</span>
                             <p className="text-[10px] text-emerald-500/70 mt-0.5">vs per-event pricing</p>
                           </div>
-                        )}
-                        <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                          {"₹"}{(marginPerEvent / 100).toFixed(2)} margin/event
-                        </Badge>
-                      </div>
+                        </div>
+                      )}
 
                       <Separator />
 
@@ -353,7 +328,7 @@ export default function ResellerPackagesPage() {
                 <CardTitle className="text-sm">Extended Validity Surcharges</CardTitle>
               </div>
               <CardDescription className="text-xs">
-                Additional charges for extended event validity. Green values are your cost, gray values are what users pay.
+                Additional charges when selecting extended event validity. Applied per event in the pack.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -380,9 +355,8 @@ export default function ResellerPackagesPage() {
                         {streamTypes.filter((s) => s.enabled).map((st) => {
                           const surcharge = tier.surcharges[st.key]
                           return (
-                            <td key={st.key} className="text-right py-2 px-2">
-                              <div className="text-xs text-primary">+{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}</div>
-                              <div className="text-[10px] text-muted-foreground">user: +{"₹"}{(surcharge.userSurcharge / 100).toFixed(2)}</div>
+                            <td key={st.key} className="text-right py-2 px-2 text-xs text-primary">
+                              +{"₹"}{(surcharge.resellerSurcharge / 100).toFixed(2)}
                             </td>
                           )
                         })}

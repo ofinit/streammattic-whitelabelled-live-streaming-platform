@@ -231,8 +231,8 @@ export default function AdminStudiosPage() {
           targetType="studio"
           existingCustomPricing={pricingStudio.customStreamPricing}
           existingAnnualOverride={(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
-          existingPackOverrides={(pricingStudio as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; studioPrice: number }> | null ?? null}
-          existingValidityOverrides={(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { userSurcharge: number; studioSurcharge: number }> | null ?? null}
+          existingPackOverrides={(pricingStudio as unknown as Record<string, unknown>).customPackPricing as Record<string, { streamerPrice: number; studioPrice: number }> | null ?? null}
+          existingValidityOverrides={(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { streamerSurcharge: number; studioSurcharge: number }> | null ?? null}
           onSave={(pricing, _note, annualOverride, packOverrides, validityOverrides) => {
             pricingStudio.customStreamPricing = pricing
             ;(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride

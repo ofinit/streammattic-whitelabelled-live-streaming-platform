@@ -1076,7 +1076,7 @@ export const mockNotifications: Notification[] = [
     type: "success",
     isRead: true,
     readAt: new Date(Date.now() - 7200000),
-    link: "/dashboard/events",
+    link: "/streamer/events",
     createdAt: new Date(Date.now() - 7200000),
   },
   {
@@ -1086,7 +1086,7 @@ export const mockNotifications: Notification[] = [
     message: "Your wallet balance is below ₹500. Please recharge.",
     type: "warning",
     isRead: false,
-    link: "/dashboard/wallet",
+    link: "/streamer/wallet",
     createdAt: new Date(Date.now() - 86400000),
   },
   {

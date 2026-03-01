@@ -115,11 +115,11 @@ function PaymentCallbackContent() {
           {status !== "processing" && (
             <div className="flex flex-col gap-3">
               <Button asChild>
-                <Link href="/dashboard/wallet">Go to Wallet</Link>
+                <Link href="/streamer/wallet">Go to Wallet</Link>
               </Button>
               {(status === "failed" || status === "cancelled") && (
                 <Button variant="outline" asChild>
-                  <Link href="/dashboard/wallet">Try Again</Link>
+                  <Link href="/streamer/wallet">Try Again</Link>
                 </Button>
               )}
             </div>

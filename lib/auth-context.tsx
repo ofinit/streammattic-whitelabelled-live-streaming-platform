@@ -72,7 +72,7 @@ function getRouteForRole(role: UserRole): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | Studio | EndUser | null>(null)
+  const [user, setUser] = useState<User | Studio | Streamer | null>(null)
   const [originalUser, setOriginalUser] = useState<User | Studio | null>(null)
   const [isLoading, setIsLoading] = useState(true) // Start with loading to check localStorage
   const [isImpersonating, setIsImpersonating] = useState(false)
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    let loggedInUser: User | Studio | EndUser | null = null
+    let loggedInUser: User | Studio | Streamer | null = null
 
     if (email === "admin@streammattic.com") {
       loggedInUser = mockAdmin
@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [originalUser])
 
   const switchRole = useCallback((role: UserRole) => {
-    let newUser: User | Studio | EndUser | null = null
+    let newUser: User | Studio | Streamer | null = null
 
     switch (role) {
       case "admin":

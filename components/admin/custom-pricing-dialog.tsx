@@ -15,63 +15,16 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package, Clock, ChevronDown } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { StreamTypePricing, StreamTypePriceLevel, EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
-
-// Master pricing defaults (same as admin packages page)
-const MASTER_PRICING: StreamTypePricing = {
-  rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
-  youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
-  youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
-  third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
-}
-
-const MASTER_ANNUAL_SUBSCRIPTION = {
-  price: 1800000, // 18,000 INR in paisa
-  enabled: true,
-}
-
-const MASTER_EVENT_PACKS: EventPack[] = [
-  { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-  { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-  { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
-]
-
-const MASTER_VALIDITY_TIERS: ValidityTier[] = [
-  { days: 60, enabled: true, surcharges: {
-    rtmp: { streamerSurcharge: 300, studioSurcharge: 150 },
-    youtube_api: { streamerSurcharge: 200, studioSurcharge: 100 },
-    youtube_embed: { streamerSurcharge: 100, studioSurcharge: 50 },
-    third_party: { streamerSurcharge: 80, studioSurcharge: 40 },
-  }},
-  { days: 90, enabled: true, surcharges: {
-    rtmp: { streamerSurcharge: 700, studioSurcharge: 350 },
-    youtube_api: { streamerSurcharge: 500, studioSurcharge: 250 },
-    youtube_embed: { streamerSurcharge: 250, studioSurcharge: 125 },
-    third_party: { streamerSurcharge: 200, studioSurcharge: 100 },
-  }},
-  { days: 180, enabled: true, surcharges: {
-    rtmp: { streamerSurcharge: 1200, studioSurcharge: 600 },
-    youtube_api: { streamerSurcharge: 1000, studioSurcharge: 500 },
-    youtube_embed: { streamerSurcharge: 500, studioSurcharge: 250 },
-    third_party: { streamerSurcharge: 400, studioSurcharge: 200 },
-  }},
-  { days: 365, enabled: true, surcharges: {
-    rtmp: { streamerSurcharge: 2500, studioSurcharge: 1250 },
-    youtube_api: { streamerSurcharge: 2000, studioSurcharge: 1000 },
-    youtube_embed: { streamerSurcharge: 1000, studioSurcharge: 500 },
-    third_party: { streamerSurcharge: 800, studioSurcharge: 400 },
-  }},
-]
+import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, Gift } from "lucide-react"
+import { masterStreamTypePricing } from "@/lib/mock-data"
+import { formatCurrency } from "@/lib/cascade-wallet-service"
+import type { StreamTypeKey } from "@/lib/types"
 
 const streamTypes = [
-  { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
-  { key: "youtube_api" as const, label: "YouTube API", description: "Direct broadcast", icon: Youtube, recommended: true },
-  { key: "youtube_embed" as const, label: "YouTube Embed", description: "Embed existing", icon: MonitorPlay },
-  { key: "third_party" as const, label: "Third Party", description: "External embed", icon: Globe },
+  { key: "rtmp" as StreamTypeKey, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
+  { key: "youtube_api" as StreamTypeKey, label: "YouTube API", description: "Direct broadcast", icon: Youtube, recommended: true },
+  { key: "youtube_embed" as StreamTypeKey, label: "YouTube Embed", description: "Embed existing", icon: MonitorPlay },
+  { key: "third_party" as StreamTypeKey, label: "Third Party", description: "External embed", icon: Globe },
 ]
 
 interface CustomPricingDialogProps {
@@ -79,11 +32,13 @@ interface CustomPricingDialogProps {
   onOpenChange: (open: boolean) => void
   targetName: string
   targetType: "streamer" | "studio"
-  existingCustomPricing?: Partial<StreamTypePricing>
-  existingAnnualOverride?: { price: number; enabled: boolean } | null
-  existingPackOverrides?: Record<string, { streamerPrice: number; studioPrice: number }> | null
-  existingValidityOverrides?: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> | null
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { streamerPrice: number; studioPrice: number }> | null, validityOverrides?: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> | null) => void
+  existingCustomPricing?: Partial<Record<StreamTypeKey, { basePrice: number }>>
+  existingBonusCredits?: Partial<Record<StreamTypeKey, number>>
+  onSave: (
+    pricing: Partial<Record<StreamTypeKey, { basePrice: number }>> | undefined,
+    note: string,
+    bonusCredits?: Partial<Record<StreamTypeKey, number>>,
+  ) => void
 }
 
 export function CustomPricingDialog({
@@ -92,173 +47,74 @@ export function CustomPricingDialog({
   targetName,
   targetType,
   existingCustomPricing,
-  existingAnnualOverride,
-  existingPackOverrides,
-  existingValidityOverrides,
+  existingBonusCredits,
   onSave,
 }: CustomPricingDialogProps) {
-  const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }>>({})
-  const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
-  const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }>>({})
-  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }>>({})
-  const [expandedValidityTiers, setExpandedValidityTiers] = useState<Record<number, boolean>>({})
+  const [priceOverrides, setPriceOverrides] = useState<Record<string, { enabled: boolean; basePrice: string }>>({})
+  const [bonusCredits, setBonusCredits] = useState<Record<string, string>>({})
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     if (open) {
-      // Initialize overrides from existing custom pricing
-      const initial: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
+      const initialPrices: Record<string, { enabled: boolean; basePrice: string }> = {}
+      const initialBonus: Record<string, string> = {}
+
       for (const { key } of streamTypes) {
         const custom = existingCustomPricing?.[key]
-        if (custom) {
-          initial[key] = {
-            enabled: true,
-            streamerPrice: (custom.streamerPrice / 100).toString(),
-            studioPrice: (custom.studioPrice / 100).toString(),
-          }
-        } else {
-          initial[key] = {
-            enabled: false,
-            streamerPrice: (MASTER_PRICING[key].streamerPrice / 100).toString(),
-            studioPrice: (MASTER_PRICING[key].studioPrice / 100).toString(),
-          }
-        }
-      }
-      setOverrides(initial)
-      // Initialize annual subscription override
-      if (existingAnnualOverride) {
-        setAnnualOverride({
-          enabled: true,
-          price: (existingAnnualOverride.price / 100).toString(),
-        })
-      } else {
-        setAnnualOverride({
-          enabled: false,
-          price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString(),
-        })
-      }
-      // Initialize event pack overrides
-      const packInit: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
-      for (const pack of MASTER_EVENT_PACKS) {
-        const custom = existingPackOverrides?.[pack.id]
-        if (custom) {
-          packInit[pack.id] = {
-            enabled: true,
-            streamerPrice: (custom.streamerPrice / 100).toString(),
-            studioPrice: (custom.studioPrice / 100).toString(),
-          }
-        } else {
-          packInit[pack.id] = {
-            enabled: false,
-            streamerPrice: (pack.streamerPrice / 100).toString(),
-            studioPrice: (pack.studioPrice / 100).toString(),
-          }
-        }
-      }
-      setPackOverrides(packInit)
-      // Initialize validity overrides (per stream type)
-      const validityInit: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }> = {}
-      for (const tier of MASTER_VALIDITY_TIERS) {
-        const custom = existingValidityOverrides?.[tier.days]
-        const surchargesInit = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
-        for (const st of streamTypes) {
-          const masterS = tier.surcharges[st.key]
-          const customS = custom?.[st.key]
-          surchargesInit[st.key] = {
-            streamerSurcharge: customS ? (customS.streamerSurcharge / 100).toString() : (masterS.streamerSurcharge / 100).toString(),
-            studioSurcharge: customS ? (customS.studioSurcharge / 100).toString() : (masterS.studioSurcharge / 100).toString(),
-          }
-        }
-        validityInit[tier.days] = {
+        const master = masterStreamTypePricing[key]
+        initialPrices[key] = {
           enabled: !!custom,
-          surcharges: surchargesInit,
+          basePrice: custom ? custom.basePrice.toString() : master.basePrice.toString(),
         }
+        initialBonus[key] = existingBonusCredits?.[key]?.toString() || "0"
       }
-      setValidityOverrides(validityInit)
+
+      setPriceOverrides(initialPrices)
+      setBonusCredits(initialBonus)
       setNote("")
       setSaved(false)
     }
-  }, [open, existingCustomPricing, existingAnnualOverride, existingPackOverrides, existingValidityOverrides])
+  }, [open, existingCustomPricing, existingBonusCredits])
 
   const toggleOverride = (key: string, enabled: boolean) => {
-    setOverrides((prev) => ({
+    setPriceOverrides((prev) => ({
       ...prev,
       [key]: {
         ...prev[key],
         enabled,
-        // Reset to master price when disabling
-        ...(!enabled
-          ? {
-              streamerPrice: (MASTER_PRICING[key as keyof StreamTypePricing].streamerPrice / 100).toString(),
-              studioPrice: (MASTER_PRICING[key as keyof StreamTypePricing].studioPrice / 100).toString(),
-            }
-          : {}),
+        ...(!enabled ? { basePrice: masterStreamTypePricing[key as StreamTypeKey].basePrice.toString() } : {}),
       },
     }))
   }
 
-  const updatePrice = (key: string, field: "streamerPrice" | "studioPrice", value: string) => {
-    setOverrides((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: value },
-    }))
-  }
-
   const handleSave = () => {
-    const customPricing: Partial<StreamTypePricing> = {}
-    let hasOverrides = false
+    const pricing: Partial<Record<StreamTypeKey, { basePrice: number }>> = {}
+    let hasPriceOverrides = false
 
     for (const { key } of streamTypes) {
-      const override = overrides[key]
+      const override = priceOverrides[key]
       if (override?.enabled) {
-        hasOverrides = true
-        ;(customPricing as Record<string, StreamTypePriceLevel>)[key] = {
-          streamerPrice: Math.round(Number(override.streamerPrice) * 100),
-          studioPrice: Math.round(Number(override.studioPrice) * 100),
-          enabled: MASTER_PRICING[key].enabled, // keep master enabled status
-        }
+        hasPriceOverrides = true
+        pricing[key] = { basePrice: Number(override.basePrice) }
       }
     }
 
-    const annualResult = annualOverride.enabled
-      ? { price: Math.round(Number(annualOverride.price) * 100), enabled: true }
-      : null
-
-    // Build pack overrides
-    const packResult: Record<string, { streamerPrice: number; studioPrice: number }> = {}
-    let hasPackOverrides = false
-    for (const pack of MASTER_EVENT_PACKS) {
-      const po = packOverrides[pack.id]
-      if (po?.enabled) {
-        hasPackOverrides = true
-        packResult[pack.id] = {
-          streamerPrice: Math.round(Number(po.streamerPrice) * 100),
-          studioPrice: Math.round(Number(po.studioPrice) * 100),
-        }
+    const bonus: Partial<Record<StreamTypeKey, number>> = {}
+    let hasBonusCredits = false
+    for (const { key } of streamTypes) {
+      const val = Number(bonusCredits[key] || 0)
+      if (val > 0) {
+        hasBonusCredits = true
+        bonus[key] = val
       }
     }
 
-    // Build validity overrides (per stream type)
-    const validityResult: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> = {}
-    let hasValidityOverrides = false
-    for (const tier of MASTER_VALIDITY_TIERS) {
-      const vo = validityOverrides[tier.days]
-      if (vo?.enabled) {
-        hasValidityOverrides = true
-        const tierResult = {} as Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>
-        for (const st of streamTypes) {
-          const s = vo.surcharges[st.key]
-          tierResult[st.key] = {
-            streamerSurcharge: Math.round(Number(s.streamerSurcharge) * 100),
-            studioSurcharge: Math.round(Number(s.studioSurcharge) * 100),
-          }
-        }
-        validityResult[tier.days] = tierResult
-      }
-    }
-
-    onSave(hasOverrides ? customPricing : undefined, note, annualResult, hasPackOverrides ? packResult : null, hasValidityOverrides ? validityResult : null)
+    onSave(
+      hasPriceOverrides ? pricing : undefined,
+      note,
+      hasBonusCredits ? bonus : undefined,
+    )
     setSaved(true)
     setTimeout(() => {
       setSaved(false)
@@ -267,43 +123,20 @@ export function CustomPricingDialog({
   }
 
   const resetAll = () => {
-    const reset: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
+    const reset: Record<string, { enabled: boolean; basePrice: string }> = {}
+    const resetBonus: Record<string, string> = {}
     for (const { key } of streamTypes) {
       reset[key] = {
         enabled: false,
-        streamerPrice: (MASTER_PRICING[key].streamerPrice / 100).toString(),
-        studioPrice: (MASTER_PRICING[key].studioPrice / 100).toString(),
+        basePrice: masterStreamTypePricing[key].basePrice.toString(),
       }
+      resetBonus[key] = "0"
     }
-    setOverrides(reset)
-    setAnnualOverride({ enabled: false, price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() })
-    const packReset: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
-    for (const pack of MASTER_EVENT_PACKS) {
-      packReset[pack.id] = {
-        enabled: false,
-        streamerPrice: (pack.streamerPrice / 100).toString(),
-        studioPrice: (pack.studioPrice / 100).toString(),
-      }
-    }
-    setPackOverrides(packReset)
-    const validityReset: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }> = {}
-    for (const tier of MASTER_VALIDITY_TIERS) {
-      const surchargesReset = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
-      for (const st of streamTypes) {
-        const masterS = tier.surcharges[st.key]
-        surchargesReset[st.key] = {
-          streamerSurcharge: (masterS.streamerSurcharge / 100).toString(),
-          studioSurcharge: (masterS.studioSurcharge / 100).toString(),
-        }
-      }
-      validityReset[tier.days] = { enabled: false, surcharges: surchargesReset }
-    }
-    setValidityOverrides(validityReset)
+    setPriceOverrides(reset)
+    setBonusCredits(resetBonus)
   }
 
-  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled || Object.values(packOverrides).some((o) => o.enabled) || Object.values(validityOverrides).some((o) => o.enabled)
-  // Determine the correct price column label based on target type
-  const priceLabel = targetType === "studio" ? "Studio Price" : "Streamer Price"
+  const hasAnyOverride = Object.values(priceOverrides).some((o) => o.enabled) || Object.values(bonusCredits).some((v) => Number(v) > 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -311,23 +144,17 @@ export function CustomPricingDialog({
         <DialogHeader>
           <DialogTitle>Custom Pricing - {targetName}</DialogTitle>
           <DialogDescription>
-            Override master pricing for this {targetType}. Toggle on a stream type to set a custom price.
-            Disabled rows use the master price.
+            Override credit prices or grant bonus credits for this {targetType}. Disabled rows use master pricing.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            {hasAnyOverride && (
-              <Badge variant="outline" className="text-amber-500 border-amber-500/30">
-                Custom pricing active
-              </Badge>
-            )}
-            {!hasAnyOverride && (
-              <Badge variant="outline" className="text-muted-foreground">
-                Using master pricing
-              </Badge>
+            {hasAnyOverride ? (
+              <Badge variant="outline" className="text-amber-500 border-amber-500/30">Custom pricing active</Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">Using master pricing</Badge>
             )}
             <Button variant="ghost" size="sm" onClick={resetAll} disabled={!hasAnyOverride}>
               <RotateCcw className="mr-2 h-3.5 w-3.5" />
@@ -337,177 +164,55 @@ export function CustomPricingDialog({
 
           <Separator />
 
-          {/* Stream Type Overrides */}
+          {/* Credit Price Overrides */}
           <div className="space-y-3">
-            {streamTypes.map(({ key, label, description, icon: Icon, recommended }) => {
-              const override = overrides[key]
+            <p className="text-sm font-medium">Credit Prices</p>
+            {streamTypes.filter((st) => masterStreamTypePricing[st.key].enabled).map(({ key, label, description, icon: Icon, recommended }) => {
+              const override = priceOverrides[key]
               if (!override) return null
-              const master = MASTER_PRICING[key]
+              const master = masterStreamTypePricing[key]
               const isOverridden = override.enabled
 
               return (
-                <div
-                  key={key}
-                  className={`rounded-lg border p-4 transition-colors ${
-                    isOverridden
-                      ? "border-amber-500/30 bg-amber-500/5"
-                      : "border-border bg-card"
-                  }`}
-                >
-                  {/* Row header: icon, label, toggle */}
+                <div key={key} className={`rounded-lg border p-4 transition-colors ${isOverridden ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                        isOverridden ? "bg-amber-500/10" : "bg-muted"
-                      }`}>
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isOverridden ? "bg-amber-500/10" : "bg-muted"}`}>
                         <Icon className={`h-4 w-4 ${isOverridden ? "text-amber-500" : "text-muted-foreground"}`} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{label}</span>
-                          {recommended && (
-                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                              Recommended
-                            </Badge>
-                          )}
-                          {isOverridden && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">
-                              Custom
-                            </Badge>
-                          )}
+                          {recommended && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Recommended</Badge>}
+                          {isOverridden && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground">{description}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">Override</span>
-                      <Switch
-                        checked={isOverridden}
-                        onCheckedChange={(checked) => toggleOverride(key, checked)}
-                      />
+                      <Switch checked={isOverridden} onCheckedChange={(checked) => toggleOverride(key, checked)} />
                     </div>
                   </div>
 
-                  {/* Price fields */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">{priceLabel}</Label>
+                      <Label className="text-xs text-muted-foreground">Custom Base Price</Label>
                       {isOverridden ? (
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={override.streamerPrice}
-                            onChange={(e) => updatePrice(key, "streamerPrice", e.target.value)}
-                            className="pl-7 bg-secondary border-0 h-9"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          {"₹"}{(master.streamerPrice / 100).toFixed(2)}
-                          <span className="ml-auto text-[10px]">master</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Only show studio price column for user targets */}
-                    {targetType === "streamer" && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Studio Price</Label>
-                        {isOverridden ? (
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={override.studioPrice}
-                              onChange={(e) => updatePrice(key, "studioPrice", e.target.value)}
-                              className="pl-7 bg-secondary border-0 h-9"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                            {"₹"}{(master.studioPrice / 100).toFixed(2)}
-                            <span className="ml-auto text-[10px]">master</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* For studio targets, show the single studio price */}
-                    {targetType === "studio" && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Master Price</Label>
-                        <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          {"₹"}{(master.studioPrice / 100).toFixed(2)}
-                          <span className="ml-auto text-[10px]">reference</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Studio Annual Subscription Override (only for studios) */}
-          {targetType === "studio" && (
-            <>
-              <Separator />
-              <Card className={`transition-colors ${annualOverride.enabled ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${annualOverride.enabled ? "bg-amber-500/10" : "bg-muted"}`}>
-                        <CreditCard className={`h-4 w-4 ${annualOverride.enabled ? "text-amber-500" : "text-muted-foreground"}`} />
-                      </div>
-                      <div>
-                        <CardTitle className="text-sm">
-                          Annual Subscription
-                          {annualOverride.enabled && (
-                            <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="text-xs">White-label & hosting charges</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Override</span>
-                      <Switch
-                        checked={annualOverride.enabled}
-                        onCheckedChange={(checked) =>
-                          setAnnualOverride((prev) => ({
-                            ...prev,
-                            enabled: checked,
-                            ...(!checked ? { price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() } : {}),
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Annual Price</Label>
-                      {annualOverride.enabled ? (
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
                           <Input
                             type="number"
                             step="1"
                             min="0"
-                            value={annualOverride.price}
-                            onChange={(e) => setAnnualOverride((prev) => ({ ...prev, price: e.target.value }))}
+                            value={override.basePrice}
+                            onChange={(e) => setPriceOverrides((prev) => ({ ...prev, [key]: { ...prev[key], basePrice: e.target.value } }))}
                             className="pl-7 bg-secondary border-0 h-9"
                           />
                         </div>
                       ) : (
                         <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          {"₹"}{(MASTER_ANNUAL_SUBSCRIPTION.price / 100).toLocaleString("en-IN")}
+                          {formatCurrency(master.basePrice)}
                           <span className="ml-auto text-[10px]">master</span>
                         </div>
                       )}
@@ -515,294 +220,72 @@ export function CustomPricingDialog({
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Master Price</Label>
                       <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                        {"₹"}{(MASTER_ANNUAL_SUBSCRIPTION.price / 100).toLocaleString("en-IN")}
+                        {formatCurrency(master.basePrice)}
                         <span className="ml-auto text-[10px]">reference</span>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
 
-          {/* Event Pack Overrides */}
+                  {isOverridden && Number(override.basePrice) < master.basePrice && (
+                    <p className="mt-2 text-xs text-emerald-500">
+                      {Math.round((1 - Number(override.basePrice) / master.basePrice) * 100)}% discount from master price
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
           <Separator />
-          <Card className={`transition-colors ${Object.values(packOverrides).some((o) => o.enabled) ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${Object.values(packOverrides).some((o) => o.enabled) ? "bg-amber-500/10" : "bg-muted"}`}>
-                  <Package className={`h-4 w-4 ${Object.values(packOverrides).some((o) => o.enabled) ? "text-amber-500" : "text-muted-foreground"}`} />
+
+          {/* Bonus Credits */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium">Grant Bonus Credits</p>
+            </div>
+            <p className="text-xs text-muted-foreground">Add free credits to this {targetType}'s balance.</p>
+
+            <div className="grid grid-cols-2 gap-3">
+              {streamTypes.filter((st) => masterStreamTypePricing[st.key].enabled).map(({ key, label, icon: Icon }) => (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Icon className="h-3 w-3" />
+                    {label}
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={bonusCredits[key] || "0"}
+                    onChange={(e) => setBonusCredits((prev) => ({ ...prev, [key]: e.target.value }))}
+                    className="bg-secondary border-0 h-9"
+                  />
                 </div>
-                <div>
-                  <CardTitle className="text-sm">
-                    Event Packs
-                    {Object.values(packOverrides).some((o) => o.enabled) && (
-                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-xs">Override prepaid bundle pricing</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {MASTER_EVENT_PACKS.map((pack) => {
-                const po = packOverrides[pack.id]
-                if (!po) return null
-                const isOverridden = po.enabled
-                const priceCol: "studioPrice" | "streamerPrice" = targetType === "studio" ? "studioPrice" : "streamerPrice"
-                const masterPrice = targetType === "studio" ? pack.studioPrice : pack.streamerPrice
-
-                return (
-                  <div key={pack.id} className={`rounded-lg border p-3 transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="text-sm font-medium">{pack.name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{pack.eventCount} events</span>
-                        {isOverridden && (
-                          <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Override</span>
-                        <Switch
-                          checked={isOverridden}
-                          onCheckedChange={(checked) =>
-                            setPackOverrides((prev) => ({
-                              ...prev,
-                              [pack.id]: {
-                                ...prev[pack.id],
-                                enabled: checked,
-                                ...(!checked
-                                  ? {
-                                      streamerPrice: (pack.streamerPrice / 100).toString(),
-                                      studioPrice: (pack.studioPrice / 100).toString(),
-                                    }
-                                  : {}),
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{targetType === "studio" ? "Studio Price" : "Streamer Price"}</Label>
-                        {isOverridden ? (
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={po[priceCol]}
-                              onChange={(e) =>
-                                setPackOverrides((prev) => ({
-                                  ...prev,
-                                  [pack.id]: { ...prev[pack.id], [priceCol]: e.target.value },
-                                }))
-                              }
-                              className="pl-7 bg-secondary border-0 h-8 text-sm"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                            {"₹"}{(masterPrice / 100).toFixed(2)}
-                            <span className="ml-auto text-[10px]">master</span>
-                          </div>
-                        )}
-                        {isOverridden && pack.eventCount > 0 && (
-                          <p className="text-[10px] text-muted-foreground px-1">
-                            {"₹"}{(Number(po[priceCol]) / pack.eventCount).toFixed(2)}/event
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Master Price</Label>
-                        <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          {"₹"}{(masterPrice / 100).toFixed(2)}
-                          <span className="ml-auto text-[10px]">reference</span>
-                        </div>
-                        {pack.eventCount > 0 && (
-                          <p className="text-[10px] text-muted-foreground px-1">
-                            {"₹"}{(masterPrice / 100 / pack.eventCount).toFixed(2)}/event
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Event Validity Surcharge Overrides (per stream type) */}
-          <Separator />
-          <Card className={`transition-colors ${Object.values(validityOverrides).some((o) => o.enabled) ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${Object.values(validityOverrides).some((o) => o.enabled) ? "bg-amber-500/10" : "bg-muted"}`}>
-                  <Clock className={`h-4 w-4 ${Object.values(validityOverrides).some((o) => o.enabled) ? "text-amber-500" : "text-muted-foreground"}`} />
-                </div>
-                <div>
-                  <CardTitle className="text-sm">
-                    Event Validity Surcharges
-                    {Object.values(validityOverrides).some((o) => o.enabled) && (
-                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-xs">Override per-stream-type extended validity surcharges (30 days always free)</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {MASTER_VALIDITY_TIERS.map((tier) => {
-                const vo = validityOverrides[tier.days]
-                if (!vo) return null
-                const isOverridden = vo.enabled
-                const isExpanded = expandedValidityTiers[tier.days] ?? false
-                const surchargeField = targetType === "studio" ? "studioSurcharge" : "streamerSurcharge"
-
-                return (
-                  <Collapsible
-                    key={tier.days}
-                    open={isExpanded && isOverridden}
-                    onOpenChange={() => setExpandedValidityTiers((prev) => ({ ...prev, [tier.days]: !prev[tier.days] }))}
-                  >
-                    <div className={`rounded-lg border transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
-                      {/* Tier header */}
-                      <div className="flex items-center justify-between p-3">
-                        <CollapsibleTrigger asChild disabled={!isOverridden}>
-                          <button type="button" className="flex items-center gap-2 text-left" disabled={!isOverridden}>
-                            {isOverridden && (
-                              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                            )}
-                            <span className="text-sm font-medium">{tier.days} days</span>
-                            {isOverridden && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                            )}
-                            {!isOverridden && (
-                              <span className="text-xs text-muted-foreground">
-                                {streamTypes.map((st) => {
-                                  const ms = tier.surcharges[st.key]
-                                  const val = targetType === "studio" ? ms.studioSurcharge : ms.streamerSurcharge
-                                  return `+₹${(val / 100).toFixed(2)}`
-                                }).join(" / ")}
-                              </span>
-                            )}
-                          </button>
-                        </CollapsibleTrigger>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Override</span>
-                          <Switch
-                            checked={isOverridden}
-                            onCheckedChange={(checked) => {
-                              const surchargesReset = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
-                              for (const st of streamTypes) {
-                                const masterS = tier.surcharges[st.key]
-                                surchargesReset[st.key as ValidityStreamKey] = {
-                                  streamerSurcharge: (masterS.streamerSurcharge / 100).toString(),
-                                  studioSurcharge: (masterS.studioSurcharge / 100).toString(),
-                                }
-                              }
-                              setValidityOverrides((prev) => ({
-                                ...prev,
-                                [tier.days]: {
-                                  enabled: checked,
-                                  surcharges: checked ? prev[tier.days]?.surcharges ?? surchargesReset : surchargesReset,
-                                },
-                              }))
-                              if (checked) {
-                                setExpandedValidityTiers((prev) => ({ ...prev, [tier.days]: true }))
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Expanded per-stream surcharge inputs */}
-                      <CollapsibleContent>
-                        {isOverridden && (
-                          <div className="border-t border-border/30 px-3 pb-3 pt-2 space-y-2">
-                            {streamTypes.map(({ key, label, icon: Icon }) => {
-                              const masterS = tier.surcharges[key]
-                              const customS = vo.surcharges[key]
-                              const masterVal = targetType === "studio" ? masterS.studioSurcharge : masterS.streamerSurcharge
-
-                              return (
-                                <div key={key} className="rounded-md bg-secondary/30 p-2.5">
-                                  <div className="grid items-center gap-2 md:grid-cols-[1fr_120px_120px]">
-                                    <div className="flex items-center gap-2">
-                                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                      <span className="text-xs font-medium">{label}</span>
-                                    </div>
-                                    <div className="space-y-0.5">
-                                      <Label className="text-[10px] text-muted-foreground md:hidden">{targetType === "studio" ? "Studio" : "Streamer"} Surcharge</Label>
-                                      <div className="relative">
-                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{"₹"}</span>
-                                        <Input
-                                          type="number"
-                                          step="0.01"
-                                          min="0"
-                                          value={customS?.[surchargeField] ?? ""}
-                                          onChange={(e) =>
-                                            setValidityOverrides((prev) => ({
-                                              ...prev,
-                                              [tier.days]: {
-                                                ...prev[tier.days],
-                                                surcharges: {
-                                                  ...prev[tier.days].surcharges,
-                                                  [key]: { ...prev[tier.days].surcharges[key as ValidityStreamKey], [surchargeField]: e.target.value },
-                                                },
-                                              },
-                                            }))
-                                          }
-                                          className="pl-6 bg-secondary border-0 h-7 text-xs"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="space-y-0.5">
-                                      <Label className="text-[10px] text-muted-foreground md:hidden">Master</Label>
-                                      <div className="flex items-center h-7 px-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                                        +{"₹"}{(masterVal / 100).toFixed(2)}
-                                        <span className="ml-auto text-[9px]">ref</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                )
-              })}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </div>
 
           <Separator />
 
           {/* Note */}
           <div className="space-y-2">
-            <Label htmlFor="pricing-note">Admin Note (optional)</Label>
+            <Label className="text-sm">Admin Note</Label>
             <Textarea
-              id="pricing-note"
-              placeholder="Reason for custom pricing, e.g. bulk deal, partner discount..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="bg-secondary border-0 resize-none"
+              placeholder="Reason for custom pricing..."
               rows={2}
+              className="resize-none"
             />
           </div>
 
-          {/* Save */}
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSave}>
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saved}>
               <Save className="mr-2 h-4 w-4" />
-              {hasAnyOverride ? "Save Custom Pricing" : "Remove Custom Pricing"}
+              {saved ? "Saved!" : "Save Changes"}
             </Button>
-            {saved && <span className="text-sm text-emerald-500">Saved!</span>}
           </div>
         </div>
       </DialogContent>

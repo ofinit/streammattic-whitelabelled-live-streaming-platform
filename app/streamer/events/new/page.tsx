@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare, Loader2, Wallet, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { mockEventTemplates, mockStreamers, mockStudios } from "@/lib/mock-data"
+import { mockEventTemplates, mockStreamers } from "@/lib/mock-data"
 import type { StreamTypeKey } from "@/lib/types"
 import { toast } from "@/hooks/use-toast"
 import { StreamTypeSelector } from "@/components/events/stream-type-selector"
@@ -19,10 +19,11 @@ import { SimulcastSelector } from "@/components/events/simulcast-selector"
 import { YouTubeChannelSelector } from "@/components/youtube/youtube-channel-selector"
 import { useAuth } from "@/lib/auth-context"
 import {
-  calculateEventPrice,
+  calculateEventCost,
   formatCurrency,
-  validateCascade,
-  type AncestorInfo,
+  hasEnoughCredits,
+  formatPaisa,
+  getSimulcastPrice,
 } from "@/lib/cascade-wallet-service"
 
 export default function ScheduleEventPage() {
@@ -30,7 +31,7 @@ export default function ScheduleEventPage() {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [cascadeError, setCascadeError] = useState<string | null>(null)
+  const [creditError, setCreditError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -77,51 +78,52 @@ export default function ScheduleEventPage() {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
   }
 
-  // Calculate price preview
-  const pricePreview = formData.streamType
-    ? calculateEventPrice(
+  // Calculate cost preview (credit-based)
+  const costPreview = formData.streamType
+    ? calculateEventCost(
         formData.streamType as StreamTypeKey,
         formData.simulcastDestinations,
-        "streamer",
       )
     : null
 
-  // Validate cascade before submission
-  const validateCascadeForSubmit = () => {
-    if (!formData.streamType) return null
+  // Get current streamer info
+  const currentStreamer = mockStreamers[0]
 
-    // Build ancestor chain: Streamer -> Studio -> Admin
-    const currentStreamer = mockStreamers[0] // In production, use actual auth user
-    const parentStudio = mockStudios.find((r) => r.id === currentStreamer.studioId)
+  // Validate credits before submission
+  const validateCreditsForSubmit = (): { isValid: boolean; errorMessage?: string } => {
+    if (!formData.streamType) return { isValid: false, errorMessage: "No stream type selected" }
 
-    const chain: AncestorInfo[] = [
-      { id: currentStreamer.id, name: currentStreamer.name, type: "streamer", walletBalance: currentStreamer.walletBalance, parentId: currentStreamer.studioId },
-    ]
+    const streamType = formData.streamType as StreamTypeKey
+    const cost = calculateEventCost(streamType, formData.simulcastDestinations)
 
-    if (parentStudio) {
-      chain.push({
-        id: parentStudio.id,
-        name: parentStudio.name,
-        type: "studio",
-        walletBalance: parentStudio.walletBalance,
-      })
+    // Check credits
+    if (!hasEnoughCredits(currentStreamer.credits, streamType, cost.creditsRequired)) {
+      return {
+        isValid: false,
+        errorMessage: `Insufficient ${streamType.replace(/_/g, " ")} credits. You need ${cost.creditsRequired} but have ${currentStreamer.credits[streamType]}.`,
+      }
     }
 
-    // Admin at the top
-    chain.push({ id: "admin-1", name: "Platform Admin", type: "admin", walletBalance: 999999 })
+    // Check wallet for simulcast
+    if (cost.simulcastWalletCost > 0 && currentStreamer.walletBalance < cost.simulcastWalletCost) {
+      return {
+        isValid: false,
+        errorMessage: `Insufficient wallet balance for simulcast charges. You need ${formatPaisa(cost.simulcastWalletCost)} but have ${formatPaisa(currentStreamer.walletBalance)}.`,
+      }
+    }
 
-    return validateCascade(chain, formData.streamType as StreamTypeKey, formData.simulcastDestinations)
+    return { isValid: true }
   }
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
-    setCascadeError(null)
+    setCreditError(null)
 
     try {
-      // 1. Validate cascade wallet balances
-      const cascadeResult = validateCascadeForSubmit()
-      if (cascadeResult && !cascadeResult.isValid) {
-        setCascadeError(cascadeResult.failureReason || "Insufficient wallet balance in the chain")
+      // 1. Validate credits and wallet balance
+      const creditResult = validateCreditsForSubmit()
+      if (!creditResult.isValid) {
+        setCreditError(creditResult.errorMessage || "Cannot create event")
         setIsSubmitting(false)
         return
       }
@@ -630,8 +632,8 @@ export default function ScheduleEventPage() {
                 </dl>
               </Card>
 
-              {/* Pricing Card */}
-              {pricePreview && (
+              {/* Cost Card */}
+              {costPreview && (
                 <Card className="p-6 border-primary/30 bg-primary/5">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <Wallet className="h-5 w-5 text-primary" />
@@ -639,31 +641,27 @@ export default function ScheduleEventPage() {
                   </h3>
                   <dl className="mt-4 space-y-2">
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Stream Type:</dt>
-                      <dd className="font-medium">{formatCurrency(pricePreview.streamPrice)}</dd>
+                      <dt className="text-muted-foreground">Stream Credit:</dt>
+                      <dd className="font-medium">{costPreview.creditsRequired} {formData.streamType?.replace(/_/g, " ")} credit</dd>
                     </div>
-                    {pricePreview.simulcastPrice > 0 && (
+                    {costPreview.simulcastWalletCost > 0 && (
                       <div className="flex justify-between">
                         <dt className="text-muted-foreground">Simulcast ({formData.simulcastDestinations.length} destinations):</dt>
-                        <dd className="font-medium">{formatCurrency(pricePreview.simulcastPrice)}</dd>
+                        <dd className="font-medium">{formatPaisa(costPreview.simulcastWalletCost)} from wallet</dd>
                       </div>
                     )}
-                    <div className="flex justify-between border-t pt-2 mt-2">
-                      <dt className="font-semibold">Total:</dt>
-                      <dd className="text-lg font-bold text-primary">{formatCurrency(pricePreview.total)}</dd>
-                    </div>
                   </dl>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    This amount will be deducted from your wallet upon event creation.
+                    1 credit of the selected stream type will be consumed. Simulcast charges are deducted from your wallet.
                   </p>
                 </Card>
               )}
 
-              {/* Cascade Error Alert */}
-              {cascadeError && (
+              {/* Credit Error Alert */}
+              {creditError && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{cascadeError}</AlertDescription>
+                  <AlertDescription>{creditError}</AlertDescription>
                 </Alert>
               )}
             </div>
@@ -689,8 +687,8 @@ export default function ScheduleEventPage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating Event...
                 </>
-              ) : pricePreview ? (
-                `Create Event (${formatCurrency(pricePreview.total)})`
+              ) : costPreview ? (
+                `Create Event (1 Credit)`
               ) : (
                 "Create Event"
               )}

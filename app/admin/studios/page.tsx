@@ -229,15 +229,9 @@ export default function AdminStudiosPage() {
           onOpenChange={(open) => !open && setPricingStudio(null)}
           targetName={pricingStudio.branding.platformName}
           targetType="studio"
-          existingCustomPricing={pricingStudio.customPricing}
-          existingAnnualOverride={(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
-          existingPackOverrides={(pricingStudio as unknown as Record<string, unknown>).customPackPricing as Record<string, { streamerPrice: number; studioPrice: number }> | null ?? null}
-          existingValidityOverrides={(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { streamerSurcharge: number; studioSurcharge: number }> | null ?? null}
-          onSave={(pricing, _note, annualOverride, packOverrides, validityOverrides) => {
+          existingCustomPricing={pricingStudio.customPricing as Record<string, { basePrice: number }> | undefined}
+          onSave={(pricing, _note) => {
             pricingStudio.customPricing = pricing
-            ;(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
-            ;(pricingStudio as unknown as Record<string, unknown>).customPackPricing = packOverrides
-            ;(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
             setPricingStudio(null)
           }}
         />

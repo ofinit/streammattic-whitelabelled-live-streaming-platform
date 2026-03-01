@@ -17,7 +17,6 @@ import type {
   StreamTypePricing,
   SimulcastPricing,
   StreamTypeCredits,
-  WalletTransaction,
 } from "./types"
 
 import {

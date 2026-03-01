@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, DollarSign, Radio, AlertCircle } from "lucide-react"
-import { mockOrders, mockEvents, mockUsers } from "@/lib/mock-data"
+import { mockOrders, mockEvents, mockStreamers } from "@/lib/mock-data"
 import {
   Line,
   LineChart,
@@ -74,9 +74,9 @@ export default function AdminAnalyticsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockUsers.filter((u) => u.role === "user").length}</div>
+            <div className="text-2xl font-bold">{mockStreamers.filter((u) => u.role === "user").length}</div>
             <p className="text-xs text-muted-foreground">
-              Across {mockUsers.filter((u) => u.role === "studio").length} studios
+              Across {mockStreamers.filter((u) => u.role === "studio").length} studios
             </p>
           </CardContent>
         </Card>

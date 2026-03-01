@@ -22,52 +22,52 @@ import {
   Star,
   ArrowRight,
 } from "lucide-react"
-import { mockUserInventory } from "@/lib/mock-data"
+import { mockStreamerInventory } from "@/lib/mock-data"
 import type { EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
 import { EventPackPurchaseDialog } from "@/components/packages/event-pack-purchase-dialog"
 import { toast } from "sonner"
 
 // Stream types with prices (from admin config -- in production fetched from API)
 const streamTypes = [
-  { key: "rtmp" as ValidityStreamKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video, userPrice: 1200, enabled: true },
-  { key: "youtube_api" as ValidityStreamKey, label: "YouTube API", description: "Direct broadcast via API", icon: Youtube, userPrice: 800, enabled: true, recommended: true },
-  { key: "youtube_embed" as ValidityStreamKey, label: "YouTube Embed", description: "Embed an existing stream", icon: MonitorPlay, userPrice: 400, enabled: true },
-  { key: "third_party" as ValidityStreamKey, label: "Third Party", description: "External embed URL", icon: Globe, userPrice: 300, enabled: false },
+  { key: "rtmp" as ValidityStreamKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video, streamerPrice: 1200, enabled: true },
+  { key: "youtube_api" as ValidityStreamKey, label: "YouTube API", description: "Direct broadcast via API", icon: Youtube, streamerPrice: 800, enabled: true, recommended: true },
+  { key: "youtube_embed" as ValidityStreamKey, label: "YouTube Embed", description: "Embed an existing stream", icon: MonitorPlay, streamerPrice: 400, enabled: true },
+  { key: "third_party" as ValidityStreamKey, label: "Third Party", description: "External embed URL", icon: Globe, streamerPrice: 300, enabled: false },
 ]
 
 // Event packs (from admin config)
 const availableEventPacks: EventPack[] = [
-  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
 ]
 
 // Validity tiers (from admin config)
 const validityTiers: ValidityTier[] = [
   { days: 60, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 300, studioSurcharge: 150 },
-    youtube_api: { userSurcharge: 200, studioSurcharge: 100 },
-    youtube_embed: { userSurcharge: 100, studioSurcharge: 50 },
-    third_party: { userSurcharge: 80, studioSurcharge: 40 },
+    rtmp: { streamerSurcharge: 300, studioSurcharge: 150 },
+    youtube_api: { streamerSurcharge: 200, studioSurcharge: 100 },
+    youtube_embed: { streamerSurcharge: 100, studioSurcharge: 50 },
+    third_party: { streamerSurcharge: 80, studioSurcharge: 40 },
   }},
   { days: 90, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 700, studioSurcharge: 350 },
-    youtube_api: { userSurcharge: 500, studioSurcharge: 250 },
-    youtube_embed: { userSurcharge: 250, studioSurcharge: 125 },
-    third_party: { userSurcharge: 200, studioSurcharge: 100 },
+    rtmp: { streamerSurcharge: 700, studioSurcharge: 350 },
+    youtube_api: { streamerSurcharge: 500, studioSurcharge: 250 },
+    youtube_embed: { streamerSurcharge: 250, studioSurcharge: 125 },
+    third_party: { streamerSurcharge: 200, studioSurcharge: 100 },
   }},
   { days: 180, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 1200, studioSurcharge: 600 },
-    youtube_api: { userSurcharge: 1000, studioSurcharge: 500 },
-    youtube_embed: { userSurcharge: 500, studioSurcharge: 250 },
-    third_party: { userSurcharge: 400, studioSurcharge: 200 },
+    rtmp: { streamerSurcharge: 1200, studioSurcharge: 600 },
+    youtube_api: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    youtube_embed: { streamerSurcharge: 500, studioSurcharge: 250 },
+    third_party: { streamerSurcharge: 400, studioSurcharge: 200 },
   }},
   { days: 365, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 2500, studioSurcharge: 1250 },
-    youtube_api: { userSurcharge: 2000, studioSurcharge: 1000 },
-    youtube_embed: { userSurcharge: 1000, studioSurcharge: 500 },
-    third_party: { userSurcharge: 800, studioSurcharge: 400 },
+    rtmp: { streamerSurcharge: 2500, studioSurcharge: 1250 },
+    youtube_api: { streamerSurcharge: 2000, studioSurcharge: 1000 },
+    youtube_embed: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    third_party: { streamerSurcharge: 800, studioSurcharge: 400 },
   }},
 ]
 
@@ -78,9 +78,9 @@ const packIcons: Record<string, typeof Zap> = {
   "Enterprise Pack": Star,
 }
 
-export default function UserPackagesPage() {
+export default function StreamerPackagesPage() {
   const [activeTab, setActiveTab] = useState("pricing")
-  const [inventory] = useState(mockUserInventory.filter((i) => i.userId === "user-1"))
+  const [inventory] = useState(mockStreamerInventory.filter((i) => i.userId === "streamer-1"))
   const [purchasePack, setPurchasePack] = useState<EventPack | null>(null)
   const walletBalance = 500
 
@@ -139,7 +139,7 @@ export default function UserPackagesPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold">{"₹"}{(st.userPrice / 100).toFixed(2)}</span>
+                      <span className="text-2xl font-bold">{"₹"}{(st.streamerPrice / 100).toFixed(2)}</span>
                       <span className="text-sm text-muted-foreground">/ event</span>
                     </div>
 
@@ -155,7 +155,7 @@ export default function UserPackagesPage() {
                         return (
                           <div key={tier.days} className="rounded-md bg-secondary/30 px-3 py-2 flex items-center justify-between text-sm">
                             <span>{tier.days} days</span>
-                            <span className="text-muted-foreground">+{"₹"}{(surcharge.userSurcharge / 100).toFixed(2)}</span>
+                            <span className="text-muted-foreground">+{"₹"}{(surcharge.streamerSurcharge / 100).toFixed(2)}</span>
                           </div>
                         )
                       })}
@@ -240,10 +240,10 @@ export default function UserPackagesPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {enabledPacks.map((pack, index) => {
                 const Icon = packIcons[pack.name] || Zap
-                const perEvent = pack.userPrice / pack.eventCount
+                const perEvent = pack.streamerPrice / pack.eventCount
                 const isPopular = index === 1
                 // Compare against cheapest per-event stream price
-                const cheapestStream = Math.min(...streamTypes.filter((s) => s.enabled).map((s) => s.userPrice))
+                const cheapestStream = Math.min(...streamTypes.filter((s) => s.enabled).map((s) => s.streamerPrice))
                 const savingsPercent = cheapestStream > 0 ? Math.round((1 - perEvent / cheapestStream) * 100) : 0
 
                 return (
@@ -263,7 +263,7 @@ export default function UserPackagesPage() {
                     <CardContent className="flex-1 space-y-4">
                       <div className="text-center">
                         <div className="flex items-baseline justify-center gap-1">
-                          <span className="text-2xl font-bold">{"₹"}{(pack.userPrice / 100).toFixed(0)}</span>
+                          <span className="text-2xl font-bold">{"₹"}{(pack.streamerPrice / 100).toFixed(0)}</span>
                         </div>
                         <div className="flex items-center justify-center gap-2 mt-1">
                           {savingsPercent > 0 && (
@@ -350,7 +350,7 @@ export default function UserPackagesPage() {
                         <td className="py-2 pr-4 font-medium">{tier.days} days</td>
                         {streamTypes.filter((s) => s.enabled).map((st) => (
                           <td key={st.key} className="text-right py-2 px-2 text-muted-foreground">
-                            +{"₹"}{(tier.surcharges[st.key].userSurcharge / 100).toFixed(2)}
+                            +{"₹"}{(tier.surcharges[st.key].streamerSurcharge / 100).toFixed(2)}
                           </td>
                         ))}
                       </tr>

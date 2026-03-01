@@ -22,52 +22,52 @@ import {
   Star,
   ArrowRight,
 } from "lucide-react"
-import { mockUserInventory } from "@/lib/mock-data"
+import { mockStreamerInventory } from "@/lib/mock-data"
 import type { EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
 import { EventPackPurchaseDialog } from "@/components/packages/event-pack-purchase-dialog"
 import { toast } from "sonner"
 
-// Stream types with studio + user prices (from admin config -- in production fetched from API)
+// Stream types with studio + streamer prices (from admin config -- in production fetched from API)
 const streamTypes = [
-  { key: "rtmp" as ValidityStreamKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video, userPrice: 1200, studioPrice: 600, enabled: true },
-  { key: "youtube_api" as ValidityStreamKey, label: "YouTube API", description: "Direct broadcast via API", icon: Youtube, userPrice: 800, studioPrice: 400, enabled: true, recommended: true },
-  { key: "youtube_embed" as ValidityStreamKey, label: "YouTube Embed", description: "Embed an existing stream", icon: MonitorPlay, userPrice: 400, studioPrice: 200, enabled: true },
-  { key: "third_party" as ValidityStreamKey, label: "Third Party", description: "External embed URL", icon: Globe, userPrice: 300, studioPrice: 150, enabled: false },
+  { key: "rtmp" as ValidityStreamKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video, streamerPrice: 1200, studioPrice: 600, enabled: true },
+  { key: "youtube_api" as ValidityStreamKey, label: "YouTube API", description: "Direct broadcast via API", icon: Youtube, streamerPrice: 800, studioPrice: 400, enabled: true, recommended: true },
+  { key: "youtube_embed" as ValidityStreamKey, label: "YouTube Embed", description: "Embed an existing stream", icon: MonitorPlay, streamerPrice: 400, studioPrice: 200, enabled: true },
+  { key: "third_party" as ValidityStreamKey, label: "Third Party", description: "External embed URL", icon: Globe, streamerPrice: 300, studioPrice: 150, enabled: false },
 ]
 
 // Event packs (from admin config)
 const availableEventPacks: EventPack[] = [
-  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
 ]
 
 // Validity tiers (from admin config)
 const validityTiers: ValidityTier[] = [
   { days: 60, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 300, studioSurcharge: 150 },
-    youtube_api: { userSurcharge: 200, studioSurcharge: 100 },
-    youtube_embed: { userSurcharge: 100, studioSurcharge: 50 },
-    third_party: { userSurcharge: 80, studioSurcharge: 40 },
+    rtmp: { streamerSurcharge: 300, studioSurcharge: 150 },
+    youtube_api: { streamerSurcharge: 200, studioSurcharge: 100 },
+    youtube_embed: { streamerSurcharge: 100, studioSurcharge: 50 },
+    third_party: { streamerSurcharge: 80, studioSurcharge: 40 },
   }},
   { days: 90, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 700, studioSurcharge: 350 },
-    youtube_api: { userSurcharge: 500, studioSurcharge: 250 },
-    youtube_embed: { userSurcharge: 250, studioSurcharge: 125 },
-    third_party: { userSurcharge: 200, studioSurcharge: 100 },
+    rtmp: { streamerSurcharge: 700, studioSurcharge: 350 },
+    youtube_api: { streamerSurcharge: 500, studioSurcharge: 250 },
+    youtube_embed: { streamerSurcharge: 250, studioSurcharge: 125 },
+    third_party: { streamerSurcharge: 200, studioSurcharge: 100 },
   }},
   { days: 180, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 1200, studioSurcharge: 600 },
-    youtube_api: { userSurcharge: 1000, studioSurcharge: 500 },
-    youtube_embed: { userSurcharge: 500, studioSurcharge: 250 },
-    third_party: { userSurcharge: 400, studioSurcharge: 200 },
+    rtmp: { streamerSurcharge: 1200, studioSurcharge: 600 },
+    youtube_api: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    youtube_embed: { streamerSurcharge: 500, studioSurcharge: 250 },
+    third_party: { streamerSurcharge: 400, studioSurcharge: 200 },
   }},
   { days: 365, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 2500, studioSurcharge: 1250 },
-    youtube_api: { userSurcharge: 2000, studioSurcharge: 1000 },
-    youtube_embed: { userSurcharge: 1000, studioSurcharge: 500 },
-    third_party: { userSurcharge: 800, studioSurcharge: 400 },
+    rtmp: { streamerSurcharge: 2500, studioSurcharge: 1250 },
+    youtube_api: { streamerSurcharge: 2000, studioSurcharge: 1000 },
+    youtube_embed: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    third_party: { streamerSurcharge: 800, studioSurcharge: 400 },
   }},
 ]
 
@@ -80,7 +80,7 @@ const packIcons: Record<string, typeof Zap> = {
 
 export default function StudioPackagesPage() {
   const [activeTab, setActiveTab] = useState("pricing")
-  const [inventory] = useState(mockUserInventory.filter((i) => i.userId === "studio-1"))
+  const [inventory] = useState(mockStreamerInventory.filter((i) => i.userId === "studio-1"))
   const [purchasePack, setPurchasePack] = useState<EventPack | null>(null)
   const walletBalance = 15000
 

@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { mockEvents, mockUsers } from "@/lib/mock-data"
+import { mockEvents, mockStreamers } from "@/lib/mock-data"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent } from "@/lib/types"
 import { format } from "date-fns"
@@ -68,7 +68,7 @@ export default function AdminEventsPage() {
   }
 
   const getUserName = (userId: string) => {
-    const user = mockUsers.find((u) => u.id === userId)
+    const user = mockStreamers.find((u) => u.id === userId)
     return user?.name || "Unknown"
   }
 

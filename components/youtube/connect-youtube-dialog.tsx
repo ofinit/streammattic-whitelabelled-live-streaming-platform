@@ -10,7 +10,7 @@ interface ConnectYouTubeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   ownerId: string
-  ownerType: "admin" | "studio" | "user"
+  ownerType: "admin" | "studio" | "streamer"
   returnUrl?: string
   onSuccess?: () => void
 }

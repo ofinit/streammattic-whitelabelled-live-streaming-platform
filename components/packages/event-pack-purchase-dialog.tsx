@@ -23,7 +23,7 @@ interface StreamTypeInfo {
   key: ValidityStreamKey
   label: string
   icon: React.ElementType
-  userPrice: number
+  streamerPrice: number
   studioPrice?: number
   enabled: boolean
 }
@@ -53,7 +53,7 @@ export function EventPackPurchaseDialog({
 
   if (!pack) return null
 
-  const packBasePrice = isStudio ? pack.studioPrice : pack.userPrice
+  const packBasePrice = isStudio ? pack.studioPrice : pack.streamerPrice
   const perEvent = packBasePrice / pack.eventCount
 
   // Calculate surcharge based on selected validity (use average across enabled stream types for packs)
@@ -63,7 +63,7 @@ export function EventPackPurchaseDialog({
     const tier = validityTiers.find((t) => t.days === selectedValidity)
     if (tier) {
       const surcharges = enabledStreamTypes.map((st) =>
-        isStudio ? tier.surcharges[st.key].studioSurcharge : tier.surcharges[st.key].userSurcharge
+        isStudio ? tier.surcharges[st.key].studioSurcharge : tier.surcharges[st.key].streamerSurcharge
       )
       validitySurchargePerEvent = surcharges.length > 0
         ? Math.round(surcharges.reduce((sum, s) => sum + s, 0) / surcharges.length)
@@ -140,7 +140,7 @@ export function EventPackPurchaseDialog({
               {/* Extended tiers */}
               {validityTiers.filter((t) => t.enabled).map((tier) => {
                 const avgSurcharge = enabledStreamTypes.length > 0
-                  ? enabledStreamTypes.reduce((sum, st) => sum + (isStudio ? tier.surcharges[st.key].studioSurcharge : tier.surcharges[st.key].userSurcharge), 0) / enabledStreamTypes.length
+                  ? enabledStreamTypes.reduce((sum, st) => sum + (isStudio ? tier.surcharges[st.key].studioSurcharge : tier.surcharges[st.key].streamerSurcharge), 0) / enabledStreamTypes.length
                   : 0
                 const tierTotalSurcharge = Math.round(avgSurcharge) * pack.eventCount
 

@@ -35,7 +35,7 @@ export default function DemoMonthlyActivePage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -111,7 +111,7 @@ export default function DemoMonthlyActivePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4">
-            <Button variant="outline" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="outline" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>

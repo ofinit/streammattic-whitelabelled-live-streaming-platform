@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Filter, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react"
-import { mockRefundRequests, mockEvents, mockUsers } from "@/lib/mock-data"
+import { mockRefundRequests, mockEvents, mockStreamers } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/refund-service"
 import type { RefundRequest } from "@/lib/types"
 
@@ -34,7 +34,7 @@ export default function AdminRefundsPage() {
   // Filter refunds
   const filteredRefunds = refunds.filter((refund) => {
     const event = mockEvents.find((e) => e.id === refund.eventId)
-    const user = mockUsers.find((u) => u.id === refund.requestedBy)
+    const user = mockStreamers.find((u) => u.id === refund.requestedBy)
 
     const matchesSearch =
       event?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -185,7 +185,7 @@ export default function AdminRefundsPage() {
           ) : (
             filteredRefunds.map((refund) => {
               const event = mockEvents.find((e) => e.id === refund.eventId)
-              const user = mockUsers.find((u) => u.id === refund.requestedBy)
+              const user = mockStreamers.find((u) => u.id === refund.requestedBy)
 
               return (
                 <Card key={refund.id}>
@@ -277,7 +277,7 @@ export default function AdminRefundsPage() {
               </div>
               <div>
                 <Label>Requested By</Label>
-                <p>{mockUsers.find((u) => u.id === selectedRefund.requestedBy)?.name}</p>
+                <p>{mockStreamers.find((u) => u.id === selectedRefund.requestedBy)?.name}</p>
               </div>
             </div>
           )}

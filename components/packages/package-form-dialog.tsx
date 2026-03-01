@@ -40,7 +40,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
       pricingModel: "monthly",
       description: "",
       basePriceStudio: 0,
-      basePriceUser: 0,
+      basePriceStreamer: 0,
       duration: 30,
       maxEvents: 10,
       maxConcurrentViewers: 500,
@@ -70,7 +70,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
         pricingModel: "monthly",
         description: "",
         basePriceStudio: 0,
-        basePriceUser: 0,
+        basePriceStreamer: 0,
         duration: 30,
         maxEvents: 10,
         maxConcurrentViewers: 500,
@@ -109,7 +109,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateStreamTypePrice = (
     streamType: keyof StreamTypePricing,
-    level: "userPrice" | "studioPrice" | "enabled",
+    level: "streamerPrice" | "studioPrice" | "enabled",
     value: number | boolean,
   ) => {
     setFormData((prev) => ({
@@ -126,7 +126,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateSimulcastPrice = (
     destination: keyof SimulcastPricing,
-    level: "userPrice" | "studioPrice" | "enabled",
+    level: "streamerPrice" | "studioPrice" | "enabled",
     value: number | boolean,
   ) => {
     setFormData((prev) => ({
@@ -296,12 +296,12 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="basePriceUser">User Price (₹)</Label>
+                        <Label htmlFor="basePriceStreamer">Streamer Price (₹)</Label>
                         <Input
-                          id="basePriceUser"
+                          id="basePriceStreamer"
                           type="number"
-                          value={formData.basePriceUser}
-                          onChange={(e) => setFormData({ ...formData, basePriceUser: Number(e.target.value) })}
+                          value={formData.basePriceStreamer}
+                          onChange={(e) => setFormData({ ...formData, basePriceStreamer: Number(e.target.value) })}
                           required
                         />
                       </div>
@@ -333,8 +333,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               <Label className="text-xs text-muted-foreground">User Price</Label>
                               <Input
                                 type="number"
-                                value={formData.streamTypePricing?.[key].userPrice}
-                                onChange={(e) => updateStreamTypePrice(key, "userPrice", Number(e.target.value))}
+                                value={formData.streamTypePricing?.[key].streamerPrice}
+                                onChange={(e) => updateStreamTypePrice(key, "streamerPrice", Number(e.target.value))}
                                 className="h-8"
                               />
                             </div>
@@ -375,8 +375,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               <Label className="text-xs text-muted-foreground">User Price</Label>
                               <Input
                                 type="number"
-                                value={formData.simulcastPricing?.[key].userPrice}
-                                onChange={(e) => updateSimulcastPrice(key, "userPrice", Number(e.target.value))}
+                                value={formData.simulcastPricing?.[key].streamerPrice}
+                                onChange={(e) => updateSimulcastPrice(key, "streamerPrice", Number(e.target.value))}
                                 className="h-8"
                               />
                             </div>

@@ -76,7 +76,7 @@ export function PackageCard({
             <div className="mt-2 flex justify-center gap-2 text-xs text-muted-foreground">
               <span>Studio: ₹{pkg.basePriceStudio}</span>
               <span>|</span>
-              <span>User: ₹{pkg.basePriceUser}</span>
+              <span>Streamer: ₹{pkg.basePriceStreamer}</span>
             </div>
           )}
         </div>

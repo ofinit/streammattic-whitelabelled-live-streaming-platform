@@ -34,6 +34,18 @@ export default function SiteLoginPage() {
 
     const success = await login(email, password)
     if (success) {
+      // Re-fetch to get user role for redirect
+      try {
+        const res = await fetch("/api/auth/me")
+        if (res.ok) {
+          const data = await res.json()
+          const role = data.user?.role
+          if (role === "admin") router.push("/admin")
+          else if (role === "studio") router.push("/studio")
+          else router.push("/streamer")
+          return
+        }
+      } catch { /* fallback */ }
       router.push("/studio")
     } else {
       setError("Invalid email or password")

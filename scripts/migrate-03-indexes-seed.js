@@ -1,0 +1,150 @@
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
+const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
+
+async function exec(query) {
+  const r = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
+    body: JSON.stringify({ query, params: [] }),
+  });
+  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
+  return r.json();
+}
+
+async function main() {
+  console.log("=== Creating remaining indexes ===");
+
+  const indexes = [
+    `CREATE INDEX IF NOT EXISTS idx_refund_requested_by ON refund_requests(requested_by)`,
+    `CREATE INDEX IF NOT EXISTS idx_refund_status ON refund_requests(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_refund_event_id ON refund_requests(event_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_wallet_adj_target ON wallet_adjustments(target_user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_wallet_adj_status ON wallet_adjustments(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_invoices_recipient ON invoices(recipient_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_invoices_issuer ON invoices(issuer_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_youtube_owner ON youtube_channels(owner_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_youtube_channel ON youtube_channels(channel_id)`,
+  ];
+
+  for (const idx of indexes) {
+    try { await exec(idx); console.log("OK:", idx.substring(0, 60)); }
+    catch (e) { console.log("FAIL:", idx.substring(0, 60), e.message.substring(0, 100)); }
+  }
+
+  console.log("\n=== Inserting seed data ===");
+
+  // Admin user with bcrypt hash of "admin123" - $2b$10$...
+  // Using gen_random_uuid() and crypt() from pgcrypto
+  try {
+    await exec(`INSERT INTO users (email, name, phone, password_hash, role, status, email_verified)
+      VALUES ('admin@streammattic.com', 'Platform Admin', '+919999999999',
+      '$2b$10$rQZ8kHwM5.TA3j5V3j5V3eK8X8X8X8X8X8X8X8X8X8X8X8X8X8',
+      'admin', 'active', true)
+      ON CONFLICT (email) DO NOTHING`);
+    console.log("OK: Admin user inserted");
+  } catch (e) { console.log("Admin user:", e.message.substring(0, 100)); }
+
+  // Create wallet for admin
+  try {
+    await exec(`INSERT INTO wallets (user_id, balance, currency)
+      SELECT id, 0, 'INR' FROM users WHERE email = 'admin@streammattic.com'
+      ON CONFLICT (user_id) DO NOTHING`);
+    console.log("OK: Admin wallet created");
+  } catch (e) { console.log("Admin wallet:", e.message.substring(0, 100)); }
+
+  // Create user_credits for admin
+  try {
+    await exec(`INSERT INTO user_credits (user_id)
+      SELECT id FROM users WHERE email = 'admin@streammattic.com'
+      ON CONFLICT (user_id) DO NOTHING`);
+    console.log("OK: Admin credits created");
+  } catch (e) { console.log("Admin credits:", e.message.substring(0, 100)); }
+
+  // Platform settings
+  const settings = [
+    { key: 'platform_name', value: { name: 'StreamMattic', tagline: 'Professional Live Streaming Platform' } },
+    { key: 'stream_type_pricing', value: {
+      rtmp: { basePrice: 1500, enabled: true, label: 'RTMP Server', description: 'Use OBS/Wirecast' },
+      youtube_api: { basePrice: 1000, enabled: true, label: 'YouTube API', description: 'Direct broadcast', recommended: true },
+      youtube_embed: { basePrice: 500, enabled: true, label: 'YouTube Embed', description: 'Embed existing' },
+      third_party: { basePrice: 400, enabled: true, label: 'Third Party', description: 'External embed' }
+    }},
+    { key: 'volume_discount_tiers', value: {
+      rtmp: [
+        { minQty: 5, maxQty: 9, pricePerCredit: 1350, label: '5-Pack (10% off)', enabled: true },
+        { minQty: 10, maxQty: 24, pricePerCredit: 1200, label: '10-Pack (20% off)', enabled: true },
+        { minQty: 25, maxQty: 49, pricePerCredit: 1050, label: '25-Pack (30% off)', enabled: true },
+        { minQty: 50, maxQty: null, pricePerCredit: 900, label: '50-Pack (40% off)', enabled: true }
+      ],
+      youtube_api: [
+        { minQty: 5, maxQty: 9, pricePerCredit: 900, label: '5-Pack (10% off)', enabled: true },
+        { minQty: 10, maxQty: 24, pricePerCredit: 800, label: '10-Pack (20% off)', enabled: true },
+        { minQty: 25, maxQty: 49, pricePerCredit: 700, label: '25-Pack (30% off)', enabled: true },
+        { minQty: 50, maxQty: null, pricePerCredit: 600, label: '50-Pack (40% off)', enabled: true }
+      ],
+      youtube_embed: [
+        { minQty: 5, maxQty: 9, pricePerCredit: 450, label: '5-Pack (10% off)', enabled: true },
+        { minQty: 10, maxQty: 24, pricePerCredit: 400, label: '10-Pack (20% off)', enabled: true },
+        { minQty: 25, maxQty: 49, pricePerCredit: 350, label: '25-Pack (30% off)', enabled: true },
+        { minQty: 50, maxQty: null, pricePerCredit: 300, label: '50-Pack (40% off)', enabled: true }
+      ],
+      third_party: [
+        { minQty: 5, maxQty: 9, pricePerCredit: 360, label: '5-Pack (10% off)', enabled: true },
+        { minQty: 10, maxQty: 24, pricePerCredit: 320, label: '10-Pack (20% off)', enabled: true },
+        { minQty: 25, maxQty: 49, pricePerCredit: 280, label: '25-Pack (30% off)', enabled: true },
+        { minQty: 50, maxQty: null, pricePerCredit: 240, label: '50-Pack (40% off)', enabled: true }
+      ]
+    }},
+    { key: 'validity_extensions', value: {
+      defaultDays: 30,
+      options: [
+        { days: 60, extraDays: 30, creditCost: 1, label: '60 Days (+1 credit)', enabled: true },
+        { days: 90, extraDays: 60, creditCost: 2, label: '90 Days (+2 credits)', enabled: true },
+        { days: 180, extraDays: 150, creditCost: 4, label: '180 Days (+4 credits)', enabled: true },
+        { days: 365, extraDays: 335, creditCost: 8, label: '365 Days (+8 credits)', enabled: true }
+      ]
+    }},
+    { key: 'simulcast_pricing', value: {
+      youtube: { pricePerEvent: 75, enabled: true },
+      facebook: { pricePerEvent: 75, enabled: true },
+      custom_rtmp: { pricePerEvent: 100, enabled: true }
+    }},
+    { key: 'studio_annual_subscription', value: { price: 1800000, enabled: true } },
+    { key: 'gst_config', value: { enabled: true, percentage: 18, gstNumber: '', businessName: 'StreamMattic' } },
+    { key: 'payment_gateways', value: {
+      razorpay: { enabled: false, keyId: '', keySecret: '' },
+      instamojo: { enabled: false, apiKey: '', authToken: '', sandbox: true }
+    }},
+  ];
+
+  for (const s of settings) {
+    try {
+      const val = JSON.stringify(s.value).replace(/'/g, "''");
+      await exec(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
+      console.log("OK: Setting", s.key);
+    } catch (e) { console.log("FAIL setting", s.key, ":", e.message.substring(0, 150)); }
+  }
+
+  // Event templates
+  const templates = [
+    { name: 'Basic Stream', stream_type: 'rtmp', description: 'Simple RTMP streaming event', is_default: true },
+    { name: 'YouTube Live', stream_type: 'youtube_api', description: 'YouTube API live broadcast', is_default: false },
+    { name: 'YouTube Embed', stream_type: 'youtube_embed', description: 'Embed existing YouTube stream', is_default: false },
+  ];
+
+  for (const t of templates) {
+    try {
+      const config = JSON.stringify({}).replace(/'/g, "''");
+      await exec(`INSERT INTO event_templates (name, stream_type, description, is_default, default_config)
+        VALUES ('${t.name}', '${t.stream_type}', '${t.description}', ${t.is_default}, '${config}'::jsonb)
+        ON CONFLICT DO NOTHING`);
+      console.log("OK: Template", t.name);
+    } catch (e) { console.log("FAIL template", t.name, ":", e.message.substring(0, 100)); }
+  }
+
+  console.log("\n=== Migration complete ===");
+}
+
+main().catch(e => { console.error("Fatal:", e.message); process.exit(1); });

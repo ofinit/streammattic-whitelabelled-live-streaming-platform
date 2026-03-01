@@ -109,8 +109,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateStreamTypePrice = (
     streamType: keyof StreamTypePricing,
-    level: "adminCost" | "resellerPrice" | "userPrice",
-    value: number,
+    level: "userPrice" | "resellerPrice" | "enabled",
+    value: number | boolean,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -126,8 +126,8 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateSimulcastPrice = (
     destination: keyof SimulcastPricing,
-    level: "adminCost" | "resellerPrice" | "userPrice",
-    value: number,
+    level: "userPrice" | "resellerPrice" | "enabled",
+    value: number | boolean,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -317,171 +317,39 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                       <CardDescription>Set per-event price for each stream type (in paisa). Applied when user schedules an event.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* RTMP Server */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Video className="h-4 w-4" />
-                          RTMP Server
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.rtmp.adminCost}
-                              onChange={(e) => updateStreamTypePrice("rtmp", "adminCost", Number(e.target.value))}
-                              className="h-8"
-                            />
+                      {[
+                        { key: "rtmp" as const, label: "RTMP Server", icon: Video },
+                        { key: "youtube_api" as const, label: "YouTube API", icon: Youtube },
+                        { key: "youtube_embed" as const, label: "YouTube Embed", icon: Play },
+                        { key: "third_party" as const, label: "Third Party Embed", icon: Globe },
+                      ].map(({ key, label, icon: StreamIcon }) => (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <StreamIcon className="h-4 w-4" />
+                            {label}
                           </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.rtmp.resellerPrice}
-                              onChange={(e) => updateStreamTypePrice("rtmp", "resellerPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.rtmp.userPrice}
-                              onChange={(e) => updateStreamTypePrice("rtmp", "userPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">User Price</Label>
+                              <Input
+                                type="number"
+                                value={formData.streamTypePricing?.[key].userPrice}
+                                onChange={(e) => updateStreamTypePrice(key, "userPrice", Number(e.target.value))}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Reseller Price</Label>
+                              <Input
+                                type="number"
+                                value={formData.streamTypePricing?.[key].resellerPrice}
+                                onChange={(e) => updateStreamTypePrice(key, "resellerPrice", Number(e.target.value))}
+                                className="h-8"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-
-                      {/* YouTube API */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Youtube className="h-4 w-4" />
-                          YouTube API
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_api.adminCost}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_api", "adminCost", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_api.resellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_api", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_api.userPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_api", "userPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* YouTube Embed */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Play className="h-4 w-4" />
-                          YouTube Embed
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_embed.adminCost}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_embed", "adminCost", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_embed.resellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_embed", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.youtube_embed.userPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("youtube_embed", "userPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Third Party */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Globe className="h-4 w-4" />
-                          Third Party Embed
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.third_party.adminCost}
-                              onChange={(e) =>
-                                updateStreamTypePrice("third_party", "adminCost", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.third_party.resellerPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("third_party", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.streamTypePricing?.third_party.userPrice}
-                              onChange={(e) =>
-                                updateStreamTypePrice("third_party", "userPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </CardContent>
                   </Card>
 
@@ -492,120 +360,38 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                       <CardDescription>Additional charges for multi-platform streaming</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* YouTube */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Youtube className="h-4 w-4 text-red-500" />
-                          YouTube Live
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.youtube.adminCost}
-                              onChange={(e) => updateSimulcastPrice("youtube", "adminCost", Number(e.target.value))}
-                              className="h-8"
-                            />
+                      {[
+                        { key: "youtube" as const, label: "YouTube Live", icon: Youtube, color: "text-red-500" },
+                        { key: "facebook" as const, label: "Facebook Live", icon: Facebook, color: "text-blue-600" },
+                        { key: "customRtmp" as const, label: "Custom RTMP", icon: Radio, color: "text-purple-500" },
+                      ].map(({ key, label, icon: SimIcon, color }) => (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <SimIcon className={`h-4 w-4 ${color}`} />
+                            {label}
                           </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.youtube.resellerPrice}
-                              onChange={(e) => updateSimulcastPrice("youtube", "resellerPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.youtube.userPrice}
-                              onChange={(e) => updateSimulcastPrice("youtube", "userPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">User Price</Label>
+                              <Input
+                                type="number"
+                                value={formData.simulcastPricing?.[key].userPrice}
+                                onChange={(e) => updateSimulcastPrice(key, "userPrice", Number(e.target.value))}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Reseller Price</Label>
+                              <Input
+                                type="number"
+                                value={formData.simulcastPricing?.[key].resellerPrice}
+                                onChange={(e) => updateSimulcastPrice(key, "resellerPrice", Number(e.target.value))}
+                                className="h-8"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Facebook */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Facebook className="h-4 w-4 text-blue-600" />
-                          Facebook Live
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.facebook.adminCost}
-                              onChange={(e) => updateSimulcastPrice("facebook", "adminCost", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.facebook.resellerPrice}
-                              onChange={(e) =>
-                                updateSimulcastPrice("facebook", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.facebook.userPrice}
-                              onChange={(e) => updateSimulcastPrice("facebook", "userPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Custom RTMP */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <Radio className="h-4 w-4 text-purple-500" />
-                          Custom RTMP
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Admin Cost</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.customRtmp.adminCost}
-                              onChange={(e) => updateSimulcastPrice("customRtmp", "adminCost", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Reseller</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.customRtmp.resellerPrice}
-                              onChange={(e) =>
-                                updateSimulcastPrice("customRtmp", "resellerPrice", Number(e.target.value))
-                              }
-                              className="h-8"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">User</Label>
-                            <Input
-                              type="number"
-                              value={formData.simulcastPricing?.customRtmp.userPrice}
-                              onChange={(e) => updateSimulcastPrice("customRtmp", "userPrice", Number(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </CardContent>
                   </Card>
             </TabsContent>

@@ -1,111 +1,212 @@
 "use client"
 
 import { useState } from "react"
-import { mockPackages } from "@/lib/mock-data"
-import type { Package } from "@/lib/types"
-import { PackageCard } from "@/components/packages/package-card"
-import { PackageFormDialog } from "@/components/packages/package-form-dialog"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee } from "lucide-react"
+import type { StreamTypePriceLevel } from "@/lib/types"
+
+const streamTypes = [
+  { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
+  { key: "youtube_api" as const, label: "YouTube API", description: "Direct broadcast", icon: Youtube, recommended: true },
+  { key: "youtube_embed" as const, label: "YouTube Embed", description: "Embed existing", icon: MonitorPlay },
+  { key: "third_party" as const, label: "Third Party", description: "External embed", icon: Globe },
+]
+
+type StreamPricingState = Record<string, StreamTypePriceLevel>
 
 export default function AdminPackagesPage() {
-  const [packages, setPackages] = useState(mockPackages)
-  const [search, setSearch] = useState("")
-  const [showForm, setShowForm] = useState(false)
-  const [editingPackage, setEditingPackage] = useState<Package | null>(null)
+  const [streamPricing, setStreamPricing] = useState<StreamPricingState>({
+    rtmp: { userPrice: 1200, resellerPrice: 600, enabled: true },
+    youtube_api: { userPrice: 800, resellerPrice: 350, enabled: true },
+    youtube_embed: { userPrice: 400, resellerPrice: 120, enabled: true },
+    third_party: { userPrice: 300, resellerPrice: 80, enabled: false },
+  })
 
-  const activePackages = packages.filter((p) => p.isActive)
-  const inactivePackages = packages.filter((p) => !p.isActive)
+  const [resellerSubscription, setResellerSubscription] = useState({
+    price: 1800000, // 18,000 INR in paisa
+    enabled: true,
+  })
 
-  const filteredActive = activePackages.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-  const filteredInactive = inactivePackages.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+  const [saved, setSaved] = useState(false)
 
-  const handleEdit = (pkg: Package) => {
-    setEditingPackage(pkg)
-    setShowForm(true)
+  const updateStreamPrice = (key: string, field: keyof StreamTypePriceLevel, value: number | boolean) => {
+    setStreamPricing((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], [field]: value },
+    }))
   }
 
-  const handleSubmit = (data: Partial<Package>) => {
-    if (editingPackage) {
-      setPackages((prev) => prev.map((p) => (p.id === editingPackage.id ? { ...p, ...data } : p)))
-    } else {
-      const newPkg: Package = {
-        id: `pkg-${Date.now()}`,
-        ...data,
-        price: data.basePriceUser || 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Package
-      setPackages((prev) => [...prev, newPkg])
-    }
-    setEditingPackage(null)
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Packages</h1>
-          <p className="text-muted-foreground">Manage subscription packages and pricing</p>
-        </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Package
+      <div>
+        <h1 className="text-2xl font-bold">Packages</h1>
+        <p className="text-muted-foreground">Configure per-event pricing and reseller subscriptions</p>
+      </div>
+
+      {/* Per-Event Stream Pricing */}
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+              <IndianRupee className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Per-Event Stream Pricing</CardTitle>
+              <CardDescription>Set pricing for each stream type. Prices are in paisa (100 paisa = ₹1).</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Table Header */}
+          <div className="hidden md:grid md:grid-cols-[1fr_140px_140px_80px] items-center gap-4 px-4 pb-3 text-sm font-medium text-muted-foreground">
+            <span>Stream Type</span>
+            <span>User Price</span>
+            <span>Reseller Price</span>
+            <span className="text-center">Status</span>
+          </div>
+          <Separator className="mb-4 hidden md:block" />
+
+          <div className="space-y-3">
+            {streamTypes.map(({ key, label, description, icon: Icon, recommended }) => {
+              const pricing = streamPricing[key]
+              return (
+                <div
+                  key={key}
+                  className={`rounded-lg border p-4 transition-colors ${
+                    pricing.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
+                  }`}
+                >
+                  <div className="grid items-center gap-4 md:grid-cols-[1fr_140px_140px_80px]">
+                    {/* Stream Type Info */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                        pricing.enabled ? "bg-primary/10" : "bg-muted"
+                      }`}>
+                        <Icon className={`h-5 w-5 ${pricing.enabled ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{label}</span>
+                          {recommended && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                              Recommended
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                      </div>
+                    </div>
+
+                    {/* User Price */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground md:hidden">User Price (paisa)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                        <Input
+                          type="number"
+                          value={(pricing.userPrice / 100).toFixed(2)}
+                          onChange={(e) => updateStreamPrice(key, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          className="pl-7 bg-secondary border-0 h-9"
+                          disabled={!pricing.enabled}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Reseller Price */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground md:hidden">Reseller Price (paisa)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                        <Input
+                          type="number"
+                          value={(pricing.resellerPrice / 100).toFixed(2)}
+                          onChange={(e) => updateStreamPrice(key, "resellerPrice", Math.round(Number(e.target.value) * 100))}
+                          className="pl-7 bg-secondary border-0 h-9"
+                          disabled={!pricing.enabled}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Toggle */}
+                    <div className="flex items-center justify-center">
+                      <Switch
+                        checked={pricing.enabled}
+                        onCheckedChange={(checked) => updateStreamPrice(key, "enabled", checked)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Reseller Annual Subscription */}
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                <Globe className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Reseller Annual Subscription</CardTitle>
+                <CardDescription>White-label charges including custom domain, branding, platform hosting, SSL & CDN</CardDescription>
+              </div>
+            </div>
+            <Switch
+              checked={resellerSubscription.enabled}
+              onCheckedChange={(enabled) => setResellerSubscription((prev) => ({ ...prev, enabled }))}
+            />
+          </div>
+        </CardHeader>
+        {resellerSubscription.enabled && (
+          <CardContent>
+            <div className="max-w-sm space-y-2">
+              <Label htmlFor="annualPrice">Annual Price</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  id="annualPrice"
+                  type="number"
+                  value={(resellerSubscription.price / 100).toFixed(2)}
+                  onChange={(e) =>
+                    setResellerSubscription((prev) => ({
+                      ...prev,
+                      price: Math.round(Number(e.target.value) * 100),
+                    }))
+                  }
+                  className="pl-7 bg-secondary border-0"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Charged annually to each reseller for white-label platform access and hosting.
+              </p>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Save */}
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave}>
+          <Save className="mr-2 h-4 w-4" />
+          Save Changes
         </Button>
+        {saved && <span className="text-sm text-emerald-500">Changes saved successfully!</span>}
       </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search packages..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active">Active ({activePackages.length})</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive ({inactivePackages.length})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="active" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredActive.map((pkg, i) => (
-              <PackageCard key={pkg.id} pkg={pkg} isAdmin isPopular={i === 1} onEdit={handleEdit} />
-            ))}
-          </div>
-          {filteredActive.length === 0 && (
-            <div className="py-12 text-center text-muted-foreground">No active packages found.</div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="inactive" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredInactive.map((pkg) => (
-              <PackageCard key={pkg.id} pkg={pkg} isAdmin onEdit={handleEdit} />
-            ))}
-          </div>
-          {filteredInactive.length === 0 && (
-            <div className="py-12 text-center text-muted-foreground">No inactive packages.</div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <PackageFormDialog
-        open={showForm}
-        onOpenChange={(open) => {
-          setShowForm(open)
-          if (!open) setEditingPackage(null)
-        }}
-        pkg={editingPackage}
-        onSubmit={handleSubmit}
-      />
     </div>
   )
 }

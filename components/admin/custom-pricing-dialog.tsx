@@ -15,9 +15,10 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package, Clock } from "lucide-react"
+import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package, Clock, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StreamTypePricing, StreamTypePriceLevel, EventPack, ValidityTier } from "@/lib/types"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import type { StreamTypePricing, StreamTypePriceLevel, EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
 
 // Master pricing defaults (same as admin packages page)
 const MASTER_PRICING: StreamTypePricing = {
@@ -40,10 +41,30 @@ const MASTER_EVENT_PACKS: EventPack[] = [
 ]
 
 const MASTER_VALIDITY_TIERS: ValidityTier[] = [
-  { days: 60, userSurcharge: 200, resellerSurcharge: 100, enabled: true },
-  { days: 90, userSurcharge: 500, resellerSurcharge: 250, enabled: true },
-  { days: 180, userSurcharge: 1000, resellerSurcharge: 500, enabled: true },
-  { days: 365, userSurcharge: 2000, resellerSurcharge: 1000, enabled: true },
+  { days: 60, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 300, resellerSurcharge: 150 },
+    youtube_api: { userSurcharge: 200, resellerSurcharge: 100 },
+    youtube_embed: { userSurcharge: 100, resellerSurcharge: 50 },
+    third_party: { userSurcharge: 80, resellerSurcharge: 40 },
+  }},
+  { days: 90, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 700, resellerSurcharge: 350 },
+    youtube_api: { userSurcharge: 500, resellerSurcharge: 250 },
+    youtube_embed: { userSurcharge: 250, resellerSurcharge: 125 },
+    third_party: { userSurcharge: 200, resellerSurcharge: 100 },
+  }},
+  { days: 180, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 1200, resellerSurcharge: 600 },
+    youtube_api: { userSurcharge: 1000, resellerSurcharge: 500 },
+    youtube_embed: { userSurcharge: 500, resellerSurcharge: 250 },
+    third_party: { userSurcharge: 400, resellerSurcharge: 200 },
+  }},
+  { days: 365, enabled: true, surcharges: {
+    rtmp: { userSurcharge: 2500, resellerSurcharge: 1250 },
+    youtube_api: { userSurcharge: 2000, resellerSurcharge: 1000 },
+    youtube_embed: { userSurcharge: 1000, resellerSurcharge: 500 },
+    third_party: { userSurcharge: 800, resellerSurcharge: 400 },
+  }},
 ]
 
 const streamTypes = [
@@ -61,8 +82,8 @@ interface CustomPricingDialogProps {
   existingCustomPricing?: Partial<StreamTypePricing>
   existingAnnualOverride?: { price: number; enabled: boolean } | null
   existingPackOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null
-  existingValidityOverrides?: Record<number, { userSurcharge: number; resellerSurcharge: number }> | null
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null, validityOverrides?: Record<number, { userSurcharge: number; resellerSurcharge: number }> | null) => void
+  existingValidityOverrides?: Record<number, Record<ValidityStreamKey, { userSurcharge: number; resellerSurcharge: number }>> | null
+  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null, validityOverrides?: Record<number, Record<ValidityStreamKey, { userSurcharge: number; resellerSurcharge: number }>> | null) => void
 }
 
 export function CustomPricingDialog({
@@ -79,7 +100,8 @@ export function CustomPricingDialog({
   const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
   const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
   const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
-  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }>>({})
+  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }> }>>({})
+  const [expandedValidityTiers, setExpandedValidityTiers] = useState<Record<number, boolean>>({})
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
 
@@ -135,22 +157,22 @@ export function CustomPricingDialog({
         }
       }
       setPackOverrides(packInit)
-      // Initialize validity overrides
-      const validityInit: Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }> = {}
+      // Initialize validity overrides (per stream type)
+      const validityInit: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }> }> = {}
       for (const tier of MASTER_VALIDITY_TIERS) {
         const custom = existingValidityOverrides?.[tier.days]
-        if (custom) {
-          validityInit[tier.days] = {
-            enabled: true,
-            userSurcharge: (custom.userSurcharge / 100).toString(),
-            resellerSurcharge: (custom.resellerSurcharge / 100).toString(),
+        const surchargesInit = {} as Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }>
+        for (const st of streamTypes) {
+          const masterS = tier.surcharges[st.key]
+          const customS = custom?.[st.key]
+          surchargesInit[st.key] = {
+            userSurcharge: customS ? (customS.userSurcharge / 100).toString() : (masterS.userSurcharge / 100).toString(),
+            resellerSurcharge: customS ? (customS.resellerSurcharge / 100).toString() : (masterS.resellerSurcharge / 100).toString(),
           }
-        } else {
-          validityInit[tier.days] = {
-            enabled: false,
-            userSurcharge: (tier.userSurcharge / 100).toString(),
-            resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
-          }
+        }
+        validityInit[tier.days] = {
+          enabled: !!custom,
+          surcharges: surchargesInit,
         }
       }
       setValidityOverrides(validityInit)
@@ -217,17 +239,22 @@ export function CustomPricingDialog({
       }
     }
 
-    // Build validity overrides
-    const validityResult: Record<number, { userSurcharge: number; resellerSurcharge: number }> = {}
+    // Build validity overrides (per stream type)
+    const validityResult: Record<number, Record<ValidityStreamKey, { userSurcharge: number; resellerSurcharge: number }>> = {}
     let hasValidityOverrides = false
     for (const tier of MASTER_VALIDITY_TIERS) {
       const vo = validityOverrides[tier.days]
       if (vo?.enabled) {
         hasValidityOverrides = true
-        validityResult[tier.days] = {
-          userSurcharge: Math.round(Number(vo.userSurcharge) * 100),
-          resellerSurcharge: Math.round(Number(vo.resellerSurcharge) * 100),
+        const tierResult = {} as Record<ValidityStreamKey, { userSurcharge: number; resellerSurcharge: number }>
+        for (const st of streamTypes) {
+          const s = vo.surcharges[st.key]
+          tierResult[st.key] = {
+            userSurcharge: Math.round(Number(s.userSurcharge) * 100),
+            resellerSurcharge: Math.round(Number(s.resellerSurcharge) * 100),
+          }
         }
+        validityResult[tier.days] = tierResult
       }
     }
 
@@ -259,13 +286,17 @@ export function CustomPricingDialog({
       }
     }
     setPackOverrides(packReset)
-    const validityReset: Record<number, { enabled: boolean; userSurcharge: string; resellerSurcharge: string }> = {}
+    const validityReset: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }> }> = {}
     for (const tier of MASTER_VALIDITY_TIERS) {
-      validityReset[tier.days] = {
-        enabled: false,
-        userSurcharge: (tier.userSurcharge / 100).toString(),
-        resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
+      const surchargesReset = {} as Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }>
+      for (const st of streamTypes) {
+        const masterS = tier.surcharges[st.key]
+        surchargesReset[st.key] = {
+          userSurcharge: (masterS.userSurcharge / 100).toString(),
+          resellerSurcharge: (masterS.resellerSurcharge / 100).toString(),
+        }
       }
+      validityReset[tier.days] = { enabled: false, surcharges: surchargesReset }
     }
     setValidityOverrides(validityReset)
   }
@@ -604,7 +635,7 @@ export function CustomPricingDialog({
             </CardContent>
           </Card>
 
-          {/* Event Validity Surcharge Overrides */}
+          {/* Event Validity Surcharge Overrides (per stream type) */}
           <Separator />
           <Card className={`transition-colors ${Object.values(validityOverrides).some((o) => o.enabled) ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
             <CardHeader className="pb-3">
@@ -619,7 +650,7 @@ export function CustomPricingDialog({
                       <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
                     )}
                   </CardTitle>
-                  <CardDescription className="text-xs">Override extended validity surcharges (30 days always free)</CardDescription>
+                  <CardDescription className="text-xs">Override per-stream-type extended validity surcharges (30 days always free)</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -628,76 +659,123 @@ export function CustomPricingDialog({
                 const vo = validityOverrides[tier.days]
                 if (!vo) return null
                 const isOverridden = vo.enabled
+                const isExpanded = expandedValidityTiers[tier.days] ?? false
                 const surchargeField = targetType === "reseller" ? "resellerSurcharge" : "userSurcharge"
-                const masterSurcharge = targetType === "reseller" ? tier.resellerSurcharge : tier.userSurcharge
 
                 return (
-                  <div key={tier.days} className={`rounded-lg border p-3 transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="text-sm font-medium">{tier.days} days</span>
-                        {isOverridden && (
-                          <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Override</span>
-                        <Switch
-                          checked={isOverridden}
-                          onCheckedChange={(checked) =>
-                            setValidityOverrides((prev) => ({
-                              ...prev,
-                              [tier.days]: {
-                                ...prev[tier.days],
-                                enabled: checked,
-                                ...(!checked
-                                  ? {
-                                      userSurcharge: (tier.userSurcharge / 100).toString(),
-                                      resellerSurcharge: (tier.resellerSurcharge / 100).toString(),
-                                    }
-                                  : {}),
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{targetType === "reseller" ? "Reseller Surcharge" : "User Surcharge"}</Label>
-                        {isOverridden ? (
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={vo[surchargeField]}
-                              onChange={(e) =>
-                                setValidityOverrides((prev) => ({
-                                  ...prev,
-                                  [tier.days]: { ...prev[tier.days], [surchargeField]: e.target.value },
-                                }))
+                  <Collapsible
+                    key={tier.days}
+                    open={isExpanded && isOverridden}
+                    onOpenChange={() => setExpandedValidityTiers((prev) => ({ ...prev, [tier.days]: !prev[tier.days] }))}
+                  >
+                    <div className={`rounded-lg border transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
+                      {/* Tier header */}
+                      <div className="flex items-center justify-between p-3">
+                        <CollapsibleTrigger asChild disabled={!isOverridden}>
+                          <button type="button" className="flex items-center gap-2 text-left" disabled={!isOverridden}>
+                            {isOverridden && (
+                              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            )}
+                            <span className="text-sm font-medium">{tier.days} days</span>
+                            {isOverridden && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                            )}
+                            {!isOverridden && (
+                              <span className="text-xs text-muted-foreground">
+                                {streamTypes.map((st) => {
+                                  const ms = tier.surcharges[st.key]
+                                  const val = targetType === "reseller" ? ms.resellerSurcharge : ms.userSurcharge
+                                  return `+₹${(val / 100).toFixed(2)}`
+                                }).join(" / ")}
+                              </span>
+                            )}
+                          </button>
+                        </CollapsibleTrigger>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Override</span>
+                          <Switch
+                            checked={isOverridden}
+                            onCheckedChange={(checked) => {
+                              const surchargesReset = {} as Record<ValidityStreamKey, { userSurcharge: string; resellerSurcharge: string }>
+                              for (const st of streamTypes) {
+                                const masterS = tier.surcharges[st.key]
+                                surchargesReset[st.key as ValidityStreamKey] = {
+                                  userSurcharge: (masterS.userSurcharge / 100).toString(),
+                                  resellerSurcharge: (masterS.resellerSurcharge / 100).toString(),
+                                }
                               }
-                              className="pl-7 bg-secondary border-0 h-8 text-sm"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                            +{"₹"}{(masterSurcharge / 100).toFixed(2)}
-                            <span className="ml-auto text-[10px]">master</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Master Surcharge</Label>
-                        <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          +{"₹"}{(masterSurcharge / 100).toFixed(2)}
-                          <span className="ml-auto text-[10px]">reference</span>
+                              setValidityOverrides((prev) => ({
+                                ...prev,
+                                [tier.days]: {
+                                  enabled: checked,
+                                  surcharges: checked ? prev[tier.days]?.surcharges ?? surchargesReset : surchargesReset,
+                                },
+                              }))
+                              if (checked) {
+                                setExpandedValidityTiers((prev) => ({ ...prev, [tier.days]: true }))
+                              }
+                            }}
+                          />
                         </div>
                       </div>
+
+                      {/* Expanded per-stream surcharge inputs */}
+                      <CollapsibleContent>
+                        {isOverridden && (
+                          <div className="border-t border-border/30 px-3 pb-3 pt-2 space-y-2">
+                            {streamTypes.map(({ key, label, icon: Icon }) => {
+                              const masterS = tier.surcharges[key]
+                              const customS = vo.surcharges[key]
+                              const masterVal = targetType === "reseller" ? masterS.resellerSurcharge : masterS.userSurcharge
+
+                              return (
+                                <div key={key} className="rounded-md bg-secondary/30 p-2.5">
+                                  <div className="grid items-center gap-2 md:grid-cols-[1fr_120px_120px]">
+                                    <div className="flex items-center gap-2">
+                                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <span className="text-xs font-medium">{label}</span>
+                                    </div>
+                                    <div className="space-y-0.5">
+                                      <Label className="text-[10px] text-muted-foreground md:hidden">{targetType === "reseller" ? "Reseller" : "User"} Surcharge</Label>
+                                      <div className="relative">
+                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{"₹"}</span>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          value={customS?.[surchargeField] ?? ""}
+                                          onChange={(e) =>
+                                            setValidityOverrides((prev) => ({
+                                              ...prev,
+                                              [tier.days]: {
+                                                ...prev[tier.days],
+                                                surcharges: {
+                                                  ...prev[tier.days].surcharges,
+                                                  [key]: { ...prev[tier.days].surcharges[key as ValidityStreamKey], [surchargeField]: e.target.value },
+                                                },
+                                              },
+                                            }))
+                                          }
+                                          className="pl-6 bg-secondary border-0 h-7 text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-0.5">
+                                      <Label className="text-[10px] text-muted-foreground md:hidden">Master</Label>
+                                      <div className="flex items-center h-7 px-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                                        +{"₹"}{(masterVal / 100).toFixed(2)}
+                                        <span className="ml-auto text-[9px]">ref</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </CollapsibleContent>
                     </div>
-                  </div>
+                  </Collapsible>
                 )
               })}
             </CardContent>

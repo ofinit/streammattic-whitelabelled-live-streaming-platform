@@ -11,7 +11,7 @@ import type { StreamTypeKey } from "@/lib/types"
 
 export default function DemoPayPerEventPage() {
   const router = useRouter()
-  const demoState = demoUserStates.noCredits
+  const demoState = demoUserStates.noCredits // Credit-based: user pays from wallet
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [

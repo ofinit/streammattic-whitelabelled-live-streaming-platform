@@ -41,7 +41,7 @@ const streamTypeDisplayNames: Record<string, string> = {
   embedded: "Third Party Embed",
 }
 
-export default function ResellerCalendarPage() {
+export default function StudioCalendarPage() {
   const { user } = useAuth()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [dateRange, setDateRange] = useState("all")
@@ -53,10 +53,10 @@ export default function ResellerCalendarPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const eventsPerPage = 10
 
-  // Get events for this reseller
+  // Get events for this studio
   const relevantEvents = useMemo(() => {
     if (!user) return []
-    // Reseller sees only their own events
+    // Studio sees only their own events
     return mockEvents.filter((e) => e.resellerId === user.id || e.userId === user.id)
   }, [user])
 

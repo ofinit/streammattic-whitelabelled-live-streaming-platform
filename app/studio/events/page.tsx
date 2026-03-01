@@ -48,9 +48,9 @@ import { toast } from "sonner"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function ResellerEventsPage() {
+export default function StudioEventsPage() {
   const { user } = useAuth()
-  const resellerId = user?.id || "b0000000-0000-0000-0000-000000000001"
+  const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
 
   const [searchQuery, setSearchQuery] = useState("")
   const [showEventDialog, setShowEventDialog] = useState(false)
@@ -58,7 +58,7 @@ export default function ResellerEventsPage() {
   const [deleteEvent, setDeleteEvent] = useState<Record<string, unknown> | null>(null)
 
   const { data, isLoading, mutate } = useSWR(
-    `/api/reseller/events?resellerId=${resellerId}${searchQuery ? `&search=${searchQuery}` : ""}`,
+    `/api/studio/events?studioId=${studioId}${searchQuery ? `&search=${searchQuery}` : ""}`,
     fetcher,
     { refreshInterval: 15000 }
   )

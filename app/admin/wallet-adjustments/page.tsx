@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { PlusCircle, Wallet, TrendingUp, TrendingDown } from "lucide-react"
-import { mockWalletAdjustments, mockUsers, mockResellers } from "@/lib/mock-data"
+import { mockWalletAdjustments, mockUsers, mockStudios } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/refund-service"
 import type { WalletAdjustment } from "@/lib/types"
 
@@ -37,7 +37,7 @@ export default function AdminWalletAdjustmentsPage() {
   const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "instamojo" | "cashfree">("razorpay")
   const [supportTicketId, setSupportTicketId] = useState("")
 
-  const allUsers = [...mockUsers, ...mockResellers]
+  const allUsers = [...mockUsers, ...mockStudios]
 
   const handleOpenAddDialog = () => {
     setShowAddDialog(true)

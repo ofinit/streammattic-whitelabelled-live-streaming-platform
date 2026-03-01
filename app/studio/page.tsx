@@ -84,7 +84,7 @@ export default function StudioDashboard() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
+      <Header title="Studio Dashboard" subtitle={`Welcome back, ${user?.name}`} />
 
       <div className="space-y-6">
         {!isLoading && lowBalanceWarning && (

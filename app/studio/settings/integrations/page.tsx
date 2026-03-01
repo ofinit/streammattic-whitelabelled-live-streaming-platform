@@ -16,13 +16,13 @@ import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTr
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-export default function ResellerIntegrationsPage() {
+export default function StudioIntegrationsPage() {
   const { toast } = useToast()
   const { user } = useAuth()
-  const resellerId = user?.id || "reseller-1"
+  const studioId = user?.id || "studio-1"
 
   const { data, mutate, isLoading } = useSWR(
-    `/api/reseller/integrations?resellerId=${resellerId}`,
+    `/api/studio/integrations?studioId=${studioId}`,
     fetcher,
   )
 
@@ -49,10 +49,10 @@ export default function ResellerIntegrationsPage() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const res = await fetch("/api/reseller/integrations", {
+      const res = await fetch("/api/studio/integrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resellerId, ...formData }),
+        body: JSON.stringify({ studioId, ...formData }),
       })
       if (!res.ok) throw new Error("Failed to save")
       toast({ title: "Saved", description: "Your YouTube API credentials have been saved." })
@@ -68,10 +68,10 @@ export default function ResellerIntegrationsPage() {
   const handleRemoveOverride = async () => {
     setIsRemoving(true)
     try {
-      const res = await fetch("/api/reseller/integrations", {
+      const res = await fetch("/api/studio/integrations", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resellerId }),
+        body: JSON.stringify({ studioId }),
       })
       if (!res.ok) throw new Error("Failed to remove")
       toast({ title: "Removed", description: "Your custom credentials have been removed. Platform defaults will be used." })

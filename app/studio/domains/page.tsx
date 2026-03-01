@@ -9,8 +9,8 @@ import { Globe, CheckCircle, Clock, AlertCircle, ExternalLink } from "lucide-rea
 import { Badge } from "@/components/ui/badge"
 import { mockDomains } from "@/lib/mock-data"
 
-export default function ResellerDomainsPage() {
-  const existingDomain = mockDomains.find((d) => d.userId === "reseller-1" && d.isPrimary)
+export default function StudioDomainsPage() {
+  const existingDomain = mockDomains.find((d) => d.userId === "b0000000-0000-0000-0000-000000000001" && d.isPrimary)
   const [domain, setDomain] = useState(existingDomain?.domain || "")
   const [savedDomain, setSavedDomain] = useState(existingDomain || null)
   const [isEditing, setIsEditing] = useState(!existingDomain)
@@ -23,7 +23,7 @@ export default function ResellerDomainsPage() {
     setTimeout(() => {
       setSavedDomain({
         id: existingDomain?.id || `dom-${Date.now()}`,
-        userId: "reseller-1",
+        userId: "b0000000-0000-0000-0000-000000000001",
         domain: domain.trim(),
         verificationToken: `streammattic-verify-${Math.random().toString(36).substring(2, 34)}`,
         verificationStatus: "pending",

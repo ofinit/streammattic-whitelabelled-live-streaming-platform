@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import {
-  getResellerDashboardStats,
+  getStudioDashboardStats,
   getOrders,
   getEvents,
 } from "@/lib/db-queries"
 
 export async function GET(req: NextRequest) {
-  const resellerId = req.nextUrl.searchParams.get("resellerId")
+  const studioId = req.nextUrl.searchParams.get("studioId")
 
-  if (!resellerId) {
-    return NextResponse.json({ error: "resellerId is required" }, { status: 400 })
+  if (!studioId) {
+    return NextResponse.json({ error: "studioId is required" }, { status: 400 })
   }
 
   try {
     const [stats, orders, events] = await Promise.all([
-      getResellerDashboardStats(resellerId),
-      getOrders({ resellerId, limit: 5 }),
-      getEvents({ resellerId, limit: 10 }),
+      getStudioDashboardStats(studioId),
+      getOrders({ studioId, limit: 5 }),
+      getEvents({ studioId, limit: 10 }),
     ])
 
     return NextResponse.json({
@@ -25,9 +25,9 @@ export async function GET(req: NextRequest) {
       events,
     })
   } catch (error) {
-    console.error("[reseller/dashboard] Error:", error)
+    console.error("[studio/dashboard] Error:", error)
     return NextResponse.json(
-      { error: "Failed to load reseller dashboard data" },
+      { error: "Failed to load studio dashboard data" },
       { status: 500 }
     )
   }

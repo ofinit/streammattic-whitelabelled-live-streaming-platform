@@ -20,7 +20,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import type { Reseller } from "@/lib/types"
+import type { Studio } from "@/lib/types"
 
 const SETUP_STEPS = [
   { id: "company", label: "Company Profile", icon: Building2 },
@@ -29,30 +29,30 @@ const SETUP_STEPS = [
   { id: "payment", label: "Payment Gateway", icon: CreditCard },
 ]
 
-export default function ResellerSetupPage() {
+export default function StudioSetupPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const reseller = user as Reseller
+  const studioUser = user as Studio
 
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
   const [companyData, setCompanyData] = useState({
-    companyName: reseller?.name || "",
+    companyName: studioUser?.name || "",
     tagline: "",
-    email: reseller?.email || "",
-    phone: reseller?.phone || "",
+    email: studioUser?.email || "",
+    phone: studioUser?.phone || "",
     address: "",
     website: "",
   })
 
   const [brandingData, setBrandingData] = useState({
-    platformName: reseller?.branding?.platformName || "",
+    platformName: studioUser?.branding?.platformName || "",
     logo: null as File | null,
     favicon: null as File | null,
-    primaryColor: reseller?.branding?.primaryColor || "#10b981",
-    secondaryColor: reseller?.branding?.secondaryColor || "#059669",
+    primaryColor: studioUser?.branding?.primaryColor || "#10b981",
+    secondaryColor: studioUser?.branding?.secondaryColor || "#059669",
   })
 
   const [domainData, setDomainData] = useState({
@@ -84,7 +84,7 @@ export default function ResellerSetupPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 2000))
     setIsSubmitting(false)
-    router.push("/reseller")
+    router.push("/studio")
   }
 
   const canProceed = () => {

@@ -3,11 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Radio, Clock, Eye, Wallet } from "lucide-react"
-import { mockEvents, mockResellerStats } from "@/lib/mock-data"
+import { mockEvents, mockStudioStats } from "@/lib/mock-data"
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Bar, BarChart } from "recharts"
 import { useMemo } from "react"
 
-export default function ResellerAnalyticsPage() {
+export default function StudioAnalyticsPage() {
   const eventStats = useMemo(() => {
     const completedEvents = mockEvents.filter((e) => e.status === "completed")
     const liveEvents = mockEvents.filter((e) => e.status === "live")
@@ -82,7 +82,7 @@ export default function ResellerAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{eventStats.liveNow}</div>
-            <p className="text-xs text-muted-foreground">{mockResellerStats.activeEvents} active</p>
+            <p className="text-xs text-muted-foreground">{mockStudioStats.activeEvents} active</p>
           </CardContent>
         </Card>
 
@@ -103,7 +103,7 @@ export default function ResellerAnalyticsPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{mockResellerStats.walletBalance.toLocaleString()}</div>
+            <div className="text-2xl font-bold">₹{mockStudioStats.walletBalance.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Current balance</p>
           </CardContent>
         </Card>

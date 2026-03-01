@@ -6,14 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
-import { mockTransactions, mockResellerWalletSummary } from "@/lib/mock-data"
+import { mockTransactions, mockStudioWalletSummary } from "@/lib/mock-data"
 import { TrendingUp, ArrowUpRight, Clock } from "lucide-react"
 
-export default function ResellerWalletPage() {
+export default function StudioWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
 
-  // Filter transactions for this reseller
-  const resellerTransactions = mockTransactions.filter((t) => t.userId === "reseller-1")
+  // Filter transactions for this studio
+  const studioTransactions = mockTransactions.filter((t) => t.userId === "studio-1")
 
   const handleTopUp = (amount: number, gateway: string) => {
     // In real app, this would redirect to payment gateway
@@ -29,7 +29,7 @@ export default function ResellerWalletPage() {
 
       {/* Wallet Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <WalletCard summary={mockResellerWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
+        <WalletCard summary={mockStudioWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
@@ -65,7 +65,7 @@ export default function ResellerWalletPage() {
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={resellerTransactions} />
+              <TransactionList transactions={studioTransactions} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -76,7 +76,7 @@ export default function ResellerWalletPage() {
               <CardTitle>Credits</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={resellerTransactions.filter((t) => t.type === "credit")} />
+              <TransactionList transactions={studioTransactions.filter((t) => t.type === "credit")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -87,7 +87,7 @@ export default function ResellerWalletPage() {
               <CardTitle>Debits</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={resellerTransactions.filter((t) => t.type === "debit")} />
+              <TransactionList transactions={studioTransactions.filter((t) => t.type === "debit")} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -184,7 +184,7 @@ export default function AdminStudiosPage() {
           </CardContent>
         </Card>
 
-        {/* Resellers Table */}
+        {/* Studios Table */}
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle>All Studios ({filteredStudios.length})</CardTitle>

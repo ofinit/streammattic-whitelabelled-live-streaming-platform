@@ -7,9 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mockNotifications } from "@/lib/mock-data"
 import type { Notification } from "@/lib/types"
 
-export default function ResellerNotificationsPage() {
+export default function StudioNotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(
-    mockNotifications.filter((n) => n.userId === "reseller-1"),
+    mockNotifications.filter((n) => n.userId === "studio-1"),
   )
 
   const handleMarkAsRead = (id: string) => {

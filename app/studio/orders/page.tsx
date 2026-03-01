@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search } from "lucide-react"
 import { toast } from "sonner"
 
-export default function ResellerOrdersPage() {
-  // Reseller sees their own orders
-  const [orders, setOrders] = useState(mockOrders.filter((o) => o.resellerId === "reseller-1"))
+export default function StudioOrdersPage() {
+  // Studio sees their own orders
+  const [orders, setOrders] = useState(mockOrders.filter((o) => o.studioId === "studio-1"))
   const [search, setSearch] = useState("")
   const [rejectOrder, setRejectOrder] = useState<Order | null>(null)
 
@@ -21,7 +21,7 @@ export default function ResellerOrdersPage() {
   const rejectedOrders = orders.filter((o) => o.status === "rejected")
   const completedOrders = orders.filter((o) => o.status === "completed")
   const failedOrders = orders.filter((o) => o.status === "failed")
-  const failedByMe = failedOrders.filter((o) => o.insufficientFundsEntity?.includes("reseller"))
+  const failedByMe = failedOrders.filter((o) => o.insufficientFundsEntity?.includes("studio"))
 
   const filterOrders = (orderList: Order[]) => {
     return orderList.filter(
@@ -34,7 +34,7 @@ export default function ResellerOrdersPage() {
   const handleApprove = (order: Order) => {
     setOrders((prev) =>
       prev.map((o) =>
-        o.id === order.id ? { ...o, status: "approved" as const, approvedAt: new Date(), approverId: "reseller-1" } : o,
+        o.id === order.id ? { ...o, status: "approved" as const, approvedAt: new Date(), approverId: "studio-1" } : o,
       ),
     )
     toast.success(`Order ${order.orderNumber} approved`)

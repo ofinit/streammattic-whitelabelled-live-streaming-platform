@@ -243,11 +243,11 @@ export default function StudioPackagesPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {enabledPacks.map((pack, index) => {
                 const Icon = packIcons[pack.name] || Zap
-                const resellerPerEvent = pack.studioPrice / pack.eventCount
+                const studioPerEvent = pack.studioPrice / pack.eventCount
                 const isPopular = index === 1
-                // Compare against cheapest reseller per-event stream price
+                // Compare against cheapest studio per-event stream price
                 const cheapestStream = Math.min(...streamTypes.filter((s) => s.enabled).map((s) => s.studioPrice))
-                const savingsPercent = cheapestStream > 0 ? Math.round((1 - resellerPerEvent / cheapestStream) * 100) : 0
+                const savingsPercent = cheapestStream > 0 ? Math.round((1 - studioPerEvent / cheapestStream) * 100) : 0
 
                 return (
                   <Card key={pack.id} className={`relative flex flex-col border-border bg-card ${isPopular ? "border-primary shadow-md" : ""}`}>
@@ -274,7 +274,7 @@ export default function StudioPackagesPage() {
                             <span className="text-xs text-muted-foreground line-through">{"₹"}{(cheapestStream / 100).toFixed(2)}</span>
                           )}
                           <span className={`text-xs ${savingsPercent > 0 ? "text-emerald-500 font-medium" : "text-muted-foreground"}`}>
-                            {"₹"}{(resellerPerEvent / 100).toFixed(2)} per event
+                            {"₹"}{(studioPerEvent / 100).toFixed(2)} per event
                           </span>
                         </div>
                       </div>
@@ -452,7 +452,7 @@ export default function StudioPackagesPage() {
         validityTiers={validityTiers}
         streamTypes={streamTypes}
         walletBalance={walletBalance}
-        isReseller
+        isStudio
         onConfirm={handlePurchase}
       />
     </div>

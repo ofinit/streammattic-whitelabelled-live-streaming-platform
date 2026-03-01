@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Loader2, User, Lock, Bell, Shield } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
-export default function ResellerSettingsPage() {
+export default function StudioSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
@@ -110,7 +110,7 @@ export default function ResellerSettingsPage() {
                   value={profileData.username}
                   onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
                   className="bg-secondary border-0"
-                  placeholder="reseller_username"
+                  placeholder="studio_username"
                 />
                 <p className="text-xs text-muted-foreground">Used for your public profile URL</p>
               </div>

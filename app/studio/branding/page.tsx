@@ -8,7 +8,7 @@ import { LandingImageEditor } from "@/components/branding/landing-image-editor"
 import { mockBranding } from "@/lib/mock-data"
 import type { Branding } from "@/lib/types"
 
-export default function ResellerBrandingPage() {
+export default function StudioBrandingPage() {
   const [branding, setBranding] = useState<Branding>(mockBranding)
 
   const handleSave = (updates: Partial<Branding>) => {

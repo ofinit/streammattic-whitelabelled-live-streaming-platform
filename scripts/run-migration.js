@@ -1,4 +1,5 @@
-import { neon, Pool } from "@neondatabase/serverless";
+// Migration script using Neon SQL-over-HTTP API directly via fetch
+// No npm packages needed - works in any Node.js environment
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -6,9 +7,27 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-// Pool for DDL (dynamic SQL), neon() for parameterized seed queries
-const pool = new Pool({ connectionString: DATABASE_URL });
-const sql = neon(DATABASE_URL);
+// Parse DATABASE_URL to extract host and auth for the HTTP SQL API
+// Format: postgres://user:password@host/dbname?sslmode=require
+const url = new URL(DATABASE_URL.replace("postgres://", "https://").replace("postgresql://", "https://"));
+const httpHost = url.hostname;
+const API_URL = `https://${httpHost}/sql`;
+
+async function execSql(query) {
+  const resp = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Neon-Connection-String": DATABASE_URL,
+    },
+    body: JSON.stringify({ query, params: [] }),
+  });
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`HTTP ${resp.status}: ${text.substring(0, 200)}`);
+  }
+  return resp.json();
+}
 
 const statements = [
   `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
@@ -82,90 +101,97 @@ const statements = [
   `CREATE TABLE event_templates (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, thumbnail TEXT, category TEXT, is_active BOOLEAN NOT NULL DEFAULT true, sort_order INT DEFAULT 0, fields JSONB DEFAULT '{}', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
 ];
 
+const triggers = [
+  `CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $f$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $f$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS trg_users_upd ON users; CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_wallets_upd ON wallets; CREATE TRIGGER trg_wallets_upd BEFORE UPDATE ON wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_credits_upd ON user_credits; CREATE TRIGGER trg_credits_upd BEFORE UPDATE ON user_credits FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_orders_upd ON orders; CREATE TRIGGER trg_orders_upd BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_branding_upd ON studio_branding; CREATE TRIGGER trg_branding_upd BEFORE UPDATE ON studio_branding FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_gwconfig_upd ON payment_gateway_configs; CREATE TRIGGER trg_gwconfig_upd BEFORE UPDATE ON payment_gateway_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_gst_upd ON gst_configurations; CREATE TRIGGER trg_gst_upd BEFORE UPDATE ON gst_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_invoices_upd ON invoices; CREATE TRIGGER trg_invoices_upd BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_refunds_upd ON refund_requests; CREATE TRIGGER trg_refunds_upd BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_adj_upd ON wallet_adjustments; CREATE TRIGGER trg_adj_upd BEFORE UPDATE ON wallet_adjustments FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  `DROP TRIGGER IF EXISTS trg_ytc_upd ON youtube_channels; CREATE TRIGGER trg_ytc_upd BEFORE UPDATE ON youtube_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+];
+
+const seedSettings = [
+  { key: "stream_type_pricing", value: {rtmp:{enabled:true,basePrice:1500,label:"RTMP Server",description:"Use OBS/Wirecast",volumeDiscountTiers:[{minQty:5,pricePerCredit:1350,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:1200,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:1050,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:900,label:"50-Pack (40% off)",enabled:true}]},youtube_api:{enabled:true,basePrice:1000,label:"YouTube API",recommended:true,description:"Direct broadcast",volumeDiscountTiers:[{minQty:5,pricePerCredit:900,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:800,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:700,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:600,label:"50-Pack (40% off)",enabled:true}]},youtube_embed:{enabled:true,basePrice:500,label:"YouTube Embed",description:"Embed existing",volumeDiscountTiers:[{minQty:5,pricePerCredit:450,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:400,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:350,label:"25-Pack (30% off)",enabled:true}]},third_party:{enabled:true,basePrice:400,label:"Third Party",description:"External embed",volumeDiscountTiers:[{minQty:5,pricePerCredit:360,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:320,label:"10-Pack (20% off)",enabled:true}]}} },
+  { key: "validity_extensions", value: {defaultDays:30,extensions:[{days:60,creditCost:1,label:"60 Days (+1 credit)",enabled:true},{days:90,creditCost:2,label:"90 Days (+2 credits)",enabled:true},{days:180,creditCost:4,label:"180 Days (+4 credits)",enabled:true},{days:365,creditCost:8,label:"365 Days (+8 credits)",enabled:true}]} },
+  { key: "simulcast_pricing", value: {youtube:{price:75,enabled:true,label:"YouTube"},facebook:{price:75,enabled:true,label:"Facebook"},custom_rtmp:{price:100,enabled:true,label:"Custom RTMP"}} },
+  { key: "studio_subscription", value: {enabled:true,annualPrice:1800000,label:"Studio Annual Subscription",description:"White-label platform access and hosting"} },
+  { key: "gst_config", value: {enabled:true,percentage:18,gstin:"",companyName:"StreamMattic",companyAddress:""} },
+  { key: "payment_gateways", value: {razorpay:{enabled:true,label:"Razorpay"},instamojo:{enabled:true,label:"Instamojo"}} },
+];
+
 async function run() {
-  console.log("Starting schema migration with Pool...");
-  const client = await pool.connect();
+  console.log("Starting migration via Neon HTTP API...");
   let ok = 0, skip = 0, fail = 0;
 
-  try {
-    for (let i = 0; i < statements.length; i++) {
-      try {
-        await client.query(statements[i]);
-        ok++;
-      } catch (err) {
-        const msg = err.message || "";
-        if (msg.includes("already exists")) {
-          skip++;
-        } else {
-          fail++;
-          console.error(`[${i}] FAIL: ${msg}`);
-        }
+  // Schema statements
+  for (let i = 0; i < statements.length; i++) {
+    try {
+      await execSql(statements[i]);
+      ok++;
+      if (i % 10 === 0) console.log(`Progress: ${i+1}/${statements.length}`);
+    } catch (err) {
+      const msg = err?.message || String(err);
+      if (msg.includes("already exists")) {
+        skip++;
+      } else {
+        fail++;
+        console.error(`[${i}] FAIL: ${msg.substring(0, 150)}`);
       }
     }
-    console.log(`Schema: ${ok} created, ${skip} skipped, ${fail} failed`);
-
-    // Triggers
-    const triggers = [
-      `CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql`,
-      `CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_wallets_upd BEFORE UPDATE ON wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_credits_upd BEFORE UPDATE ON user_credits FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_orders_upd BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_branding_upd BEFORE UPDATE ON studio_branding FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_gwconfig_upd BEFORE UPDATE ON payment_gateway_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_gst_upd BEFORE UPDATE ON gst_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_invoices_upd BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_refunds_upd BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_adj_upd BEFORE UPDATE ON wallet_adjustments FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-      `CREATE TRIGGER trg_ytc_upd BEFORE UPDATE ON youtube_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    ];
-
-    for (const t of triggers) {
-      try { await client.query(t); } catch (e) {
-        if (!e.message?.includes("already exists")) console.error("Trigger err:", e.message);
-      }
-    }
-    console.log("Triggers done");
-  } finally {
-    client.release();
   }
+  console.log(`Schema: ${ok} ok, ${skip} skipped, ${fail} failed`);
 
-  // Seed data using neon tagged template (supports parameterized queries)
-  console.log("Seeding...");
+  // Triggers (multi-statement, need to split)
+  console.log("Creating triggers...");
+  // First create the function
+  await execSql(`CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $f$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $f$ LANGUAGE plpgsql`);
+
+  const triggerTables = ["users","wallets","user_credits","orders","studio_branding","payment_gateway_configs","gst_configurations","invoices","refund_requests","wallet_adjustments","youtube_channels"];
+  for (const t of triggerTables) {
+    const tname = `trg_${t.replace(/_/g,"")}_upd`;
+    try {
+      await execSql(`DROP TRIGGER IF EXISTS ${tname} ON ${t}`);
+      await execSql(`CREATE TRIGGER ${tname} BEFORE UPDATE ON ${t} FOR EACH ROW EXECUTE FUNCTION update_updated_at()`);
+    } catch(e) {
+      console.error(`Trigger ${t}:`, e?.message?.substring(0,80));
+    }
+  }
+  console.log("Triggers done");
+
+  // Seed admin user
+  console.log("Seeding admin...");
   try {
-    const adminCheck = await sql`SELECT id FROM users WHERE email = 'admin@streammattic.com'`;
-    if (adminCheck.length === 0) {
-      await sql`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streammattic.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`;
-      await sql`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`;
-      await sql`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`;
-      console.log("Admin user created");
+    const check = await execSql(`SELECT id FROM users WHERE email = 'admin@streammattic.com'`);
+    const hasAdmin = check?.rows?.length > 0;
+    if (!hasAdmin) {
+      await execSql(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streammattic.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
+      await execSql(`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`);
+      await execSql(`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`);
+      console.log("Admin created");
     } else {
       console.log("Admin already exists");
     }
   } catch (e) {
-    console.error("Admin seed error:", e.message);
+    console.error("Admin seed error:", e?.message?.substring(0,150));
   }
 
-  // Platform settings
-  const settings = [
-    ["stream_type_pricing", JSON.stringify({rtmp:{enabled:true,basePrice:1500,label:"RTMP Server",description:"Use OBS/Wirecast",volumeDiscountTiers:[{minQty:5,pricePerCredit:1350,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:1200,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:1050,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:900,label:"50-Pack (40% off)",enabled:true}]},youtube_api:{enabled:true,basePrice:1000,label:"YouTube API",recommended:true,description:"Direct broadcast",volumeDiscountTiers:[{minQty:5,pricePerCredit:900,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:800,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:700,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:600,label:"50-Pack (40% off)",enabled:true}]},youtube_embed:{enabled:true,basePrice:500,label:"YouTube Embed",description:"Embed existing",volumeDiscountTiers:[{minQty:5,pricePerCredit:450,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:400,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:350,label:"25-Pack (30% off)",enabled:true}]},third_party:{enabled:true,basePrice:400,label:"Third Party",description:"External embed",volumeDiscountTiers:[{minQty:5,pricePerCredit:360,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:320,label:"10-Pack (20% off)",enabled:true}]}})],
-    ["validity_extensions", JSON.stringify({defaultDays:30,extensions:[{days:60,creditCost:1,label:"60 Days (+1 credit)",enabled:true},{days:90,creditCost:2,label:"90 Days (+2 credits)",enabled:true},{days:180,creditCost:4,label:"180 Days (+4 credits)",enabled:true},{days:365,creditCost:8,label:"365 Days (+8 credits)",enabled:true}]})],
-    ["simulcast_pricing", JSON.stringify({youtube:{price:75,enabled:true,label:"YouTube"},facebook:{price:75,enabled:true,label:"Facebook"},custom_rtmp:{price:100,enabled:true,label:"Custom RTMP"}})],
-    ["studio_subscription", JSON.stringify({enabled:true,annualPrice:1800000,label:"Studio Annual Subscription",description:"White-label platform access and hosting"})],
-    ["gst_config", JSON.stringify({enabled:true,percentage:18,gstin:"",companyName:"StreamMattic",companyAddress:""})],
-    ["payment_gateways", JSON.stringify({razorpay:{enabled:true,label:"Razorpay"},instamojo:{enabled:true,label:"Instamojo"}})]
-  ];
-
-  for (const [key, val] of settings) {
+  // Seed platform settings
+  console.log("Seeding settings...");
+  for (const s of seedSettings) {
     try {
-      await sql`INSERT INTO platform_settings (key, value) VALUES (${key}, ${val}::jsonb) ON CONFLICT (key) DO UPDATE SET value = ${val}::jsonb, updated_at = NOW()`;
+      const val = JSON.stringify(s.value).replace(/'/g, "''");
+      await execSql(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
     } catch (e) {
-      console.error(`Setting ${key}:`, e.message);
+      console.error(`Setting ${s.key}:`, e?.message?.substring(0,100));
     }
   }
-  console.log("Settings seeded:", settings.length);
-
-  await pool.end();
+  console.log("Settings seeded");
   console.log("MIGRATION COMPLETE!");
 }
 

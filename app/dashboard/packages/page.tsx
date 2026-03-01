@@ -265,13 +265,24 @@ export default function UserPackagesPage() {
                         <div className="flex items-baseline justify-center gap-1">
                           <span className="text-2xl font-bold">{"₹"}{(pack.userPrice / 100).toFixed(0)}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {"₹"}{(perEvent / 100).toFixed(2)} per event
-                        </p>
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                          {savingsPercent > 0 && (
+                            <span className="text-xs text-muted-foreground line-through">{"₹"}{(cheapestStream / 100).toFixed(2)}</span>
+                          )}
+                          <span className={`text-xs ${savingsPercent > 0 ? "text-emerald-500 font-medium" : "text-muted-foreground"}`}>
+                            {"₹"}{(perEvent / 100).toFixed(2)} per event
+                          </span>
+                        </div>
                         {savingsPercent > 0 && (
-                          <Badge variant="outline" className="mt-1.5 text-[10px] border-primary/30 text-primary">
-                            Save {savingsPercent}%
-                          </Badge>
+                          <div className="mt-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5">
+                            <span className="text-sm font-semibold text-emerald-500">Save {savingsPercent}%</span>
+                            <p className="text-[10px] text-emerald-500/70 mt-0.5">vs per-event pricing</p>
+                          </div>
+                        )}
+                        {savingsPercent <= 0 && (
+                          <div className="mt-2 rounded-md bg-muted/50 px-3 py-1.5">
+                            <span className="text-xs text-muted-foreground">Same as per-event</span>
+                          </div>
                         )}
                       </div>
 

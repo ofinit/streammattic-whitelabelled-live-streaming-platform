@@ -31,7 +31,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: Users, label: "Studios", href: "/admin/studios" },
   { icon: Users, label: "Streamers", href: "/admin/streamers" },
-  { icon: Package, label: "Packages", href: "/admin/packages" },
+  { icon: Package, label: "Pricing", href: "/admin/packages" },
   { icon: Calendar, label: "Calendar", href: "/admin/calendar" },
   { icon: ShoppingCart, label: "Orders", href: "/admin/orders" },
   { icon: Wallet, label: "Wallets", href: "/admin/wallets" },

@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Orders</h1>
-        <p className="text-muted-foreground">View all pay-per-event order history across streamers</p>
+        <p className="text-muted-foreground">View all credit purchases, wallet recharges, and service charges</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -70,9 +70,10 @@ export default function AdminOrdersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="package">Package</SelectItem>
-            <SelectItem value="validity">Validity</SelectItem>
-            <SelectItem value="addon">Addon</SelectItem>
+            <SelectItem value="credit_purchase">Credit Purchase</SelectItem>
+            <SelectItem value="wallet_recharge">Wallet Recharge</SelectItem>
+            <SelectItem value="validity_extension">Validity Extension</SelectItem>
+            <SelectItem value="service_charge">Service Charge</SelectItem>
           </SelectContent>
         </Select>
       </div>

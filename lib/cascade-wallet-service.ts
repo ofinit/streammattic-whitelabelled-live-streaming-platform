@@ -1,231 +1,107 @@
 /**
- * Cascade Wallet Service
+ * Credit & Pricing Service
  *
- * Handles hierarchical wallet debits for pay-per-event pricing.
- * 2-tier model: Streamer/Studio -> Admin
- * - Streamers pay streamerPrice, Admin receives studioPrice from studio
- * - Studios pay studioPrice to admin
+ * Handles stream type credit purchases, pricing calculations,
+ * and wallet operations for the pay-per-event credit system.
+ *
+ * Flow:
+ * 1. User recharges wallet (real money in)
+ * 2. User buys stream type credits (wallet -> credits, with volume discounts)
+ * 3. Creating an event deducts 1 credit of the selected stream type
+ * 4. Extending validity deducts additional credits
+ * 5. Other services (AI images, whitelabel, domains) deduct directly from wallet
  */
 
 import type {
-  CascadeValidation,
-  CascadeLevel,
-  CascadeDebitRequest,
-  CascadeDebitResult,
-  CascadeTransactionResult,
   StreamTypeKey,
   StreamTypePricing,
   SimulcastPricing,
-  UserRole,
-  WalletTransaction,
+  StreamTypeCredits,
 } from "./types"
 
-// Default stream type pricing (platform defaults)
-export const defaultStreamTypePricing: StreamTypePricing = {
-  rtmp: { streamerPrice: 1500, studioPrice: 700, enabled: true },
-  youtube_api: { streamerPrice: 1000, studioPrice: 400, enabled: true },
-  youtube_embed: { streamerPrice: 500, studioPrice: 150, enabled: true },
-  third_party: { streamerPrice: 400, studioPrice: 100, enabled: true },
-}
+import {
+  masterStreamTypePricing,
+  masterSimulcastPricing,
+  masterValiditySettings,
+  getBestPriceForQuantity,
+} from "./mock-data"
 
-// Default simulcast pricing
-export const defaultSimulcastPricing: SimulcastPricing = {
-  youtube: { streamerPrice: 75, studioPrice: 40, enabled: true },
-  facebook: { streamerPrice: 75, studioPrice: 40, enabled: true },
-  customRtmp: { streamerPrice: 100, studioPrice: 60, enabled: true },
-}
-
-// Get price for stream type at given level
+// Get price for stream type (single price, no cascade)
 export function getStreamTypePrice(
   streamType: StreamTypeKey,
-  level: "studio" | "streamer",
+  quantity: number = 1,
+  customPricing?: StreamTypePricing,
+): { pricePerEvent: number; tierLabel?: string; totalPrice: number; savings: number } {
+  const pricing = customPricing || masterStreamTypePricing
+  return getBestPriceForQuantity(streamType, quantity, pricing)
+}
+
+// Get base price for a stream type (qty 1, no discount)
+export function getStreamTypeBasePrice(
+  streamType: StreamTypeKey,
   customPricing?: StreamTypePricing,
 ): number {
-  const pricing = customPricing || defaultStreamTypePricing
-  const streamPricing = pricing[streamType]
-
-  return level === "studio" ? streamPricing.studioPrice : streamPricing.streamerPrice
-
+  const pricing = customPricing || masterStreamTypePricing
+  return pricing[streamType].basePrice
 }
 
-// Get price for simulcast destination at given level
+// Check if stream type is enabled
+export function isStreamTypeEnabled(
+  streamType: StreamTypeKey,
+  customPricing?: StreamTypePricing,
+): boolean {
+  const pricing = customPricing || masterStreamTypePricing
+  return pricing[streamType].enabled
+}
+
+// Get simulcast destination price
 export function getSimulcastPrice(
   destination: "youtube" | "facebook" | "custom_rtmp",
-  level: "studio" | "streamer",
   customPricing?: SimulcastPricing,
 ): number {
-  const pricing = customPricing || defaultSimulcastPricing
-  const destPricing = pricing[destination === "custom_rtmp" ? "customRtmp" : destination]
-
-  return level === "studio" ? destPricing.studioPrice : destPricing.streamerPrice
+  const pricing = customPricing || masterSimulcastPricing
+  const destKey = destination === "custom_rtmp" ? "customRtmp" : destination
+  return pricing[destKey].price
 }
 
-// Calculate total event price for a user or studio
-export function calculateEventPrice(
+// Calculate total event cost (stream type credit check + simulcast wallet cost)
+export function calculateEventCost(
   streamType: StreamTypeKey,
   simulcastDestinations: ("youtube" | "facebook" | "custom_rtmp")[],
-  level: "studio" | "streamer",
-  customStreamPricing?: StreamTypePricing,
   customSimulcastPricing?: SimulcastPricing,
-): { streamPrice: number; simulcastPrice: number; total: number } {
-  const streamPrice = getStreamTypePrice(streamType, level, customStreamPricing)
+): { creditsRequired: number; simulcastWalletCost: number } {
+  // Events always cost 1 credit of the stream type
+  const creditsRequired = 1
 
-  let simulcastPrice = 0
+  // Simulcast destinations are extra wallet charges
+  let simulcastWalletCost = 0
   for (const dest of simulcastDestinations) {
-    simulcastPrice += getSimulcastPrice(dest, level, customSimulcastPricing)
+    simulcastWalletCost += getSimulcastPrice(dest, customSimulcastPricing)
   }
 
-  return {
-    streamPrice,
-    simulcastPrice,
-    total: streamPrice + simulcastPrice,
-  }
+  return { creditsRequired, simulcastWalletCost }
 }
 
-// Build ancestor chain for cascade (2-tier: entity -> admin)
-export interface AncestorInfo {
-  id: string
-  name: string
-  type: UserRole
-  walletBalance: number
-}
-
-export function buildAncestorChain(
-  userId: string,
-  getUserById: (id: string) => AncestorInfo | null,
-): AncestorInfo[] {
-  const chain: AncestorInfo[] = []
-
-  // Get the initiating entity (user or studio)
-  const entity = getUserById(userId)
-  if (!entity) return chain
-  chain.push(entity)
-
-  // Always add admin as the top level
-  const admin = getUserById("admin-1")
-  if (admin) chain.push(admin)
-
-  return chain
-}
-
-// Validate cascade - check if entity has sufficient balance
-export function validateCascade(
-  ancestorChain: AncestorInfo[],
+// Check if user has enough credits for a stream type
+export function hasEnoughCredits(
+  credits: StreamTypeCredits,
   streamType: StreamTypeKey,
-  simulcastDestinations: ("youtube" | "facebook" | "custom_rtmp")[],
-  customStreamPricing?: StreamTypePricing,
-  customSimulcastPricing?: SimulcastPricing,
-): CascadeValidation {
-  const levels: CascadeLevel[] = []
-  let allValid = true
-  let failedAt: string | undefined
-  let failureReason: string | undefined
-  let totalRequired = 0
-
-  for (let i = 0; i < ancestorChain.length; i++) {
-    const entity = ancestorChain[i]
-    const isAdmin = entity.type === "admin"
-
-    // Determine price level -- admin doesn't pay, only user and studio
-    const priceLevel: "studio" | "streamer" =
-      entity.type === "streamer" ? "streamer" : "studio"
-
-    // Calculate price at this level
-    const { total: requiredAmount } = calculateEventPrice(
-      streamType,
-      simulcastDestinations,
-      priceLevel,
-      customStreamPricing,
-      customSimulcastPricing,
-    )
-
-    // Calculate profit (admin earns the difference)
-    let profitAmount = 0
-    if (isAdmin && i > 0) {
-      const entityLevel = levels[i - 1]
-      profitAmount = entityLevel.requiredAmount - requiredAmount
-    }
-
-    const hasEnough = isAdmin || entity.walletBalance >= requiredAmount
-
-    if (!hasEnough && !failedAt) {
-      allValid = false
-      failedAt = entity.name
-      failureReason = `Insufficient balance: ${entity.name} has ₹${entity.walletBalance} but needs ₹${requiredAmount}`
-    }
-
-    if (!isAdmin) {
-      totalRequired += requiredAmount
-    }
-
-    levels.push({
-      level: i,
-      entityId: entity.id,
-      entityName: entity.name,
-      entityType: entity.type,
-      currentBalance: entity.walletBalance,
-      requiredAmount: isAdmin ? 0 : requiredAmount,
-      profitAmount,
-      hasEnough,
-    })
-  }
-
-  return {
-    isValid: allValid,
-    totalRequired,
-    levels,
-    failedAt,
-    failureReason,
-  }
+  amount: number = 1,
+): boolean {
+  return credits[streamType] >= amount
 }
 
-// Execute cascade debit
-export function executeCascadeDebit(
-  validation: CascadeValidation,
-  request: CascadeDebitRequest,
-  onDebit: (entityId: string, amount: number, description: string) => WalletTransaction,
-): CascadeDebitResult {
-  if (!validation.isValid) {
-    return {
-      success: false,
-      totalDebited: 0,
-      transactions: [],
-      error: validation.failureReason,
-    }
-  }
-
-  const transactions: CascadeTransactionResult[] = []
-  let totalDebited = 0
-
-  // Process debits (only the entity pays -- admin receives)
-  for (const level of validation.levels) {
-    if (level.entityType === "admin") continue
-
-    const description = `${request.description} - ${level.entityName}`
-    const transaction = onDebit(level.entityId, level.requiredAmount, description)
-
-    transactions.push({
-      transactionId: transaction.id,
-      entityId: level.entityId,
-      entityName: level.entityName,
-      entityType: level.entityType,
-      amount: level.requiredAmount,
-      profit: level.profitAmount,
-      balanceBefore: transaction.balanceBefore,
-      balanceAfter: transaction.balanceAfter,
-    })
-
-    totalDebited += level.requiredAmount
-  }
-
-  return {
-    success: true,
-    totalDebited,
-    transactions,
-  }
+// Get validity extension cost in credits
+export function getValidityExtensionCost(extensionDays: number): {
+  creditCost: number
+  label: string
+} | null {
+  const tier = masterValiditySettings.extendedTiers.find(t => t.days === extensionDays && t.enabled)
+  if (!tier) return null
+  return { creditCost: tier.creditCost, label: tier.label || `${tier.days} Days` }
 }
 
-// Get pricing display for UI
+// Get pricing display info for UI
 export function getPricingDisplay(streamType: StreamTypeKey): {
   name: string
   description: string
@@ -265,4 +141,19 @@ export function formatCurrency(amount: number, currency = "INR"): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
+}
+
+// Format paisa to rupees display
+export function formatPaisa(paisa: number): string {
+  return formatCurrency(paisa / 100)
+}
+
+// Get all stream type keys
+export function getAllStreamTypes(): StreamTypeKey[] {
+  return ["rtmp", "youtube_api", "youtube_embed", "third_party"]
+}
+
+// Get total credits remaining across all stream types
+export function getTotalCredits(credits: StreamTypeCredits): number {
+  return credits.rtmp + credits.youtube_api + credits.youtube_embed + credits.third_party
 }

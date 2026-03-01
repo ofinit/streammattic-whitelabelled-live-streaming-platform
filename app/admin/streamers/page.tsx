@@ -129,7 +129,7 @@ export default function AdminStreamersPage() {
 <DropdownMenuItem onClick={() => setPricingStreamer(item)}>
   <IndianRupee className="mr-2 h-4 w-4" />
   Custom Pricing
-  {item.customStreamPricing && (
+  {item.customPricing && (
     <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
   )}
 </DropdownMenuItem>
@@ -247,14 +247,9 @@ export default function AdminStreamersPage() {
           onOpenChange={(open) => !open && setPricingStreamer(null)}
           targetName={pricingStreamer.name}
           targetType="streamer"
-          existingCustomPricing={pricingStreamer.customStreamPricing}
-          existingPackOverrides={(pricingStreamer as unknown as Record<string, unknown>).customPackPricing as Record<string, { streamerPrice: number; studioPrice: number }> | null ?? null}
-          existingValidityOverrides={(pricingStreamer as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { streamerSurcharge: number; studioSurcharge: number }> | null ?? null}
-          onSave={(pricing, _note, _annualOverride, packOverrides, validityOverrides) => {
-            // In production, save to API
-            pricingStreamer.customStreamPricing = pricing
-            ;(pricingStreamer as unknown as Record<string, unknown>).customPackPricing = packOverrides
-            ;(pricingStreamer as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
+          existingCustomPricing={pricingStreamer.customPricing as Record<string, { basePrice: number }> | undefined}
+          onSave={(pricing, _note) => {
+            pricingStreamer.customPricing = pricing
             setPricingStreamer(null)
           }}
         />

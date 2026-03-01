@@ -11,7 +11,7 @@ import type { StreamTypeKey } from "@/lib/types"
 
 export default function DemoNoPackagePage() {
   const router = useRouter()
-  const demoState = demoUserStates.noPackage
+  const demoState = demoUserStates.noCredits
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -77,11 +77,11 @@ export default function DemoNoPackagePage() {
           </AlertDescription>
         </Alert>
 
-        {/* No Package Info */}
+        {/* No Credits Info */}
         <Alert className="mb-6 bg-orange-500/10 border-orange-500/20">
           <Package className="h-4 w-4 text-orange-500" />
           <AlertDescription className="text-orange-600 dark:text-orange-400">
-            You haven't purchased any package yet. Browse packages to get started or pay per event.
+            You have no stream credits yet. Purchase credits to get started or pay per event from your wallet.
           </AlertDescription>
         </Alert>
 
@@ -104,7 +104,7 @@ export default function DemoNoPackagePage() {
           <DemoStreamTypeSelector
             value={selectedType}
             onChange={setSelectedType}
-            availableEvents={demoState.inventory?.availableQty ?? null}
+            availableEvents={0}
           />
 
           {/* Action Buttons */}
@@ -116,7 +116,7 @@ export default function DemoNoPackagePage() {
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => router.push("/streamer/packages")}>
                 <Package className="mr-2 h-4 w-4" />
-                Browse Packages
+                Buy Credits
               </Button>
               <Button disabled>Pay Per Event (Demo mode)</Button>
             </div>

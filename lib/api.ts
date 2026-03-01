@@ -149,66 +149,44 @@ export const walletApi = {
     }),
 }
 
-// Packages API
-export const packagesApi = {
-  getAll: () => apiFetch<any[]>("/packages"),
+// Credits API
+export const creditsApi = {
+  // Get current stream type pricing (admin-set)
+  getPricing: () => apiFetch<any>("/credits/pricing"),
 
-  getMyPrices: () => apiFetch<any[]>("/packages/my-prices"),
+  // Get my credit balances
+  getMyCredits: () => apiFetch<any>("/credits/my-credits"),
 
-  getMyInventory: () => apiFetch<any[]>("/packages/my-inventory"),
-
-  getById: (id: string) => apiFetch<any>(`/packages/${id}`),
-
-  create: (data: any) =>
-    apiFetch("/packages", {
+  // Purchase credits (wallet -> credits)
+  purchase: (streamType: string, quantity: number) =>
+    apiFetch("/credits/purchase", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ streamType, quantity }),
     }),
 
-  update: (id: string, data: any) =>
-    apiFetch(`/packages/${id}`, {
+  // Get purchase history
+  getPurchaseHistory: (params?: { page?: number; limit?: number }) =>
+    apiFetch<{ purchases: any[]; total: number }>(
+      `/credits/history?${new URLSearchParams(params as any).toString()}`,
+    ),
+
+  // Admin: Update stream type pricing
+  updatePricing: (data: any) =>
+    apiFetch("/credits/pricing", {
       method: "PUT",
       body: JSON.stringify(data),
-    }),
-
-  setCustomPrice: (userId: string, packageId: string, price: number) =>
-    apiFetch("/packages/custom-price", {
-      method: "POST",
-      body: JSON.stringify({ userId, packageId, price }),
     }),
 }
 
 // Orders API
 export const ordersApi = {
-  createPackageOrder: (packageId: string, quantity: number) =>
-    apiFetch("/orders/package", {
-      method: "POST",
-      body: JSON.stringify({ packageId, quantity }),
-    }),
-
-  createValidityOrder: (eventId: string, days: number) =>
-    apiFetch("/orders/validity", {
-      method: "POST",
-      body: JSON.stringify({ eventId, days }),
-    }),
-
-  getMyOrders: (params?: { page?: number; limit?: number; status?: string }) =>
+  getMyOrders: (params?: { page?: number; limit?: number; status?: string; orderType?: string }) =>
     apiFetch<{ orders: any[]; total: number }>(`/orders/my?${new URLSearchParams(params as any).toString()}`),
 
-  getPendingForApproval: () => apiFetch<any[]>("/orders/pending-approval"),
-
-  getAll: (params?: { page?: number; limit?: number; status?: string }) =>
+  getAll: (params?: { page?: number; limit?: number; status?: string; orderType?: string }) =>
     apiFetch<{ orders: any[]; total: number }>(`/orders?${new URLSearchParams(params as any).toString()}`),
 
-  approve: (id: string) => apiFetch(`/orders/${id}/approve`, { method: "POST" }),
-
-  reject: (id: string, reason: string) =>
-    apiFetch(`/orders/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    }),
-
-  cancel: (id: string) => apiFetch(`/orders/${id}/cancel`, { method: "POST" }),
+  getById: (id: string) => apiFetch<any>(`/orders/${id}`),
 }
 
 // Events API
@@ -366,7 +344,7 @@ export default {
   auth: authApi,
   users: usersApi,
   wallet: walletApi,
-  packages: packagesApi,
+  credits: creditsApi,
   orders: ordersApi,
   events: eventsApi,
   domains: domainsApi,

@@ -125,7 +125,7 @@ export default function AdminStudiosPage() {
 <DropdownMenuItem onClick={() => setPricingStudio(item)}>
   <IndianRupee className="mr-2 h-4 w-4" />
   Custom Pricing
-  {(item.customStreamPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
+  {(item.customPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
     <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
   )}
 </DropdownMenuItem>
@@ -229,15 +229,9 @@ export default function AdminStudiosPage() {
           onOpenChange={(open) => !open && setPricingStudio(null)}
           targetName={pricingStudio.branding.platformName}
           targetType="studio"
-          existingCustomPricing={pricingStudio.customStreamPricing}
-          existingAnnualOverride={(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
-          existingPackOverrides={(pricingStudio as unknown as Record<string, unknown>).customPackPricing as Record<string, { streamerPrice: number; studioPrice: number }> | null ?? null}
-          existingValidityOverrides={(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { streamerSurcharge: number; studioSurcharge: number }> | null ?? null}
-          onSave={(pricing, _note, annualOverride, packOverrides, validityOverrides) => {
-            pricingStudio.customStreamPricing = pricing
-            ;(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
-            ;(pricingStudio as unknown as Record<string, unknown>).customPackPricing = packOverrides
-            ;(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
+          existingCustomPricing={pricingStudio.customPricing as Record<string, { basePrice: number }> | undefined}
+          onSave={(pricing, _note) => {
+            pricingStudio.customPricing = pricing
             setPricingStudio(null)
           }}
         />

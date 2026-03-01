@@ -37,37 +37,37 @@ const streamTypes = [
 
 // Event packs (from admin config)
 const availableEventPacks: EventPack[] = [
-  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, resellerPrice: 5000, enabled: true, sortOrder: 1 },
-  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, resellerPrice: 20000, enabled: true, sortOrder: 2 },
-  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, resellerPrice: 30000, enabled: true, sortOrder: 3 },
-  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, resellerPrice: 100000, enabled: true, sortOrder: 4 },
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
 ]
 
 // Validity tiers (from admin config)
 const validityTiers: ValidityTier[] = [
   { days: 60, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 300, resellerSurcharge: 150 },
-    youtube_api: { userSurcharge: 200, resellerSurcharge: 100 },
-    youtube_embed: { userSurcharge: 100, resellerSurcharge: 50 },
-    third_party: { userSurcharge: 80, resellerSurcharge: 40 },
+    rtmp: { userSurcharge: 300, studioSurcharge: 150 },
+    youtube_api: { userSurcharge: 200, studioSurcharge: 100 },
+    youtube_embed: { userSurcharge: 100, studioSurcharge: 50 },
+    third_party: { userSurcharge: 80, studioSurcharge: 40 },
   }},
   { days: 90, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 700, resellerSurcharge: 350 },
-    youtube_api: { userSurcharge: 500, resellerSurcharge: 250 },
-    youtube_embed: { userSurcharge: 250, resellerSurcharge: 125 },
-    third_party: { userSurcharge: 200, resellerSurcharge: 100 },
+    rtmp: { userSurcharge: 700, studioSurcharge: 350 },
+    youtube_api: { userSurcharge: 500, studioSurcharge: 250 },
+    youtube_embed: { userSurcharge: 250, studioSurcharge: 125 },
+    third_party: { userSurcharge: 200, studioSurcharge: 100 },
   }},
   { days: 180, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 1200, resellerSurcharge: 600 },
-    youtube_api: { userSurcharge: 1000, resellerSurcharge: 500 },
-    youtube_embed: { userSurcharge: 500, resellerSurcharge: 250 },
-    third_party: { userSurcharge: 400, resellerSurcharge: 200 },
+    rtmp: { userSurcharge: 1200, studioSurcharge: 600 },
+    youtube_api: { userSurcharge: 1000, studioSurcharge: 500 },
+    youtube_embed: { userSurcharge: 500, studioSurcharge: 250 },
+    third_party: { userSurcharge: 400, studioSurcharge: 200 },
   }},
   { days: 365, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 2500, resellerSurcharge: 1250 },
-    youtube_api: { userSurcharge: 2000, resellerSurcharge: 1000 },
-    youtube_embed: { userSurcharge: 1000, resellerSurcharge: 500 },
-    third_party: { userSurcharge: 800, resellerSurcharge: 400 },
+    rtmp: { userSurcharge: 2500, studioSurcharge: 1250 },
+    youtube_api: { userSurcharge: 2000, studioSurcharge: 1000 },
+    youtube_embed: { userSurcharge: 1000, studioSurcharge: 500 },
+    third_party: { userSurcharge: 800, studioSurcharge: 400 },
   }},
 ]
 

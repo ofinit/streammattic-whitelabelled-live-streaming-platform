@@ -76,7 +76,7 @@ export default function AdminAnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{mockUsers.filter((u) => u.role === "user").length}</div>
             <p className="text-xs text-muted-foreground">
-              Across {mockUsers.filter((u) => u.role === "reseller").length} resellers
+              Across {mockUsers.filter((u) => u.role === "studio").length} studios
             </p>
           </CardContent>
         </Card>

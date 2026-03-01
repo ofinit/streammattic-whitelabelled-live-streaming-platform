@@ -57,7 +57,7 @@ export default function StudioCalendarPage() {
   const relevantEvents = useMemo(() => {
     if (!user) return []
     // Studio sees only their own events
-    return mockEvents.filter((e) => e.resellerId === user.id || e.userId === user.id)
+    return mockEvents.filter((e) => e.studioId === user.id || e.userId === user.id)
   }, [user])
 
   // Filter events by date range

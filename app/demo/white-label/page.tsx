@@ -8,21 +8,21 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { BrandedLogo } from "@/components/branding/branded-logo"
-import { mockResellers } from "@/lib/mock-data"
+import { mockStudios } from "@/lib/mock-data"
 import { ArrowLeft, Globe, Palette, Building2 } from "lucide-react"
 import Link from "next/link"
 
 export default function WhiteLabelDemoPage() {
-  const { branding, reseller, isWhiteLabel, setDemoReseller } = useBranding()
-  const [selectedReseller, setSelectedReseller] = useState<string>(reseller?.id || "")
+  const { branding, studio, isWhiteLabel, setDemoStudio } = useBranding()
+  const [selectedStudio, setSelectedStudio] = useState<string>(studio?.id || "")
 
   const handleApply = () => {
-    setDemoReseller(selectedReseller || null)
+    setDemoStudio(selectedStudio || null)
   }
 
   const handleReset = () => {
-    setSelectedReseller("")
-    setDemoReseller(null)
+    setSelectedStudio("")
+    setDemoStudio(null)
   }
 
   return (
@@ -44,7 +44,7 @@ export default function WhiteLabelDemoPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">White-Label Demo</h1>
           <p className="text-muted-foreground">
-            Test how the platform appears with different reseller brandings. Select a reseller to see their colors and
+            Test how the platform appears with different studio brandings. Select a studio to see their colors and
             branding applied.
           </p>
         </div>
@@ -88,27 +88,27 @@ export default function WhiteLabelDemoPage() {
               </div>
             </div>
 
-            {reseller && (
+            {studio && (
               <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-1">Reseller</p>
-                <p className="font-semibold">{reseller.name}</p>
-                <p className="text-sm text-muted-foreground">{reseller.email}</p>
+                <p className="text-sm text-muted-foreground mb-1">Studio</p>
+                <p className="font-semibold">{studio.name}</p>
+                <p className="text-sm text-muted-foreground">{studio.email}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Reseller Selection */}
+        {/* Studio Selection */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Select Reseller Branding
+              Select Studio Branding
             </CardTitle>
-            <CardDescription>Choose a reseller to preview their white-label experience</CardDescription>
+            <CardDescription>Choose a studio to preview their white-label experience</CardDescription>
           </CardHeader>
           <CardContent>
-            <RadioGroup value={selectedReseller} onValueChange={setSelectedReseller} className="space-y-4">
+            <RadioGroup value={selectedStudio} onValueChange={setSelectedStudio} className="space-y-4">
               <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
                 <RadioGroupItem value="" id="platform" />
                 <Label htmlFor="platform" className="flex-1 cursor-pointer">
@@ -127,7 +127,7 @@ export default function WhiteLabelDemoPage() {
                 </Label>
               </div>
 
-              {mockResellers.map((r) => (
+              {mockStudios.map((r) => (
                 <div
                   key={r.id}
                   className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors"

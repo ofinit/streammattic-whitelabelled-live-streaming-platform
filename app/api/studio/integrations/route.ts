@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server"
 import { getPlatformSetting, setPlatformSetting } from "@/lib/db-queries"
 
-/** GET: Fetch reseller-specific integration settings (masked secrets) */
+/** GET: Fetch studio-specific integration settings (masked secrets) */
 export async function GET(request: Request) {
   const url = new URL(request.url)
-  const resellerId = url.searchParams.get("resellerId")
+  const studioId = url.searchParams.get("studioId")
 
-  if (!resellerId) {
-    return NextResponse.json({ error: "resellerId is required" }, { status: 400 })
+  if (!studioId) {
+    return NextResponse.json({ error: "studioId is required" }, { status: 400 })
   }
 
   try {
     const [clientId, clientSecret] = await Promise.all([
-      getPlatformSetting(`google_client_id:${resellerId}`),
-      getPlatformSetting(`google_client_secret:${resellerId}`),
+      getPlatformSetting(`google_client_id:${studioId}`),
+      getPlatformSetting(`google_client_secret:${studioId}`),
     ])
 
     // Also check if platform-level defaults exist
@@ -40,52 +40,52 @@ export async function GET(request: Request) {
       has_platform_defaults: hasPlatformDefaults,
     })
   } catch (error) {
-    console.error("Failed to fetch reseller integration settings:", error)
+    console.error("Failed to fetch studio integration settings:", error)
     return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
   }
 }
 
-/** POST: Save reseller-specific integration settings */
+/** POST: Save studio-specific integration settings */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { resellerId, google_client_id, google_client_secret } = body
+    const { studioId, google_client_id, google_client_secret } = body
 
-    if (!resellerId) {
-      return NextResponse.json({ error: "resellerId is required" }, { status: 400 })
+    if (!studioId) {
+      return NextResponse.json({ error: "studioId is required" }, { status: 400 })
     }
 
-    // Save with reseller-namespaced keys
+    // Save with studio-namespaced keys
     if (google_client_id !== undefined && google_client_id !== "") {
-      await setPlatformSetting(`google_client_id:${resellerId}`, google_client_id)
+      await setPlatformSetting(`google_client_id:${studioId}`, google_client_id)
     }
     if (google_client_secret !== undefined && google_client_secret !== "" && !google_client_secret.startsWith("****")) {
-      await setPlatformSetting(`google_client_secret:${resellerId}`, google_client_secret)
+      await setPlatformSetting(`google_client_secret:${studioId}`, google_client_secret)
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Failed to save reseller integration settings:", error)
+    console.error("Failed to save studio integration settings:", error)
     return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
   }
 }
 
-/** DELETE: Remove reseller-specific overrides (fall back to platform defaults) */
+/** DELETE: Remove studio-specific overrides (fall back to platform defaults) */
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
-    const { resellerId } = body
+    const { studioId } = body
 
-    if (!resellerId) {
-      return NextResponse.json({ error: "resellerId is required" }, { status: 400 })
+    if (!studioId) {
+      return NextResponse.json({ error: "studioId is required" }, { status: 400 })
     }
 
     const sql = (await import("@/lib/db")).getDb()
-    await sql`DELETE FROM platform_settings WHERE key IN (${`google_client_id:${resellerId}`}, ${`google_client_secret:${resellerId}`})`
+    await sql`DELETE FROM platform_settings WHERE key IN (${`google_client_id:${studioId}`}, ${`google_client_secret:${studioId}`})`
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Failed to remove reseller integration settings:", error)
+    console.error("Failed to remove studio integration settings:", error)
     return NextResponse.json({ error: "Failed to remove settings" }, { status: 500 })
   }
 }

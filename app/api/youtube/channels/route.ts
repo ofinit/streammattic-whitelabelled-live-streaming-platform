@@ -8,7 +8,7 @@ import {
 import { decrypt, initEncryptionKeyFromDb } from "@/lib/encryption"
 
 /**
- * GET /api/youtube/channels?ownerId=xxx&ownerType=admin|reseller|user
+ * GET /api/youtube/channels?ownerId=xxx&ownerType=admin|studio|user
  * Returns all connected YouTube channels for an owner (without tokens).
  */
 export async function GET(request: Request) {

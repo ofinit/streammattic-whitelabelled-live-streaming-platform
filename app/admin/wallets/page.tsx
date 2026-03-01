@@ -22,7 +22,7 @@ export default function AdminWalletsPage() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; balance: number } | null>(null)
 
-  // Combine resellers and users for wallet management
+    // Combine studios and users for wallet management
   const allWallets = [
     ...mockStudios.map((r) => ({
       id: r.id,

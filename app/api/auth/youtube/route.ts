@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ownerId and ownerType are required" }, { status: 400 })
     }
 
-    if (!["admin", "reseller", "user"].includes(ownerType)) {
-      return NextResponse.json({ error: "ownerType must be admin, reseller, or user" }, { status: 400 })
+    if (!["admin", "studio", "user"].includes(ownerType)) {
+      return NextResponse.json({ error: "ownerType must be admin, studio, or user" }, { status: 400 })
     }
 
     // Encode state as base64url JSON

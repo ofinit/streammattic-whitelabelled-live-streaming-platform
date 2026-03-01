@@ -290,7 +290,7 @@ export default function AdminPackagesPage() {
           <div className="space-y-3">
             {eventPacks.map((pack) => {
               const perEventUser = pack.eventCount > 0 ? pack.userPrice / pack.eventCount : 0
-              const perEventReseller = pack.eventCount > 0 ? pack.resellerPrice / pack.eventCount : 0
+              const perEventStudio = pack.eventCount > 0 ? pack.studioPrice / pack.eventCount : 0
               return (
                 <div
                   key={pack.id}
@@ -346,24 +346,24 @@ export default function AdminPackagesPage() {
                       )}
                     </div>
 
-                    {/* Reseller Price */}
+                    {/* Studio Price */}
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground md:hidden">Reseller Price</Label>
+                      <Label className="text-xs text-muted-foreground md:hidden">Studio Price</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
                         <Input
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={pack.resellerPrice / 100}
-                          onBlur={(e) => updatePack(pack.id, "resellerPrice", Math.round(Number(e.target.value) * 100))}
+                          defaultValue={pack.studioPrice / 100}
+                          onBlur={(e) => updatePack(pack.id, "studioPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pack.enabled}
                         />
                       </div>
                       {pack.eventCount > 0 && pack.enabled && (
                         <p className="text-[10px] text-muted-foreground px-1">
-                          {"₹"}{(perEventReseller / 100).toFixed(2)}/event
+                          {"₹"}{(perEventStudio / 100).toFixed(2)}/event
                         </p>
                       )}
                     </div>
@@ -466,7 +466,7 @@ export default function AdminPackagesPage() {
                           <div className="hidden md:grid md:grid-cols-[1fr_140px_140px] items-center gap-3 px-2 text-xs font-medium text-muted-foreground">
                             <span>Stream Type</span>
                             <span>User Surcharge</span>
-                            <span>Reseller Surcharge</span>
+                            <span>Studio Surcharge</span>
                           </div>
 
                           {streamTypes.map(({ key, label, icon: Icon }) => {
@@ -497,21 +497,21 @@ export default function AdminPackagesPage() {
                                     <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.userSurcharge / 100).toFixed(2)}/event</p>
                                   </div>
 
-                                  {/* Reseller Surcharge */}
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground md:hidden">Reseller Surcharge</Label>
-                                    <div className="relative">
-                                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                                      <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        defaultValue={s.resellerSurcharge / 100}
-                                        onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "resellerSurcharge", Math.round(Number(e.target.value) * 100))}
-                                        className="pl-7 bg-secondary border-0 h-8 text-sm"
-                                      />
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.resellerSurcharge / 100).toFixed(2)}/event</p>
+                    {/* Studio Surcharge */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground md:hidden">Studio Surcharge</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={s.studioSurcharge / 100}
+                          onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "studioSurcharge", Math.round(Number(e.target.value) * 100))}
+                          className="pl-7 bg-secondary border-0 h-9"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.studioSurcharge / 100).toFixed(2)}/event</p>
                                   </div>
                                 </div>
                               </div>
@@ -537,26 +537,22 @@ export default function AdminPackagesPage() {
         </CardContent>
       </Card>
 
-      {/* Reseller Annual Subscription */}
+      {/* Studio Annual Subscription */}
       <Card className="border-border bg-card">
-        <CardHeader>
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                <Globe className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle>Reseller Annual Subscription</CardTitle>
-                <CardDescription>White-label charges including custom domain, branding, platform hosting, SSL & CDN</CardDescription>
-              </div>
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              <CardTitle>Studio Annual Subscription</CardTitle>
             </div>
             <Switch
-              checked={resellerSubscription.enabled}
-              onCheckedChange={(enabled) => setResellerSubscription((prev) => ({ ...prev, enabled }))}
+              checked={studioSubscription.enabled}
+              onCheckedChange={(enabled) => setStudioSubscription((prev) => ({ ...prev, enabled }))}
             />
           </div>
         </CardHeader>
-        {resellerSubscription.enabled && (
+        <CardContent>
+          {studioSubscription.enabled && (
           <CardContent>
             <div className="max-w-sm space-y-2">
               <Label htmlFor="annualPrice">Annual Price</Label>
@@ -567,9 +563,9 @@ export default function AdminPackagesPage() {
                   type="number"
                   step="1"
                   min="0"
-                  defaultValue={resellerSubscription.price / 100}
+                  defaultValue={studioSubscription.price / 100}
                   onBlur={(e) =>
-                    setResellerSubscription((prev) => ({
+                    setStudioSubscription((prev) => ({
                       ...prev,
                       price: Math.round(Number(e.target.value) * 100),
                     }))
@@ -578,7 +574,7 @@ export default function AdminPackagesPage() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Charged annually to each reseller for white-label platform access and hosting.
+                Charged annually to each studio for white-label platform access and hosting.
               </p>
             </div>
           </CardContent>

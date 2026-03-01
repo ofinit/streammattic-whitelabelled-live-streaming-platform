@@ -381,6 +381,23 @@ export interface SimulcastPricing {
   enabled: boolean
   }
 
+// Prepaid event pack -- buy in bulk at discounted rates
+export interface EventPack {
+  id: string
+  name: string
+  eventCount: number
+  userPrice: number // flat pack price for users (in paisa)
+  resellerPrice: number // flat pack price for resellers (in paisa)
+  enabled: boolean
+  sortOrder: number
+}
+
+export interface EventPackSettings {
+  packs: EventPack[]
+  expiryDays: number // 0 = never expires
+  streamTypeRestriction: "any" | (keyof StreamTypePricing)[]
+}
+
 // Custom stream pricing override per user or reseller
 // When set, overrides the master pricing from admin packages
 export interface CustomStreamPricing {

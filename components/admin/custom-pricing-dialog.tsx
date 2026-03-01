@@ -15,9 +15,9 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard } from "lucide-react"
+import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard, Package } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StreamTypePricing, StreamTypePriceLevel } from "@/lib/types"
+import type { StreamTypePricing, StreamTypePriceLevel, EventPack } from "@/lib/types"
 
 // Master pricing defaults (same as admin packages page)
 const MASTER_PRICING: StreamTypePricing = {
@@ -31,6 +31,13 @@ const MASTER_ANNUAL_SUBSCRIPTION = {
   price: 1800000, // 18,000 INR in paisa
   enabled: true,
 }
+
+const MASTER_EVENT_PACKS: EventPack[] = [
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, resellerPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, resellerPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, resellerPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, resellerPrice: 100000, enabled: true, sortOrder: 4 },
+]
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -46,7 +53,8 @@ interface CustomPricingDialogProps {
   targetType: "user" | "reseller"
   existingCustomPricing?: Partial<StreamTypePricing>
   existingAnnualOverride?: { price: number; enabled: boolean } | null
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null) => void
+  existingPackOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null
+  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; resellerPrice: number }> | null) => void
 }
 
 export function CustomPricingDialog({
@@ -56,10 +64,12 @@ export function CustomPricingDialog({
   targetType,
   existingCustomPricing,
   existingAnnualOverride,
+  existingPackOverrides,
   onSave,
 }: CustomPricingDialogProps) {
   const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
   const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
+  const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
 
@@ -96,10 +106,29 @@ export function CustomPricingDialog({
           price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString(),
         })
       }
+      // Initialize event pack overrides
+      const packInit: Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }> = {}
+      for (const pack of MASTER_EVENT_PACKS) {
+        const custom = existingPackOverrides?.[pack.id]
+        if (custom) {
+          packInit[pack.id] = {
+            enabled: true,
+            userPrice: (custom.userPrice / 100).toString(),
+            resellerPrice: (custom.resellerPrice / 100).toString(),
+          }
+        } else {
+          packInit[pack.id] = {
+            enabled: false,
+            userPrice: (pack.userPrice / 100).toString(),
+            resellerPrice: (pack.resellerPrice / 100).toString(),
+          }
+        }
+      }
+      setPackOverrides(packInit)
       setNote("")
       setSaved(false)
     }
-  }, [open, existingCustomPricing, existingAnnualOverride])
+  }, [open, existingCustomPricing, existingAnnualOverride, existingPackOverrides])
 
   const toggleOverride = (key: string, enabled: boolean) => {
     setOverrides((prev) => ({
@@ -145,7 +174,21 @@ export function CustomPricingDialog({
       ? { price: Math.round(Number(annualOverride.price) * 100), enabled: true }
       : null
 
-    onSave(hasOverrides ? customPricing : undefined, note, annualResult)
+    // Build pack overrides
+    const packResult: Record<string, { userPrice: number; resellerPrice: number }> = {}
+    let hasPackOverrides = false
+    for (const pack of MASTER_EVENT_PACKS) {
+      const po = packOverrides[pack.id]
+      if (po?.enabled) {
+        hasPackOverrides = true
+        packResult[pack.id] = {
+          userPrice: Math.round(Number(po.userPrice) * 100),
+          resellerPrice: Math.round(Number(po.resellerPrice) * 100),
+        }
+      }
+    }
+
+    onSave(hasOverrides ? customPricing : undefined, note, annualResult, hasPackOverrides ? packResult : null)
     setSaved(true)
     setTimeout(() => {
       setSaved(false)
@@ -164,9 +207,18 @@ export function CustomPricingDialog({
     }
     setOverrides(reset)
     setAnnualOverride({ enabled: false, price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() })
+    const packReset: Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }> = {}
+    for (const pack of MASTER_EVENT_PACKS) {
+      packReset[pack.id] = {
+        enabled: false,
+        userPrice: (pack.userPrice / 100).toString(),
+        resellerPrice: (pack.resellerPrice / 100).toString(),
+      }
+    }
+    setPackOverrides(packReset)
   }
 
-  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled
+  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled || Object.values(packOverrides).some((o) => o.enabled)
   // Determine the correct price column label based on target type
   const priceLabel = targetType === "reseller" ? "Reseller Price" : "User Price"
 
@@ -389,6 +441,116 @@ export function CustomPricingDialog({
               </Card>
             </>
           )}
+
+          {/* Event Pack Overrides */}
+          <Separator />
+          <Card className={`transition-colors ${Object.values(packOverrides).some((o) => o.enabled) ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${Object.values(packOverrides).some((o) => o.enabled) ? "bg-amber-500/10" : "bg-muted"}`}>
+                  <Package className={`h-4 w-4 ${Object.values(packOverrides).some((o) => o.enabled) ? "text-amber-500" : "text-muted-foreground"}`} />
+                </div>
+                <div>
+                  <CardTitle className="text-sm">
+                    Event Packs
+                    {Object.values(packOverrides).some((o) => o.enabled) && (
+                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-xs">Override prepaid bundle pricing</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {MASTER_EVENT_PACKS.map((pack) => {
+                const po = packOverrides[pack.id]
+                if (!po) return null
+                const isOverridden = po.enabled
+                const priceCol = targetType === "reseller" ? "resellerPrice" : "userPrice"
+                const masterPrice = targetType === "reseller" ? pack.resellerPrice : pack.userPrice
+
+                return (
+                  <div key={pack.id} className={`rounded-lg border p-3 transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-sm font-medium">{pack.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{pack.eventCount} events</span>
+                        {isOverridden && (
+                          <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Override</span>
+                        <Switch
+                          checked={isOverridden}
+                          onCheckedChange={(checked) =>
+                            setPackOverrides((prev) => ({
+                              ...prev,
+                              [pack.id]: {
+                                ...prev[pack.id],
+                                enabled: checked,
+                                ...(!checked
+                                  ? {
+                                      userPrice: (pack.userPrice / 100).toString(),
+                                      resellerPrice: (pack.resellerPrice / 100).toString(),
+                                    }
+                                  : {}),
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">{targetType === "reseller" ? "Reseller Price" : "User Price"}</Label>
+                        {isOverridden ? (
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={po[priceCol]}
+                              onChange={(e) =>
+                                setPackOverrides((prev) => ({
+                                  ...prev,
+                                  [pack.id]: { ...prev[pack.id], [priceCol]: e.target.value },
+                                }))
+                              }
+                              className="pl-7 bg-secondary border-0 h-8 text-sm"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                            {"₹"}{(masterPrice / 100).toFixed(2)}
+                            <span className="ml-auto text-[10px]">master</span>
+                          </div>
+                        )}
+                        {isOverridden && pack.eventCount > 0 && (
+                          <p className="text-[10px] text-muted-foreground px-1">
+                            {"₹"}{(Number(po[priceCol]) / pack.eventCount).toFixed(2)}/event
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Master Price</Label>
+                        <div className="flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                          {"₹"}{(masterPrice / 100).toFixed(2)}
+                          <span className="ml-auto text-[10px]">reference</span>
+                        </div>
+                        {pack.eventCount > 0 && (
+                          <p className="text-[10px] text-muted-foreground px-1">
+                            {"₹"}{(masterPrice / 100 / pack.eventCount).toFixed(2)}/event
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
 
           <Separator />
 

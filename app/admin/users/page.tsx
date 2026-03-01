@@ -248,9 +248,11 @@ export default function AdminUsersPage() {
           targetName={pricingUser.name}
           targetType="user"
           existingCustomPricing={pricingUser.customStreamPricing}
-          onSave={(pricing, _note) => {
+          existingPackOverrides={(pricingUser as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; resellerPrice: number }> | null ?? null}
+          onSave={(pricing, _note, _annualOverride, packOverrides) => {
             // In production, save to API
             pricingUser.customStreamPricing = pricing
+            ;(pricingUser as unknown as Record<string, unknown>).customPackPricing = packOverrides
             setPricingUser(null)
           }}
         />

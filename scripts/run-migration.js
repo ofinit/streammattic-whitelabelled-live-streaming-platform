@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, Pool } from "@neondatabase/serverless";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -6,6 +6,8 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
+// Pool for DDL (dynamic SQL), neon() for parameterized seed queries
+const pool = new Pool({ connectionString: DATABASE_URL });
 const sql = neon(DATABASE_URL);
 
 const statements = [
@@ -68,7 +70,7 @@ const statements = [
   `CREATE TABLE domains (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, domain TEXT NOT NULL UNIQUE, verification_token TEXT, verification_status domain_verification_status NOT NULL DEFAULT 'pending', ssl_status domain_ssl_status NOT NULL DEFAULT 'pending', is_primary BOOLEAN NOT NULL DEFAULT false, verified_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX idx_domains_user ON domains(user_id)`,
   `CREATE INDEX idx_domains_domain ON domains(domain)`,
-  `CREATE TABLE refund_requests (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), type refund_type NOT NULL, event_id UUID REFERENCES events(id), order_id UUID REFERENCES orders(id), credit_purchase_id UUID REFERENCES credit_purchases(id), original_amount BIGINT NOT NULL DEFAULT 0, refund_amount BIGINT NOT NULL DEFAULT 0, gst_amount BIGINT DEFAULT 0, total_refund_amount BIGINT NOT NULL DEFAULT 0, related_transaction_ids TEXT[] DEFAULT '{}', status refund_status NOT NULL DEFAULT 'pending', requested_by UUID NOT NULL REFERENCES users(id), requested_by_role user_role, requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), approved_by UUID REFERENCES users(id), approved_at TIMESTAMPTZ, rejected_by UUID REFERENCES users(id), rejected_at TIMESTAMPTZ, rejection_reason TEXT, refund_method TEXT, payment_gateway payment_gateway, original_payment_id TEXT, refund_transaction_id UUID REFERENCES wallet_transactions(id), completed_at TIMESTAMPTZ, failure_reason TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
+  `CREATE TABLE refund_requests (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), type refund_type NOT NULL, event_id UUID REFERENCES events(id), order_id UUID REFERENCES orders(id), credit_purchase_id UUID REFERENCES credit_purchases(id), original_amount BIGINT NOT NULL DEFAULT 0, refund_amount BIGINT NOT NULL DEFAULT 0, gst_amount BIGINT DEFAULT 0, total_refund_amount BIGINT NOT NULL DEFAULT 0, related_transaction_ids TEXT[] DEFAULT ARRAY[]::TEXT[], status refund_status NOT NULL DEFAULT 'pending', requested_by UUID NOT NULL REFERENCES users(id), requested_by_role user_role, requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), approved_by UUID REFERENCES users(id), approved_at TIMESTAMPTZ, rejected_by UUID REFERENCES users(id), rejected_at TIMESTAMPTZ, rejection_reason TEXT, refund_method TEXT, payment_gateway payment_gateway, original_payment_id TEXT, refund_transaction_id UUID REFERENCES wallet_transactions(id), completed_at TIMESTAMPTZ, failure_reason TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX idx_refund_status ON refund_requests(status)`,
   `CREATE TABLE wallet_adjustments (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), target_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, target_user_role user_role, type adjustment_type NOT NULL, amount BIGINT NOT NULL, reason TEXT NOT NULL, category adjustment_category NOT NULL, initiated_by UUID NOT NULL REFERENCES users(id), initiated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), approval_required BOOLEAN NOT NULL DEFAULT false, approved_by UUID REFERENCES users(id), approved_at TIMESTAMPTZ, status wallet_adjustment_status NOT NULL DEFAULT 'completed', transaction_id UUID REFERENCES wallet_transactions(id), notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE TABLE gst_configurations (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE, gst_enabled BOOLEAN NOT NULL DEFAULT false, gst_percentage NUMERIC(5,2) DEFAULT 18.00, gst_number TEXT, pan_number TEXT, business_name TEXT, business_address TEXT, city TEXT, state TEXT, pincode TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
@@ -81,49 +83,54 @@ const statements = [
 ];
 
 async function run() {
-  console.log("Starting schema migration...");
+  console.log("Starting schema migration with Pool...");
+  const client = await pool.connect();
   let ok = 0, skip = 0, fail = 0;
 
-  for (let i = 0; i < statements.length; i++) {
-    try {
-      await sql.query(statements[i]);
-      ok++;
-    } catch (err) {
-      const msg = err.message || "";
-      if (msg.includes("already exists")) {
-        skip++;
-      } else {
-        fail++;
-        console.error(`[${i}] ${msg}`);
+  try {
+    for (let i = 0; i < statements.length; i++) {
+      try {
+        await client.query(statements[i]);
+        ok++;
+      } catch (err) {
+        const msg = err.message || "";
+        if (msg.includes("already exists")) {
+          skip++;
+        } else {
+          fail++;
+          console.error(`[${i}] FAIL: ${msg}`);
+        }
       }
     }
-  }
-  console.log(`Schema: ${ok} ok, ${skip} skipped, ${fail} failed`);
+    console.log(`Schema: ${ok} created, ${skip} skipped, ${fail} failed`);
 
-  // Triggers
-  const triggers = [
-    `CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql`,
-    `CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_wallets_upd BEFORE UPDATE ON wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_credits_upd BEFORE UPDATE ON user_credits FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_orders_upd BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_branding_upd BEFORE UPDATE ON studio_branding FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_gwconfig_upd BEFORE UPDATE ON payment_gateway_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_gst_upd BEFORE UPDATE ON gst_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_invoices_upd BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_refunds_upd BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_adj_upd BEFORE UPDATE ON wallet_adjustments FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-    `CREATE TRIGGER trg_ytc_upd BEFORE UPDATE ON youtube_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  ];
+    // Triggers
+    const triggers = [
+      `CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql`,
+      `CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_wallets_upd BEFORE UPDATE ON wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_credits_upd BEFORE UPDATE ON user_credits FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_orders_upd BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_branding_upd BEFORE UPDATE ON studio_branding FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_gwconfig_upd BEFORE UPDATE ON payment_gateway_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_gst_upd BEFORE UPDATE ON gst_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_invoices_upd BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_refunds_upd BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_adj_upd BEFORE UPDATE ON wallet_adjustments FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+      `CREATE TRIGGER trg_ytc_upd BEFORE UPDATE ON youtube_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+    ];
 
-  for (const t of triggers) {
-    try { await sql.query(t); } catch (e) {
-      if (!e.message?.includes("already exists")) console.error("Trigger:", e.message);
+    for (const t of triggers) {
+      try { await client.query(t); } catch (e) {
+        if (!e.message?.includes("already exists")) console.error("Trigger err:", e.message);
+      }
     }
+    console.log("Triggers done");
+  } finally {
+    client.release();
   }
-  console.log("Triggers created");
 
-  // Seed data
+  // Seed data using neon tagged template (supports parameterized queries)
   console.log("Seeding...");
   try {
     const adminCheck = await sql`SELECT id FROM users WHERE email = 'admin@streammattic.com'`;
@@ -157,7 +164,9 @@ async function run() {
     }
   }
   console.log("Settings seeded:", settings.length);
-  console.log("DONE!");
+
+  await pool.end();
+  console.log("MIGRATION COMPLETE!");
 }
 
 run().catch(e => { console.error("Fatal:", e); process.exit(1); });

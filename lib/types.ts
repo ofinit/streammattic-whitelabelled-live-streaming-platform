@@ -55,6 +55,7 @@ export interface Admin extends User {
 // Streamer (managed by admin)
 export interface Streamer extends User {
   role: "streamer"
+  studioId?: string
   packageId?: string
   packageExpiresAt?: Date
   walletBalance: number

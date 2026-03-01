@@ -122,33 +122,24 @@ export async function getWalletTransactions(walletId: string, limit = 20, offset
 }
 
 // ============================================================
-// PACKAGES
+// CREDITS
 // ============================================================
 
-export async function getPackages(filters?: { isStudio?: boolean; isActive?: boolean }) {
+export async function getUserCredits(userId: string) {
   const sql = getDb()
-  const conditions: string[] = []
-  const params: unknown[] = []
-  let paramIdx = 1
-
-  if (filters?.isStudio !== undefined) {
-    conditions.push(`is_studio_package = $${paramIdx++}`)
-    params.push(filters.isStudio)
-  }
-  if (filters?.isActive !== undefined) {
-    conditions.push(`is_active = $${paramIdx++}`)
-    params.push(filters.isActive)
-  }
-
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
-  const rows = await sql(`SELECT * FROM packages ${where} ORDER BY sort_order ASC, created_at ASC`, params)
-  return toCamelRows(rows as Record<string, unknown>[])
+  const rows = await sql`SELECT * FROM user_credits WHERE user_id = ${userId}`
+  return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
-export async function getPackageById(id: string) {
+export async function getCreditPurchases(userId: string, limit = 20, offset = 0) {
   const sql = getDb()
-  const rows = await sql`SELECT * FROM packages WHERE id = ${id}`
-  return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
+  const rows = await sql`
+    SELECT * FROM credit_purchases
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `
+  return toCamelRows(rows as Record<string, unknown>[])
 }
 
 // ============================================================

@@ -31,7 +31,6 @@ export type DNSStatus = "pending" | "verified" | "failed"
   role: UserRole
   status: UserStatus
   avatar?: string
-  customStreamPricing?: Partial<StreamTypePricing>
   createdAt: Date
   updatedAt: Date
   }
@@ -42,8 +41,8 @@ export type DNSStatus = "pending" | "verified" | "failed"
   branding: StudioBranding
   domain?: CustomDomain
   walletBalance: number
+  credits: StreamTypeCredits
   totalEvents: number
-  customStreamPricing?: Partial<StreamTypePricing>
   }
 
 // Admin extends User
@@ -56,9 +55,8 @@ export interface Admin extends User {
 export interface Streamer extends User {
   role: "streamer"
   studioId?: string
-  packageId?: string
-  packageExpiresAt?: Date
   walletBalance: number
+  credits: StreamTypeCredits
   totalEvents: number
   eventsUsed: number
 }
@@ -103,19 +101,19 @@ export interface Wallet {
 
 // Transaction Category
 export type TransactionCategory =
-  | "top_up"
-  | "package_purchase"
-  | "cascade_debit"
+  | "top_up" // Wallet recharge
+  | "credit_purchase" // Buying stream type credits from wallet
+  | "service_charge" // AI image gen, whitelabel, domain charges
   | "order_refund"
   | "adjustment"
-  | "commission"
-  | "refund_reversal" // When studio loses commission on refund
   | "manual_adjustment" // Admin adds/deducts funds manually
   | "payment_recovery" // Payment gateway success but wallet credit failed
   | "compensation" // Compensation for service issues
   | "correction" // Corrections for errors
   | "goodwill" // Goodwill credits
   | "ai_image_generation" // AI image generation charge
+  | "whitelabel_hosting" // Annual whitelabel & hosting charge
+  | "domain_registration" // Domain registration/renewal charge
 
 // Enhanced Wallet Transaction with cascade support
 export interface WalletTransaction {
@@ -130,7 +128,7 @@ export interface WalletTransaction {
   description: string
   referenceId?: string
   referenceType?: string
-  cascadeLevel?: number // 0 = streamer, 1 = studio, 2 = admin
+  creditPurchaseId?: string // Link to credit purchase if this was a credit buy
 
   baseAmount?: number // Amount without GST
   gstAmount?: number // GST portion
@@ -154,16 +152,6 @@ export interface WalletTransaction {
   createdAt: Date
 }
 
-// Cascade Transaction Result
-export interface CascadeResult {
-  userId: string
-  userName: string
-  userType: UserRole
-  amount: number
-  profit: number
-  transactionId: string
-}
-
 // Wallet Summary
 export interface WalletSummary {
   balance: number
@@ -179,19 +167,27 @@ export interface Order {
   orderNumber: string
   userId: string
   user?: User
-  orderType: "package" | "validity" | "addon"
+  orderType: "credit_purchase" | "validity_extension" | "wallet_recharge" | "service_charge"
   status: OrderStatus
-  unitPrice: number
+  // For credit purchases
+  streamType?: StreamTypeKey
   quantity: number
-  totalPrice: number
-  items?: OrderItem[]
+  unitPrice: number // Price per unit in paisa
+  totalPrice: number // Total amount in paisa
+  discountTierLabel?: string // Volume discount tier applied
+  // For validity extensions
   eventId?: string
   validityDays?: number
+  creditsCost?: number // Credits deducted (for validity extensions)
+  // For service charges
+  serviceType?: "ai_image" | "whitelabel_hosting" | "domain_registration" | "domain_renewal"
+  // Payment info (for wallet recharges)
   paymentGateway?: PaymentGateway
   paymentId?: string
-  failureReason?: string // Why the order failed
-  insufficientFundsEntity?: string // Which entity lacked funds
-  requiredAmount?: number // Amount required at failed entity
+  // Failure tracking
+  failureReason?: string
+  insufficientFundsEntity?: string
+  requiredAmount?: number
   createdAt: Date
   updatedAt: Date
   completedAt?: Date
@@ -324,150 +320,114 @@ export interface StudioStats {
 
 export interface StreamerStats {
   walletBalance: number
+  credits: StreamTypeCredits
   totalEvents: number
   activeEvents: number
   totalViews: number
-  packageName?: string
-  packageExpiry?: Date
-  eventsRemaining: number
+  totalCreditsRemaining: number // Sum of all stream type credits
 }
 
-// Package Interface Declaration
-export interface Package {
-  id: string
-  name: string
-  slug: string
-  type: "event_pack" | "validity" | "addon" | "pay_per_event"
-  pricingModel: PricingModel
-  description: string
-  price: number
-  basePriceStudio: number
-  basePriceStreamer: number
-  duration: number
-  maxEvents: number
-  maxConcurrentViewers: number
-  features: string[]
-  isActive: boolean
-  sortOrder: number
-  minQty: number
-  maxQty: number
-  streamTypePricing?: StreamTypePricing
-  simulcastPricing?: SimulcastPricing
-  createdAt: Date
-  updatedAt: Date
-}
+// ===== STREAM TYPE PRICING (Admin-set, single price) =====
 
 export interface StreamTypePricing {
-  rtmp: StreamTypePriceLevel
-  youtube_api: StreamTypePriceLevel
-  youtube_embed: StreamTypePriceLevel
-  third_party: StreamTypePriceLevel
+  rtmp: StreamTypePriceConfig
+  youtube_api: StreamTypePriceConfig
+  youtube_embed: StreamTypePriceConfig
+  third_party: StreamTypePriceConfig
 }
 
-  export interface StreamTypePriceLevel {
-  streamerPrice: number // What streamer pays (in paisa)
-  studioPrice: number // What studio pays to admin (in paisa)
+export interface StreamTypePriceConfig {
+  basePrice: number // Price per event in paisa (single price, no cascade)
   enabled: boolean // Whether this stream type is available
-  }
+  volumeDiscountTiers: VolumeDiscountTier[] // Quantity-based discounts
+}
 
+export interface VolumeDiscountTier {
+  minQty: number // Minimum quantity to unlock this tier
+  pricePerEvent: number // Discounted price per event in paisa
+  label?: string // e.g. "Starter Pack", "Bulk Deal"
+}
+
+// Simulcast destination pricing (flat per-destination fee)
 export interface SimulcastPricing {
-  youtube: SimulcastPriceLevel
-  facebook: SimulcastPriceLevel
-  customRtmp: SimulcastPriceLevel
+  youtube: SimulcastPriceConfig
+  facebook: SimulcastPriceConfig
+  customRtmp: SimulcastPriceConfig
 }
 
-  export interface SimulcastPriceLevel {
-  streamerPrice: number
-  studioPrice: number
+export interface SimulcastPriceConfig {
+  price: number // Price per simulcast per event in paisa
   enabled: boolean
-  }
+}
 
-// Prepaid event pack -- buy in bulk at discounted rates
-export interface EventPack {
+// ===== STREAM TYPE CREDITS (User balance per stream type) =====
+
+export interface StreamTypeCredits {
+  rtmp: number
+  youtube_api: number
+  youtube_embed: number
+  third_party: number
+}
+
+// Credit purchase record (wallet -> credits)
+export interface CreditPurchase {
   id: string
-  name: string
-  eventCount: number
-  streamerPrice: number // flat pack price for streamers (in paisa)
-  studioPrice: number // flat pack price for studios (in paisa)
-  enabled: boolean
-  sortOrder: number
+  userId: string
+  streamType: StreamTypeKey
+  quantity: number
+  pricePerEvent: number // Price paid per credit in paisa
+  totalPrice: number // Total wallet deduction in paisa
+  discountTierApplied?: string // Label of the volume tier
+  createdAt: Date
 }
 
-export interface EventPackSettings {
-  packs: EventPack[]
-  enabled: boolean // master toggle for event packs
-  streamTypeRestriction: "any" | (keyof StreamTypePricing)[]
+// Credit deduction record (credits -> event/validity)
+export interface CreditDeduction {
+  id: string
+  userId: string
+  streamType: StreamTypeKey
+  amount: number // Number of credits deducted
+  reason: "event_creation" | "validity_extension"
+  eventId?: string
+  validityDays?: number // For validity extensions
+  createdAt: Date
 }
 
-// Event validity -- 30 days included free, extended durations have a per-stream-type surcharge
-export interface ValidityTierStreamSurcharge {
-  streamerSurcharge: number // in paisa, added on top of base event/pack price
-  studioSurcharge: number
-}
+// ===== EVENT VALIDITY (costs credits, not wallet) =====
 
 export interface ValidityTier {
   days: number
+  creditCost: number // Number of credits of that stream type to extend
   enabled: boolean
-  surcharges: {
-    rtmp: ValidityTierStreamSurcharge
-    youtube_api: ValidityTierStreamSurcharge
-    youtube_embed: ValidityTierStreamSurcharge
-    third_party: ValidityTierStreamSurcharge
-  }
+  label?: string // e.g. "60 Days (+1 credit)"
 }
 
-export type ValidityStreamKey = keyof ValidityTier["surcharges"]
-
 export interface EventValiditySettings {
-  defaultDays: 30 // always 30, not configurable
+  defaultDays: 30 // Always 30, free with event creation
   extendedTiers: ValidityTier[] // 60, 90, 180, 365
 }
 
-// Custom stream pricing override per user or studio
-// When set, overrides the master pricing from admin packages
-export interface CustomStreamPricing {
-  id: string
-  targetId: string // userId or studioId
-  targetType: "streamer" | "studio"
-  setById: string // admin who set it
-  streamTypePricing?: Partial<StreamTypePricing> // only overridden types
-  note?: string // admin note for why custom pricing was set
-  createdAt: Date
-  updatedAt: Date
-}
+// ===== STREAMER CREDIT INVENTORY =====
 
-// Streamer package inventory
 export interface StreamerInventory {
   id: string
   userId: string
-  packageId: string
-  package?: Package
-  totalQty: number
-  availableQty: number
-  usedQty: number
+  credits: StreamTypeCredits
+  totalPurchased: StreamTypeCredits // Lifetime purchased
+  totalUsed: StreamTypeCredits // Lifetime used
   createdAt: Date
   updatedAt: Date
-}
-
-// Validity pricing tiers
-export interface ValidityPrice {
-  id: string
-  packageId: string
-  days: number
-  priceStudio: number
-  priceStreamer: number
-  isActive: boolean
 }
 
 // Order line item
 export interface OrderItem {
   id: string
   orderId: string
-  packageId: string
-  package?: Package
+  streamType?: StreamTypeKey
   quantity: number
   unitPrice: number
   totalPrice: number
+  description?: string
 }
 
 // Event Template
@@ -755,18 +715,7 @@ export interface SimulcastConfig {
 
 export type StreamTypeKey = "rtmp" | "youtube_api" | "youtube_embed" | "third_party"
 
-export type PricingModel = "monthly" | "pay_per_event" | "credits" | "hybrid"
-
-export interface EventPricing {
-  streamType: StreamTypeKey
-  streamTypePrice: number
-  simulcastDestinations: SimulcastDestination[]
-  simulcastTotal: number
-  validityExtensionPrice: number
-  dateChangePrice: number
-  totalPrice: number
-  breakdown: PriceBreakdown[]
-}
+export type PricingModel = "pay_per_event" | "credits"
 
 export interface SimulcastDestination {
   type: "youtube" | "facebook" | "custom_rtmp"
@@ -775,7 +724,7 @@ export interface SimulcastDestination {
 }
 
 export interface PriceBreakdown {
-  desiredWalletAmount: number // What streamer wants in wallet
+  desiredWalletAmount: number // What user wants in wallet
   gstEnabled: boolean
   gstPercentage: number
   baseAmount: number // Amount that goes to wallet
@@ -784,51 +733,7 @@ export interface PriceBreakdown {
   walletCreditAmount: number // Amount credited to wallet
 }
 
-export interface CascadeValidation {
-  isValid: boolean
-  totalRequired: number
-  levels: CascadeLevel[]
-  failedAt?: string
-  failureReason?: string
-}
 
-export interface CascadeLevel {
-  level: number
-  entityId: string
-  entityName: string
-  entityType: UserRole
-  currentBalance: number
-  requiredAmount: number
-  profitAmount: number
-  hasEnough: boolean
-}
-
-export interface CascadeDebitRequest {
-  userId: string
-  eventId?: string
-  orderId?: string
-  streamType: StreamTypeKey
-  simulcastDestinations: string[]
-  description: string
-}
-
-export interface CascadeDebitResult {
-  success: boolean
-  totalDebited: number
-  transactions: CascadeTransactionResult[]
-  error?: string
-}
-
-export interface CascadeTransactionResult {
-  transactionId: string
-  entityId: string
-  entityName: string
-  entityType: UserRole
-  amount: number
-  profit: number
-  balanceBefore: number
-  balanceAfter: number
-}
 
 export interface ValidityExtensionRequest {
   eventId: string
@@ -962,41 +867,7 @@ export interface TranscodingProfile {
   isDefault: boolean
 }
 
-export interface BlockedSale {
-  id: string
-  userId: string
-  userName: string
-  userEmail: string
-  packageId?: string
-  packageName?: string
-  streamType?: StreamTypeKey
-  orderType: "package" | "pay_per_event"
-  streamerPrice: number
-  insufficientEntityId: string
-  insufficientEntityName: string
-  insufficientEntityType: UserRole
-  requiredAmount: number
-  currentBalance: number
-  shortfall: number
-  potentialProfit: number // Profit the entity would have made
-  blockedAt: Date
-  notified: boolean
-}
 
-export interface InsufficientFundsNotification extends Notification {
-  type: "error"
-  data: {
-    userId: string
-    userName: string
-    packageName?: string
-    streamType?: string
-    shortfall: number
-    requiredAmount: number
-    currentBalance: number
-    potentialProfit: number
-    suggestedTopUp: number
-  }
-}
 
 // Event Cancellation
 export interface EventCancellation {
@@ -1016,7 +887,7 @@ export interface EventCancellation {
 // Refund Request
 export interface RefundRequest {
   id: string
-  type: "event_cancellation" | "package_refund" | "order_refund"
+  type: "event_cancellation" | "credit_refund" | "order_refund"
 
   // Reference tracking
   eventId?: string
@@ -1029,8 +900,8 @@ export interface RefundRequest {
   gstAmount: number
   totalRefundAmount: number
 
-  // Cascade tracking
-  cascadeTransactionIds: string[]
+  // Transaction tracking
+  relatedTransactionIds: string[]
 
   // Workflow
   status: "pending" | "approved" | "rejected" | "processing" | "completed" | "failed"
@@ -1059,35 +930,7 @@ export interface RefundRequest {
   updatedAt: Date
 }
 
-// Cascade Reversal
-export interface CascadeReversal {
-  id: string
-  refundRequestId: string
-  originalCascadeTransactionIds: string[]
 
-  reversalTransactions: CascadeReversalTransaction[]
-
-  status: "pending" | "in_progress" | "completed" | "failed" | "rolled_back"
-  startedAt?: Date
-  completedAt?: Date
-  failureReason?: string
-  createdAt: Date
-}
-
-// Individual reversal transaction
-export interface CascadeReversalTransaction {
-  id: string
-  cascadeReversalId: string
-  level: number
-  entityId: string
-  entityType: UserRole
-  originalDebitAmount: number
-  creditAmount: number
-  originalProfit: number
-  transactionId?: string
-  status: "pending" | "completed" | "failed"
-  createdAt: Date
-}
 
 // Wallet Adjustment (Admin)
 export interface WalletAdjustment {

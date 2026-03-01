@@ -2,7 +2,6 @@ import type {
   User,
   Studio,
   Streamer,
-  Package,
   Order,
   LiveEvent,
   WalletTransaction,
@@ -13,8 +12,11 @@ import type {
   StreamerStats,
   WalletSummary,
   StreamerInventory,
-  CustomPrice,
-  ValidityPrice,
+  StreamTypePricing,
+  SimulcastPricing,
+  EventValiditySettings,
+  StreamTypeKey,
+  StreamTypeCredits,
   EventTemplate,
   Domain,
   Payment,
@@ -26,9 +28,9 @@ import type {
   FacebookPage,
   RefundRequest,
   WalletAdjustment,
-  PaymentGatewayTransaction, // Import new types
-  UnmatchedPayment, // Import new types
-  GSTConfiguration, // Import new types
+  PaymentGatewayTransaction,
+  UnmatchedPayment,
+  GSTConfiguration,
 } from "./types"
 
 // Mock Admin
@@ -52,8 +54,8 @@ export const mockStudios: Studio[] = [
     role: "studio",
     status: "active",
     walletBalance: 15000,
+    credits: { rtmp: 20, youtube_api: 15, youtube_embed: 10, third_party: 5 },
     totalEvents: 234,
-
     createdAt: new Date("2024-02-15"),
     updatedAt: new Date(),
     branding: {
@@ -73,6 +75,7 @@ export const mockStudios: Studio[] = [
     role: "studio",
     status: "active",
     walletBalance: 8500,
+    credits: { rtmp: 10, youtube_api: 8, youtube_embed: 5, third_party: 0 },
     totalEvents: 156,
     createdAt: new Date("2024-03-01"),
     updatedAt: new Date(),
@@ -92,6 +95,7 @@ export const mockStudios: Studio[] = [
     role: "studio",
     status: "inactive",
     walletBalance: 2200,
+    credits: { rtmp: 2, youtube_api: 0, youtube_embed: 3, third_party: 0 },
     totalEvents: 67,
     createdAt: new Date("2024-04-10"),
     updatedAt: new Date(),
@@ -111,6 +115,7 @@ export const mockStudios: Studio[] = [
     role: "studio",
     status: "active",
     walletBalance: 5000,
+    credits: { rtmp: 5, youtube_api: 3, youtube_embed: 0, third_party: 0 },
     totalEvents: 89,
     createdAt: new Date("2024-05-20"),
     updatedAt: new Date(),
@@ -131,6 +136,7 @@ export const mockStudios: Studio[] = [
     role: "studio",
     status: "active",
     walletBalance: 7500,
+    credits: { rtmp: 8, youtube_api: 5, youtube_embed: 3, third_party: 2 },
     totalEvents: 45,
     createdAt: new Date("2024-06-10"),
     updatedAt: new Date(),
@@ -153,9 +159,8 @@ export const mockStreamers: Streamer[] = [
     name: "Alice Johnson",
     role: "streamer",
     status: "active",
-    packageId: "pkg-2",
-    packageExpiresAt: new Date("2025-02-15"),
     walletBalance: 500,
+    credits: { rtmp: 5, youtube_api: 3, youtube_embed: 2, third_party: 0 },
     totalEvents: 15,
     eventsUsed: 8,
     createdAt: new Date("2024-06-01"),
@@ -167,9 +172,8 @@ export const mockStreamers: Streamer[] = [
     name: "Bob Smith",
     role: "streamer",
     status: "active",
-    packageId: "pkg-1",
-    packageExpiresAt: new Date("2025-01-20"),
     walletBalance: 150,
+    credits: { rtmp: 0, youtube_api: 1, youtube_embed: 0, third_party: 0 },
     totalEvents: 5,
     eventsUsed: 5,
     createdAt: new Date("2024-07-15"),
@@ -182,6 +186,7 @@ export const mockStreamers: Streamer[] = [
     role: "streamer",
     status: "suspended",
     walletBalance: 0,
+    credits: { rtmp: 0, youtube_api: 0, youtube_embed: 0, third_party: 0 },
     totalEvents: 3,
     eventsUsed: 3,
     createdAt: new Date("2024-08-01"),
@@ -189,219 +194,161 @@ export const mockStreamers: Streamer[] = [
   },
 ]
 
-// Mock Packages
-export const mockPackages: Package[] = [
-  {
-    id: "pkg-1",
-    name: "Starter",
-    slug: "starter",
-    type: "event_pack",
-    pricingModel: "monthly",
-    description: "Perfect for beginners",
-    price: 999,
-    basePriceStudio: 600,
-    basePriceStreamer: 999,
-    duration: 30,
-    maxEvents: 5,
-    maxConcurrentViewers: 100,
-    features: ["5 Live Events", "100 Concurrent Viewers", "Basic Analytics", "Email Support"],
-    streamTypePricing: {
-      rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
-      youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
-      youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
-      third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
-    },
-    isActive: true,
-    sortOrder: 1,
-    minQty: 1,
-    maxQty: 10,
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "pkg-2",
-    name: "Professional",
-    slug: "professional",
-    type: "event_pack",
-    pricingModel: "monthly",
-    description: "For growing creators",
-    price: 2499,
-    basePriceStudio: 1500,
-    basePriceStreamer: 2499,
-    duration: 30,
-    maxEvents: 20,
-    maxConcurrentViewers: 500,
-    features: ["20 Live Events", "500 Concurrent Viewers", "Advanced Analytics", "Priority Support", "Custom Branding"],
-    streamTypePricing: {
-      rtmp: { streamerPrice: 1000, studioPrice: 500, enabled: true },
-      youtube_api: { streamerPrice: 700, studioPrice: 300, enabled: true },
-      youtube_embed: { streamerPrice: 350, studioPrice: 100, enabled: true },
-      third_party: { streamerPrice: 250, studioPrice: 70, enabled: false },
-    },
-    isActive: true,
-    sortOrder: 2,
-    minQty: 1,
-    maxQty: 10,
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date(),
-  },
-  {
-    id: "pkg-3",
-    name: "Enterprise",
-    slug: "enterprise",
-    type: "event_pack",
-    pricingModel: "monthly",
-    description: "For large organizations",
-    price: 9999,
-    basePriceStudio: 6000,
-    basePriceStreamer: 9999,
-    duration: 30,
-    maxEvents: -1, // Unlimited
-    maxConcurrentViewers: 5000,
-    features: [
-      "Unlimited Events",
-      "5000 Concurrent Viewers",
-      "Full Analytics Suite",
-      "24/7 Support",
-      "Custom Branding",
-      "API Access",
-      "White-label",
+// ===== Master Stream Type Pricing (admin-configured) =====
+export const masterStreamTypePricing: StreamTypePricing = {
+  rtmp: {
+    basePrice: 1500, // Rs 15 per event
+    enabled: true,
+    volumeDiscountTiers: [
+      { minQty: 5, pricePerEvent: 1300, label: "5 Pack" },
+      { minQty: 10, pricePerEvent: 1100, label: "10 Pack" },
+      { minQty: 25, pricePerEvent: 900, label: "25 Pack" },
+      { minQty: 50, pricePerEvent: 750, label: "50 Pack" },
     ],
-    streamTypePricing: {
-      rtmp: { streamerPrice: 800, studioPrice: 400, enabled: true },
-      youtube_api: { streamerPrice: 500, studioPrice: 250, enabled: true },
-      youtube_embed: { streamerPrice: 250, studioPrice: 80, enabled: true },
-      third_party: { streamerPrice: 150, studioPrice: 50, enabled: true },
-    },
-    isActive: true,
-    sortOrder: 3,
-    minQty: 1,
-    maxQty: 5,
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date(),
   },
-  {
-    id: "pkg-pay-per-event",
-    name: "Pay Per Event",
-    slug: "pay-per-event",
-    type: "pay_per_event",
-    pricingModel: "pay_per_event",
-    description: "Pay only for what you use - no commitment",
-    price: 0,
-    basePriceStudio: 0,
-    basePriceStreamer: 0,
-    duration: 0,
-    maxEvents: -1,
-    maxConcurrentViewers: 5000,
-    features: [
-      "No Monthly Commitment",
-      "Pay Per Stream Type",
-      "All Stream Types Available",
-      "Simulcast Support",
-      "Up to 5000 Viewers",
-      "Full Analytics",
+  youtube_api: {
+    basePrice: 1000, // Rs 10 per event
+    enabled: true,
+    volumeDiscountTiers: [
+      { minQty: 5, pricePerEvent: 850, label: "5 Pack" },
+      { minQty: 10, pricePerEvent: 700, label: "10 Pack" },
+      { minQty: 25, pricePerEvent: 550, label: "25 Pack" },
+      { minQty: 50, pricePerEvent: 450, label: "50 Pack" },
     ],
-    isActive: true,
-    sortOrder: 0,
-    minQty: 1,
-    maxQty: 999,
-    streamTypePricing: {
-      rtmp: { streamerPrice: 1500, studioPrice: 700, enabled: true },
-      youtube_api: { streamerPrice: 1000, studioPrice: 400, enabled: true },
-      youtube_embed: { streamerPrice: 500, studioPrice: 150, enabled: true },
-      third_party: { streamerPrice: 400, studioPrice: 100, enabled: true },
-    },
-    simulcastPricing: {
-      youtube: { streamerPrice: 75, studioPrice: 40, enabled: true },
-      facebook: { streamerPrice: 75, studioPrice: 40, enabled: true },
-      customRtmp: { streamerPrice: 100, studioPrice: 60, enabled: true },
-    },
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date(),
   },
-]
+  youtube_embed: {
+    basePrice: 500, // Rs 5 per event
+    enabled: true,
+    volumeDiscountTiers: [
+      { minQty: 5, pricePerEvent: 425, label: "5 Pack" },
+      { minQty: 10, pricePerEvent: 350, label: "10 Pack" },
+      { minQty: 25, pricePerEvent: 275, label: "25 Pack" },
+      { minQty: 50, pricePerEvent: 200, label: "50 Pack" },
+    ],
+  },
+  third_party: {
+    basePrice: 400, // Rs 4 per event
+    enabled: true,
+    volumeDiscountTiers: [
+      { minQty: 5, pricePerEvent: 340, label: "5 Pack" },
+      { minQty: 10, pricePerEvent: 280, label: "10 Pack" },
+      { minQty: 25, pricePerEvent: 220, label: "25 Pack" },
+      { minQty: 50, pricePerEvent: 160, label: "50 Pack" },
+    ],
+  },
+}
 
-// Mock Orders
+// Master Simulcast Pricing
+export const masterSimulcastPricing: SimulcastPricing = {
+  youtube: { price: 75, enabled: true },
+  facebook: { price: 75, enabled: true },
+  customRtmp: { price: 100, enabled: true },
+}
+
+// Master Validity Settings (extension costs in credits)
+export const masterValiditySettings: EventValiditySettings = {
+  defaultDays: 30,
+  extendedTiers: [
+    { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
+    { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
+    { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
+    { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
+  ],
+}
+
+// Helper: Get the best price for a quantity
+export function getBestPriceForQuantity(
+  streamType: StreamTypeKey,
+  quantity: number,
+  pricing: StreamTypePricing = masterStreamTypePricing,
+): { pricePerEvent: number; tierLabel?: string; totalPrice: number; savings: number } {
+  const config = pricing[streamType]
+  let pricePerEvent = config.basePrice
+  let tierLabel: string | undefined
+
+  // Find the best matching tier (highest minQty that's <= quantity)
+  for (const tier of config.volumeDiscountTiers) {
+    if (quantity >= tier.minQty) {
+      pricePerEvent = tier.pricePerEvent
+      tierLabel = tier.label
+    }
+  }
+
+  const totalPrice = pricePerEvent * quantity
+  const savings = (config.basePrice * quantity) - totalPrice
+
+  return { pricePerEvent, tierLabel, totalPrice, savings }
+}
+
+// Mock Orders (credit purchases, wallet recharges, service charges)
 export const mockOrders: Order[] = [
   {
     id: "order-1",
     orderNumber: "ORD-M1K8X-ABC1",
     userId: "streamer-1",
     user: mockStreamers[0] as any,
-    orderType: "package",
+    orderType: "wallet_recharge",
     status: "completed",
-    unitPrice: 2499,
+    unitPrice: 5000,
     quantity: 1,
-    totalPrice: 2499,
-    items: [
-      {
-        id: "item-1",
-        orderId: "order-1",
-        packageId: "pkg-2",
-        package: mockPackages[1],
-        quantity: 1,
-        unitPrice: 2499,
-        totalPrice: 2499,
-      },
-    ],
+    totalPrice: 5000,
     paymentGateway: "razorpay",
     paymentId: "pay_xyz123",
-    completedAt: new Date("2024-11-15"),
-    createdAt: new Date("2024-11-15"),
+    completedAt: new Date("2024-11-10"),
+    createdAt: new Date("2024-11-10"),
     updatedAt: new Date(),
   },
   {
     id: "order-2",
     orderNumber: "ORD-N2L9Y-DEF2",
-    userId: "streamer-2",
-    user: mockStreamers[1] as any,
-    orderType: "package",
+    userId: "streamer-1",
+    user: mockStreamers[0] as any,
+    orderType: "credit_purchase",
     status: "completed",
-    unitPrice: 999,
-    quantity: 2,
-    totalPrice: 1998,
+    streamType: "rtmp",
+    unitPrice: 1100,
+    quantity: 10,
+    totalPrice: 11000,
+    discountTierLabel: "10 Pack",
     items: [
       {
         id: "item-2",
         orderId: "order-2",
-        packageId: "pkg-1",
-        package: mockPackages[0],
-        quantity: 2,
-        unitPrice: 999,
-        totalPrice: 1998,
+        streamType: "rtmp",
+        quantity: 10,
+        unitPrice: 1100,
+        totalPrice: 11000,
+        description: "10x RTMP Credits (10 Pack discount)",
       },
     ],
-    paymentGateway: "razorpay",
-    paymentId: "pay_def456",
-    completedAt: new Date("2024-12-01"),
-    createdAt: new Date("2024-12-01"),
+    completedAt: new Date("2024-11-15"),
+    createdAt: new Date("2024-11-15"),
     updatedAt: new Date(),
   },
   {
     id: "order-3",
     orderNumber: "ORD-O3M0Z-GHI3",
-    userId: "streamer-3",
-    user: mockStreamers[2] as any,
-    orderType: "package",
-    status: "failed",
-    unitPrice: 9999,
-    quantity: 1,
-    totalPrice: 9999,
+    userId: "streamer-2",
+    user: mockStreamers[1] as any,
+    orderType: "credit_purchase",
+    status: "completed",
+    streamType: "youtube_api",
+    unitPrice: 850,
+    quantity: 5,
+    totalPrice: 4250,
+    discountTierLabel: "5 Pack",
     items: [
       {
         id: "item-3",
         orderId: "order-3",
-        packageId: "pkg-3",
-        package: mockPackages[2],
-        quantity: 1,
-        unitPrice: 9999,
-        totalPrice: 9999,
+        streamType: "youtube_api",
+        quantity: 5,
+        unitPrice: 850,
+        totalPrice: 4250,
+        description: "5x YouTube API Credits (5 Pack discount)",
       },
     ],
-    failureReason: "Insufficient wallet balance",
-    insufficientFundsEntity: "streamer-3",
-    requiredAmount: 9999,
-    failedAt: new Date("2024-11-20"),
+    completedAt: new Date("2024-11-20"),
     createdAt: new Date("2024-11-20"),
     updatedAt: new Date(),
   },
@@ -410,15 +357,15 @@ export const mockOrders: Order[] = [
     orderNumber: "ORD-P4N1A-JKL4",
     userId: "streamer-1",
     user: mockStreamers[0] as any,
-    orderType: "validity",
+    orderType: "validity_extension",
     status: "completed",
-    unitPrice: 799,
+    streamType: "rtmp",
+    unitPrice: 0,
     quantity: 1,
-    totalPrice: 799,
+    totalPrice: 0,
+    creditsCost: 2,
     eventId: "event-1",
-    validityDays: 30,
-    paymentGateway: "razorpay",
-    paymentId: "pay_val789",
+    validityDays: 90,
     completedAt: new Date("2024-12-02"),
     createdAt: new Date("2024-12-02"),
     updatedAt: new Date(),
@@ -426,25 +373,34 @@ export const mockOrders: Order[] = [
   {
     id: "order-5",
     orderNumber: "ORD-Q5O2B-MNO5",
-    userId: "streamer-2",
-    user: mockStreamers[1] as any,
-    orderType: "package",
-    status: "cancelled",
-    unitPrice: 4999,
-    quantity: 1,
-    totalPrice: 4999,
-    items: [
-      {
-        id: "item-5",
-        orderId: "order-5",
-        packageId: "pkg-3",
-        package: mockPackages[2],
-        quantity: 1,
-        unitPrice: 4999,
-        totalPrice: 4999,
-      },
-    ],
+    userId: "streamer-3",
+    user: mockStreamers[2] as any,
+    orderType: "credit_purchase",
+    status: "failed",
+    streamType: "rtmp",
+    unitPrice: 900,
+    quantity: 25,
+    totalPrice: 22500,
+    failureReason: "Insufficient wallet balance",
+    insufficientFundsEntity: "streamer-3",
+    requiredAmount: 22500,
+    failedAt: new Date("2024-12-05"),
     createdAt: new Date("2024-12-05"),
+    updatedAt: new Date(),
+  },
+  {
+    id: "order-6",
+    orderNumber: "ORD-R6S3C-PQR6",
+    userId: "streamer-1",
+    user: mockStreamers[0] as any,
+    orderType: "service_charge",
+    status: "completed",
+    serviceType: "ai_image",
+    unitPrice: 500,
+    quantity: 3,
+    totalPrice: 1500,
+    completedAt: new Date("2024-12-10"),
+    createdAt: new Date("2024-12-10"),
     updatedAt: new Date(),
   },
 ]
@@ -1165,12 +1121,11 @@ export const mockStudioStats: StudioStats = {
 
 export const mockStreamerStats: StreamerStats = {
   walletBalance: 500,
+  credits: { rtmp: 5, youtube_api: 3, youtube_embed: 2, third_party: 0 },
   totalEvents: 15,
   activeEvents: 1,
   totalViews: 4250,
-  packageName: "Professional",
-  packageExpiry: new Date("2025-02-15"),
-  eventsRemaining: 12,
+  totalCreditsRemaining: 10,
 }
 
 // Mock Wallet Summaries
@@ -1203,48 +1158,21 @@ export const mockStreamerInventory: StreamerInventory[] = [
   {
     id: "inv-1",
     userId: "streamer-1",
-    packageId: "pkg-2",
-    package: mockPackages[1],
-    totalQty: 20,
-    availableQty: 12,
-    usedQty: 8,
+    credits: { rtmp: 5, youtube_api: 3, youtube_embed: 2, third_party: 0 },
+    totalPurchased: { rtmp: 10, youtube_api: 5, youtube_embed: 2, third_party: 0 },
+    totalUsed: { rtmp: 5, youtube_api: 2, youtube_embed: 0, third_party: 0 },
     createdAt: new Date("2024-11-15"),
     updatedAt: new Date(),
   },
   {
     id: "inv-2",
     userId: "streamer-2",
-    packageId: "pkg-1",
-    package: mockPackages[0],
-    totalQty: 5,
-    availableQty: 0,
-    usedQty: 5,
+    credits: { rtmp: 0, youtube_api: 1, youtube_embed: 0, third_party: 0 },
+    totalPurchased: { rtmp: 5, youtube_api: 5, youtube_embed: 0, third_party: 0 },
+    totalUsed: { rtmp: 5, youtube_api: 4, youtube_embed: 0, third_party: 0 },
     createdAt: new Date("2024-10-20"),
     updatedAt: new Date(),
   },
-]
-
-// Mock Custom Prices
-export const mockCustomPrices: CustomPrice[] = [
-  {
-    id: "cp-1",
-    packageId: "pkg-2",
-    ownerId: "streamer-1",
-    setById: "studio-1",
-    price: 2200, // Discounted from 2499
-    createdAt: new Date("2024-11-01"),
-    updatedAt: new Date(),
-  },
-]
-
-// Mock Validity Prices
-export const mockValidityPrices: ValidityPrice[] = [
-  { id: "vp-1", packageId: "pkg-1", days: 7, priceStudio: 199, priceStreamer: 299, isActive: true },
-  { id: "vp-2", packageId: "pkg-1", days: 30, priceStudio: 599, priceStreamer: 799, isActive: true },
-  { id: "vp-3", packageId: "pkg-1", days: 90, priceStudio: 1499, priceStreamer: 1999, isActive: true },
-  { id: "vp-4", packageId: "pkg-2", days: 7, priceStudio: 399, priceStreamer: 599, isActive: true },
-  { id: "vp-5", packageId: "pkg-2", days: 30, priceStudio: 999, priceStreamer: 1499, isActive: true },
-  { id: "vp-6", packageId: "pkg-2", days: 90, priceStudio: 2499, priceStreamer: 3499, isActive: true },
 ]
 
 // Mock Event Templates

@@ -1,19 +1,14 @@
 /**
  * Refund Service
  *
- * Handles refund requests, cascade reversals, and manual wallet adjustments
- * Key principles:
- * - Admin has NO wallet (not part of cascade)
- * - ALL refunds require manual admin approval (no automatic refunds)
- * - Cascade reversal credits back studios/streamers (in reverse order)
- * - Each level loses their profit/margin on refund
+ * Handles refund requests and manual wallet adjustments.
+ * Refunds can return credits (for event/credit purchases)
+ * or wallet balance (for service charges).
  */
 
 import type {
   RefundRequest,
   EventCancellation,
-  CascadeReversal,
-  CascadeReversalTransaction,
   WalletTransaction,
   UserRole,
   WalletAdjustment,
@@ -72,13 +67,13 @@ export function createRefundRequest(
     throw new Error("Event not found")
   }
 
-  // Find original cascade transactions for this event
-  const cascadeTransactions = mockWalletTransactions.filter(
-    (t) => t.referenceId === eventId && t.category === "cascade_debit",
+  // Find original transaction for this event
+  const relatedTransactions = mockWalletTransactions.filter(
+    (t) => t.referenceId === eventId && t.category === "credit_purchase",
   )
 
-  // Calculate refund amount (from user's transaction)
-  const userTransaction = cascadeTransactions.find((t) => t.userId === requestedBy)
+  // Calculate refund amount
+  const userTransaction = relatedTransactions.find((t) => t.userId === requestedBy)
   const originalAmount = userTransaction?.amount || 0
 
   const eligibility = checkRefundEligibility(eventId)
@@ -95,17 +90,16 @@ export function createRefundRequest(
     refundAmount,
     gstAmount,
     totalRefundAmount,
-    cascadeTransactionIds: cascadeTransactions.map((t) => t.id),
+    relatedTransactionIds: relatedTransactions.map((t) => t.id),
     status: "pending",
     requestedBy,
     requestedByRole,
     requestedAt: new Date(),
-    refundMethod: "wallet", // Default to wallet refund
+    refundMethod: "wallet",
     createdAt: new Date(),
     updatedAt: new Date(),
   }
 
-  // Create audit log
   createRefundAuditLog(refundRequest.id, "created", requestedBy, requestedByRole, {
     reason,
     reasonCategory,
@@ -117,7 +111,6 @@ export function createRefundRequest(
 
 // Admin approves refund
 export function approveRefund(refundId: string, adminId: string): RefundRequest {
-  // In real app, fetch from database
   const refund = { id: refundId, status: "pending" } as RefundRequest
 
   if (refund.status !== "pending") {
@@ -158,98 +151,6 @@ export function rejectRefund(refundId: string, adminId: string, reason: string):
   return refund
 }
 
-// Execute cascade reversal (credit back wallets)
-export function executeCascadeReversal(refundId: string, adminId: string): CascadeReversal {
-  // Fetch refund request
-  const refund = { id: refundId, status: "approved" } as RefundRequest
-
-  if (refund.status !== "approved") {
-    throw new Error("Refund must be approved before processing")
-  }
-
-  // Fetch original cascade transactions
-  const originalTransactions = mockWalletTransactions.filter((t) => refund.cascadeTransactionIds.includes(t.id))
-
-  // Build reversal transactions (reverse order: studio first, then user)
-  const reversalTransactions: CascadeReversalTransaction[] = []
-
-  // Sort by cascade level (descending) to credit studio first
-  const sortedTransactions = originalTransactions.sort((a, b) => (b.cascadeLevel || 0) - (a.cascadeLevel || 0))
-
-  for (const originalTx of sortedTransactions) {
-    // Skip admin (admin has no wallet)
-    if (originalTx.userId === "admin-1") continue
-
-    const reversalTx: CascadeReversalTransaction = {
-      id: `rev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      cascadeReversalId: `cascade_rev_${refundId}`,
-      level: originalTx.cascadeLevel || 0,
-      entityId: originalTx.userId,
-      entityType: originalTx.cascadeLevel === 0 ? "streamer" : "studio",
-      originalDebitAmount: originalTx.amount,
-      creditAmount: originalTx.amount, // Credit back exact amount debited
-      originalProfit: 0, // Calculate from cascade
-      status: "pending",
-      createdAt: new Date(),
-    }
-
-    reversalTransactions.push(reversalTx)
-  }
-
-  const cascadeReversal: CascadeReversal = {
-    id: `cascade_rev_${refundId}`,
-    refundRequestId: refundId,
-    originalCascadeTransactionIds: refund.cascadeTransactionIds,
-    reversalTransactions,
-    status: "in_progress",
-    startedAt: new Date(),
-    createdAt: new Date(),
-  }
-
-  // Execute each reversal transaction
-  for (const reversalTx of reversalTransactions) {
-    try {
-      // Credit wallet
-      const walletTransaction = creditWallet(
-        reversalTx.entityId,
-        reversalTx.creditAmount,
-        "refund_reversal",
-        `Refund reversal - Event cancellation`,
-        {
-          performedBy: adminId,
-          performedByRole: "admin",
-          relatedRefundId: refundId,
-          relatedEventId: refund.eventId,
-        },
-      )
-
-      reversalTx.transactionId = walletTransaction.id
-      reversalTx.status = "completed"
-    } catch (error) {
-      reversalTx.status = "failed"
-      cascadeReversal.status = "failed"
-      cascadeReversal.failureReason = error instanceof Error ? error.message : "Unknown error"
-      break
-    }
-  }
-
-  if (cascadeReversal.status !== "failed") {
-    cascadeReversal.status = "completed"
-    cascadeReversal.completedAt = new Date()
-
-    // Update refund status
-    refund.status = "completed"
-    refund.completedAt = new Date()
-
-    createRefundAuditLog(refundId, "completed", adminId, "admin", {
-      cascadeReversalId: cascadeReversal.id,
-      completedAt: cascadeReversal.completedAt,
-    })
-  }
-
-  return cascadeReversal
-}
-
 // Manual wallet adjustment by admin
 export function createWalletAdjustment(
   targetUserId: string,
@@ -276,7 +177,7 @@ export function createWalletAdjustment(
     category,
     initiatedBy: adminId,
     initiatedAt: new Date(),
-    approvalRequired: amount > 10000, // Require approval for large amounts
+    approvalRequired: amount > 10000,
     notes: options?.notes,
     supportTicketId: options?.supportTicketId,
     paymentGatewayId: options?.paymentGatewayId,
@@ -285,7 +186,6 @@ export function createWalletAdjustment(
     updatedAt: new Date(),
   }
 
-  // If no approval required, execute immediately
   if (!adjustment.approvalRequired) {
     executeWalletAdjustment(adjustment.id, adminId)
   }
@@ -295,7 +195,6 @@ export function createWalletAdjustment(
 
 // Execute wallet adjustment
 export function executeWalletAdjustment(adjustmentId: string, adminId: string): WalletAdjustment {
-  // Fetch adjustment
   const adjustment = { id: adjustmentId } as WalletAdjustment
 
   const transactionCategory: TransactionCategory =
@@ -309,7 +208,6 @@ export function executeWalletAdjustment(adjustmentId: string, adminId: string): 
             ? "goodwill"
             : "manual_adjustment"
 
-  // Credit or debit wallet
   if (adjustment.type === "credit") {
     const transaction = creditWallet(
       adjustment.targetUserId,
@@ -326,10 +224,8 @@ export function executeWalletAdjustment(adjustmentId: string, adminId: string): 
         paymentGateway: adjustment.paymentGateway,
       },
     )
-
     adjustment.transactionId = transaction.id
   } else {
-    // Debit logic (for corrections)
     const transaction = debitWallet(
       adjustment.targetUserId,
       adjustment.amount,
@@ -342,7 +238,6 @@ export function executeWalletAdjustment(adjustmentId: string, adminId: string): 
         notes: adjustment.notes,
       },
     )
-
     adjustment.transactionId = transaction.id
   }
 
@@ -371,8 +266,7 @@ function creditWallet(
     supportTicketId?: string
   },
 ): WalletTransaction {
-  // In real app, this would update database
-  const currentBalance = 5000 // Mock current balance
+  const currentBalance = 5000
 
   const transaction: WalletTransaction = {
     id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

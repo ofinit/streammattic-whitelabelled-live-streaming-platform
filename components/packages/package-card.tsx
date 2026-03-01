@@ -6,7 +6,7 @@ import type { Package } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Sparkles, Zap, Crown } from "lucide-react"
+import { Check, Sparkles, Zap, Crown, Video, Youtube, MonitorPlay, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface PackageCardProps {
@@ -89,6 +89,29 @@ export function PackageCard({
             </div>
           ))}
         </div>
+
+        {/* Per-Event Stream Type Pricing (admin only) */}
+        {isAdmin && pkg.streamTypePricing && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Per-Event Pricing (User)</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { key: "rtmp" as const, label: "RTMP", icon: Video },
+                { key: "youtube_api" as const, label: "YT API", icon: Youtube },
+                { key: "youtube_embed" as const, label: "YT Embed", icon: MonitorPlay },
+                { key: "third_party" as const, label: "3rd Party", icon: Globe },
+              ].map(({ key, label, icon: Icon }) => (
+                <div key={key} className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1.5">
+                  <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="ml-auto text-xs font-medium text-foreground">
+                    ₹{(pkg.streamTypePricing[key].userPrice / 100).toFixed(0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2 text-center text-xs text-muted-foreground">
           <div className="rounded-md bg-muted/50 p-2">

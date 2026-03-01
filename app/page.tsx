@@ -17,7 +17,7 @@ import Link from "next/link"
 export default function LoginPage() {
   const router = useRouter()
   const { login, isLoading, switchRole } = useAuth()
-  const { branding, isWhiteLabel, reseller } = useBranding()
+  const { branding, isWhiteLabel, studio } = useBranding()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -32,7 +32,7 @@ export default function LoginPage() {
       if (email === "admin@streammattic.com") {
         router.push("/admin")
       } else if (email.includes("livestream.pro") || email.includes("streamhub")) {
-        router.push("/reseller")
+        router.push("/studio")
       } else {
         router.push("/dashboard")
       }
@@ -41,14 +41,14 @@ export default function LoginPage() {
     }
   }
 
-  const handleDemoLogin = (role: "admin" | "reseller" | "user") => {
+  const handleDemoLogin = (role: "admin" | "studio" | "user") => {
     switchRole(role)
     switch (role) {
       case "admin":
         router.push("/admin")
         break
-      case "reseller":
-        router.push("/reseller")
+      case "studio":
+        router.push("/studio")
         break
       case "user":
         router.push("/dashboard")
@@ -119,8 +119,8 @@ export default function LoginPage() {
                   <Button variant="outline" onClick={() => handleDemoLogin("admin")} className="border-border">
                     Admin
                   </Button>
-                  <Button variant="outline" onClick={() => handleDemoLogin("reseller")} className="border-border">
-                    Reseller
+                  <Button variant="outline" onClick={() => handleDemoLogin("studio")} className="border-border">
+                    Studio
                   </Button>
                   <Button variant="outline" onClick={() => handleDemoLogin("user")} className="border-border">
                     User
@@ -140,7 +140,7 @@ export default function LoginPage() {
                   <span className="text-foreground">Admin:</span> admin@streammattic.com
                 </p>
                 <p>
-                  <span className="text-foreground">Reseller:</span> john@livestream.pro
+                  <span className="text-foreground">Studio:</span> john@livestream.pro
                 </p>
                 <p>
                   <span className="text-foreground">User:</span> alice@example.com
@@ -162,8 +162,8 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Show reseller info when in white-label mode */}
-        {isWhiteLabel && reseller && (
+        {/* Show studio info when in white-label mode */}
+        {isWhiteLabel && studio && (
           <div className="text-center text-sm text-muted-foreground">
             <p>Powered by StreamMattic</p>
           </div>

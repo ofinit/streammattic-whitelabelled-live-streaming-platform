@@ -8,7 +8,7 @@ interface StreamTypeSelectorProps {
   value: StreamTypeKey | ""
   onChange: (value: StreamTypeKey) => void
   showPricing?: boolean
-  userLevel?: "admin" | "reseller" | "user"
+  userLevel?: "admin" | "studio" | "user"
 }
 
 const streamTypes: {

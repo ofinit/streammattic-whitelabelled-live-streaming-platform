@@ -6,7 +6,7 @@
  * - Admin has NO wallet (not part of cascade)
  * - ALL refunds require manual admin approval (no automatic refunds)
  * - Cascade reversal credits back studios/users (in reverse order)
- * - Each level loses their profit/commission on refund
+ * - Each level loses their profit/margin on refund
  */
 
 import type {
@@ -59,7 +59,7 @@ export function checkRefundEligibility(eventId: string): {
   }
 }
 
-// Create refund request (initiated by user/reseller)
+// Create refund request (initiated by user/studio)
 export function createRefundRequest(
   eventId: string,
   requestedBy: string,
@@ -170,10 +170,10 @@ export function executeCascadeReversal(refundId: string, adminId: string): Casca
   // Fetch original cascade transactions
   const originalTransactions = mockWalletTransactions.filter((t) => refund.cascadeTransactionIds.includes(t.id))
 
-  // Build reversal transactions (reverse order: reseller first, then user)
+  // Build reversal transactions (reverse order: studio first, then user)
   const reversalTransactions: CascadeReversalTransaction[] = []
 
-  // Sort by cascade level (descending) to credit reseller first
+  // Sort by cascade level (descending) to credit studio first
   const sortedTransactions = originalTransactions.sort((a, b) => (b.cascadeLevel || 0) - (a.cascadeLevel || 0))
 
   for (const originalTx of sortedTransactions) {

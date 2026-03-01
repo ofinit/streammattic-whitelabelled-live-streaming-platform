@@ -39,7 +39,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
       type: "event_pack",
       pricingModel: "monthly",
       description: "",
-      basePriceReseller: 0,
+      basePriceStudio: 0,
       basePriceUser: 0,
       duration: 30,
       maxEvents: 10,
@@ -69,7 +69,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
         type: "event_pack",
         pricingModel: "monthly",
         description: "",
-        basePriceReseller: 0,
+        basePriceStudio: 0,
         basePriceUser: 0,
         duration: 30,
         maxEvents: 10,
@@ -109,7 +109,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateStreamTypePrice = (
     streamType: keyof StreamTypePricing,
-    level: "userPrice" | "resellerPrice" | "enabled",
+    level: "userPrice" | "studioPrice" | "enabled",
     value: number | boolean,
   ) => {
     setFormData((prev) => ({
@@ -126,7 +126,7 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
   const updateSimulcastPrice = (
     destination: keyof SimulcastPricing,
-    level: "userPrice" | "resellerPrice" | "enabled",
+    level: "userPrice" | "studioPrice" | "enabled",
     value: number | boolean,
   ) => {
     setFormData((prev) => ({
@@ -286,12 +286,12 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="basePriceReseller">Reseller Price (₹)</Label>
+                        <Label htmlFor="basePriceStudio">Studio Price (₹)</Label>
                         <Input
-                          id="basePriceReseller"
+                          id="basePriceStudio"
                           type="number"
-                          value={formData.basePriceReseller}
-                          onChange={(e) => setFormData({ ...formData, basePriceReseller: Number(e.target.value) })}
+                          value={formData.basePriceStudio}
+                          onChange={(e) => setFormData({ ...formData, basePriceStudio: Number(e.target.value) })}
                           required
                         />
                       </div>
@@ -339,11 +339,11 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-muted-foreground">Reseller Price</Label>
+                              <Label className="text-xs text-muted-foreground">Studio Price</Label>
                               <Input
                                 type="number"
-                                value={formData.streamTypePricing?.[key].resellerPrice}
-                                onChange={(e) => updateStreamTypePrice(key, "resellerPrice", Number(e.target.value))}
+                                value={formData.streamTypePricing?.[key].studioPrice}
+                                onChange={(e) => updateStreamTypePrice(key, "studioPrice", Number(e.target.value))}
                                 className="h-8"
                               />
                             </div>
@@ -381,11 +381,11 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-muted-foreground">Reseller Price</Label>
+                              <Label className="text-xs text-muted-foreground">Studio Price</Label>
                               <Input
                                 type="number"
-                                value={formData.simulcastPricing?.[key].resellerPrice}
-                                onChange={(e) => updateSimulcastPrice(key, "resellerPrice", Number(e.target.value))}
+                                value={formData.simulcastPricing?.[key].studioPrice}
+                                onChange={(e) => updateSimulcastPrice(key, "studioPrice", Number(e.target.value))}
                                 className="h-8"
                               />
                             </div>

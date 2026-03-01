@@ -19,17 +19,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Building2, Settings, Palette } from "lucide-react"
-import type { Reseller } from "@/lib/types"
+import type { Studio } from "@/lib/types"
 
-interface ResellerFormDialogProps {
+interface StudioFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: "create" | "edit"
-  initialData?: Partial<Reseller>
-  onSubmit: (data: ResellerFormData) => Promise<void>
+  initialData?: Partial<Studio>
+  onSubmit: (data: StudioFormData) => Promise<void>
 }
 
-export interface ResellerFormData {
+export interface StudioFormData {
   // Company Info
   companyName: string
   email: string
@@ -53,11 +53,11 @@ export interface ResellerFormData {
   status: string
 }
 
-export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSubmit }: ResellerFormDialogProps) {
+export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubmit }: StudioFormDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("company")
 
-  const [formData, setFormData] = useState<ResellerFormData>({
+  const [formData, setFormData] = useState<StudioFormData>({
     companyName: initialData?.name || "",
     email: initialData?.email || "",
     password: "",
@@ -85,7 +85,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
     }
   }
 
-  const updateField = (field: keyof ResellerFormData, value: any) => {
+  const updateField = (field: keyof StudioFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -93,11 +93,11 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add New Reseller" : "Edit Reseller"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? "Add New Studio" : "Edit Studio"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
-              ? "Create a new white-label reseller account with their own branding and users."
-              : "Update reseller account settings and permissions."}
+              ? "Create a new white-label studio account with their own branding and users."
+              : "Update studio account settings and permissions."}
           </DialogDescription>
         </DialogHeader>
 
@@ -123,7 +123,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="text-base">Company Information</CardTitle>
-                  <CardDescription>Basic details about the reseller company</CardDescription>
+                  <CardDescription>Basic details about the studio company</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -179,7 +179,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
                         minLength={8}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Reseller will be prompted to change this on first login
+                        Studio will be prompted to change this on first login
                       </p>
                     </div>
                   )}
@@ -219,7 +219,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle className="text-base">Platform Branding</CardTitle>
-                  <CardDescription>Initial branding settings (reseller can customize later)</CardDescription>
+                  <CardDescription>Initial branding settings (studio can customize later)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -334,7 +334,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
                       <div>
                         <p className="font-medium">Custom Pricing</p>
                         <p className="text-sm text-muted-foreground">
-                          Allow reseller to set custom prices for their users
+                          Allow studio to set custom prices for their users
                         </p>
                       </div>
                       <Switch
@@ -347,7 +347,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
                       <div>
                         <p className="font-medium">Payment Gateway Access</p>
                         <p className="text-sm text-muted-foreground">
-                          Allow reseller to configure their own payment gateways
+                          Allow studio to configure their own payment gateways
                         </p>
                       </div>
                       <Switch
@@ -380,7 +380,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === "create" ? "Create Reseller" : "Save Changes"}
+              {mode === "create" ? "Create Studio" : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

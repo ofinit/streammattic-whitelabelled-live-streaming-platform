@@ -132,7 +132,7 @@ export async function getPackages(filters?: { isStudio?: boolean; isActive?: boo
   let paramIdx = 1
 
   if (filters?.isStudio !== undefined) {
-    conditions.push(`is_reseller_package = $${paramIdx++}`)
+    conditions.push(`is_studio_package = $${paramIdx++}`)
     params.push(filters.isStudio)
   }
   if (filters?.isActive !== undefined) {
@@ -379,7 +379,7 @@ export async function getAdminDashboardStats() {
 }
 
 // ============================================================
-// DASHBOARD STATS (reseller)
+// DASHBOARD STATS (studio)
 // ============================================================
 
 export async function getStudioDashboardStats(studioId: string) {

@@ -14,16 +14,16 @@ import {
 } from "@/components/ui/dialog"
 import { Youtube, CheckCircle, AlertCircle, Eye, EyeOff, RefreshCw, Trash2 } from "lucide-react"
 import { mockYouTubeChannels } from "@/lib/mock-data"
-import type { Reseller, YouTubeChannel } from "@/lib/types"
+import type { Studio, YouTubeChannel } from "@/lib/types"
 
-interface ResellerYouTubeDialogProps {
+interface StudioYouTubeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  reseller: Reseller
+  studio: Studio
 }
 
-export function ResellerYouTubeDialog({ open, onOpenChange, reseller }: ResellerYouTubeDialogProps) {
-  const existingChannels = mockYouTubeChannels.filter((c) => c.ownerId === reseller.id)
+export function StudioYouTubeDialog({ open, onOpenChange, studio }: StudioYouTubeDialogProps) {
+  const existingChannels = mockYouTubeChannels.filter((c) => c.ownerId === studio.id)
   const [channelId, setChannelId] = useState("")
   const [apiKey, setApiKey] = useState("")
   const [clientId, setClientId] = useState("")
@@ -78,7 +78,7 @@ export function ResellerYouTubeDialog({ open, onOpenChange, reseller }: Reseller
             YouTube API Configuration
           </DialogTitle>
           <DialogDescription>
-            Configure YouTube API credentials for {reseller.name} to enable live streaming.
+            Configure YouTube API credentials for {studio.name} to enable live streaming.
           </DialogDescription>
         </DialogHeader>
 

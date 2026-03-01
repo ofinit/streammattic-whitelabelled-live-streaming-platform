@@ -215,7 +215,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSave }: EventForm
     const savedEvent: LiveEvent = {
       id: event?.id || `event-${Date.now()}`,
       userId: event?.userId || "user-1",
-      resellerId: event?.resellerId || "reseller-1",
+      studioId: event?.studioId || "studio-1",
       title: formData.title,
       description: formData.description,
       streamType: formData.streamType,

@@ -14,22 +14,22 @@ import {
 } from "@/components/ui/dialog"
 import { Globe, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ShieldCheck } from "lucide-react"
 import { mockDomains } from "@/lib/mock-data"
-import type { Reseller } from "@/lib/types"
+import type { Studio } from "@/lib/types"
 
-interface ResellerDomainDialogProps {
+interface StudioDomainDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  reseller: Reseller
+  studio: Studio
 }
 
-export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerDomainDialogProps) {
-  const existingDomain = mockDomains.find((d) => d.userId === reseller.id && d.isPrimary)
+export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainDialogProps) {
+  const existingDomain = mockDomains.find((d) => d.userId === studio.id && d.isPrimary)
   const [domain, setDomain] = useState(existingDomain?.domain || "")
   const [isSaving, setIsSaving] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
-  const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${reseller.id}`
+  const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${studio.id}`
 
   // TODO: In production, fetch these from PlatformSettings via API
   const VERCEL_A_RECORD_IP = "76.76.21.21"
@@ -97,7 +97,7 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
             Domain Configuration
           </DialogTitle>
           <DialogDescription>
-            Configure custom domain for {reseller.name}
+            Configure custom domain for {studio.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -142,7 +142,7 @@ export function ResellerDomainDialog({ open, onOpenChange, reseller }: ResellerD
           {/* DNS Records */}
           {domain && (
             <div className="space-y-3">
-              <Label>DNS Records (Reseller must add these)</Label>
+              <Label>DNS Records (Studio must add these)</Label>
               <div className="space-y-2">
                 {dnsRecords.map((record, i) => (
                   <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-2">

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/dashboard/data-table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
-import { ResellerFormDialog, type ResellerFormData } from "@/components/reseller/reseller-form-dialog"
+import { StudioFormDialog, type StudioFormData } from "@/components/studio/studio-form-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,48 +17,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
-import { mockResellers } from "@/lib/mock-data"
+import { mockStudios } from "@/lib/mock-data"
 import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee } from "lucide-react"
-import type { Reseller } from "@/lib/types"
+import type { Studio } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
-import { ResellerDomainDialog } from "@/components/admin/reseller-domain-dialog"
-import { ResellerYouTubeDialog } from "@/components/admin/reseller-youtube-dialog"
+import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
+import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
 import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
 
-export default function AdminResellersPage() {
+export default function AdminStudiosPage() {
   const { impersonate } = useAuth()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingReseller, setEditingReseller] = useState<Reseller | null>(null)
-  const [domainReseller, setDomainReseller] = useState<Reseller | null>(null)
-  const [youtubeReseller, setYoutubeReseller] = useState<Reseller | null>(null)
-  const [pricingReseller, setPricingReseller] = useState<Reseller | null>(null)
+  const [editingStudio, setEditingStudio] = useState<Studio | null>(null)
+  const [domainStudio, setDomainStudio] = useState<Studio | null>(null)
+  const [youtubeStudio, setYoutubeStudio] = useState<Studio | null>(null)
+  const [pricingStudio, setPricingStudio] = useState<Studio | null>(null)
 
-  const filteredResellers = mockResellers.filter((reseller) => {
+  const filteredStudios = mockStudios.filter((studio) => {
     const matchesSearch =
-      reseller.name.toLowerCase().includes(search.toLowerCase()) ||
-      reseller.email.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === "all" || reseller.status === statusFilter
+      studio.name.toLowerCase().includes(search.toLowerCase()) ||
+      studio.email.toLowerCase().includes(search.toLowerCase())
+    const matchesStatus = statusFilter === "all" || studio.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  const handleCreate = async (data: ResellerFormData) => {
-    console.log("[v0] Creating reseller:", data)
+  const handleCreate = async (data: StudioFormData) => {
+    console.log("[v0] Creating studio:", data)
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
 
-  const handleEdit = async (data: ResellerFormData) => {
-    console.log("[v0] Updating reseller:", editingReseller?.id, data)
+  const handleEdit = async (data: StudioFormData) => {
+    console.log("[v0] Updating studio:", editingStudio?.id, data)
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    setEditingReseller(null)
+    setEditingStudio(null)
   }
 
   const columns = [
     {
       key: "name",
-      header: "Reseller",
-      render: (item: Reseller) => (
+      header: "Studio",
+      render: (item: Studio) => (
         <div className="flex items-center gap-3">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-lg text-white"
@@ -76,24 +76,24 @@ export default function AdminResellersPage() {
     {
       key: "branding",
       header: "Platform",
-      render: (item: Reseller) => <span className="text-foreground">{item.branding.platformName}</span>,
+      render: (item: Studio) => <span className="text-foreground">{item.branding.platformName}</span>,
     },
     {
       key: "status",
       header: "Status",
-      render: (item: Reseller) => <StatusBadge status={item.status} />,
+      render: (item: Studio) => <StatusBadge status={item.status} />,
     },
     {
       key: "walletBalance",
       header: "Balance",
-      render: (item: Reseller) => (
+      render: (item: Studio) => (
         <span className="font-mono text-foreground">₹{item.walletBalance.toLocaleString()}</span>
       ),
     },
     {
       key: "actions",
       header: "",
-      render: (item: Reseller) => (
+      render: (item: Studio) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -103,9 +103,9 @@ export default function AdminResellersPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => impersonate(item.id)}>
               <Eye className="mr-2 h-4 w-4" />
-              View as Reseller
+              View as Studio
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setEditingReseller(item)}>
+            <DropdownMenuItem onClick={() => setEditingStudio(item)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
@@ -114,15 +114,15 @@ export default function AdminResellersPage() {
               Add Funds
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setDomainReseller(item)}>
+            <DropdownMenuItem onClick={() => setDomainStudio(item)}>
               <Globe className="mr-2 h-4 w-4" />
               Manage Domain
             </DropdownMenuItem>
-<DropdownMenuItem onClick={() => setYoutubeReseller(item)}>
+<DropdownMenuItem onClick={() => setYoutubeStudio(item)}>
   <Youtube className="mr-2 h-4 w-4" />
   YouTube API
 </DropdownMenuItem>
-<DropdownMenuItem onClick={() => setPricingReseller(item)}>
+<DropdownMenuItem onClick={() => setPricingStudio(item)}>
   <IndianRupee className="mr-2 h-4 w-4" />
   Custom Pricing
   {(item.customStreamPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
@@ -149,7 +149,7 @@ export default function AdminResellersPage() {
 
   return (
     <div className="min-h-screen">
-      <Header title="Reseller Management" subtitle="Manage platform resellers" />
+      <Header title="Studio Management" subtitle="Manage platform studios" />
 
       <div className="space-y-6">
         {/* Filters */}
@@ -159,7 +159,7 @@ export default function AdminResellersPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search resellers..."
+                  placeholder="Search studios..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 bg-secondary border-0"
@@ -178,7 +178,7 @@ export default function AdminResellersPage() {
               </Select>
               <Button onClick={() => setIsCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Reseller
+                Add Studio
               </Button>
             </div>
           </CardContent>
@@ -187,58 +187,58 @@ export default function AdminResellersPage() {
         {/* Resellers Table */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle>All Resellers ({filteredResellers.length})</CardTitle>
+            <CardTitle>All Studios ({filteredStudios.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataTable columns={columns} data={filteredResellers} />
+            <DataTable columns={columns} data={filteredStudios} />
           </CardContent>
         </Card>
       </div>
 
-      <ResellerFormDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} mode="create" onSubmit={handleCreate} />
+      <StudioFormDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} mode="create" onSubmit={handleCreate} />
 
-      {editingReseller && (
-        <ResellerFormDialog
-          open={!!editingReseller}
-          onOpenChange={(open) => !open && setEditingReseller(null)}
+      {editingStudio && (
+        <StudioFormDialog
+          open={!!editingStudio}
+          onOpenChange={(open) => !open && setEditingStudio(null)}
           mode="edit"
-          initialData={editingReseller}
+          initialData={editingStudio}
           onSubmit={handleEdit}
         />
       )}
 
-      {domainReseller && (
-        <ResellerDomainDialog
-          open={!!domainReseller}
-          onOpenChange={(open) => !open && setDomainReseller(null)}
-          reseller={domainReseller}
+      {domainStudio && (
+        <StudioDomainDialog
+          open={!!domainStudio}
+          onOpenChange={(open) => !open && setDomainStudio(null)}
+          studio={domainStudio}
         />
       )}
 
-      {youtubeReseller && (
-        <ResellerYouTubeDialog
-          open={!!youtubeReseller}
-          onOpenChange={(open) => !open && setYoutubeReseller(null)}
-          reseller={youtubeReseller}
+      {youtubeStudio && (
+        <StudioYouTubeDialog
+          open={!!youtubeStudio}
+          onOpenChange={(open) => !open && setYoutubeStudio(null)}
+          studio={youtubeStudio}
         />
       )}
 
-      {pricingReseller && (
+      {pricingStudio && (
         <CustomPricingDialog
-          open={!!pricingReseller}
-          onOpenChange={(open) => !open && setPricingReseller(null)}
-          targetName={pricingReseller.branding.platformName}
-          targetType="reseller"
-          existingCustomPricing={pricingReseller.customStreamPricing}
-          existingAnnualOverride={(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
-          existingPackOverrides={(pricingReseller as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; resellerPrice: number }> | null ?? null}
-          existingValidityOverrides={(pricingReseller as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { userSurcharge: number; resellerSurcharge: number }> | null ?? null}
+          open={!!pricingStudio}
+          onOpenChange={(open) => !open && setPricingStudio(null)}
+          targetName={pricingStudio.branding.platformName}
+          targetType="studio"
+          existingCustomPricing={pricingStudio.customStreamPricing}
+          existingAnnualOverride={(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
+          existingPackOverrides={(pricingStudio as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; studioPrice: number }> | null ?? null}
+          existingValidityOverrides={(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { userSurcharge: number; studioSurcharge: number }> | null ?? null}
           onSave={(pricing, _note, annualOverride, packOverrides, validityOverrides) => {
-            pricingReseller.customStreamPricing = pricing
-            ;(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
-            ;(pricingReseller as unknown as Record<string, unknown>).customPackPricing = packOverrides
-            ;(pricingReseller as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
-            setPricingReseller(null)
+            pricingStudio.customStreamPricing = pricing
+            ;(pricingStudio as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
+            ;(pricingStudio as unknown as Record<string, unknown>).customPackPricing = packOverrides
+            ;(pricingStudio as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
+            setPricingStudio(null)
           }}
         />
       )}

@@ -18,17 +18,17 @@ export default function AdminDashboard() {
   })
 
   const stats = data?.stats
-  const resellers = data?.resellers ?? []
+  const studios = data?.studios ?? []
   const recentOrders = data?.recentOrders ?? []
   const recentEvents = data?.recentEvents ?? []
 
   const liveEvents = recentEvents.filter((e: Record<string, unknown>) => e.status === "live")
   const completedOrders = recentOrders.filter((o: Record<string, unknown>) => o.status === "completed")
 
-  const resellerColumns = [
+  const studioColumns = [
     {
       key: "name",
-      header: "Reseller",
+      header: "Studio",
       render: (item: Record<string, unknown>) => (
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
                 value={`₹${Number(stats?.totalRevenue ?? 0).toLocaleString()}`}
                 icon={DollarSign}
               />
-              <StatsCard title="Total Resellers" value={stats?.totalResellers ?? 0} icon={Building2} />
+              <StatsCard title="Total Studios" value={stats?.totalStudios ?? 0} icon={Building2} />
               <StatsCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
               <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} />
             </>
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
             <>
               <StatsCard title="Total Events" value={stats?.totalEvents ?? 0} icon={Radio} />
               <StatsCard
-                title="Active Resellers"
-                value={stats?.activeResellers ?? 0}
+                title="Active Studios"
+                value={stats?.activeStudios ?? 0}
                 icon={UserCheck}
                 iconColor="text-emerald-500"
               />
@@ -193,10 +193,10 @@ export default function AdminDashboard() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Recent Resellers</CardTitle>
+              <CardTitle className="text-lg">Recent Studios</CardTitle>
               <Button size="sm" variant="outline" className="border-border bg-transparent">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Reseller
+                Add Studio
               </Button>
             </CardHeader>
             <CardContent>
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
                   {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
                 </div>
               ) : (
-                <DataTable columns={resellerColumns} data={resellers.slice(0, 3)} />
+                <DataTable columns={studioColumns} data={studios.slice(0, 3)} />
               )}
             </CardContent>
           </Card>

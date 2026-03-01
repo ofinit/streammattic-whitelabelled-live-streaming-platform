@@ -1,19 +1,45 @@
-import { readFileSync, writeFileSync } from "fs"
-import { execSync } from "child_process"
+import { readFileSync, writeFileSync, readdirSync, statSync } from "fs"
+import { join, extname } from "path"
+import { fileURLToPath } from "url"
+import { dirname } from "path"
 
-// Get all files still referencing reseller/Reseller
-const files = execSync(
-  `grep -rl "reseller\\|Reseller\\|RESELLER" --include="*.ts" --include="*.tsx" /vercel/share/v0-project/app /vercel/share/v0-project/components /vercel/share/v0-project/lib`,
-  { encoding: "utf-8" }
-)
-  .trim()
-  .split("\n")
-  .filter(Boolean)
+// Script files are copied to /home/user/ at runtime, so hardcode the actual project path
+const projectRoot = "/vercel/share/v0-project"
+
+// Recursively find all .ts/.tsx files
+function findFiles(dir, results = []) {
+  try {
+    const entries = readdirSync(dir)
+    for (const entry of entries) {
+      const fullPath = join(dir, entry)
+      try {
+        const stat = statSync(fullPath)
+        if (stat.isDirectory() && !entry.startsWith(".") && entry !== "node_modules" && entry !== ".next" && entry !== "scripts") {
+          findFiles(fullPath, results)
+        } else if (stat.isFile() && (extname(entry) === ".ts" || extname(entry) === ".tsx")) {
+          results.push(fullPath)
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  return results
+}
+
+console.log("Project root:", projectRoot)
+
+const allFiles = findFiles(projectRoot)
+console.log(`Found ${allFiles.length} .ts/.tsx files total`)
+
+// Filter to those containing reseller/Reseller
+const files = allFiles.filter(f => {
+  const content = readFileSync(f, "utf-8")
+  return /reseller|Reseller|RESELLER/i.test(content)
+})
 
 console.log(`Found ${files.length} files with reseller references`)
 
 const replacements = [
-  // Import paths and file references
+  // Import paths and file references  
   [/reseller-form-dialog/g, "studio-form-dialog"],
   [/reseller-youtube-dialog/g, "studio-youtube-dialog"],
   [/reseller-domain-dialog/g, "studio-domain-dialog"],
@@ -30,7 +56,7 @@ const replacements = [
   [/ResellerDashboard/g, "StudioDashboard"],
   [/ResellerLayout/g, "StudioLayout"],
   [/ResellerLayoutInner/g, "StudioLayoutInner"],
-  
+
   // Property/variable names
   [/resellerPrice/g, "studioPrice"],
   [/resellerSurcharge/g, "studioSurcharge"],
@@ -74,7 +100,7 @@ const replacements = [
   [/"reseller"/g, '"studio"'],
   [/'reseller'/g, "'studio'"],
 
-  // Generic catch-all (order: plural before singular, capitalized before lowercase)
+  // Generic catch-all (order matters: plural before singular, capitalized before lowercase)
   [/Resellers/g, "Studios"],
   [/Reseller/g, "Studio"],
   [/resellers/g, "studios"],
@@ -96,24 +122,29 @@ for (const filePath of files) {
   if (content !== original) {
     writeFileSync(filePath, content)
     totalFiles++
-    console.log(`Updated: ${filePath.replace("/vercel/share/v0-project/", "")}`)
+    console.log(`Updated: ${filePath.replace(projectRoot + "/", "")}`)
   }
 }
 
 console.log(`\nDone! Updated ${totalFiles} files`)
 
 // Verify no remaining references
-try {
-  const remaining = execSync(
-    `grep -rn "reseller\\|Reseller\\|RESELLER" --include="*.ts" --include="*.tsx" /vercel/share/v0-project/app /vercel/share/v0-project/components /vercel/share/v0-project/lib | head -20`,
-    { encoding: "utf-8" }
-  ).trim()
-  if (remaining) {
-    console.log("\nRemaining references found:")
-    console.log(remaining)
-  } else {
-    console.log("\nAll clean - no remaining reseller references!")
+const remaining = allFiles.filter(f => {
+  const content = readFileSync(f, "utf-8")
+  return /reseller|Reseller|RESELLER/.test(content)
+})
+
+if (remaining.length > 0) {
+  console.log(`\nRemaining references in ${remaining.length} files:`)
+  for (const f of remaining) {
+    const content = readFileSync(f, "utf-8")
+    const lines = content.split("\n")
+    for (let i = 0; i < lines.length; i++) {
+      if (/reseller|Reseller|RESELLER/.test(lines[i])) {
+        console.log(`  ${f.replace(projectRoot + "/", "")}:${i + 1}: ${lines[i].trim().substring(0, 100)}`)
+      }
+    }
   }
-} catch {
+} else {
   console.log("\nAll clean - no remaining reseller references!")
 }

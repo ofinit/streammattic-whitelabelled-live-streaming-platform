@@ -522,7 +522,7 @@ export async function saveChannel(params: {
 }
 
 /** Get all channels for an owner */
-export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | "reseller" | "user") {
+export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | "studio" | "user") {
   const sql = getDb()
   const rows = await sql`
     SELECT id, channel_id, channel_title, channel_thumbnail, subscriber_count, video_count,

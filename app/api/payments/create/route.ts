@@ -63,7 +63,6 @@ export const POST = withAuth(async (user, request) => {
       buyerName: user.name as string,
       email: user.email as string,
       redirectUrl: `${baseUrl}/payment/callback?gateway=instamojo&orderId=${order.id}`,
-      webhookUrl: `${baseUrl}/api/payments/webhook/instamojo`,
     })
 
     // Store gateway payment request ID

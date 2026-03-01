@@ -97,7 +97,6 @@ export async function createInstamojoPayment(params: {
   email: string
   phone?: string
   redirectUrl: string
-  webhookUrl?: string
 }) {
   const res = await fetch(`${INSTAMOJO_BASE_URL}/payment_requests/`, {
     method: "POST",
@@ -109,7 +108,6 @@ export async function createInstamojoPayment(params: {
       email: params.email,
       phone: params.phone || "",
       redirect_url: params.redirectUrl,
-      webhook: params.webhookUrl || "",
       send_email: false,
       allow_repeated_payments: false,
     }),

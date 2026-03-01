@@ -125,7 +125,7 @@ export default function AdminResellersPage() {
 <DropdownMenuItem onClick={() => setPricingReseller(item)}>
   <IndianRupee className="mr-2 h-4 w-4" />
   Custom Pricing
-  {item.customStreamPricing && (
+  {(item.customStreamPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
     <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
   )}
 </DropdownMenuItem>
@@ -230,8 +230,10 @@ export default function AdminResellersPage() {
           targetName={pricingReseller.branding.platformName}
           targetType="reseller"
           existingCustomPricing={pricingReseller.customStreamPricing}
-          onSave={(pricing, _note) => {
+          existingAnnualOverride={(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
+          onSave={(pricing, _note, annualOverride) => {
             pricingReseller.customStreamPricing = pricing
+            ;(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
             setPricingReseller(null)
           }}
         />

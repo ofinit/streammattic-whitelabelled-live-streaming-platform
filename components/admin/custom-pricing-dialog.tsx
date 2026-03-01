@@ -15,7 +15,8 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw } from "lucide-react"
+import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, CreditCard } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { StreamTypePricing, StreamTypePriceLevel } from "@/lib/types"
 
 // Master pricing defaults (same as admin packages page)
@@ -24,6 +25,11 @@ const MASTER_PRICING: StreamTypePricing = {
   youtube_api: { userPrice: 800, resellerPrice: 350, enabled: true },
   youtube_embed: { userPrice: 400, resellerPrice: 120, enabled: true },
   third_party: { userPrice: 300, resellerPrice: 80, enabled: false },
+}
+
+const MASTER_ANNUAL_SUBSCRIPTION = {
+  price: 1800000, // 18,000 INR in paisa
+  enabled: true,
 }
 
 const streamTypes = [
@@ -39,7 +45,8 @@ interface CustomPricingDialogProps {
   targetName: string
   targetType: "user" | "reseller"
   existingCustomPricing?: Partial<StreamTypePricing>
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string) => void
+  existingAnnualOverride?: { price: number; enabled: boolean } | null
+  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null) => void
 }
 
 export function CustomPricingDialog({
@@ -48,9 +55,11 @@ export function CustomPricingDialog({
   targetName,
   targetType,
   existingCustomPricing,
+  existingAnnualOverride,
   onSave,
 }: CustomPricingDialogProps) {
   const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; resellerPrice: string }>>({})
+  const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
 
@@ -75,10 +84,22 @@ export function CustomPricingDialog({
         }
       }
       setOverrides(initial)
+      // Initialize annual subscription override
+      if (existingAnnualOverride) {
+        setAnnualOverride({
+          enabled: true,
+          price: (existingAnnualOverride.price / 100).toString(),
+        })
+      } else {
+        setAnnualOverride({
+          enabled: false,
+          price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString(),
+        })
+      }
       setNote("")
       setSaved(false)
     }
-  }, [open, existingCustomPricing])
+  }, [open, existingCustomPricing, existingAnnualOverride])
 
   const toggleOverride = (key: string, enabled: boolean) => {
     setOverrides((prev) => ({
@@ -120,7 +141,11 @@ export function CustomPricingDialog({
       }
     }
 
-    onSave(hasOverrides ? customPricing : undefined, note)
+    const annualResult = annualOverride.enabled
+      ? { price: Math.round(Number(annualOverride.price) * 100), enabled: true }
+      : null
+
+    onSave(hasOverrides ? customPricing : undefined, note, annualResult)
     setSaved(true)
     setTimeout(() => {
       setSaved(false)
@@ -138,9 +163,10 @@ export function CustomPricingDialog({
       }
     }
     setOverrides(reset)
+    setAnnualOverride({ enabled: false, price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() })
   }
 
-  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled)
+  const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled
   // Determine the correct price column label based on target type
   const priceLabel = targetType === "reseller" ? "Reseller Price" : "User Price"
 
@@ -291,6 +317,78 @@ export function CustomPricingDialog({
               )
             })}
           </div>
+
+          {/* Reseller Annual Subscription Override (only for resellers) */}
+          {targetType === "reseller" && (
+            <>
+              <Separator />
+              <Card className={`transition-colors ${annualOverride.enabled ? "border-amber-500/30 bg-amber-500/5" : "border-border"}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${annualOverride.enabled ? "bg-amber-500/10" : "bg-muted"}`}>
+                        <CreditCard className={`h-4 w-4 ${annualOverride.enabled ? "text-amber-500" : "text-muted-foreground"}`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-sm">
+                          Annual Subscription
+                          {annualOverride.enabled && (
+                            <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="text-xs">White-label & hosting charges</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Override</span>
+                      <Switch
+                        checked={annualOverride.enabled}
+                        onCheckedChange={(checked) =>
+                          setAnnualOverride((prev) => ({
+                            ...prev,
+                            enabled: checked,
+                            ...(!checked ? { price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() } : {}),
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Annual Price</Label>
+                      {annualOverride.enabled ? (
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                          <Input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={annualOverride.price}
+                            onChange={(e) => setAnnualOverride((prev) => ({ ...prev, price: e.target.value }))}
+                            className="pl-7 bg-secondary border-0 h-9"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                          {"₹"}{(MASTER_ANNUAL_SUBSCRIPTION.price / 100).toLocaleString("en-IN")}
+                          <span className="ml-auto text-[10px]">master</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Master Price</Label>
+                      <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                        {"₹"}{(MASTER_ANNUAL_SUBSCRIPTION.price / 100).toLocaleString("en-IN")}
+                        <span className="ml-auto text-[10px]">reference</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           <Separator />
 

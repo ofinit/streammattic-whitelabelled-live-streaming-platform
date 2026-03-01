@@ -4,23 +4,18 @@ import { useState } from "react"
 import { mockOrders } from "@/lib/mock-data"
 import type { Order } from "@/lib/types"
 import { OrderCard } from "@/components/orders/order-card"
-import { RejectDialog } from "@/components/orders/reject-dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search } from "lucide-react"
-import { toast } from "sonner"
 
 export default function StudioOrdersPage() {
-  // Studio sees their own orders
-  const [orders, setOrders] = useState(mockOrders.filter((o) => o.studioId === "studio-1"))
+  // Studio sees orders from their streamers
+  const [orders] = useState(mockOrders.filter((o) => o.studioId === "studio-1"))
   const [search, setSearch] = useState("")
-  const [rejectOrder, setRejectOrder] = useState<Order | null>(null)
 
-  const pendingOrders = orders.filter((o) => o.status === "pending")
-  const approvedOrders = orders.filter((o) => o.status === "approved")
-  const rejectedOrders = orders.filter((o) => o.status === "rejected")
   const completedOrders = orders.filter((o) => o.status === "completed")
   const failedOrders = orders.filter((o) => o.status === "failed")
+  const cancelledOrders = orders.filter((o) => o.status === "cancelled")
   const failedByMe = failedOrders.filter((o) => o.insufficientFundsEntity?.includes("studio"))
 
   const filterOrders = (orderList: Order[]) => {
@@ -29,31 +24,6 @@ export default function StudioOrdersPage() {
         o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
         o.user?.name?.toLowerCase().includes(search.toLowerCase()),
     )
-  }
-
-  const handleApprove = (order: Order) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id ? { ...o, status: "approved" as const, approvedAt: new Date(), approverId: "studio-1" } : o,
-      ),
-    )
-    toast.success(`Order ${order.orderNumber} approved`)
-  }
-
-  const handleReject = (orderId: string, reason: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "rejected" as const,
-              rejectedAt: new Date(),
-              rejectionReason: reason,
-            }
-          : o,
-      ),
-    )
-    toast.success("Order rejected")
   }
 
   const OrderList = ({ orderList }: { orderList: Order[] }) => {
@@ -68,8 +38,6 @@ export default function StudioOrdersPage() {
             key={order.id}
             order={order}
             showUser
-            onApprove={order.status === "pending" ? handleApprove : undefined}
-            onReject={order.status === "pending" ? () => setRejectOrder(order) : undefined}
           />
         ))}
       </div>
@@ -80,7 +48,7 @@ export default function StudioOrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Orders</h1>
-        <p className="text-muted-foreground">Manage and approve orders from your users</p>
+        <p className="text-muted-foreground">View order history from your streamers</p>
       </div>
 
       <div className="relative max-w-sm">
@@ -93,24 +61,17 @@ export default function StudioOrdersPage() {
         />
       </div>
 
-      <Tabs defaultValue="completed">
+      <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({approvedOrders.length})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({rejectedOrders.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({orders.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
-          <TabsTrigger value="failed">All Failed ({failedOrders.length})</TabsTrigger>
+          <TabsTrigger value="failed">Failed ({failedOrders.length})</TabsTrigger>
           <TabsTrigger value="failed-me">Failed - My Insufficient Funds ({failedByMe.length})</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-6">
-          <OrderList orderList={pendingOrders} />
-        </TabsContent>
-        <TabsContent value="approved" className="mt-6">
-          <OrderList orderList={approvedOrders} />
-        </TabsContent>
-        <TabsContent value="rejected" className="mt-6">
-          <OrderList orderList={rejectedOrders} />
+        <TabsContent value="all" className="mt-6">
+          <OrderList orderList={orders} />
         </TabsContent>
         <TabsContent value="completed" className="mt-6">
           <OrderList orderList={completedOrders} />
@@ -121,14 +82,10 @@ export default function StudioOrdersPage() {
         <TabsContent value="failed-me" className="mt-6">
           <OrderList orderList={failedByMe} />
         </TabsContent>
+        <TabsContent value="cancelled" className="mt-6">
+          <OrderList orderList={cancelledOrders} />
+        </TabsContent>
       </Tabs>
-
-      <RejectDialog
-        open={!!rejectOrder}
-        onOpenChange={(open) => !open && setRejectOrder(null)}
-        order={rejectOrder}
-        onConfirm={handleReject}
-      />
     </div>
   )
 }

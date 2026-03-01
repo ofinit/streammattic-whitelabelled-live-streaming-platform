@@ -2,28 +2,19 @@
 
 import type { Order } from "@/lib/types"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { formatDistanceToNow } from "date-fns"
-import { Package, Calendar, CheckCircle, XCircle, User } from "lucide-react"
+import { Package, Calendar, User, AlertTriangle, CheckCircle } from "lucide-react"
 
 interface OrderCardProps {
   order: Order
-  onApprove?: (order: Order) => void
-  onReject?: (order: Order) => void
-  onCancel?: (order: Order) => void
   showUser?: boolean
-  showActions?: boolean
 }
 
 export function OrderCard({
   order,
-  onApprove,
-  onReject,
-  onCancel,
   showUser = false,
-  showActions = true,
 }: OrderCardProps) {
   const packageName = order.items?.[0]?.package?.name || "Package"
 
@@ -74,38 +65,19 @@ export function OrderCard({
           )}
         </div>
 
-        {order.status === "rejected" && order.rejectionReason && (
-          <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
-            Rejected: {order.rejectionReason}
-          </div>
-        )}
-
-        {order.status === "approved" && order.approvedAt && (
+        {order.status === "completed" && order.completedAt && (
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <CheckCircle className="h-4 w-4 text-green-500" />
-            <span>Approved {formatDistanceToNow(new Date(order.approvedAt), { addSuffix: true })}</span>
+            <span>Completed {formatDistanceToNow(new Date(order.completedAt), { addSuffix: true })}</span>
           </div>
         )}
 
-        {showActions && order.status === "pending" && (
-          <div className="flex gap-2 pt-2">
-            {onApprove && (
-              <Button size="sm" onClick={() => onApprove(order)} className="flex-1">
-                <CheckCircle className="mr-1 h-4 w-4" />
-                Approve
-              </Button>
-            )}
-            {onReject && (
-              <Button size="sm" variant="destructive" onClick={() => onReject(order)} className="flex-1">
-                <XCircle className="mr-1 h-4 w-4" />
-                Reject
-              </Button>
-            )}
-            {onCancel && (
-              <Button size="sm" variant="outline" onClick={() => onCancel(order)}>
-                Cancel
-              </Button>
-            )}
+        {order.status === "failed" && order.failureReason && (
+          <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+            <div className="flex items-center gap-1">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{order.failureReason}</span>
+            </div>
           </div>
         )}
       </CardContent>

@@ -4,24 +4,19 @@ import { useState } from "react"
 import { mockOrders } from "@/lib/mock-data"
 import type { Order } from "@/lib/types"
 import { OrderCard } from "@/components/orders/order-card"
-import { RejectDialog } from "@/components/orders/reject-dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter } from "lucide-react"
-import { toast } from "sonner"
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(mockOrders)
+  const [orders] = useState(mockOrders)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
-  const [rejectOrder, setRejectOrder] = useState<Order | null>(null)
 
-  const pendingOrders = orders.filter((o) => o.status === "pending")
-  const approvedOrders = orders.filter((o) => o.status === "approved")
-  const rejectedOrders = orders.filter((o) => o.status === "rejected")
   const completedOrders = orders.filter((o) => o.status === "completed")
   const failedOrders = orders.filter((o) => o.status === "failed")
+  const cancelledOrders = orders.filter((o) => o.status === "cancelled")
 
   const filterOrders = (orderList: Order[]) => {
     return orderList.filter((o) => {
@@ -31,29 +26,6 @@ export default function AdminOrdersPage() {
       const matchesType = typeFilter === "all" || o.orderType === typeFilter
       return matchesSearch && matchesType
     })
-  }
-
-  const handleApprove = (order: Order) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: "approved" as const, approvedAt: new Date() } : o)),
-    )
-    toast.success(`Order ${order.orderNumber} approved`)
-  }
-
-  const handleReject = (orderId: string, reason: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "rejected" as const,
-              rejectedAt: new Date(),
-              rejectionReason: reason,
-            }
-          : o,
-      ),
-    )
-    toast.success("Order rejected")
   }
 
   const OrderList = ({ orderList }: { orderList: Order[] }) => {
@@ -68,8 +40,6 @@ export default function AdminOrdersPage() {
             key={order.id}
             order={order}
             showUser
-            onApprove={order.status === "pending" ? handleApprove : undefined}
-            onReject={order.status === "pending" ? () => setRejectOrder(order) : undefined}
           />
         ))}
       </div>
@@ -80,7 +50,7 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Orders</h1>
-        <p className="text-muted-foreground">Manage and approve package orders from all streamers</p>
+        <p className="text-muted-foreground">View all pay-per-event order history across streamers</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -107,23 +77,16 @@ export default function AdminOrdersPage() {
         </Select>
       </div>
 
-      <Tabs defaultValue="pending">
+      <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({approvedOrders.length})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({rejectedOrders.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({orders.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
           <TabsTrigger value="failed">Failed ({failedOrders.length})</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-6">
-          <OrderList orderList={pendingOrders} />
-        </TabsContent>
-        <TabsContent value="approved" className="mt-6">
-          <OrderList orderList={approvedOrders} />
-        </TabsContent>
-        <TabsContent value="rejected" className="mt-6">
-          <OrderList orderList={rejectedOrders} />
+        <TabsContent value="all" className="mt-6">
+          <OrderList orderList={orders} />
         </TabsContent>
         <TabsContent value="completed" className="mt-6">
           <OrderList orderList={completedOrders} />
@@ -131,14 +94,10 @@ export default function AdminOrdersPage() {
         <TabsContent value="failed" className="mt-6">
           <OrderList orderList={failedOrders} />
         </TabsContent>
+        <TabsContent value="cancelled" className="mt-6">
+          <OrderList orderList={cancelledOrders} />
+        </TabsContent>
       </Tabs>
-
-      <RejectDialog
-        open={!!rejectOrder}
-        onOpenChange={(open) => !open && setRejectOrder(null)}
-        order={rejectOrder}
-        onConfirm={handleReject}
-      />
     </div>
   )
 }

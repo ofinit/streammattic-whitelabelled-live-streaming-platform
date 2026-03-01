@@ -86,7 +86,7 @@ async function run() {
 
   for (let i = 0; i < statements.length; i++) {
     try {
-      await sql(statements[i]);
+      await sql.query(statements[i]);
       ok++;
     } catch (err) {
       const msg = err.message || "";
@@ -117,7 +117,7 @@ async function run() {
   ];
 
   for (const t of triggers) {
-    try { await sql(t); } catch (e) {
+    try { await sql.query(t); } catch (e) {
       if (!e.message?.includes("already exists")) console.error("Trigger:", e.message);
     }
   }

@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Building2, Wallet, Settings, Palette } from "lucide-react"
+import { Loader2, Building2, Settings, Palette } from "lucide-react"
 import type { Reseller } from "@/lib/types"
 
 interface ResellerFormDialogProps {
@@ -41,10 +41,6 @@ export interface ResellerFormData {
   platformName: string
   primaryColor: string
   secondaryColor: string
-
-  // Wallet & Commission
-  initialBalance: number
-  commissionRate: number
 
   // Settings
   maxUsers: number
@@ -70,8 +66,6 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
     platformName: initialData?.branding?.platformName || "",
     primaryColor: initialData?.branding?.primaryColor || "#10b981",
     secondaryColor: initialData?.branding?.secondaryColor || "#059669",
-    initialBalance: initialData?.walletBalance || 0,
-    commissionRate: 20,
     maxUsers: 100,
     maxEvents: 1000,
     canSetCustomPricing: true,
@@ -109,7 +103,7 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
 
         <form onSubmit={handleSubmit}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="company" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Company</span>
@@ -117,10 +111,6 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
               <TabsTrigger value="branding" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 <span className="hidden sm:inline">Branding</span>
-              </TabsTrigger>
-              <TabsTrigger value="wallet" className="flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Wallet</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -300,69 +290,6 @@ export function ResellerFormDialog({ open, onOpenChange, mode, initialData, onSu
                         <p className="text-white font-semibold">{formData.platformName || "Platform Name"}</p>
                         <p className="text-white/70 text-sm">White-label streaming</p>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Wallet Tab */}
-            <TabsContent value="wallet" className="space-y-4">
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base">Wallet & Commission</CardTitle>
-                  <CardDescription>Initial balance and commission settings</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="initialBalance">Initial Wallet Balance</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
-                      <Input
-                        id="initialBalance"
-                        type="number"
-                        min="0"
-                        step="100"
-                        value={formData.initialBalance}
-                        onChange={(e) => updateField("initialBalance", Number.parseFloat(e.target.value) || 0)}
-                        className="bg-secondary border-0 pl-8"
-                        placeholder="0"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Credit this amount to the reseller's wallet on creation
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-                    <div className="relative">
-                      <Input
-                        id="commissionRate"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.commissionRate}
-                        onChange={(e) => updateField("commissionRate", Number.parseFloat(e.target.value) || 0)}
-                        className="bg-secondary border-0 pr-8"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Platform commission on each package sold by this reseller
-                    </p>
-                  </div>
-
-                  {/* Commission Example */}
-                  <div className="rounded-lg bg-secondary/50 p-4 space-y-2">
-                    <p className="text-sm font-medium">Example Calculation</p>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>If reseller sells a package for ₹1,000:</p>
-                      <p>
-                        • Platform commission: ₹{((1000 * formData.commissionRate) / 100).toFixed(0)} (
-                        {formData.commissionRate}%)
-                      </p>
-                      <p>• Reseller keeps: ₹{(1000 - (1000 * formData.commissionRate) / 100).toFixed(0)}</p>
                     </div>
                   </div>
                 </CardContent>

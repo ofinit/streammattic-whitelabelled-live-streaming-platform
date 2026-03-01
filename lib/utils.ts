@@ -87,8 +87,8 @@ export function getStatusColor(status: string): string {
     verified: "bg-green-500/20 text-green-400",
     ADMIN: "bg-purple-500/20 text-purple-400",
     admin: "bg-purple-500/20 text-purple-400",
-    RESELLER: "bg-blue-500/20 text-blue-400",
-    reseller: "bg-blue-500/20 text-blue-400",
+    STUDIO: "bg-blue-500/20 text-blue-400",
+    studio: "bg-blue-500/20 text-blue-400",
     USER: "bg-muted text-muted-foreground",
     user: "bg-muted text-muted-foreground",
   }

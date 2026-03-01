@@ -13,25 +13,25 @@ const YOUTUBE_SCOPES = [
 
 /**
  * Get Google OAuth credentials.
- * Resolution chain: Reseller override (if resellerId provided) > Admin platform_settings > Env vars.
+ * Resolution chain: Studio override (if studioId provided) > Admin platform_settings > Env vars.
  */
-export async function getGoogleCredentials(resellerId?: string): Promise<{ clientId: string; clientSecret: string }> {
+export async function getGoogleCredentials(studioId?: string): Promise<{ clientId: string; clientSecret: string }> {
   const sql = getDb()
 
-  // 1. Try reseller-specific override first
-  if (resellerId) {
-    const resellerRows = await sql`
+  // 1. Try studio-specific override first
+  if (studioId) {
+    const studioRows = await sql`
       SELECT key, value FROM platform_settings
-      WHERE key IN (${`google_client_id:${resellerId}`}, ${`google_client_secret:${resellerId}`})
+      WHERE key IN (${`google_client_id:${studioId}`}, ${`google_client_secret:${studioId}`})
     `
-    const resellerSettings: Record<string, string> = {}
-    for (const row of resellerRows as { key: string; value: string }[]) {
+    const studioSettings: Record<string, string> = {}
+    for (const row of studioRows as { key: string; value: string }[]) {
       const baseKey = (row.key as string).split(":")[0]
       const val = typeof row.value === "string" ? row.value : JSON.stringify(row.value)
-      resellerSettings[baseKey] = val.replace(/^"|"$/g, "")
+      studioSettings[baseKey] = val.replace(/^"|"$/g, "")
     }
-    if (resellerSettings.google_client_id && resellerSettings.google_client_secret) {
-      return { clientId: resellerSettings.google_client_id, clientSecret: resellerSettings.google_client_secret }
+    if (studioSettings.google_client_id && studioSettings.google_client_secret) {
+      return { clientId: studioSettings.google_client_id, clientSecret: studioSettings.google_client_secret }
     }
   }
 
@@ -477,7 +477,7 @@ export async function waitForStreamReady(
 /** Save a connected YouTube channel to the database with encrypted tokens */
 export async function saveChannel(params: {
   ownerId: string
-  ownerType: "admin" | "reseller" | "user"
+  ownerType: "admin" | "studio" | "user"
   channelId: string
   channelTitle: string
   channelThumbnail: string

@@ -75,27 +75,27 @@ export async function getUserCount(filters?: { role?: string; status?: string })
 }
 
 // ============================================================
-// RESELLERS (users with role='reseller')
+// STUDIOS (users with role='studio')
 // ============================================================
 
-export async function getResellers(filters?: { status?: string; search?: string; limit?: number; offset?: number }) {
-  return getUsers({ ...filters, role: "reseller" })
+export async function getStudios(filters?: { status?: string; search?: string; limit?: number; offset?: number }) {
+  return getUsers({ ...filters, role: "studio" })
 }
 
-export async function getResellerCount(status?: string) {
-  return getUserCount({ role: "reseller", status })
+export async function getStudioCount(status?: string) {
+  return getUserCount({ role: "studio", status })
 }
 
-export async function getResellerWithStats(resellerId: string) {
+export async function getStudioWithStats(studioId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
       u.*,
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = u.id) AS total_events,
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = u.id AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = u.id) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = u.id AND status = 'live') AS live_events,
       (SELECT COALESCE(w.balance, 0)::numeric FROM wallets w WHERE w.user_id = u.id) AS wallet_balance
     FROM users u
-    WHERE u.id = ${resellerId} AND u.role = 'reseller'
+    WHERE u.id = ${studioId} AND u.role = 'studio'
   `
   return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
@@ -125,15 +125,15 @@ export async function getWalletTransactions(walletId: string, limit = 20, offset
 // PACKAGES
 // ============================================================
 
-export async function getPackages(filters?: { isReseller?: boolean; isActive?: boolean }) {
+export async function getPackages(filters?: { isStudio?: boolean; isActive?: boolean }) {
   const sql = getDb()
   const conditions: string[] = []
   const params: unknown[] = []
   let paramIdx = 1
 
-  if (filters?.isReseller !== undefined) {
+  if (filters?.isStudio !== undefined) {
     conditions.push(`is_reseller_package = $${paramIdx++}`)
-    params.push(filters.isReseller)
+    params.push(filters.isStudio)
   }
   if (filters?.isActive !== undefined) {
     conditions.push(`is_active = $${paramIdx++}`)
@@ -157,7 +157,7 @@ export async function getPackageById(id: string) {
 
 export async function getOrders(filters?: {
   userId?: string
-  resellerId?: string
+  studioId?: string
   status?: string
   limit?: number
   offset?: number
@@ -171,9 +171,9 @@ export async function getOrders(filters?: {
     conditions.push(`o.user_id = $${paramIdx++}`)
     params.push(filters.userId)
   }
-  if (filters?.resellerId) {
-    conditions.push(`o.reseller_id = $${paramIdx++}`)
-    params.push(filters.resellerId)
+  if (filters?.studioId) {
+    conditions.push(`o.studio_id = $${paramIdx++}`)
+    params.push(filters.studioId)
   }
   if (filters?.status) {
     conditions.push(`o.status = $${paramIdx++}`)
@@ -196,7 +196,7 @@ export async function getOrders(filters?: {
   return toCamelRows(rows as Record<string, unknown>[])
 }
 
-export async function getOrderCount(filters?: { userId?: string; resellerId?: string; status?: string }) {
+export async function getOrderCount(filters?: { userId?: string; studioId?: string; status?: string }) {
   const sql = getDb()
   const conditions: string[] = []
   const params: unknown[] = []
@@ -206,9 +206,9 @@ export async function getOrderCount(filters?: { userId?: string; resellerId?: st
     conditions.push(`user_id = $${paramIdx++}`)
     params.push(filters.userId)
   }
-  if (filters?.resellerId) {
-    conditions.push(`reseller_id = $${paramIdx++}`)
-    params.push(filters.resellerId)
+  if (filters?.studioId) {
+    conditions.push(`studio_id = $${paramIdx++}`)
+    params.push(filters.studioId)
   }
   if (filters?.status) {
     conditions.push(`status = $${paramIdx++}`)
@@ -220,15 +220,15 @@ export async function getOrderCount(filters?: { userId?: string; resellerId?: st
   return (rows[0] as { count: number }).count
 }
 
-export async function getRevenueTotal(filters?: { resellerId?: string; days?: number }) {
+export async function getRevenueTotal(filters?: { studioId?: string; days?: number }) {
   const sql = getDb()
   const conditions: string[] = ["status = 'completed'"]
   const params: unknown[] = []
   let paramIdx = 1
 
-  if (filters?.resellerId) {
-    conditions.push(`reseller_id = $${paramIdx++}`)
-    params.push(filters.resellerId)
+  if (filters?.studioId) {
+    conditions.push(`studio_id = $${paramIdx++}`)
+    params.push(filters.studioId)
   }
   if (filters?.days) {
     conditions.push(`created_at >= NOW() - INTERVAL '${filters.days} days'`)
@@ -245,7 +245,7 @@ export async function getRevenueTotal(filters?: { resellerId?: string; days?: nu
 
 export async function getEvents(filters?: {
   userId?: string
-  resellerId?: string
+  studioId?: string
   status?: string
   search?: string
   limit?: number
@@ -260,9 +260,9 @@ export async function getEvents(filters?: {
     conditions.push(`e.user_id = $${paramIdx++}`)
     params.push(filters.userId)
   }
-  if (filters?.resellerId) {
-    conditions.push(`e.reseller_id = $${paramIdx++}`)
-    params.push(filters.resellerId)
+  if (filters?.studioId) {
+    conditions.push(`e.studio_id = $${paramIdx++}`)
+    params.push(filters.studioId)
   }
   if (filters?.status) {
     conditions.push(`e.status = $${paramIdx++}`)
@@ -293,16 +293,16 @@ export async function getEvents(filters?: {
 export async function getEventById(id: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT e.*, u.name AS user_name, u.email AS user_email, r.platform_name AS reseller_name
+    SELECT e.*, u.name AS user_name, u.email AS user_email, r.platform_name AS studio_name
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
-    LEFT JOIN users r ON e.reseller_id = r.id
+    LEFT JOIN users r ON e.studio_id = r.id
     WHERE e.id = ${id}
   `
   return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
-export async function getEventCount(filters?: { userId?: string; resellerId?: string; status?: string }) {
+export async function getEventCount(filters?: { userId?: string; studioId?: string; status?: string }) {
   const sql = getDb()
   const conditions: string[] = []
   const params: unknown[] = []
@@ -312,9 +312,9 @@ export async function getEventCount(filters?: { userId?: string; resellerId?: st
     conditions.push(`user_id = $${paramIdx++}`)
     params.push(filters.userId)
   }
-  if (filters?.resellerId) {
-    conditions.push(`reseller_id = $${paramIdx++}`)
-    params.push(filters.resellerId)
+  if (filters?.studioId) {
+    conditions.push(`studio_id = $${paramIdx++}`)
+    params.push(filters.studioId)
   }
   if (filters?.status) {
     conditions.push(`status = $${paramIdx++}`)
@@ -359,8 +359,8 @@ export async function getAdminDashboardStats() {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM users WHERE role = 'reseller') AS total_resellers,
-      (SELECT COUNT(*)::int FROM users WHERE role = 'reseller' AND status = 'active') AS active_resellers,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'studio') AS total_studios,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') AS active_studios,
       (SELECT COUNT(*)::int FROM users WHERE role = 'user') AS total_users,
       (SELECT COUNT(*)::int FROM users WHERE role = 'user' AND status = 'active') AS active_users,
       (SELECT COUNT(*)::int FROM events) AS total_events,
@@ -382,18 +382,18 @@ export async function getAdminDashboardStats() {
 // DASHBOARD STATS (reseller)
 // ============================================================
 
-export async function getResellerDashboardStats(resellerId: string) {
+export async function getStudioDashboardStats(studioId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId}) AS total_events,
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId} AND status = 'live') AS live_events,
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId} AND status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE reseller_id = ${resellerId} AND status = 'completed') AS completed_events,
-      (SELECT COUNT(*)::int FROM orders WHERE reseller_id = ${resellerId}) AS total_orders,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE reseller_id = ${resellerId} AND status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE reseller_id = ${resellerId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
-      (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${resellerId}) AS wallet_balance
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId}) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'completed') AS completed_events,
+      (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
+      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
+      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
   `
   return toCamel(rows[0] as Record<string, unknown>)
 }

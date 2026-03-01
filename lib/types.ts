@@ -1,5 +1,5 @@
 // User Roles
-export type UserRole = "admin" | "reseller" | "user"
+export type UserRole = "admin" | "studio" | "user"
 
 // User Status
 export type UserStatus = "active" | "inactive" | "suspended"
@@ -36,10 +36,10 @@ export type DNSStatus = "pending" | "verified" | "failed"
   updatedAt: Date
   }
 
-// Reseller extends User with branding
-  export interface Reseller extends User {
-  role: "reseller"
-  branding: ResellerBranding
+// Studio extends User with branding
+  export interface Studio extends User {
+  role: "studio"
+  branding: StudioBranding
   domain?: CustomDomain
   walletBalance: number
   totalEvents: number
@@ -62,10 +62,10 @@ export interface EndUser extends User {
   eventsUsed: number
 }
 
-// Reseller Branding
-export interface ResellerBranding {
+// Studio Branding
+export interface StudioBranding {
   id: string
-  resellerId: string
+  studioId: string
   platformName: string
   logo?: string
   favicon?: string
@@ -81,7 +81,7 @@ export interface ResellerBranding {
 // Custom Domain
 export interface CustomDomain {
   id: string
-  resellerId: string
+  studioId: string
   domain: string
   dnsStatus: DNSStatus
   sslEnabled: boolean
@@ -108,7 +108,7 @@ export type TransactionCategory =
   | "order_refund"
   | "adjustment"
   | "commission"
-  | "refund_reversal" // When reseller loses commission on refund
+  | "refund_reversal" // When studio loses commission on refund
   | "manual_adjustment" // Admin adds/deducts funds manually
   | "payment_recovery" // Payment gateway success but wallet credit failed
   | "compensation" // Compensation for service issues
@@ -129,7 +129,7 @@ export interface WalletTransaction {
   description: string
   referenceId?: string
   referenceType?: string
-  cascadeLevel?: number // 0 = user, 1 = reseller, 2 = admin
+  cascadeLevel?: number // 0 = user, 1 = studio, 2 = admin
 
   baseAmount?: number // Amount without GST
   gstAmount?: number // GST portion
@@ -201,7 +201,7 @@ export interface Order {
 export interface LiveEvent {
   id: string
   userId: string
-  resellerId?: string
+  studioId?: string
   title: string
   description?: string
   thumbnail?: string
@@ -247,7 +247,7 @@ export interface EventAnalytics {
 // Payment Gateway Config
 export interface PaymentGatewayConfig {
   id: string
-  resellerId?: string
+  studioId?: string
   gateway: PaymentGateway
   isEnabled: boolean
   isDefault: boolean
@@ -271,8 +271,8 @@ export interface PlatformSettings {
   maintenanceMode: boolean
   imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
   platformDomain: string // admin's primary platform domain, e.g. "myplatform.io"
-  resellerCnameTarget: string // CNAME target for reseller www records, e.g. "cname.vercel-dns.com"
-  resellerAnnualSubscription: {
+  studioCnameTarget: string // CNAME target for studio www records, e.g. "cname.vercel-dns.com"
+  studioAnnualSubscription: {
     price: number // Annual price in paisa for white-label + hosting
     enabled: boolean
   }
@@ -296,7 +296,7 @@ export interface Notification {
 
 // Auth Context Types
 export interface AuthState {
-  user: User | Reseller | EndUser | null
+  user: User | Studio | EndUser | null
   isLoading: boolean
   isAuthenticated: boolean
 }
@@ -304,16 +304,16 @@ export interface AuthState {
 // Dashboard Stats
 export interface AdminStats {
   totalRevenue: number
-  totalResellers: number
+  totalStudios: number
   totalUsers: number
   totalEvents: number
   activeEvents: number
-  activeResellers: number
+  activeStudios: number
   revenueGrowth: number
   userGrowth: number
 }
 
-export interface ResellerStats {
+export interface StudioStats {
   walletBalance: number
   totalEvents: number
   activeEvents: number
@@ -340,7 +340,7 @@ export interface Package {
   pricingModel: PricingModel
   description: string
   price: number
-  basePriceReseller: number
+  basePriceStudio: number
   basePriceUser: number
   duration: number
   maxEvents: number
@@ -365,7 +365,7 @@ export interface StreamTypePricing {
 
   export interface StreamTypePriceLevel {
   userPrice: number // What end user pays (in paisa)
-  resellerPrice: number // What reseller pays to admin (in paisa)
+  studioPrice: number // What studio pays to admin (in paisa)
   enabled: boolean // Whether this stream type is available
   }
 
@@ -377,7 +377,7 @@ export interface SimulcastPricing {
 
   export interface SimulcastPriceLevel {
   userPrice: number
-  resellerPrice: number
+  studioPrice: number
   enabled: boolean
   }
 
@@ -387,7 +387,7 @@ export interface EventPack {
   name: string
   eventCount: number
   userPrice: number // flat pack price for users (in paisa)
-  resellerPrice: number // flat pack price for resellers (in paisa)
+  studioPrice: number // flat pack price for studios (in paisa)
   enabled: boolean
   sortOrder: number
 }
@@ -401,7 +401,7 @@ export interface EventPackSettings {
 // Event validity -- 30 days included free, extended durations have a per-stream-type surcharge
 export interface ValidityTierStreamSurcharge {
   userSurcharge: number // in paisa, added on top of base event/pack price
-  resellerSurcharge: number
+  studioSurcharge: number
 }
 
 export interface ValidityTier {
@@ -426,8 +426,8 @@ export interface EventValiditySettings {
 // When set, overrides the master pricing from admin packages
 export interface CustomStreamPricing {
   id: string
-  targetId: string // userId or resellerId
-  targetType: "user" | "reseller"
+  targetId: string // userId or studioId
+  targetType: "user" | "studio"
   setById: string // admin who set it
   streamTypePricing?: Partial<StreamTypePricing> // only overridden types
   note?: string // admin note for why custom pricing was set
@@ -671,7 +671,7 @@ export interface EmailTemplate {
 export interface YouTubeChannel {
   id: string
   ownerId: string
-  ownerType: "admin" | "reseller" | "user"
+  ownerType: "admin" | "studio" | "user"
   channelId: string
   channelTitle: string
   channelThumbnail?: string
@@ -713,7 +713,7 @@ export interface YouTubeStreamHealth {
 export interface FacebookPage {
   id: string
   ownerId: string
-  ownerType: "admin" | "reseller" | "user"
+  ownerType: "admin" | "studio" | "user"
   pageId: string
   pageName: string
   pageThumbnail?: string
@@ -1175,7 +1175,7 @@ export interface UnmatchedPayment {
 
 export interface GSTConfiguration {
   id: string
-  entityId: string // userId, resellerId, or adminId
+  entityId: string // userId, studioId, or adminId
   entityType: UserRole
   gstEnabled: boolean
   gstPercentage: number // 18, 12, 5, 28, etc.

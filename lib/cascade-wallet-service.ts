@@ -2,9 +2,9 @@
  * Cascade Wallet Service
  *
  * Handles hierarchical wallet debits for pay-per-event pricing.
- * 2-tier model: User/Reseller -> Admin
- * - Users pay userPrice, Admin receives resellerPrice from reseller
- * - Resellers pay resellerPrice to admin
+ * 2-tier model: User/Studio -> Admin
+ * - Users pay userPrice, Admin receives studioPrice from studio
+ * - Studios pay studioPrice to admin
  */
 
 import type {
@@ -22,48 +22,48 @@ import type {
 
 // Default stream type pricing (platform defaults)
 export const defaultStreamTypePricing: StreamTypePricing = {
-  rtmp: { userPrice: 1500, resellerPrice: 700, enabled: true },
-  youtube_api: { userPrice: 1000, resellerPrice: 400, enabled: true },
-  youtube_embed: { userPrice: 500, resellerPrice: 150, enabled: true },
-  third_party: { userPrice: 400, resellerPrice: 100, enabled: true },
+  rtmp: { userPrice: 1500, studioPrice: 700, enabled: true },
+  youtube_api: { userPrice: 1000, studioPrice: 400, enabled: true },
+  youtube_embed: { userPrice: 500, studioPrice: 150, enabled: true },
+  third_party: { userPrice: 400, studioPrice: 100, enabled: true },
 }
 
 // Default simulcast pricing
 export const defaultSimulcastPricing: SimulcastPricing = {
-  youtube: { userPrice: 75, resellerPrice: 40, enabled: true },
-  facebook: { userPrice: 75, resellerPrice: 40, enabled: true },
-  customRtmp: { userPrice: 100, resellerPrice: 60, enabled: true },
+  youtube: { userPrice: 75, studioPrice: 40, enabled: true },
+  facebook: { userPrice: 75, studioPrice: 40, enabled: true },
+  customRtmp: { userPrice: 100, studioPrice: 60, enabled: true },
 }
 
 // Get price for stream type at given level
 export function getStreamTypePrice(
   streamType: StreamTypeKey,
-  level: "reseller" | "user",
+  level: "studio" | "user",
   customPricing?: StreamTypePricing,
 ): number {
   const pricing = customPricing || defaultStreamTypePricing
   const streamPricing = pricing[streamType]
 
-  return level === "reseller" ? streamPricing.resellerPrice : streamPricing.userPrice
+  return level === "studio" ? streamPricing.studioPrice : streamPricing.userPrice
 }
 
 // Get price for simulcast destination at given level
 export function getSimulcastPrice(
   destination: "youtube" | "facebook" | "custom_rtmp",
-  level: "reseller" | "user",
+  level: "studio" | "user",
   customPricing?: SimulcastPricing,
 ): number {
   const pricing = customPricing || defaultSimulcastPricing
   const destPricing = pricing[destination === "custom_rtmp" ? "customRtmp" : destination]
 
-  return level === "reseller" ? destPricing.resellerPrice : destPricing.userPrice
+  return level === "studio" ? destPricing.studioPrice : destPricing.userPrice
 }
 
-// Calculate total event price for a user or reseller
+// Calculate total event price for a user or studio
 export function calculateEventPrice(
   streamType: StreamTypeKey,
   simulcastDestinations: ("youtube" | "facebook" | "custom_rtmp")[],
-  level: "reseller" | "user",
+  level: "studio" | "user",
   customStreamPricing?: StreamTypePricing,
   customSimulcastPricing?: SimulcastPricing,
 ): { streamPrice: number; simulcastPrice: number; total: number } {
@@ -95,7 +95,7 @@ export function buildAncestorChain(
 ): AncestorInfo[] {
   const chain: AncestorInfo[] = []
 
-  // Get the initiating entity (user or reseller)
+  // Get the initiating entity (user or studio)
   const entity = getUserById(userId)
   if (!entity) return chain
   chain.push(entity)
@@ -125,9 +125,9 @@ export function validateCascade(
     const entity = ancestorChain[i]
     const isAdmin = entity.type === "admin"
 
-    // Determine price level -- admin doesn't pay, only user and reseller
-    const priceLevel: "reseller" | "user" =
-      entity.type === "user" ? "user" : "reseller"
+    // Determine price level -- admin doesn't pay, only user and studio
+    const priceLevel: "studio" | "user" =
+      entity.type === "user" ? "user" : "studio"
 
     // Calculate price at this level
     const { total: requiredAmount } = calculateEventPrice(

@@ -290,15 +290,23 @@ export default function ResellerPackagesPage() {
                         <div className="flex items-baseline justify-center gap-1">
                           <span className="text-2xl font-bold text-primary">{"₹"}{(pack.resellerPrice / 100).toFixed(0)}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">Your cost: {"₹"}{(resellerPerEvent / 100).toFixed(2)}/event</p>
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                          {savingsPercent > 0 && (
+                            <span className="text-xs text-muted-foreground line-through">{"₹"}{(cheapestStream / 100).toFixed(2)}</span>
+                          )}
+                          <span className={`text-xs ${savingsPercent > 0 ? "text-emerald-500 font-medium" : "text-muted-foreground"}`}>
+                            {"₹"}{(resellerPerEvent / 100).toFixed(2)} per event
+                          </span>
+                        </div>
                         <p className="text-[10px] text-muted-foreground">User price: {"₹"}{(pack.userPrice / 100).toFixed(0)} ({"₹"}{(userPerEvent / 100).toFixed(2)}/event)</p>
                       </div>
 
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex flex-col items-center gap-1.5">
                         {savingsPercent > 0 && (
-                          <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                            Save {savingsPercent}%
-                          </Badge>
+                          <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-center">
+                            <span className="text-sm font-semibold text-emerald-500">Save {savingsPercent}%</span>
+                            <p className="text-[10px] text-emerald-500/70 mt-0.5">vs per-event pricing</p>
+                          </div>
                         )}
                         <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
                           {"₹"}{(marginPerEvent / 100).toFixed(2)} margin/event

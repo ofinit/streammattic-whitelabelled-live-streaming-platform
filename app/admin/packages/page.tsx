@@ -551,8 +551,7 @@ export default function AdminPackagesPage() {
             />
           </div>
         </CardHeader>
-        <CardContent>
-          {studioSubscription.enabled && (
+        {studioSubscription.enabled && (
           <CardContent>
             <div className="max-w-sm space-y-2">
               <Label htmlFor="annualPrice">Annual Price</Label>

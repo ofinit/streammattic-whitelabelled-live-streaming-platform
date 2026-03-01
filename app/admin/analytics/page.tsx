@@ -41,7 +41,7 @@ export default function AdminAnalyticsPage() {
     }))
   }, [])
 
-  const topResellers = useMemo(() => {
+  const topStudios = useMemo(() => {
     return [
       { name: "LiveStream Pro", revenue: 45000, users: 89 },
       { name: "EventCast TV", revenue: 32000, users: 56 },
@@ -76,7 +76,7 @@ export default function AdminAnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{mockUsers.filter((u) => u.role === "user").length}</div>
             <p className="text-xs text-muted-foreground">
-              Across {mockUsers.filter((u) => u.role === "reseller").length} resellers
+              Across {mockUsers.filter((u) => u.role === "studio").length} studios
             </p>
           </CardContent>
         </Card>
@@ -173,23 +173,23 @@ export default function AdminAnalyticsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Top Resellers by Revenue</CardTitle>
+          <CardTitle>Top Studios by Revenue</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {topResellers.map((reseller, idx) => (
-              <div key={reseller.name} className="flex items-center justify-between border-b pb-4 last:border-0">
+            {topStudios.map((studio, idx) => (
+              <div key={studio.name} className="flex items-center justify-between border-b pb-4 last:border-0">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
                     {idx + 1}
                   </div>
                   <div>
-                    <p className="font-medium">{reseller.name}</p>
-                    <p className="text-sm text-muted-foreground">{reseller.users} users</p>
+                    <p className="font-medium">{studio.name}</p>
+                    <p className="text-sm text-muted-foreground">{studio.users} users</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">₹{reseller.revenue.toLocaleString()}</p>
+                  <p className="font-bold text-lg">₹{studio.revenue.toLocaleString()}</p>
                   <p className="text-sm text-muted-foreground">Total revenue</p>
                 </div>
               </div>

@@ -1,24 +1,24 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
-import type { User, Reseller, EndUser, UserRole } from "./types"
-import { mockAdmin, mockResellers, mockUsers } from "./mock-data"
+import type { User, Studio, EndUser, UserRole } from "./types"
+import { mockAdmin, mockStudios, mockUsers } from "./mock-data"
 
 const AUTH_STORAGE_KEY = "streammattic_auth"
 
 interface AuthState {
-  user: User | Reseller | EndUser | null
-  originalUser: User | Reseller | null
+  user: User | Studio | EndUser | null
+  originalUser: User | Studio | null
   isImpersonating: boolean
   impersonatedBy: string | null
 }
 
 interface AuthContextType {
-  user: User | Reseller | EndUser | null
+  user: User | Studio | EndUser | null
   isLoading: boolean
   isAuthenticated: boolean
   isImpersonating: boolean
-  originalUser: User | Reseller | null
+  originalUser: User | Studio | null
   impersonatedBy: string | null
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
@@ -62,8 +62,8 @@ function getRouteForRole(role: UserRole): string {
   switch (role) {
     case "admin":
       return "/admin"
-    case "reseller":
-      return "/reseller"
+    case "studio":
+      return "/studio"
     case "user":
       return "/dashboard"
     default:
@@ -72,8 +72,8 @@ function getRouteForRole(role: UserRole): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | Reseller | EndUser | null>(null)
-  const [originalUser, setOriginalUser] = useState<User | Reseller | null>(null)
+  const [user, setUser] = useState<User | Studio | EndUser | null>(null)
+  const [originalUser, setOriginalUser] = useState<User | Studio | null>(null)
   const [isLoading, setIsLoading] = useState(true) // Start with loading to check localStorage
   const [isImpersonating, setIsImpersonating] = useState(false)
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null)
@@ -93,14 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    let loggedInUser: User | Reseller | EndUser | null = null
+    let loggedInUser: User | Studio | EndUser | null = null
 
     if (email === "admin@streammattic.com") {
       loggedInUser = mockAdmin
     } else {
-      const reseller = mockResellers.find((r) => r.email === email)
-      if (reseller) {
-        loggedInUser = reseller
+      const foundStudio = mockStudios.find((r) => r.email === email)
+      if (foundStudio) {
+        loggedInUser = foundStudio
       } else {
         const endUser = mockUsers.find((u) => u.email === email)
         if (endUser) {
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      const existingUser = [...mockResellers, ...mockUsers].find((u) => u.email === data.email)
+      const existingUser = [...mockStudios, ...mockUsers].find((u) => u.email === data.email)
       if (existingUser) {
         setIsLoading(false)
         return false
@@ -159,20 +159,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const impersonate = useCallback(
     (userId: string): string | null => {
-      // Only admin and resellers can impersonate
-      if (user?.role !== "admin" && user?.role !== "reseller") return null
+      // Only admin and studios can impersonate
+      if (user?.role !== "admin" && user?.role !== "studio") return null
 
-      const targetUser = [...mockResellers, ...mockUsers].find((u) => u.id === userId)
+      const targetUser = [...mockStudios, ...mockUsers].find((u) => u.id === userId)
       if (targetUser) {
         // Update state
-        setOriginalUser(user as User | Reseller)
+        setOriginalUser(user as User | Studio)
         setImpersonatedBy(user.id)
         setUser(targetUser)
         setIsImpersonating(true)
 
         saveAuthState({
           user: targetUser,
-          originalUser: user as User | Reseller,
+          originalUser: user as User | Studio,
           isImpersonating: true,
           impersonatedBy: user.id,
         })
@@ -206,14 +206,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [originalUser])
 
   const switchRole = useCallback((role: UserRole) => {
-    let newUser: User | Reseller | EndUser | null = null
+    let newUser: User | Studio | EndUser | null = null
 
     switch (role) {
       case "admin":
         newUser = mockAdmin
         break
-      case "reseller":
-        newUser = mockResellers[0]
+      case "studio":
+        newUser = mockStudios[0]
         break
       case "user":
         newUser = mockUsers[0]

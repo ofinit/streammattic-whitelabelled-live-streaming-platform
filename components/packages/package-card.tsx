@@ -17,7 +17,7 @@ interface PackageCardProps {
   onEdit?: (pkg: Package) => void
   showActions?: boolean
   isAdmin?: boolean
-  isReseller?: boolean
+  isStudio?: boolean
   isPopular?: boolean
 }
 
@@ -35,13 +35,13 @@ export function PackageCard({
   onEdit,
   showActions = true,
   isAdmin = false,
-  isReseller = false,
+  isStudio = false,
   isPopular = false,
 }: PackageCardProps) {
   const Icon = packageIcons[pkg.name] || Zap
   const displayPrice = effectivePrice ?? pkg.price
 
-  const canEdit = isAdmin || isReseller
+  const canEdit = isAdmin || isStudio
 
   return (
     <Card
@@ -72,9 +72,9 @@ export function PackageCard({
               Custom Price
             </Badge>
           )}
-          {(isAdmin || isReseller) && (
+          {(isAdmin || isStudio) && (
             <div className="mt-2 flex justify-center gap-2 text-xs text-muted-foreground">
-              <span>Reseller: ₹{pkg.basePriceReseller}</span>
+              <span>Studio: ₹{pkg.basePriceStudio}</span>
               <span>|</span>
               <span>User: ₹{pkg.basePriceUser}</span>
             </div>

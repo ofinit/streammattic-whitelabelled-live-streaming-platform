@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare, Loader2, Wallet, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { mockEventTemplates, mockUsers, mockResellers } from "@/lib/mock-data"
+import { mockEventTemplates, mockUsers, mockStudios } from "@/lib/mock-data"
 import type { StreamTypeKey } from "@/lib/types"
 import { toast } from "@/hooks/use-toast"
 import { StreamTypeSelector } from "@/components/events/stream-type-selector"
@@ -90,20 +90,20 @@ export default function ScheduleEventPage() {
   const validateCascadeForSubmit = () => {
     if (!formData.streamType) return null
 
-    // Build ancestor chain: User -> Reseller -> Admin
+    // Build ancestor chain: User -> Studio -> Admin
     const currentUser = mockUsers[0] // In production, use actual auth user
-    const parentReseller = mockResellers.find((r) => r.id === currentUser.resellerId)
+    const parentStudio = mockStudios.find((r) => r.id === currentUser.studioId)
 
     const chain: AncestorInfo[] = [
-      { id: currentUser.id, name: currentUser.name, type: "user", walletBalance: currentUser.walletBalance, parentId: currentUser.resellerId },
+      { id: currentUser.id, name: currentUser.name, type: "user", walletBalance: currentUser.walletBalance, parentId: currentUser.studioId },
     ]
 
-    if (parentReseller) {
+    if (parentStudio) {
       chain.push({
-        id: parentReseller.id,
-        name: parentReseller.name,
-        type: "reseller",
-        walletBalance: parentReseller.walletBalance,
+        id: parentStudio.id,
+        name: parentStudio.name,
+        type: "studio",
+        walletBalance: parentStudio.walletBalance,
       })
     }
 

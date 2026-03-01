@@ -13,7 +13,7 @@ import { TransactionList } from "@/components/wallet/transaction-list"
 import { CascadeFlow } from "@/components/wallet/cascade-flow"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
-import { mockResellers, mockUsers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
+import { mockStudios, mockUsers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
 import { Search, MoreHorizontal, Plus, TrendingUp, Wallet, Users, Building2 } from "lucide-react"
 
 export default function AdminWalletsPage() {
@@ -22,13 +22,13 @@ export default function AdminWalletsPage() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; balance: number } | null>(null)
 
-  // Combine resellers and users for wallet management
+    // Combine studios and users for wallet management
   const allWallets = [
-    ...mockResellers.map((r) => ({
+    ...mockStudios.map((r) => ({
       id: r.id,
       name: r.name,
       email: r.email,
-      type: "reseller" as const,
+      type: "studio" as const,
       balance: r.walletBalance,
       status: r.status,
     })),
@@ -69,7 +69,7 @@ export default function AdminWalletsPage() {
   }
 
   // Calculate totals
-  const totalResellerBalance = mockResellers.reduce((sum, r) => sum + r.walletBalance, 0)
+  const totalStudioBalance = mockStudios.reduce((sum, r) => sum + r.walletBalance, 0)
   const totalUserBalance = mockUsers.reduce((sum, u) => sum + u.walletBalance, 0)
 
   return (
@@ -84,12 +84,12 @@ export default function AdminWalletsPage() {
         <WalletCard summary={mockAdminWalletSummary} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Reseller Balance</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Studio Balance</CardTitle>
             <Building2 className="h-5 w-5 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">₹{(totalResellerBalance / 100).toLocaleString("en-IN")}</p>
-            <p className="text-sm text-muted-foreground">{mockResellers.length} resellers</p>
+            <p className="text-2xl font-bold">₹{(totalStudioBalance / 100).toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">{mockStudios.length} studios</p>
           </CardContent>
         </Card>
         <Card>
@@ -157,7 +157,7 @@ export default function AdminWalletsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={wallet.type === "reseller" ? "default" : "secondary"}>{wallet.type}</Badge>
+                      <Badge variant={wallet.type === "studio" ? "default" : "secondary"}>{wallet.type}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -216,9 +216,9 @@ export default function AdminWalletsPage() {
             <CascadeFlow
               packageName="Professional Package"
               userPrice={249900}
-              resellerCost={100000}
+              studioCost={100000}
               userName="Alice Johnson"
-              resellerName="LiveStream Pro"
+              studioName="LiveStream Pro"
             />
             <Card>
               <CardHeader>
@@ -231,7 +231,7 @@ export default function AdminWalletsPage() {
                     <strong>User pays full price</strong> - Debited from user wallet
                   </li>
                   <li>
-                    <strong>Reseller pays cost</strong> - Debited from reseller wallet (keeps margin)
+                    <strong>Studio pays cost</strong> - Debited from studio wallet (keeps margin)
                   </li>
                   <li>
                     <strong>Admin pays base cost</strong> - Debited from admin wallet (keeps margin)
@@ -242,7 +242,7 @@ export default function AdminWalletsPage() {
                   <p className="font-medium text-foreground">Example:</p>
                   <ul className="mt-2 space-y-1">
                     <li>User Price: ₹2,499</li>
-                    <li>Reseller Cost: ₹1,000 → Reseller Profit: ₹1,499</li>
+                    <li>Studio Cost: ₹1,000 → Studio Profit: ₹1,499</li>
                     <li>Admin Cost: ₹600 → Admin Profit: ₹400</li>
                   </ul>
                 </div>

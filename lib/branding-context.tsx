@@ -1,8 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { Branding, Reseller, Domain } from "./types"
-import { mockResellers, mockDomains } from "./mock-data"
+import type { Branding, Studio, Domain } from "./types"
+import { mockStudios, mockDomains } from "./mock-data"
 
 // Default platform branding (StreamMattic)
 const defaultBranding: Branding = {
@@ -13,7 +13,7 @@ const defaultBranding: Branding = {
   accentColor: "#059669",
   email: "support@streammattic.com",
   metaTitle: "StreamMattic - White-Label Live Streaming Platform",
-  metaDescription: "Multi-tenant live streaming platform for resellers and content creators",
+  metaDescription: "Multi-tenant live streaming platform for studios and content creators",
   hasGatewayConfig: false,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -21,62 +21,62 @@ const defaultBranding: Branding = {
 
 interface BrandingContextType {
   branding: Branding
-  reseller: Reseller | null
+  studio: Studio | null
   isWhiteLabel: boolean
   isLoading: boolean
   currentDomain: string | null
-  setDemoReseller: (resellerId: string | null) => void
+  setDemoStudio: (studioId: string | null) => void
 }
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined)
 
 // Simulates domain lookup - in production this would be server-side middleware
-function lookupDomainReseller(hostname: string): { reseller: Reseller; domain: Domain } | null {
+function lookupDomainStudio(hostname: string): { studio: Studio; domain: Domain } | null {
   // Check custom domains
   const domain = mockDomains.find((d) => d.domain === hostname && d.verificationStatus === "verified")
 
   if (domain) {
-    const reseller = mockResellers.find((r) => r.id === domain.userId)
-    if (reseller) {
-      return { reseller, domain }
+    const foundStudio = mockStudios.find((r) => r.id === domain.userId)
+    if (foundStudio) {
+      return { studio: foundStudio, domain }
     }
   }
 
-  // Check for subdomain pattern: {reseller-slug}.streammattic.com
+  // Check for subdomain pattern: {studio-slug}.streammattic.com
   const subdomainMatch = hostname.match(/^([^.]+)\.streammattic\.com$/)
   if (subdomainMatch) {
     const slug = subdomainMatch[1]
-    const reseller = mockResellers.find((r) => r.branding.platformName.toLowerCase().replace(/\s+/g, "-") === slug)
-    if (reseller) {
-      return { reseller, domain: null as unknown as Domain }
+    const foundStudio = mockStudios.find((r) => r.branding.platformName.toLowerCase().replace(/\s+/g, "-") === slug)
+    if (foundStudio) {
+      return { studio: foundStudio, domain: null as unknown as Domain }
     }
   }
 
   return null
 }
 
-// Convert reseller branding to full Branding interface
-function resellerToBranding(reseller: Reseller): Branding {
+// Convert studio branding to full Branding interface
+function studioToBranding(s: Studio): Branding {
   return {
-    id: reseller.branding.id,
-    userId: reseller.id,
-    brandName: reseller.branding.platformName,
-    companyLogo: reseller.branding.logo,
-    themeColor: reseller.branding.primaryColor,
-    accentColor: reseller.branding.secondaryColor,
-    email: reseller.branding.supportEmail,
-    phone: reseller.branding.supportPhone,
-    termsConditions: reseller.branding.termsUrl,
-    privacyPolicy: reseller.branding.privacyUrl,
+    id: s.branding.id,
+    userId: s.id,
+    brandName: s.branding.platformName,
+    companyLogo: s.branding.logo,
+    themeColor: s.branding.primaryColor,
+    accentColor: s.branding.secondaryColor,
+    email: s.branding.supportEmail,
+    phone: s.branding.supportPhone,
+    termsConditions: s.branding.termsUrl,
+    privacyPolicy: s.branding.privacyUrl,
     hasGatewayConfig: false,
-    createdAt: reseller.createdAt,
-    updatedAt: reseller.updatedAt,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
   }
 }
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<Branding>(defaultBranding)
-  const [reseller, setReseller] = useState<Reseller | null>(null)
+  const [studio, setStudio] = useState<Studio | null>(null)
   const [currentDomain, setCurrentDomain] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -91,10 +91,10 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const result = lookupDomainReseller(hostname)
+    const result = lookupDomainStudio(hostname)
     if (result) {
-      setReseller(result.reseller)
-      setBranding(resellerToBranding(result.reseller))
+      setStudio(result.studio)
+      setBranding(studioToBranding(result.studio))
     }
 
     setIsLoading(false)
@@ -150,18 +150,18 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [branding])
 
-  // For demo purposes - allows switching reseller context
-  const setDemoReseller = (resellerId: string | null) => {
-    if (!resellerId) {
-      setReseller(null)
+  // For demo purposes - allows switching studio context
+  const setDemoStudio = (studioId: string | null) => {
+    if (!studioId) {
+      setStudio(null)
       setBranding(defaultBranding)
       return
     }
 
-    const foundReseller = mockResellers.find((r) => r.id === resellerId)
-    if (foundReseller) {
-      setReseller(foundReseller)
-      setBranding(resellerToBranding(foundReseller))
+    const foundStudio = mockStudios.find((r) => r.id === studioId)
+    if (foundStudio) {
+      setStudio(foundStudio)
+      setBranding(studioToBranding(foundStudio))
     }
   }
 
@@ -169,11 +169,11 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     <BrandingContext.Provider
       value={{
         branding,
-        reseller,
-        isWhiteLabel: !!reseller,
+        studio,
+        isWhiteLabel: !!studio,
         isLoading,
         currentDomain,
-        setDemoReseller,
+        setDemoStudio,
       }}
     >
       {children}

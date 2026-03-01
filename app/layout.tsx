@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "StreamMattic - White-Label Live Streaming Platform",
-  description: "Multi-tenant live streaming platform for resellers and content creators",
+  description: "Multi-tenant live streaming platform for studios and content creators",
   generator: "v0.app",
   icons: {
     icon: [

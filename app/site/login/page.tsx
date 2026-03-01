@@ -34,7 +34,7 @@ export default function SiteLoginPage() {
 
     const success = await login(email, password)
     if (success) {
-      router.push("/reseller")
+      router.push("/studio")
     } else {
       setError("Invalid email or password")
     }

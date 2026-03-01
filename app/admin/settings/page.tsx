@@ -30,7 +30,7 @@ export default function AdminSettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [notifications, setNotifications] = useState({
     email: true,
-    newReseller: true,
+    newStudio: true,
     lowBalance: true,
     systemAlerts: true,
   })
@@ -41,7 +41,7 @@ export default function AdminSettingsPage() {
   })
   const [domainSettings, setDomainSettings] = useState({
     platformDomain: "",
-    resellerCnameTarget: "cname.vercel-dns.com",
+    studioCnameTarget: "cname.vercel-dns.com",
   })
   const [domainSaved, setDomainSaved] = useState(false)
 
@@ -273,7 +273,7 @@ export default function AdminSettingsPage() {
               </div>
               <div>
                 <CardTitle>Platform Domain</CardTitle>
-                <CardDescription>Set your primary platform domain. Reseller DNS records will reference this.</CardDescription>
+                <CardDescription>Set your primary platform domain. Studio DNS records will reference this.</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -293,27 +293,27 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnameTarget">Reseller CNAME Target</Label>
+                <Label htmlFor="cnameTarget">Studio CNAME Target</Label>
                 <Input
                   id="cnameTarget"
                   placeholder="cname.vercel-dns.com"
-                  value={domainSettings.resellerCnameTarget}
-                  onChange={(e) => setDomainSettings({ ...domainSettings, resellerCnameTarget: e.target.value })}
+                  value={domainSettings.studioCnameTarget}
+                  onChange={(e) => setDomainSettings({ ...domainSettings, studioCnameTarget: e.target.value })}
                   className="bg-secondary border-0"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {"Resellers' www CNAME records will point here. Default: cname.vercel-dns.com (Vercel). Change only if using a custom proxy or CDN."}
+                  {"Studios' www CNAME records will point here. Default: cname.vercel-dns.com (Vercel). Change only if using a custom proxy or CDN."}
                 </p>
               </div>
               <Separator />
               <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                <p className="text-xs font-medium text-foreground">Reseller DNS Records Preview</p>
+                <p className="text-xs font-medium text-foreground">Studio DNS Records Preview</p>
                 <p className="text-xs text-muted-foreground">
-                  When you configure a reseller domain (e.g. clientbrand.com), they will need:
+                  When you configure a studio domain (e.g. clientbrand.com), they will need:
                 </p>
                 <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
                   <p>A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; 76.76.21.21</p>
-                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.resellerCnameTarget || "cname.vercel-dns.com"}</p>
+                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.studioCnameTarget || "cname.vercel-dns.com"}</p>
                   <p>TXT &nbsp;&nbsp;&nbsp; _verify.clientbrand.com &rarr; (auto-generated)</p>
                 </div>
               </div>
@@ -350,19 +350,19 @@ export default function AdminSettingsPage() {
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-foreground">New Reseller Alerts</p>
-                <p className="text-sm text-muted-foreground">Get notified when new resellers sign up</p>
+                <p className="font-medium text-foreground">New Studio Alerts</p>
+                <p className="text-sm text-muted-foreground">Get notified when new studios sign up</p>
               </div>
               <Switch
-                checked={notifications.newReseller}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, newReseller: checked })}
+                checked={notifications.newStudio}
+                onCheckedChange={(checked) => setNotifications({ ...notifications, newStudio: checked })}
               />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">Low Balance Warnings</p>
-                <p className="text-sm text-muted-foreground">Alert when reseller balance is low</p>
+                <p className="text-sm text-muted-foreground">Alert when studio balance is low</p>
               </div>
               <Switch
                 checked={notifications.lowBalance}

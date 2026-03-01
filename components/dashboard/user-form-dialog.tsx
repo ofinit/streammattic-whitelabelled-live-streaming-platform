@@ -21,7 +21,7 @@ interface UserFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: "create" | "edit"
-  userType: "reseller" | "user"
+  userType: "studio" | "user"
   initialData?: {
     id?: string
     email?: string
@@ -60,7 +60,7 @@ export function UserFormDialog({ open, onOpenChange, mode, userType, initialData
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Create" : "Edit"} {userType === "reseller" ? "Reseller" : "User"}
+            {mode === "create" ? "Create" : "Edit"} {userType === "studio" ? "Studio" : "User"}
           </DialogTitle>
           <DialogDescription>
             {mode === "create" ? `Add a new ${userType} to the platform.` : `Update ${userType} information.`}

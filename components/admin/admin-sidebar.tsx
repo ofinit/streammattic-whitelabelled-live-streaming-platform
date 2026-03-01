@@ -29,7 +29,7 @@ import { BrandedLogo } from "@/components/branding/branded-logo"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: Users, label: "Resellers", href: "/admin/resellers" },
+  { icon: Users, label: "Studios", href: "/admin/studios" },
   { icon: Users, label: "Users", href: "/admin/users" },
   { icon: Package, label: "Packages", href: "/admin/packages" },
   { icon: Calendar, label: "Calendar", href: "/admin/calendar" },

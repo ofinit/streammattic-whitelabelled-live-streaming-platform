@@ -7,20 +7,20 @@ import { ArrowDown, User, Building2, Shield } from "lucide-react"
 interface CascadeFlowProps {
   packageName: string
   userPrice: number
-  resellerCost: number
+  studioCost: number
   userName?: string
-  resellerName?: string
+  studioName?: string
 }
 
 export function CascadeFlow({
   packageName,
   userPrice,
-  resellerCost,
+  studioCost,
   userName = "User",
-  resellerName = "Reseller",
+  studioName = "Studio",
 }: CascadeFlowProps) {
-  const resellerProfit = userPrice - resellerCost
-  const adminRevenue = resellerCost
+  const studioProfit = userPrice - studioCost
+  const adminRevenue = studioCost
 
   return (
     <Card>
@@ -55,11 +55,11 @@ export function CascadeFlow({
           <div className="flex flex-col items-center py-1">
             <ArrowDown className="h-5 w-5 text-muted-foreground" />
             <Badge variant="outline" className="mt-1 text-xs">
-              ₹{((userPrice - resellerCost) / 100).toLocaleString("en-IN")} profit
+              ₹{((userPrice - studioCost) / 100).toLocaleString("en-IN")} profit
             </Badge>
           </div>
 
-          {/* Reseller Level */}
+          {/* Studio Level */}
           <div className="w-full max-w-sm">
             <div className="flex items-center justify-between rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
               <div className="flex items-center gap-3">
@@ -67,13 +67,13 @@ export function CascadeFlow({
                   <Building2 className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{resellerName}</p>
-                  <p className="text-xs text-muted-foreground">Reseller</p>
+                  <p className="font-medium text-foreground">{studioName}</p>
+                  <p className="text-xs text-muted-foreground">Studio</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-red-500">-₹{(resellerCost / 100).toLocaleString("en-IN")}</p>
-                <p className="text-xs text-emerald-500">+₹{(resellerProfit / 100).toLocaleString("en-IN")} margin</p>
+                <p className="font-semibold text-red-500">-₹{(studioCost / 100).toLocaleString("en-IN")}</p>
+                <p className="text-xs text-emerald-500">+₹{(studioProfit / 100).toLocaleString("en-IN")} margin</p>
               </div>
             </div>
           </div>
@@ -112,8 +112,8 @@ export function CascadeFlow({
               <span className="font-medium">₹{(userPrice / 100).toLocaleString("en-IN")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Reseller Profit</span>
-              <span className="font-medium text-emerald-500">₹{(resellerProfit / 100).toLocaleString("en-IN")}</span>
+              <span className="text-muted-foreground">Studio Profit</span>
+              <span className="font-medium text-emerald-500">₹{(studioProfit / 100).toLocaleString("en-IN")}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Admin Revenue</span>

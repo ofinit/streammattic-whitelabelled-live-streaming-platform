@@ -276,38 +276,45 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
 
             {/* Pricing Tab */}
             <TabsContent value="pricing" className="space-y-4 mt-4">
-              {!isPayPerEvent ? (
-                // Monthly/Fixed Pricing
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="basePriceReseller">Reseller Price (₹)</Label>
-                    <Input
-                      id="basePriceReseller"
-                      type="number"
-                      value={formData.basePriceReseller}
-                      onChange={(e) => setFormData({ ...formData, basePriceReseller: Number(e.target.value) })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="basePriceUser">User Price (₹)</Label>
-                    <Input
-                      id="basePriceUser"
-                      type="number"
-                      value={formData.basePriceUser}
-                      onChange={(e) => setFormData({ ...formData, basePriceUser: Number(e.target.value) })}
-                      required
-                    />
-                  </div>
-                </div>
-              ) : (
-                // Pay Per Event Pricing
-                <div className="space-y-6">
-                  {/* Stream Type Pricing */}
-                  <Card>
+              {/* Base Package Price (for monthly/event_pack) */}
+              {!isPayPerEvent && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Base Package Price</CardTitle>
+                    <CardDescription>The fixed price for this package subscription</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="basePriceReseller">Reseller Price (₹)</Label>
+                        <Input
+                          id="basePriceReseller"
+                          type="number"
+                          value={formData.basePriceReseller}
+                          onChange={(e) => setFormData({ ...formData, basePriceReseller: Number(e.target.value) })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="basePriceUser">User Price (₹)</Label>
+                        <Input
+                          id="basePriceUser"
+                          type="number"
+                          value={formData.basePriceUser}
+                          onChange={(e) => setFormData({ ...formData, basePriceUser: Number(e.target.value) })}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Stream Type Per-Event Pricing - always visible */}
+              <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Stream Type Pricing</CardTitle>
-                      <CardDescription>Set prices for each stream type at different hierarchy levels</CardDescription>
+                      <CardTitle className="text-base">Per-Event Stream Type Pricing</CardTitle>
+                      <CardDescription>Set per-event price for each stream type (in paisa). Applied when user schedules an event.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* RTMP Server */}
@@ -601,8 +608,6 @@ export function PackageFormDialog({ open, onOpenChange, pkg, onSubmit }: Package
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              )}
             </TabsContent>
 
             {/* Features Tab */}

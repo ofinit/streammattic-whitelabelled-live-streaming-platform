@@ -11,7 +11,7 @@ import type { StreamTypeKey } from "@/lib/types"
 
 export default function DemoPayPerEventPage() {
   const router = useRouter()
-  const demoState = demoUserStates.payPerEvent
+  const demoState = demoUserStates.noCredits
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -96,7 +96,7 @@ export default function DemoPayPerEventPage() {
           <DemoStreamTypeSelector
             value={selectedType}
             onChange={setSelectedType}
-            availableEvents={demoState.inventory?.availableQty ?? null}
+            availableEvents={0}
           />
 
           {/* Action Buttons */}

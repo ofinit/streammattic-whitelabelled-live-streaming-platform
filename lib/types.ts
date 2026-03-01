@@ -1,5 +1,5 @@
 // User Roles
-export type UserRole = "admin" | "studio" | "user"
+export type UserRole = "admin" | "studio" | "streamer"
 
 // User Status
 export type UserStatus = "active" | "inactive" | "suspended"
@@ -52,9 +52,9 @@ export interface Admin extends User {
   permissions: string[]
 }
 
-// Regular User (managed by admin)
-export interface EndUser extends User {
-  role: "user"
+// Streamer (managed by admin)
+export interface Streamer extends User {
+  role: "streamer"
   packageId?: string
   packageExpiresAt?: Date
   walletBalance: number
@@ -129,7 +129,7 @@ export interface WalletTransaction {
   description: string
   referenceId?: string
   referenceType?: string
-  cascadeLevel?: number // 0 = user, 1 = studio, 2 = admin
+  cascadeLevel?: number // 0 = streamer, 1 = studio, 2 = admin
 
   baseAmount?: number // Amount without GST
   gstAmount?: number // GST portion
@@ -266,7 +266,7 @@ export interface PlatformSettings {
   defaultCurrency: string
   rtmpServerUrl: string
   hlsServerUrl: string
-  maxEventsPerUser: number
+  maxEventsPerStreamer: number
   maxViewersPerEvent: number
   maintenanceMode: boolean
   imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
@@ -296,7 +296,7 @@ export interface Notification {
 
 // Auth Context Types
 export interface AuthState {
-  user: User | Studio | EndUser | null
+  user: User | Studio | Streamer | null
   isLoading: boolean
   isAuthenticated: boolean
 }
@@ -305,23 +305,23 @@ export interface AuthState {
 export interface AdminStats {
   totalRevenue: number
   totalStudios: number
-  totalUsers: number
+  totalStreamers: number
   totalEvents: number
   activeEvents: number
   activeStudios: number
   revenueGrowth: number
-  userGrowth: number
+  streamerGrowth: number
 }
 
 export interface StudioStats {
   walletBalance: number
   totalEvents: number
   activeEvents: number
-  activeUsers: number
+  activeStreamers: number
   monthlyRevenue: number
 }
 
-export interface UserStats {
+export interface StreamerStats {
   walletBalance: number
   totalEvents: number
   activeEvents: number
@@ -341,7 +341,7 @@ export interface Package {
   description: string
   price: number
   basePriceStudio: number
-  basePriceUser: number
+  basePriceStreamer: number
   duration: number
   maxEvents: number
   maxConcurrentViewers: number
@@ -364,7 +364,7 @@ export interface StreamTypePricing {
 }
 
   export interface StreamTypePriceLevel {
-  userPrice: number // What end user pays (in paisa)
+  streamerPrice: number // What streamer pays (in paisa)
   studioPrice: number // What studio pays to admin (in paisa)
   enabled: boolean // Whether this stream type is available
   }
@@ -376,7 +376,7 @@ export interface SimulcastPricing {
 }
 
   export interface SimulcastPriceLevel {
-  userPrice: number
+  streamerPrice: number
   studioPrice: number
   enabled: boolean
   }
@@ -386,7 +386,7 @@ export interface EventPack {
   id: string
   name: string
   eventCount: number
-  userPrice: number // flat pack price for users (in paisa)
+  streamerPrice: number // flat pack price for streamers (in paisa)
   studioPrice: number // flat pack price for studios (in paisa)
   enabled: boolean
   sortOrder: number
@@ -400,7 +400,7 @@ export interface EventPackSettings {
 
 // Event validity -- 30 days included free, extended durations have a per-stream-type surcharge
 export interface ValidityTierStreamSurcharge {
-  userSurcharge: number // in paisa, added on top of base event/pack price
+  streamerSurcharge: number // in paisa, added on top of base event/pack price
   studioSurcharge: number
 }
 
@@ -427,7 +427,7 @@ export interface EventValiditySettings {
 export interface CustomStreamPricing {
   id: string
   targetId: string // userId or studioId
-  targetType: "user" | "studio"
+  targetType: "streamer" | "studio"
   setById: string // admin who set it
   streamTypePricing?: Partial<StreamTypePricing> // only overridden types
   note?: string // admin note for why custom pricing was set
@@ -435,8 +435,8 @@ export interface CustomStreamPricing {
   updatedAt: Date
 }
 
-// User package inventory
-export interface UserInventory {
+// Streamer package inventory
+export interface StreamerInventory {
   id: string
   userId: string
   packageId: string
@@ -454,7 +454,7 @@ export interface ValidityPrice {
   packageId: string
   days: number
   priceStudio: number
-  priceUser: number
+  priceStreamer: number
   isActive: boolean
 }
 
@@ -671,7 +671,7 @@ export interface EmailTemplate {
 export interface YouTubeChannel {
   id: string
   ownerId: string
-  ownerType: "admin" | "studio" | "user"
+  ownerType: "admin" | "studio" | "streamer"
   channelId: string
   channelTitle: string
   channelThumbnail?: string
@@ -713,7 +713,7 @@ export interface YouTubeStreamHealth {
 export interface FacebookPage {
   id: string
   ownerId: string
-  ownerType: "admin" | "studio" | "user"
+  ownerType: "admin" | "studio" | "streamer"
   pageId: string
   pageName: string
   pageThumbnail?: string
@@ -774,7 +774,7 @@ export interface SimulcastDestination {
 }
 
 export interface PriceBreakdown {
-  desiredWalletAmount: number // What user wants in wallet
+  desiredWalletAmount: number // What streamer wants in wallet
   gstEnabled: boolean
   gstPercentage: number
   baseAmount: number // Amount that goes to wallet
@@ -970,7 +970,7 @@ export interface BlockedSale {
   packageName?: string
   streamType?: StreamTypeKey
   orderType: "package" | "pay_per_event"
-  userPrice: number
+  streamerPrice: number
   insufficientEntityId: string
   insufficientEntityName: string
   insufficientEntityType: UserRole
@@ -1004,7 +1004,7 @@ export interface EventCancellation {
   cancelledBy: string
   cancelledByRole: UserRole
   reason: string
-  reasonCategory: "user_request" | "technical_failure" | "admin_action" | "no_show" | "other"
+  reasonCategory: "streamer_request" | "technical_failure" | "admin_action" | "no_show" | "other"
   cancellationDate: Date
   eligibleForRefund: boolean
   refundPercentage: number // 0-100

@@ -61,7 +61,7 @@ export default function AdminDashboard() {
     },
     {
       key: "userName",
-      header: "User",
+      header: "Streamer",
       render: (item: Record<string, unknown>) => <span className="text-foreground">{item.userName as string}</span>,
     },
     {
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
                 icon={DollarSign}
               />
               <StatsCard title="Total Studios" value={stats?.totalStudios ?? 0} icon={Building2} />
-              <StatsCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
+              <StatsCard title="Total Streamers" value={stats?.totalStreamers ?? 0} icon={Users} />
               <StatsCard title="Live Events" value={stats?.liveEvents ?? 0} icon={Radio} />
             </>
           )}

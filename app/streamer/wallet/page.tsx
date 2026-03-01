@@ -6,15 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
-import { mockTransactions, mockUserWalletSummary } from "@/lib/mock-data"
+import { mockTransactions, mockStreamerWalletSummary } from "@/lib/mock-data"
 import { Package, Calendar, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-export default function UserWalletPage() {
+export default function StreamerWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
 
-  // Filter transactions for this user
-  const userTransactions = mockTransactions.filter((t) => t.userId === "user-1")
+  // Filter transactions for this streamer
+  const streamerTransactions = mockTransactions.filter((t) => t.userId === "streamer-1")
 
   const handleTopUp = (amount: number, gateway: string) => {
     // In real app, this would redirect to payment gateway
@@ -29,7 +29,7 @@ export default function UserWalletPage() {
       </div>
 
       {/* Low Balance Alert */}
-      {mockUserWalletSummary.balance < 50000 && (
+      {mockStreamerWalletSummary.balance < 50000 && (
         <Alert variant="destructive" className="border-yellow-500/50 bg-yellow-500/10">
           <AlertCircle className="h-4 w-4 text-yellow-500" />
           <AlertTitle className="text-yellow-500">Low Balance</AlertTitle>
@@ -41,7 +41,7 @@ export default function UserWalletPage() {
 
       {/* Wallet Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <WalletCard summary={mockUserWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
+        <WalletCard summary={mockStreamerWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Active Package</CardTitle>
@@ -77,7 +77,7 @@ export default function UserWalletPage() {
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={userTransactions} />
+              <TransactionList transactions={streamerTransactions} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -88,7 +88,7 @@ export default function UserWalletPage() {
               <CardTitle>Purchases</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={userTransactions.filter((t) => t.category === "package_purchase")} />
+              <TransactionList transactions={streamerTransactions.filter((t) => t.category === "package_purchase")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -100,7 +100,7 @@ export default function UserWalletPage() {
             </CardHeader>
             <CardContent>
               <TransactionList
-                transactions={userTransactions.filter((t) => t.category === "top_up" || t.category === "order_refund")}
+                transactions={streamerTransactions.filter((t) => t.category === "top_up" || t.category === "order_refund")}
               />
             </CardContent>
           </Card>

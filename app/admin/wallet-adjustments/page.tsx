@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { PlusCircle, Wallet, TrendingUp, TrendingDown } from "lucide-react"
-import { mockWalletAdjustments, mockUsers, mockStudios } from "@/lib/mock-data"
+import { mockWalletAdjustments, mockStreamers, mockStudios } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/refund-service"
 import type { WalletAdjustment } from "@/lib/types"
 
@@ -37,7 +37,7 @@ export default function AdminWalletAdjustmentsPage() {
   const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "instamojo" | "cashfree">("razorpay")
   const [supportTicketId, setSupportTicketId] = useState("")
 
-  const allUsers = [...mockUsers, ...mockStudios]
+  const allUsers = [...mockStreamers, ...mockStudios]
 
   const handleOpenAddDialog = () => {
     setShowAddDialog(true)
@@ -93,7 +93,7 @@ export default function AdminWalletAdjustmentsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Wallet Adjustments</h1>
-            <p className="text-muted-foreground">Manually add or deduct funds from user wallets</p>
+            <p className="text-muted-foreground">Manually add or deduct funds from streamer wallets</p>
           </div>
           <Button onClick={handleOpenAddDialog}>
             <PlusCircle className="h-4 w-4 mr-2" />
@@ -204,17 +204,17 @@ export default function AdminWalletAdjustmentsPage() {
           <DialogHeader>
             <DialogTitle>Add Wallet Adjustment</DialogTitle>
             <DialogDescription>
-              Manually credit or debit a user's wallet. This should only be done for specific reasons like payment
+              Manually credit or debit a streamer's wallet. This should only be done for specific reasons like payment
               recovery or compensation.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label htmlFor="user">Target User *</Label>
+                <Label htmlFor="user">Target Streamer *</Label>
                 <Select value={targetUserId} onValueChange={setTargetUserId}>
                   <SelectTrigger id="user">
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder="Select streamer" />
                   </SelectTrigger>
                   <SelectContent>
                     {allUsers.map((user) => (
@@ -349,7 +349,7 @@ export default function AdminWalletAdjustmentsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Target User</Label>
+              <Label>Target Streamer</Label>
               <p className="font-medium">{selectedUser?.name}</p>
               <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
             </div>

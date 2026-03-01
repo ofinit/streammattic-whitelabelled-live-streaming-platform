@@ -506,7 +506,7 @@ export function SimulcastDestinations({
           const newChannel: YouTubeChannel = {
             id: `yt-${Date.now()}`,
             ownerId: "current-user",
-            ownerType: "user",
+            ownerType: "streamer",
             channelId: data.channelId,
             channelTitle: data.channelTitle,
             channelThumbnail: data.channelThumbnail,
@@ -529,7 +529,7 @@ export function SimulcastDestinations({
           const newPage: FacebookPage = {
             id: `fb-${Date.now()}`,
             ownerId: "current-user",
-            ownerType: "user",
+            ownerType: "streamer",
             pageId: data.pageId,
             pageName: data.pageName,
             pageThumbnail: data.pageThumbnail,

@@ -9,7 +9,7 @@ import type { Notification } from "@/lib/types"
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(
-    mockNotifications.filter((n) => n.userId === "user-1"),
+    mockNotifications.filter((n) => n.userId === "streamer-1"),
   )
 
   const handleMarkAsRead = (id: string) => {

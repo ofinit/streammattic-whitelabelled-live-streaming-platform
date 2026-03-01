@@ -151,7 +151,7 @@ export default function StreamControlRoomPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-muted-foreground">Event not found</p>
-        <Button variant="outline" onClick={() => router.push("/dashboard/events")}>
+        <Button variant="outline" onClick={() => router.push("/streamer/events")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Events
         </Button>
@@ -169,7 +169,7 @@ export default function StreamControlRoomPage() {
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/events")}>
+              <Button variant="ghost" size="icon" onClick={() => router.push("/streamer/events")}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>

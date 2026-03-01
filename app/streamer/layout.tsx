@@ -9,13 +9,13 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
 
-function UserDashboardLayoutInner({ children }: { children: React.ReactNode }) {
+function StreamerDashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const { isCollapsed } = useSidebar()
 
-  const isDemoPage = pathname?.startsWith("/dashboard/events/new/demo-")
+  const isDemoPage = pathname?.startsWith("/streamer/events/new/demo-")
 
   useEffect(() => {
     if (isDemoPage) {
@@ -24,12 +24,12 @@ function UserDashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
     if (!isAuthenticated) {
       router.push("/")
-    } else if (user?.role !== "user") {
+    } else if (user?.role !== "streamer") {
       router.push("/")
     }
   }, [isAuthenticated, user, router, isDemoPage])
 
-  if (!isDemoPage && (!isAuthenticated || user?.role !== "user")) {
+  if (!isDemoPage && (!isAuthenticated || user?.role !== "streamer")) {
     return null
   }
 
@@ -44,10 +44,10 @@ function UserDashboardLayoutInner({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function UserDashboardLayout({ children }: { children: React.ReactNode }) {
+export default function StreamerDashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <UserDashboardLayoutInner>{children}</UserDashboardLayoutInner>
+      <StreamerDashboardLayoutInner>{children}</StreamerDashboardLayoutInner>
     </SidebarProvider>
   )
 }

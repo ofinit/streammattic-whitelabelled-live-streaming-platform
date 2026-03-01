@@ -3,15 +3,16 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info, Package } from "lucide-react"
+import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DemoStreamTypeSelector } from "@/components/events/demo-stream-type-selector"
 import { demoUserStates } from "@/lib/demo-user-states"
 import type { StreamTypeKey } from "@/lib/types"
+import { Progress } from "@/components/ui/progress"
 
-export default function DemoNoPackagePage() {
+export default function DemoMonthlyActivePage() {
   const router = useRouter()
-  const demoState = demoUserStates.noPackage
+  const demoState = demoUserStates.monthlyActive
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -21,6 +22,8 @@ export default function DemoNoPackagePage() {
     { id: 3, name: "Settings", icon: MessageSquare },
     { id: 4, name: "Review", icon: Check },
   ]
+
+  const usagePercentage = demoState.inventory ? (demoState.inventory.usedQty / demoState.inventory.totalQty) * 100 : 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,7 +35,7 @@ export default function DemoNoPackagePage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -77,21 +80,20 @@ export default function DemoNoPackagePage() {
           </AlertDescription>
         </Alert>
 
-        {/* No Package Info */}
-        <Alert className="mb-6 bg-orange-500/10 border-orange-500/20">
-          <Package className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="text-orange-600 dark:text-orange-400">
-            You haven't purchased any package yet. Browse packages to get started or pay per event.
-          </AlertDescription>
-        </Alert>
-
-        {/* Wallet Display */}
-        <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Wallet Balance</p>
-            <p className="text-2xl font-bold text-foreground">₹{demoState.walletBalance.toLocaleString()}</p>
+        {/* Package Status */}
+        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{demoState.package?.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {demoState.inventory?.availableQty} of {demoState.inventory?.totalQty} events remaining
+              </p>
+            </div>
+            <Button variant="outline" size="sm">
+              View Package
+            </Button>
           </div>
-          <Button variant="outline">Recharge Wallet</Button>
+          <Progress value={usagePercentage} className="h-2" />
         </div>
 
         {/* Content */}
@@ -109,17 +111,11 @@ export default function DemoNoPackagePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4">
-            <Button variant="outline" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="outline" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => router.push("/dashboard/packages")}>
-                <Package className="mr-2 h-4 w-4" />
-                Browse Packages
-              </Button>
-              <Button disabled>Pay Per Event (Demo mode)</Button>
-            </div>
+            <Button disabled>Next (Demo mode - view only)</Button>
           </div>
         </div>
       </div>

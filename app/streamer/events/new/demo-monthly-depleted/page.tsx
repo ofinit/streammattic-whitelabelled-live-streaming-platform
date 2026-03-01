@@ -3,15 +3,16 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info } from "lucide-react"
+import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info, AlertTriangle, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DemoStreamTypeSelector } from "@/components/events/demo-stream-type-selector"
 import { demoUserStates } from "@/lib/demo-user-states"
 import type { StreamTypeKey } from "@/lib/types"
+import { Progress } from "@/components/ui/progress"
 
-export default function DemoPayPerEventPage() {
+export default function DemoMonthlyDepletedPage() {
   const router = useRouter()
-  const demoState = demoUserStates.payPerEvent
+  const demoState = demoUserStates.monthlyDepleted
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -32,7 +33,7 @@ export default function DemoPayPerEventPage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -77,11 +78,35 @@ export default function DemoPayPerEventPage() {
           </AlertDescription>
         </Alert>
 
+        {/* Package Depleted Warning */}
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>Your {demoState.package?.name} has 0 events remaining</AlertDescription>
+        </Alert>
+
+        {/* Package Status */}
+        <div className="mb-6 rounded-lg border border-destructive/50 bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{demoState.package?.name}</p>
+              <p className="text-sm text-destructive">0 of {demoState.inventory?.totalQty} events remaining</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="default" size="sm">
+                <Package className="mr-2 h-4 w-4" />
+                Upgrade Package
+              </Button>
+            </div>
+          </div>
+          <Progress value={100} className="h-2" />
+        </div>
+
         {/* Wallet Display */}
         <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card p-4">
           <div>
             <p className="text-sm text-muted-foreground">Wallet Balance</p>
             <p className="text-2xl font-bold text-foreground">₹{demoState.walletBalance.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">You can pay per event from your wallet</p>
           </div>
           <Button variant="outline">Recharge Wallet</Button>
         </div>
@@ -101,11 +126,17 @@ export default function DemoPayPerEventPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4">
-            <Button variant="outline" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="outline" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button disabled>Next (Demo mode - view only)</Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => router.push("/streamer/packages")}>
+                <Package className="mr-2 h-4 w-4" />
+                Upgrade Package
+              </Button>
+              <Button disabled>Pay Per Event (Demo mode)</Button>
+            </div>
           </div>
         </div>
       </div>

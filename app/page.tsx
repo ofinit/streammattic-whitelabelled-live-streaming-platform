@@ -34,14 +34,14 @@ export default function LoginPage() {
       } else if (email.includes("livestream.pro") || email.includes("streamhub")) {
         router.push("/studio")
       } else {
-        router.push("/dashboard")
+        router.push("/streamer")
       }
     } else {
       setError("Invalid email or password")
     }
   }
 
-  const handleDemoLogin = (role: "admin" | "studio" | "user") => {
+  const handleDemoLogin = (role: "admin" | "studio" | "streamer") => {
     switchRole(role)
     switch (role) {
       case "admin":
@@ -50,8 +50,8 @@ export default function LoginPage() {
       case "studio":
         router.push("/studio")
         break
-      case "user":
-        router.push("/dashboard")
+      case "streamer":
+        router.push("/streamer")
         break
     }
   }
@@ -122,8 +122,8 @@ export default function LoginPage() {
                   <Button variant="outline" onClick={() => handleDemoLogin("studio")} className="border-border">
                     Studio
                   </Button>
-                  <Button variant="outline" onClick={() => handleDemoLogin("user")} className="border-border">
-                    User
+                  <Button variant="outline" onClick={() => handleDemoLogin("streamer")} className="border-border">
+                    Streamer
                   </Button>
                 </div>
               </div>

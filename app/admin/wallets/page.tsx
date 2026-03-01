@@ -13,7 +13,7 @@ import { TransactionList } from "@/components/wallet/transaction-list"
 import { CascadeFlow } from "@/components/wallet/cascade-flow"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
-import { mockStudios, mockUsers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
+import { mockStudios, mockStreamers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
 import { Search, MoreHorizontal, Plus, TrendingUp, Wallet, Users, Building2 } from "lucide-react"
 
 export default function AdminWalletsPage() {
@@ -32,11 +32,11 @@ export default function AdminWalletsPage() {
       balance: r.walletBalance,
       status: r.status,
     })),
-    ...mockUsers.map((u) => ({
+    ...mockStreamers.map((u) => ({
       id: u.id,
       name: u.name,
       email: u.email,
-      type: "user" as const,
+      type: "streamer" as const,
       balance: u.walletBalance,
       status: u.status,
     })),
@@ -70,7 +70,7 @@ export default function AdminWalletsPage() {
 
   // Calculate totals
   const totalStudioBalance = mockStudios.reduce((sum, r) => sum + r.walletBalance, 0)
-  const totalUserBalance = mockUsers.reduce((sum, u) => sum + u.walletBalance, 0)
+  const totalStreamerBalance = mockStreamers.reduce((sum, u) => sum + u.walletBalance, 0)
 
   return (
     <div className="space-y-6">
@@ -94,12 +94,12 @@ export default function AdminWalletsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total User Balance</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Streamer Balance</CardTitle>
             <Users className="h-5 w-5 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">₹{(totalUserBalance / 100).toLocaleString("en-IN")}</p>
-            <p className="text-sm text-muted-foreground">{mockUsers.length} users</p>
+            <p className="text-2xl font-bold">₹{(totalStreamerBalance / 100).toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">{mockStreamers.length} streamers</p>
           </CardContent>
         </Card>
         <Card>
@@ -140,7 +140,7 @@ export default function AdminWalletsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
@@ -215,7 +215,7 @@ export default function AdminWalletsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <CascadeFlow
               packageName="Professional Package"
-              userPrice={249900}
+              streamerPrice={249900}
               studioCost={100000}
               userName="Alice Johnson"
               studioName="LiveStream Pro"
@@ -225,10 +225,10 @@ export default function AdminWalletsPage() {
                 <CardTitle>How Cascade Works</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-muted-foreground">
-                <p>When a user purchases a package, money flows through the hierarchy:</p>
+                <p>When a streamer purchases a package, money flows through the hierarchy:</p>
                 <ol className="list-decimal list-inside space-y-2">
                   <li>
-                    <strong>User pays full price</strong> - Debited from user wallet
+                    <strong>Streamer pays full price</strong> - Debited from streamer wallet
                   </li>
                   <li>
                     <strong>Studio pays cost</strong> - Debited from studio wallet (keeps margin)
@@ -241,7 +241,7 @@ export default function AdminWalletsPage() {
                 <div className="rounded-lg bg-muted/50 p-4 mt-4">
                   <p className="font-medium text-foreground">Example:</p>
                   <ul className="mt-2 space-y-1">
-                    <li>User Price: ₹2,499</li>
+                    <li>Streamer Price: ₹2,499</li>
                     <li>Studio Cost: ₹1,000 → Studio Profit: ₹1,499</li>
                     <li>Admin Cost: ₹600 → Admin Profit: ₹400</li>
                   </ul>

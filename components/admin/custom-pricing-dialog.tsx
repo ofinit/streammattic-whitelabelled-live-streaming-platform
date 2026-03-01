@@ -22,10 +22,10 @@ import type { StreamTypePricing, StreamTypePriceLevel, EventPack, ValidityTier, 
 
 // Master pricing defaults (same as admin packages page)
 const MASTER_PRICING: StreamTypePricing = {
-  rtmp: { userPrice: 1200, studioPrice: 600, enabled: true },
-  youtube_api: { userPrice: 800, studioPrice: 350, enabled: true },
-  youtube_embed: { userPrice: 400, studioPrice: 120, enabled: true },
-  third_party: { userPrice: 300, studioPrice: 80, enabled: false },
+  rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
+  youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
+  youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
+  third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
 }
 
 const MASTER_ANNUAL_SUBSCRIPTION = {
@@ -34,36 +34,36 @@ const MASTER_ANNUAL_SUBSCRIPTION = {
 }
 
 const MASTER_EVENT_PACKS: EventPack[] = [
-  { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-  { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-  { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
+  { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+  { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+  { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+  { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
 ]
 
 const MASTER_VALIDITY_TIERS: ValidityTier[] = [
   { days: 60, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 300, studioSurcharge: 150 },
-    youtube_api: { userSurcharge: 200, studioSurcharge: 100 },
-    youtube_embed: { userSurcharge: 100, studioSurcharge: 50 },
-    third_party: { userSurcharge: 80, studioSurcharge: 40 },
+    rtmp: { streamerSurcharge: 300, studioSurcharge: 150 },
+    youtube_api: { streamerSurcharge: 200, studioSurcharge: 100 },
+    youtube_embed: { streamerSurcharge: 100, studioSurcharge: 50 },
+    third_party: { streamerSurcharge: 80, studioSurcharge: 40 },
   }},
   { days: 90, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 700, studioSurcharge: 350 },
-    youtube_api: { userSurcharge: 500, studioSurcharge: 250 },
-    youtube_embed: { userSurcharge: 250, studioSurcharge: 125 },
-    third_party: { userSurcharge: 200, studioSurcharge: 100 },
+    rtmp: { streamerSurcharge: 700, studioSurcharge: 350 },
+    youtube_api: { streamerSurcharge: 500, studioSurcharge: 250 },
+    youtube_embed: { streamerSurcharge: 250, studioSurcharge: 125 },
+    third_party: { streamerSurcharge: 200, studioSurcharge: 100 },
   }},
   { days: 180, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 1200, studioSurcharge: 600 },
-    youtube_api: { userSurcharge: 1000, studioSurcharge: 500 },
-    youtube_embed: { userSurcharge: 500, studioSurcharge: 250 },
-    third_party: { userSurcharge: 400, studioSurcharge: 200 },
+    rtmp: { streamerSurcharge: 1200, studioSurcharge: 600 },
+    youtube_api: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    youtube_embed: { streamerSurcharge: 500, studioSurcharge: 250 },
+    third_party: { streamerSurcharge: 400, studioSurcharge: 200 },
   }},
   { days: 365, enabled: true, surcharges: {
-    rtmp: { userSurcharge: 2500, studioSurcharge: 1250 },
-    youtube_api: { userSurcharge: 2000, studioSurcharge: 1000 },
-    youtube_embed: { userSurcharge: 1000, studioSurcharge: 500 },
-    third_party: { userSurcharge: 800, studioSurcharge: 400 },
+    rtmp: { streamerSurcharge: 2500, studioSurcharge: 1250 },
+    youtube_api: { streamerSurcharge: 2000, studioSurcharge: 1000 },
+    youtube_embed: { streamerSurcharge: 1000, studioSurcharge: 500 },
+    third_party: { streamerSurcharge: 800, studioSurcharge: 400 },
   }},
 ]
 
@@ -78,12 +78,12 @@ interface CustomPricingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   targetName: string
-  targetType: "user" | "studio"
+  targetType: "streamer" | "studio"
   existingCustomPricing?: Partial<StreamTypePricing>
   existingAnnualOverride?: { price: number; enabled: boolean } | null
-  existingPackOverrides?: Record<string, { userPrice: number; studioPrice: number }> | null
-  existingValidityOverrides?: Record<number, Record<ValidityStreamKey, { userSurcharge: number; studioSurcharge: number }>> | null
-  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { userPrice: number; studioPrice: number }> | null, validityOverrides?: Record<number, Record<ValidityStreamKey, { userSurcharge: number; studioSurcharge: number }>> | null) => void
+  existingPackOverrides?: Record<string, { streamerPrice: number; studioPrice: number }> | null
+  existingValidityOverrides?: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> | null
+  onSave: (pricing: Partial<StreamTypePricing> | undefined, note: string, annualOverride?: { price: number; enabled: boolean } | null, packOverrides?: Record<string, { streamerPrice: number; studioPrice: number }> | null, validityOverrides?: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> | null) => void
 }
 
 export function CustomPricingDialog({
@@ -97,10 +97,10 @@ export function CustomPricingDialog({
   existingValidityOverrides,
   onSave,
 }: CustomPricingDialogProps) {
-  const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; studioPrice: string }>>({})
+  const [overrides, setOverrides] = useState<Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }>>({})
   const [annualOverride, setAnnualOverride] = useState<{ enabled: boolean; price: string }>({ enabled: false, price: "" })
-  const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; userPrice: string; studioPrice: string }>>({})
-  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }> }>>({})
+  const [packOverrides, setPackOverrides] = useState<Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }>>({})
+  const [validityOverrides, setValidityOverrides] = useState<Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }>>({})
   const [expandedValidityTiers, setExpandedValidityTiers] = useState<Record<number, boolean>>({})
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
@@ -108,19 +108,19 @@ export function CustomPricingDialog({
   useEffect(() => {
     if (open) {
       // Initialize overrides from existing custom pricing
-      const initial: Record<string, { enabled: boolean; userPrice: string; studioPrice: string }> = {}
+      const initial: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
       for (const { key } of streamTypes) {
         const custom = existingCustomPricing?.[key]
         if (custom) {
           initial[key] = {
             enabled: true,
-            userPrice: (custom.userPrice / 100).toString(),
+            streamerPrice: (custom.streamerPrice / 100).toString(),
             studioPrice: (custom.studioPrice / 100).toString(),
           }
         } else {
           initial[key] = {
             enabled: false,
-            userPrice: (MASTER_PRICING[key].userPrice / 100).toString(),
+            streamerPrice: (MASTER_PRICING[key].streamerPrice / 100).toString(),
             studioPrice: (MASTER_PRICING[key].studioPrice / 100).toString(),
           }
         }
@@ -139,34 +139,34 @@ export function CustomPricingDialog({
         })
       }
       // Initialize event pack overrides
-      const packInit: Record<string, { enabled: boolean; userPrice: string; studioPrice: string }> = {}
+      const packInit: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
       for (const pack of MASTER_EVENT_PACKS) {
         const custom = existingPackOverrides?.[pack.id]
         if (custom) {
           packInit[pack.id] = {
             enabled: true,
-            userPrice: (custom.userPrice / 100).toString(),
+            streamerPrice: (custom.streamerPrice / 100).toString(),
             studioPrice: (custom.studioPrice / 100).toString(),
           }
         } else {
           packInit[pack.id] = {
             enabled: false,
-            userPrice: (pack.userPrice / 100).toString(),
+            streamerPrice: (pack.streamerPrice / 100).toString(),
             studioPrice: (pack.studioPrice / 100).toString(),
           }
         }
       }
       setPackOverrides(packInit)
       // Initialize validity overrides (per stream type)
-      const validityInit: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }> }> = {}
+      const validityInit: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }> = {}
       for (const tier of MASTER_VALIDITY_TIERS) {
         const custom = existingValidityOverrides?.[tier.days]
-        const surchargesInit = {} as Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }>
+        const surchargesInit = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
         for (const st of streamTypes) {
           const masterS = tier.surcharges[st.key]
           const customS = custom?.[st.key]
           surchargesInit[st.key] = {
-            userSurcharge: customS ? (customS.userSurcharge / 100).toString() : (masterS.userSurcharge / 100).toString(),
+            streamerSurcharge: customS ? (customS.streamerSurcharge / 100).toString() : (masterS.streamerSurcharge / 100).toString(),
             studioSurcharge: customS ? (customS.studioSurcharge / 100).toString() : (masterS.studioSurcharge / 100).toString(),
           }
         }
@@ -190,7 +190,7 @@ export function CustomPricingDialog({
         // Reset to master price when disabling
         ...(!enabled
           ? {
-              userPrice: (MASTER_PRICING[key as keyof StreamTypePricing].userPrice / 100).toString(),
+              streamerPrice: (MASTER_PRICING[key as keyof StreamTypePricing].streamerPrice / 100).toString(),
               studioPrice: (MASTER_PRICING[key as keyof StreamTypePricing].studioPrice / 100).toString(),
             }
           : {}),
@@ -198,7 +198,7 @@ export function CustomPricingDialog({
     }))
   }
 
-  const updatePrice = (key: string, field: "userPrice" | "studioPrice", value: string) => {
+  const updatePrice = (key: string, field: "streamerPrice" | "studioPrice", value: string) => {
     setOverrides((prev) => ({
       ...prev,
       [key]: { ...prev[key], [field]: value },
@@ -214,7 +214,7 @@ export function CustomPricingDialog({
       if (override?.enabled) {
         hasOverrides = true
         ;(customPricing as Record<string, StreamTypePriceLevel>)[key] = {
-          userPrice: Math.round(Number(override.userPrice) * 100),
+          streamerPrice: Math.round(Number(override.streamerPrice) * 100),
           studioPrice: Math.round(Number(override.studioPrice) * 100),
           enabled: MASTER_PRICING[key].enabled, // keep master enabled status
         }
@@ -226,31 +226,31 @@ export function CustomPricingDialog({
       : null
 
     // Build pack overrides
-    const packResult: Record<string, { userPrice: number; studioPrice: number }> = {}
+    const packResult: Record<string, { streamerPrice: number; studioPrice: number }> = {}
     let hasPackOverrides = false
     for (const pack of MASTER_EVENT_PACKS) {
       const po = packOverrides[pack.id]
       if (po?.enabled) {
         hasPackOverrides = true
         packResult[pack.id] = {
-          userPrice: Math.round(Number(po.userPrice) * 100),
+          streamerPrice: Math.round(Number(po.streamerPrice) * 100),
           studioPrice: Math.round(Number(po.studioPrice) * 100),
         }
       }
     }
 
     // Build validity overrides (per stream type)
-    const validityResult: Record<number, Record<ValidityStreamKey, { userSurcharge: number; studioSurcharge: number }>> = {}
+    const validityResult: Record<number, Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>> = {}
     let hasValidityOverrides = false
     for (const tier of MASTER_VALIDITY_TIERS) {
       const vo = validityOverrides[tier.days]
       if (vo?.enabled) {
         hasValidityOverrides = true
-        const tierResult = {} as Record<ValidityStreamKey, { userSurcharge: number; studioSurcharge: number }>
+        const tierResult = {} as Record<ValidityStreamKey, { streamerSurcharge: number; studioSurcharge: number }>
         for (const st of streamTypes) {
           const s = vo.surcharges[st.key]
           tierResult[st.key] = {
-            userSurcharge: Math.round(Number(s.userSurcharge) * 100),
+            streamerSurcharge: Math.round(Number(s.streamerSurcharge) * 100),
             studioSurcharge: Math.round(Number(s.studioSurcharge) * 100),
           }
         }
@@ -267,32 +267,32 @@ export function CustomPricingDialog({
   }
 
   const resetAll = () => {
-    const reset: Record<string, { enabled: boolean; userPrice: string; studioPrice: string }> = {}
+    const reset: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
     for (const { key } of streamTypes) {
       reset[key] = {
         enabled: false,
-        userPrice: (MASTER_PRICING[key].userPrice / 100).toString(),
+        streamerPrice: (MASTER_PRICING[key].streamerPrice / 100).toString(),
         studioPrice: (MASTER_PRICING[key].studioPrice / 100).toString(),
       }
     }
     setOverrides(reset)
     setAnnualOverride({ enabled: false, price: (MASTER_ANNUAL_SUBSCRIPTION.price / 100).toString() })
-    const packReset: Record<string, { enabled: boolean; userPrice: string; studioPrice: string }> = {}
+    const packReset: Record<string, { enabled: boolean; streamerPrice: string; studioPrice: string }> = {}
     for (const pack of MASTER_EVENT_PACKS) {
       packReset[pack.id] = {
         enabled: false,
-        userPrice: (pack.userPrice / 100).toString(),
+        streamerPrice: (pack.streamerPrice / 100).toString(),
         studioPrice: (pack.studioPrice / 100).toString(),
       }
     }
     setPackOverrides(packReset)
-    const validityReset: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }> }> = {}
+    const validityReset: Record<number, { enabled: boolean; surcharges: Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }> }> = {}
     for (const tier of MASTER_VALIDITY_TIERS) {
-      const surchargesReset = {} as Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }>
+      const surchargesReset = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
       for (const st of streamTypes) {
         const masterS = tier.surcharges[st.key]
         surchargesReset[st.key] = {
-          userSurcharge: (masterS.userSurcharge / 100).toString(),
+          streamerSurcharge: (masterS.streamerSurcharge / 100).toString(),
           studioSurcharge: (masterS.studioSurcharge / 100).toString(),
         }
       }
@@ -303,7 +303,7 @@ export function CustomPricingDialog({
 
   const hasAnyOverride = Object.values(overrides).some((o) => o.enabled) || annualOverride.enabled || Object.values(packOverrides).some((o) => o.enabled) || Object.values(validityOverrides).some((o) => o.enabled)
   // Determine the correct price column label based on target type
-  const priceLabel = targetType === "studio" ? "Studio Price" : "User Price"
+  const priceLabel = targetType === "studio" ? "Studio Price" : "Streamer Price"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -399,21 +399,21 @@ export function CustomPricingDialog({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={override.userPrice}
-                            onChange={(e) => updatePrice(key, "userPrice", e.target.value)}
+                            value={override.streamerPrice}
+                            onChange={(e) => updatePrice(key, "streamerPrice", e.target.value)}
                             className="pl-7 bg-secondary border-0 h-9"
                           />
                         </div>
                       ) : (
                         <div className="flex items-center h-9 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
-                          {"₹"}{(master.userPrice / 100).toFixed(2)}
+                          {"₹"}{(master.streamerPrice / 100).toFixed(2)}
                           <span className="ml-auto text-[10px]">master</span>
                         </div>
                       )}
                     </div>
 
                     {/* Only show studio price column for user targets */}
-                    {targetType === "user" && (
+                    {targetType === "streamer" && (
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Studio Price</Label>
                         {isOverridden ? (
@@ -549,8 +549,8 @@ export function CustomPricingDialog({
                 const po = packOverrides[pack.id]
                 if (!po) return null
                 const isOverridden = po.enabled
-                const priceCol = targetType === "studio" ? "studioPrice" : "userPrice"
-                const masterPrice = targetType === "studio" ? pack.studioPrice : pack.userPrice
+                const priceCol: "studioPrice" | "streamerPrice" = targetType === "studio" ? "studioPrice" : "streamerPrice"
+                const masterPrice = targetType === "studio" ? pack.studioPrice : pack.streamerPrice
 
                 return (
                   <div key={pack.id} className={`rounded-lg border p-3 transition-colors ${isOverridden ? "border-amber-500/20 bg-amber-500/5" : "border-border/50"}`}>
@@ -574,7 +574,7 @@ export function CustomPricingDialog({
                                 enabled: checked,
                                 ...(!checked
                                   ? {
-                                      userPrice: (pack.userPrice / 100).toString(),
+                                      streamerPrice: (pack.streamerPrice / 100).toString(),
                                       studioPrice: (pack.studioPrice / 100).toString(),
                                     }
                                   : {}),
@@ -586,7 +586,7 @@ export function CustomPricingDialog({
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">{targetType === "studio" ? "Studio Price" : "User Price"}</Label>
+                        <Label className="text-xs text-muted-foreground">{targetType === "studio" ? "Studio Price" : "Streamer Price"}</Label>
                         {isOverridden ? (
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
@@ -660,7 +660,7 @@ export function CustomPricingDialog({
                 if (!vo) return null
                 const isOverridden = vo.enabled
                 const isExpanded = expandedValidityTiers[tier.days] ?? false
-                const surchargeField = targetType === "studio" ? "studioSurcharge" : "userSurcharge"
+                const surchargeField = targetType === "studio" ? "studioSurcharge" : "streamerSurcharge"
 
                 return (
                   <Collapsible
@@ -684,7 +684,7 @@ export function CustomPricingDialog({
                               <span className="text-xs text-muted-foreground">
                                 {streamTypes.map((st) => {
                                   const ms = tier.surcharges[st.key]
-                                  const val = targetType === "studio" ? ms.studioSurcharge : ms.userSurcharge
+                                  const val = targetType === "studio" ? ms.studioSurcharge : ms.streamerSurcharge
                                   return `+₹${(val / 100).toFixed(2)}`
                                 }).join(" / ")}
                               </span>
@@ -696,11 +696,11 @@ export function CustomPricingDialog({
                           <Switch
                             checked={isOverridden}
                             onCheckedChange={(checked) => {
-                              const surchargesReset = {} as Record<ValidityStreamKey, { userSurcharge: string; studioSurcharge: string }>
+                              const surchargesReset = {} as Record<ValidityStreamKey, { streamerSurcharge: string; studioSurcharge: string }>
                               for (const st of streamTypes) {
                                 const masterS = tier.surcharges[st.key]
                                 surchargesReset[st.key as ValidityStreamKey] = {
-                                  userSurcharge: (masterS.userSurcharge / 100).toString(),
+                                  streamerSurcharge: (masterS.streamerSurcharge / 100).toString(),
                                   studioSurcharge: (masterS.studioSurcharge / 100).toString(),
                                 }
                               }
@@ -726,7 +726,7 @@ export function CustomPricingDialog({
                             {streamTypes.map(({ key, label, icon: Icon }) => {
                               const masterS = tier.surcharges[key]
                               const customS = vo.surcharges[key]
-                              const masterVal = targetType === "studio" ? masterS.studioSurcharge : masterS.userSurcharge
+                              const masterVal = targetType === "studio" ? masterS.studioSurcharge : masterS.streamerSurcharge
 
                               return (
                                 <div key={key} className="rounded-md bg-secondary/30 p-2.5">
@@ -736,7 +736,7 @@ export function CustomPricingDialog({
                                       <span className="text-xs font-medium">{label}</span>
                                     </div>
                                     <div className="space-y-0.5">
-                                      <Label className="text-[10px] text-muted-foreground md:hidden">{targetType === "studio" ? "Studio" : "User"} Surcharge</Label>
+                                      <Label className="text-[10px] text-muted-foreground md:hidden">{targetType === "studio" ? "Studio" : "Streamer"} Surcharge</Label>
                                       <div className="relative">
                                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{"₹"}</span>
                                         <Input

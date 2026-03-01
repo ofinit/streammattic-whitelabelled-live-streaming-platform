@@ -477,7 +477,7 @@ export async function waitForStreamReady(
 /** Save a connected YouTube channel to the database with encrypted tokens */
 export async function saveChannel(params: {
   ownerId: string
-  ownerType: "admin" | "studio" | "user"
+  ownerType: "admin" | "studio" | "streamer"
   channelId: string
   channelTitle: string
   channelThumbnail: string
@@ -522,7 +522,7 @@ export async function saveChannel(params: {
 }
 
 /** Get all channels for an owner */
-export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | "studio" | "user") {
+export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | "studio" | "streamer") {
   const sql = getDb()
   const rows = await sql`
     SELECT id, channel_id, channel_title, channel_thumbnail, subscriber_count, video_count,

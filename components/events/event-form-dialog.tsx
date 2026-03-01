@@ -214,7 +214,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSave }: EventForm
 
     const savedEvent: LiveEvent = {
       id: event?.id || `event-${Date.now()}`,
-      userId: event?.userId || "user-1",
+      userId: event?.userId || "streamer-1",
       studioId: event?.studioId || "studio-1",
       title: formData.title,
       description: formData.description,
@@ -556,8 +556,8 @@ export function EventFormDialog({ open, onOpenChange, event, onSave }: EventForm
 
               {formData.streamType === "youtube_api" && (
                 <YouTubeChannelSelector
-                  ownerId="user-1"
-                  ownerType="user"
+                    ownerId="streamer-1"
+                    ownerType="streamer"
                   selectedChannelId={selectedYouTubeChannel}
                   onSelectChannel={setSelectedYouTubeChannel}
                   broadcastSettings={youtubeBroadcastSettings}

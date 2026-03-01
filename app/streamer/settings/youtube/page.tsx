@@ -14,8 +14,8 @@ import useSWR from "swr"
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 // TODO: Replace with real auth context values
-const OWNER_ID = "user-1"
-const OWNER_TYPE = "user" as const
+const OWNER_ID = "streamer-1"
+const OWNER_TYPE = "streamer" as const
 
 export default function YouTubeSettingsPage() {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
@@ -202,7 +202,7 @@ export default function YouTubeSettingsPage() {
         onOpenChange={setShowConnectDialog}
         ownerId={OWNER_ID}
         ownerType={OWNER_TYPE}
-        returnUrl="/dashboard/settings/youtube"
+        returnUrl="/streamer/settings/youtube"
         onSuccess={handleConnectSuccess}
       />
     </div>

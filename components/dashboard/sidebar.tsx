@@ -56,7 +56,7 @@ interface NavItem {
 const adminNav: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Studios", href: "/admin/studios", icon: Building2 },
-  { title: "Users", href: "/admin/users", icon: Users },
+  { title: "Streamers", href: "/admin/streamers", icon: Users },
   { title: "Packages", href: "/admin/packages", icon: Package },
   { title: "Events", href: "/admin/events", icon: Radio },
   { title: "Event Calendar", href: "/admin/calendar", icon: Calendar },
@@ -83,18 +83,18 @@ const studioNav: NavItem[] = [
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
 
-const userNav: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "My Events", href: "/dashboard/events", icon: Radio },
-  { title: "Schedule Event", href: "/dashboard/events/new", icon: Calendar },
-  { title: "Event Calendar", href: "/dashboard/calendar", icon: Calendar },
-  { title: "Wallet", href: "/dashboard/wallet", icon: Wallet },
-  { title: "Packages", href: "/dashboard/packages", icon: Package },
-  { title: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Notifications", href: "/dashboard/notifications", icon: Bell },
-  { title: "YouTube Channels", href: "/dashboard/settings/youtube", icon: Youtube },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings },
+const streamerNav: NavItem[] = [
+  { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
+  { title: "My Events", href: "/streamer/events", icon: Radio },
+  { title: "Schedule Event", href: "/streamer/events/new", icon: Calendar },
+  { title: "Event Calendar", href: "/streamer/calendar", icon: Calendar },
+  { title: "Wallet", href: "/streamer/wallet", icon: Wallet },
+  { title: "Packages", href: "/streamer/packages", icon: Package },
+  { title: "Orders", href: "/streamer/orders", icon: ShoppingCart },
+  { title: "Analytics", href: "/streamer/analytics", icon: BarChart3 },
+  { title: "Notifications", href: "/streamer/notifications", icon: Bell },
+  { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
+  { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]
 
 export function Sidebar() {
@@ -109,8 +109,8 @@ export function Sidebar() {
         return adminNav
       case "studio":
         return studioNav
-      case "user":
-        return userNav
+      case "streamer":
+        return streamerNav
       default:
         return []
     }
@@ -269,9 +269,9 @@ export function Sidebar() {
                       <Building2 className="mr-2 h-4 w-4" />
                       Studio View
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => switchRole("user")}>
+                    <DropdownMenuItem onClick={() => switchRole("streamer")}>
                       <Users className="mr-2 h-4 w-4" />
-                      User View
+                      Streamer View
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

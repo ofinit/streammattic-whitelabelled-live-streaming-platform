@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, TrendingUp, Radio, Eye } from "lucide-react"
-import { mockEvents, mockUserStats } from "@/lib/mock-data"
+import { mockEvents, mockStreamerStats } from "@/lib/mock-data"
 import {
   Bar,
   BarChart,
@@ -17,7 +17,7 @@ import {
 } from "recharts"
 import { useMemo } from "react"
 
-export default function UserAnalyticsPage() {
+export default function StreamerAnalyticsPage() {
   const stats = useMemo(() => {
     const totalEvents = mockEvents.length
     const totalViews = mockEvents.reduce((sum, event) => sum + event.totalViews, 0)
@@ -107,8 +107,8 @@ export default function UserAnalyticsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{mockUserStats.walletBalance.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Package: {mockUserStats.packageName}</p>
+            <div className="text-2xl font-bold">₹{mockStreamerStats.walletBalance.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Package: {mockStreamerStats.packageName}</p>
           </CardContent>
         </Card>
       </div>

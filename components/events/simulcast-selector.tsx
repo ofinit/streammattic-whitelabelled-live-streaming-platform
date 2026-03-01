@@ -11,7 +11,7 @@ interface SimulcastSelectorProps {
   value: ("youtube" | "facebook" | "custom_rtmp")[]
   onChange: (value: ("youtube" | "facebook" | "custom_rtmp")[]) => void
   showPricing?: boolean
-  userLevel?: "admin" | "studio" | "user"
+  userLevel?: "admin" | "studio" | "streamer"
 }
 
 const simulcastOptions: {
@@ -44,7 +44,7 @@ const simulcastOptions: {
   },
 ]
 
-export function SimulcastSelector({ value, onChange, showPricing = true, userLevel = "user" }: SimulcastSelectorProps) {
+export function SimulcastSelector({ value, onChange, showPricing = true, userLevel = "streamer" }: SimulcastSelectorProps) {
   const toggleDestination = (id: "youtube" | "facebook" | "custom_rtmp") => {
     if (value.includes(id)) {
       onChange(value.filter((v) => v !== id))

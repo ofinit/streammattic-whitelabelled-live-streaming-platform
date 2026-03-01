@@ -8,11 +8,10 @@ import { useRouter } from "next/navigation"
 import { DemoStreamTypeSelector } from "@/components/events/demo-stream-type-selector"
 import { demoUserStates } from "@/lib/demo-user-states"
 import type { StreamTypeKey } from "@/lib/types"
-import { Progress } from "@/components/ui/progress"
 
-export default function DemoMonthlyActivePage() {
+export default function DemoPayPerEventPage() {
   const router = useRouter()
-  const demoState = demoUserStates.monthlyActive
+  const demoState = demoUserStates.payPerEvent
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -22,8 +21,6 @@ export default function DemoMonthlyActivePage() {
     { id: 3, name: "Settings", icon: MessageSquare },
     { id: 4, name: "Review", icon: Check },
   ]
-
-  const usagePercentage = demoState.inventory ? (demoState.inventory.usedQty / demoState.inventory.totalQty) * 100 : 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,7 +32,7 @@ export default function DemoMonthlyActivePage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -80,20 +77,13 @@ export default function DemoMonthlyActivePage() {
           </AlertDescription>
         </Alert>
 
-        {/* Package Status */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-sm font-medium text-foreground">{demoState.package?.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {demoState.inventory?.availableQty} of {demoState.inventory?.totalQty} events remaining
-              </p>
-            </div>
-            <Button variant="outline" size="sm">
-              View Package
-            </Button>
+        {/* Wallet Display */}
+        <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card p-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Wallet Balance</p>
+            <p className="text-2xl font-bold text-foreground">₹{demoState.walletBalance.toLocaleString()}</p>
           </div>
-          <Progress value={usagePercentage} className="h-2" />
+          <Button variant="outline">Recharge Wallet</Button>
         </div>
 
         {/* Content */}
@@ -111,7 +101,7 @@ export default function DemoMonthlyActivePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4">
-            <Button variant="outline" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="outline" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>

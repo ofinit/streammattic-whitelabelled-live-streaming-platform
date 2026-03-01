@@ -27,7 +27,7 @@ interface ChannelData {
 
 interface YouTubeChannelSelectorProps {
   ownerId: string
-  ownerType: "admin" | "studio" | "user"
+  ownerType: "admin" | "studio" | "streamer"
   selectedChannelId: string | null
   onSelectChannel: (channelDbId: string | null) => void
   broadcastSettings: {

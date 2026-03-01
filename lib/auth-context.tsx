@@ -1,20 +1,20 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
-import type { User, Studio, EndUser, UserRole } from "./types"
-import { mockAdmin, mockStudios, mockUsers } from "./mock-data"
+import type { User, Studio, Streamer, UserRole } from "./types"
+import { mockAdmin, mockStudios, mockStreamers } from "./mock-data"
 
 const AUTH_STORAGE_KEY = "streammattic_auth"
 
 interface AuthState {
-  user: User | Studio | EndUser | null
+  user: User | Studio | Streamer | null
   originalUser: User | Studio | null
   isImpersonating: boolean
   impersonatedBy: string | null
 }
 
 interface AuthContextType {
-  user: User | Studio | EndUser | null
+  user: User | Studio | Streamer | null
   isLoading: boolean
   isAuthenticated: boolean
   isImpersonating: boolean
@@ -64,15 +64,15 @@ function getRouteForRole(role: UserRole): string {
       return "/admin"
     case "studio":
       return "/studio"
-    case "user":
-      return "/dashboard"
+    case "streamer":
+      return "/streamer"
     default:
-      return "/dashboard"
+      return "/streamer"
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | Studio | EndUser | null>(null)
+  const [user, setUser] = useState<User | Studio | Streamer | null>(null)
   const [originalUser, setOriginalUser] = useState<User | Studio | null>(null)
   const [isLoading, setIsLoading] = useState(true) // Start with loading to check localStorage
   const [isImpersonating, setIsImpersonating] = useState(false)
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    let loggedInUser: User | Studio | EndUser | null = null
+    let loggedInUser: User | Studio | Streamer | null = null
 
     if (email === "admin@streammattic.com") {
       loggedInUser = mockAdmin
@@ -102,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (foundStudio) {
         loggedInUser = foundStudio
       } else {
-        const endUser = mockUsers.find((u) => u.email === email)
-        if (endUser) {
-          loggedInUser = endUser
+        const streamer = mockStreamers.find((u) => u.email === email)
+        if (streamer) {
+          loggedInUser = streamer
         }
       }
     }
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      const existingUser = [...mockStudios, ...mockUsers].find((u) => u.email === data.email)
+      const existingUser = [...mockStudios, ...mockStreamers].find((u) => u.email === data.email)
       if (existingUser) {
         setIsLoading(false)
         return false
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Only admin and studios can impersonate
       if (user?.role !== "admin" && user?.role !== "studio") return null
 
-      const targetUser = [...mockStudios, ...mockUsers].find((u) => u.id === userId)
+      const targetUser = [...mockStudios, ...mockStreamers].find((u) => u.id === userId)
       if (targetUser) {
         // Update state
         setOriginalUser(user as User | Studio)
@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [originalUser])
 
   const switchRole = useCallback((role: UserRole) => {
-    let newUser: User | Studio | EndUser | null = null
+    let newUser: User | Studio | Streamer | null = null
 
     switch (role) {
       case "admin":
@@ -215,8 +215,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       case "studio":
         newUser = mockStudios[0]
         break
-      case "user":
-        newUser = mockUsers[0]
+      case "streamer":
+        newUser = mockStreamers[0]
         break
     }
 

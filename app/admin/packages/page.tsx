@@ -23,10 +23,10 @@ type StreamPricingState = Record<string, StreamTypePriceLevel>
 
 export default function AdminPackagesPage() {
   const [streamPricing, setStreamPricing] = useState<StreamPricingState>({
-    rtmp: { userPrice: 1200, studioPrice: 600, enabled: true },
-    youtube_api: { userPrice: 800, studioPrice: 350, enabled: true },
-    youtube_embed: { userPrice: 400, studioPrice: 120, enabled: true },
-    third_party: { userPrice: 300, studioPrice: 80, enabled: false },
+    rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
+    youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
+    youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
+    third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
   })
 
   const [studioSubscription, setStudioSubscription] = useState({
@@ -36,36 +36,36 @@ export default function AdminPackagesPage() {
 
   const [eventPacksEnabled, setEventPacksEnabled] = useState(true)
   const [eventPacks, setEventPacks] = useState<EventPack[]>([
-    { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
-    { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
-    { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
-    { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
+    { id: "pack-1", name: "Starter Pack", eventCount: 10, streamerPrice: 10000, studioPrice: 5000, enabled: true, sortOrder: 1 },
+    { id: "pack-2", name: "Growth Pack", eventCount: 50, streamerPrice: 40000, studioPrice: 20000, enabled: true, sortOrder: 2 },
+    { id: "pack-3", name: "Pro Pack", eventCount: 100, streamerPrice: 60000, studioPrice: 30000, enabled: true, sortOrder: 3 },
+    { id: "pack-4", name: "Enterprise Pack", eventCount: 500, streamerPrice: 200000, studioPrice: 100000, enabled: true, sortOrder: 4 },
   ])
 
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
     { days: 60, enabled: true, surcharges: {
-      rtmp: { userSurcharge: 300, studioSurcharge: 150 },
-      youtube_api: { userSurcharge: 200, studioSurcharge: 100 },
-      youtube_embed: { userSurcharge: 100, studioSurcharge: 50 },
-      third_party: { userSurcharge: 80, studioSurcharge: 40 },
+      rtmp: { streamerSurcharge: 300, studioSurcharge: 150 },
+      youtube_api: { streamerSurcharge: 200, studioSurcharge: 100 },
+      youtube_embed: { streamerSurcharge: 100, studioSurcharge: 50 },
+      third_party: { streamerSurcharge: 80, studioSurcharge: 40 },
     }},
     { days: 90, enabled: true, surcharges: {
-      rtmp: { userSurcharge: 700, studioSurcharge: 350 },
-      youtube_api: { userSurcharge: 500, studioSurcharge: 250 },
-      youtube_embed: { userSurcharge: 250, studioSurcharge: 125 },
-      third_party: { userSurcharge: 200, studioSurcharge: 100 },
+      rtmp: { streamerSurcharge: 700, studioSurcharge: 350 },
+      youtube_api: { streamerSurcharge: 500, studioSurcharge: 250 },
+      youtube_embed: { streamerSurcharge: 250, studioSurcharge: 125 },
+      third_party: { streamerSurcharge: 200, studioSurcharge: 100 },
     }},
     { days: 180, enabled: true, surcharges: {
-      rtmp: { userSurcharge: 1200, studioSurcharge: 600 },
-      youtube_api: { userSurcharge: 1000, studioSurcharge: 500 },
-      youtube_embed: { userSurcharge: 500, studioSurcharge: 250 },
-      third_party: { userSurcharge: 400, studioSurcharge: 200 },
+      rtmp: { streamerSurcharge: 1200, studioSurcharge: 600 },
+      youtube_api: { streamerSurcharge: 1000, studioSurcharge: 500 },
+      youtube_embed: { streamerSurcharge: 500, studioSurcharge: 250 },
+      third_party: { streamerSurcharge: 400, studioSurcharge: 200 },
     }},
     { days: 365, enabled: true, surcharges: {
-      rtmp: { userSurcharge: 2500, studioSurcharge: 1250 },
-      youtube_api: { userSurcharge: 2000, studioSurcharge: 1000 },
-      youtube_embed: { userSurcharge: 1000, studioSurcharge: 500 },
-      third_party: { userSurcharge: 800, studioSurcharge: 400 },
+      rtmp: { streamerSurcharge: 2500, studioSurcharge: 1250 },
+      youtube_api: { streamerSurcharge: 2000, studioSurcharge: 1000 },
+      youtube_embed: { streamerSurcharge: 1000, studioSurcharge: 500 },
+      third_party: { streamerSurcharge: 800, studioSurcharge: 400 },
     }},
   ])
   const [expandedTiers, setExpandedTiers] = useState<Record<number, boolean>>({})
@@ -80,7 +80,7 @@ export default function AdminPackagesPage() {
         id: newId,
         name: "",
         eventCount: 0,
-        userPrice: 0,
+        streamerPrice: 0,
         studioPrice: 0,
         enabled: true,
         sortOrder: prev.length + 1,
@@ -104,7 +104,7 @@ export default function AdminPackagesPage() {
     )
   }
 
-  const updateValidityTierSurcharge = (days: number, streamKey: ValidityStreamKey, field: "userSurcharge" | "studioSurcharge", value: number) => {
+  const updateValidityTierSurcharge = (days: number, streamKey: ValidityStreamKey, field: "streamerSurcharge" | "studioSurcharge", value: number) => {
     setValidityTiers((prev) =>
       prev.map((t) =>
         t.days === days
@@ -154,7 +154,7 @@ export default function AdminPackagesPage() {
           {/* Table Header */}
           <div className="hidden md:grid md:grid-cols-[1fr_140px_140px_80px] items-center gap-4 px-4 pb-3 text-sm font-medium text-muted-foreground">
             <span>Stream Type</span>
-            <span>User Price</span>
+            <span>Streamer Price</span>
             <span>Studio Price</span>
             <span className="text-center">Status</span>
           </div>
@@ -191,17 +191,17 @@ export default function AdminPackagesPage() {
                       </div>
                     </div>
 
-                    {/* User Price */}
+                    {/* Streamer Price */}
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground md:hidden">User Price</Label>
+                      <Label className="text-xs text-muted-foreground md:hidden">Streamer Price</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                         <Input
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={pricing.userPrice / 100}
-                          onBlur={(e) => updateStreamPrice(key, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          defaultValue={pricing.streamerPrice / 100}
+                          onBlur={(e) => updateStreamPrice(key, "streamerPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pricing.enabled}
                         />
@@ -272,7 +272,7 @@ export default function AdminPackagesPage() {
           <div className="hidden md:grid md:grid-cols-[1fr_80px_120px_120px_60px_40px] items-center gap-3 px-4 text-sm font-medium text-muted-foreground">
             <span>Pack Name</span>
             <span>Events</span>
-            <span>User Price</span>
+            <span>Streamer Price</span>
             <span>Studio Price</span>
             <span className="text-center">Status</span>
             <span></span>
@@ -289,7 +289,7 @@ export default function AdminPackagesPage() {
 
           <div className="space-y-3">
             {eventPacks.map((pack) => {
-              const perEventUser = pack.eventCount > 0 ? pack.userPrice / pack.eventCount : 0
+              const perEventStreamer = pack.eventCount > 0 ? pack.streamerPrice / pack.eventCount : 0
               const perEventStudio = pack.eventCount > 0 ? pack.studioPrice / pack.eventCount : 0
               return (
                 <div
@@ -324,24 +324,24 @@ export default function AdminPackagesPage() {
                       />
                     </div>
 
-                    {/* User Price */}
+                    {/* Streamer Price */}
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground md:hidden">User Price</Label>
+                      <Label className="text-xs text-muted-foreground md:hidden">Streamer Price</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
                         <Input
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={pack.userPrice / 100}
-                          onBlur={(e) => updatePack(pack.id, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          defaultValue={pack.streamerPrice / 100}
+                          onBlur={(e) => updatePack(pack.id, "streamerPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pack.enabled}
                         />
                       </div>
                       {pack.eventCount > 0 && pack.enabled && (
                         <p className="text-[10px] text-muted-foreground px-1">
-                          {"₹"}{(perEventUser / 100).toFixed(2)}/event
+                          {"₹"}{(perEventStreamer / 100).toFixed(2)}/event
                         </p>
                       )}
                     </div>
@@ -446,7 +446,7 @@ export default function AdminPackagesPage() {
                             <span className="text-xs text-muted-foreground">
                               {streamTypes.map((st) => {
                                 const s = tier.surcharges[st.key]
-                                return `${st.label}: +₹${(s.userSurcharge / 100).toFixed(2)}`
+                                return `${st.label}: +₹${(s.streamerSurcharge / 100).toFixed(2)}`
                               }).join(" / ")}
                             </span>
                           )}
@@ -465,7 +465,7 @@ export default function AdminPackagesPage() {
                           {/* Sub-header */}
                           <div className="hidden md:grid md:grid-cols-[1fr_140px_140px] items-center gap-3 px-2 text-xs font-medium text-muted-foreground">
                             <span>Stream Type</span>
-                            <span>User Surcharge</span>
+                            <span>Streamer Surcharge</span>
                             <span>Studio Surcharge</span>
                           </div>
 
@@ -480,21 +480,21 @@ export default function AdminPackagesPage() {
                                     <span className="text-sm">{label}</span>
                                   </div>
 
-                                  {/* User Surcharge */}
+                                  {/* Streamer Surcharge */}
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground md:hidden">User Surcharge</Label>
+                                    <Label className="text-xs text-muted-foreground md:hidden">Streamer Surcharge</Label>
                                     <div className="relative">
                                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
                                       <Input
                                         type="number"
                                         step="0.01"
                                         min="0"
-                                        defaultValue={s.userSurcharge / 100}
-                                        onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "userSurcharge", Math.round(Number(e.target.value) * 100))}
+                                        defaultValue={s.streamerSurcharge / 100}
+                                        onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "streamerSurcharge", Math.round(Number(e.target.value) * 100))}
                                         className="pl-7 bg-secondary border-0 h-8 text-sm"
                                       />
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.userSurcharge / 100).toFixed(2)}/event</p>
+                                    <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.streamerSurcharge / 100).toFixed(2)}/event</p>
                                   </div>
 
                     {/* Studio Surcharge */}
@@ -530,8 +530,8 @@ export default function AdminPackagesPage() {
           <div className="mt-4 rounded-lg bg-secondary/50 p-4 space-y-2">
             <p className="text-sm font-medium">Example</p>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>RTMP event {"₹"}12.00 + 90-day RTMP surcharge {"₹"}{(validityTiers[1]?.surcharges.rtmp.userSurcharge / 100 || 7).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(12 + (validityTiers[1]?.surcharges.rtmp.userSurcharge / 100 || 7)).toFixed(2)} total</span></p>
-              <p>YouTube Embed event {"₹"}4.00 + 90-day YT Embed surcharge {"₹"}{(validityTiers[1]?.surcharges.youtube_embed.userSurcharge / 100 || 2.5).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(4 + (validityTiers[1]?.surcharges.youtube_embed.userSurcharge / 100 || 2.5)).toFixed(2)} total</span></p>
+              <p>RTMP event {"₹"}12.00 + 90-day RTMP surcharge {"₹"}{(validityTiers[1]?.surcharges.rtmp.streamerSurcharge / 100 || 7).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(12 + (validityTiers[1]?.surcharges.rtmp.streamerSurcharge / 100 || 7)).toFixed(2)} total</span></p>
+              <p>YouTube Embed event {"₹"}4.00 + 90-day YT Embed surcharge {"₹"}{(validityTiers[1]?.surcharges.youtube_embed.streamerSurcharge / 100 || 2.5).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(4 + (validityTiers[1]?.surcharges.youtube_embed.streamerSurcharge / 100 || 2.5)).toFixed(2)} total</span></p>
             </div>
           </div>
         </CardContent>

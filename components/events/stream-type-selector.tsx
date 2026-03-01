@@ -8,7 +8,7 @@ interface StreamTypeSelectorProps {
   value: StreamTypeKey | ""
   onChange: (value: StreamTypeKey) => void
   showPricing?: boolean
-  userLevel?: "admin" | "studio" | "user"
+  userLevel?: "admin" | "studio" | "streamer"
 }
 
 const streamTypes: {
@@ -59,7 +59,7 @@ export function StreamTypeSelector({
   value,
   onChange,
   showPricing = true,
-  userLevel = "user",
+  userLevel = "streamer",
 }: StreamTypeSelectorProps) {
   return (
     <div className="space-y-3">

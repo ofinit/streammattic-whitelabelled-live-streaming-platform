@@ -1,7 +1,7 @@
 import type {
   User,
   Studio,
-  EndUser,
+  Streamer,
   Package,
   Order,
   LiveEvent,
@@ -10,9 +10,9 @@ import type {
   Notification,
   AdminStats,
   StudioStats,
-  UserStats,
+  StreamerStats,
   WalletSummary,
-  UserInventory,
+  StreamerInventory,
   CustomPrice,
   ValidityPrice,
   EventTemplate,
@@ -145,13 +145,13 @@ export const mockStudios: Studio[] = [
   },
 ]
 
-// Mock End Users
-export const mockUsers: EndUser[] = [
+// Mock Streamers
+export const mockStreamers: Streamer[] = [
   {
-    id: "user-1",
+    id: "streamer-1",
     email: "alice@example.com",
     name: "Alice Johnson",
-    role: "user",
+    role: "streamer",
     status: "active",
     packageId: "pkg-2",
     packageExpiresAt: new Date("2025-02-15"),
@@ -162,10 +162,10 @@ export const mockUsers: EndUser[] = [
     updatedAt: new Date(),
   },
   {
-    id: "user-2",
+    id: "streamer-2",
     email: "bob@example.com",
     name: "Bob Smith",
-    role: "user",
+    role: "streamer",
     status: "active",
     packageId: "pkg-1",
     packageExpiresAt: new Date("2025-01-20"),
@@ -176,10 +176,10 @@ export const mockUsers: EndUser[] = [
     updatedAt: new Date(),
   },
   {
-    id: "user-3",
+    id: "streamer-3",
     email: "charlie@example.com",
     name: "Charlie Brown",
-    role: "user",
+    role: "streamer",
     status: "suspended",
     walletBalance: 0,
     totalEvents: 3,
@@ -200,16 +200,16 @@ export const mockPackages: Package[] = [
     description: "Perfect for beginners",
     price: 999,
     basePriceStudio: 600,
-    basePriceUser: 999,
+    basePriceStreamer: 999,
     duration: 30,
     maxEvents: 5,
     maxConcurrentViewers: 100,
     features: ["5 Live Events", "100 Concurrent Viewers", "Basic Analytics", "Email Support"],
     streamTypePricing: {
-      rtmp: { userPrice: 1200, studioPrice: 600, enabled: true },
-      youtube_api: { userPrice: 800, studioPrice: 350, enabled: true },
-      youtube_embed: { userPrice: 400, studioPrice: 120, enabled: true },
-      third_party: { userPrice: 300, studioPrice: 80, enabled: false },
+      rtmp: { streamerPrice: 1200, studioPrice: 600, enabled: true },
+      youtube_api: { streamerPrice: 800, studioPrice: 350, enabled: true },
+      youtube_embed: { streamerPrice: 400, studioPrice: 120, enabled: true },
+      third_party: { streamerPrice: 300, studioPrice: 80, enabled: false },
     },
     isActive: true,
     sortOrder: 1,
@@ -227,16 +227,16 @@ export const mockPackages: Package[] = [
     description: "For growing creators",
     price: 2499,
     basePriceStudio: 1500,
-    basePriceUser: 2499,
+    basePriceStreamer: 2499,
     duration: 30,
     maxEvents: 20,
     maxConcurrentViewers: 500,
     features: ["20 Live Events", "500 Concurrent Viewers", "Advanced Analytics", "Priority Support", "Custom Branding"],
     streamTypePricing: {
-      rtmp: { userPrice: 1000, studioPrice: 500, enabled: true },
-      youtube_api: { userPrice: 700, studioPrice: 300, enabled: true },
-      youtube_embed: { userPrice: 350, studioPrice: 100, enabled: true },
-      third_party: { userPrice: 250, studioPrice: 70, enabled: false },
+      rtmp: { streamerPrice: 1000, studioPrice: 500, enabled: true },
+      youtube_api: { streamerPrice: 700, studioPrice: 300, enabled: true },
+      youtube_embed: { streamerPrice: 350, studioPrice: 100, enabled: true },
+      third_party: { streamerPrice: 250, studioPrice: 70, enabled: false },
     },
     isActive: true,
     sortOrder: 2,
@@ -254,7 +254,7 @@ export const mockPackages: Package[] = [
     description: "For large organizations",
     price: 9999,
     basePriceStudio: 6000,
-    basePriceUser: 9999,
+    basePriceStreamer: 9999,
     duration: 30,
     maxEvents: -1, // Unlimited
     maxConcurrentViewers: 5000,
@@ -268,10 +268,10 @@ export const mockPackages: Package[] = [
       "White-label",
     ],
     streamTypePricing: {
-      rtmp: { userPrice: 800, studioPrice: 400, enabled: true },
-      youtube_api: { userPrice: 500, studioPrice: 250, enabled: true },
-      youtube_embed: { userPrice: 250, studioPrice: 80, enabled: true },
-      third_party: { userPrice: 150, studioPrice: 50, enabled: true },
+      rtmp: { streamerPrice: 800, studioPrice: 400, enabled: true },
+      youtube_api: { streamerPrice: 500, studioPrice: 250, enabled: true },
+      youtube_embed: { streamerPrice: 250, studioPrice: 80, enabled: true },
+      third_party: { streamerPrice: 150, studioPrice: 50, enabled: true },
     },
     isActive: true,
     sortOrder: 3,
@@ -289,7 +289,7 @@ export const mockPackages: Package[] = [
     description: "Pay only for what you use - no commitment",
     price: 0,
     basePriceStudio: 0,
-    basePriceUser: 0,
+    basePriceStreamer: 0,
     duration: 0,
     maxEvents: -1,
     maxConcurrentViewers: 5000,
@@ -306,15 +306,15 @@ export const mockPackages: Package[] = [
     minQty: 1,
     maxQty: 999,
     streamTypePricing: {
-      rtmp: { userPrice: 1500, studioPrice: 700, enabled: true },
-      youtube_api: { userPrice: 1000, studioPrice: 400, enabled: true },
-      youtube_embed: { userPrice: 500, studioPrice: 150, enabled: true },
-      third_party: { userPrice: 400, studioPrice: 100, enabled: true },
+      rtmp: { streamerPrice: 1500, studioPrice: 700, enabled: true },
+      youtube_api: { streamerPrice: 1000, studioPrice: 400, enabled: true },
+      youtube_embed: { streamerPrice: 500, studioPrice: 150, enabled: true },
+      third_party: { streamerPrice: 400, studioPrice: 100, enabled: true },
     },
     simulcastPricing: {
-      youtube: { userPrice: 75, studioPrice: 40, enabled: true },
-      facebook: { userPrice: 75, studioPrice: 40, enabled: true },
-      customRtmp: { userPrice: 100, studioPrice: 60, enabled: true },
+      youtube: { streamerPrice: 75, studioPrice: 40, enabled: true },
+      facebook: { streamerPrice: 75, studioPrice: 40, enabled: true },
+      customRtmp: { streamerPrice: 100, studioPrice: 60, enabled: true },
     },
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date(),
@@ -326,8 +326,8 @@ export const mockOrders: Order[] = [
   {
     id: "order-1",
     orderNumber: "ORD-M1K8X-ABC1",
-    userId: "user-1",
-    user: mockUsers[0] as any,
+    userId: "streamer-1",
+    user: mockStreamers[0] as any,
     orderType: "package",
     status: "approved",
     unitPrice: 2499,
@@ -354,8 +354,8 @@ export const mockOrders: Order[] = [
   {
     id: "order-2",
     orderNumber: "ORD-N2L9Y-DEF2",
-    userId: "user-2",
-    user: mockUsers[1] as any,
+    userId: "streamer-2",
+    user: mockStreamers[1] as any,
     orderType: "package",
     status: "pending",
     unitPrice: 999,
@@ -378,8 +378,8 @@ export const mockOrders: Order[] = [
   {
     id: "order-3",
     orderNumber: "ORD-O3M0Z-GHI3",
-    userId: "user-3",
-    user: mockUsers[2] as any,
+    userId: "streamer-3",
+    user: mockStreamers[2] as any,
     orderType: "package",
     status: "rejected",
     unitPrice: 9999,
@@ -404,8 +404,8 @@ export const mockOrders: Order[] = [
   {
     id: "order-4",
     orderNumber: "ORD-P4N1A-JKL4",
-    userId: "user-1",
-    user: mockUsers[0] as any,
+    userId: "streamer-1",
+    user: mockStreamers[0] as any,
     orderType: "validity",
     status: "pending",
     unitPrice: 799,
@@ -422,7 +422,7 @@ export const mockOrders: Order[] = [
 export const mockEvents: LiveEvent[] = [
   {
     id: "event-1",
-    userId: "user-1",
+    userId: "streamer-1",
     title: "Tech Conference 2024",
     description: "Annual technology conference featuring industry leaders",
     streamType: "rtmp",
@@ -442,7 +442,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-2",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "Product Launch Webinar",
     description: "Exclusive product launch event",
@@ -462,7 +462,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-3",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "Music Festival Stream",
     description: "Live streaming from the music festival",
@@ -483,7 +483,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-4",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "January 2025 Kickoff",
     description: "Start the year with a live event",
@@ -505,7 +505,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-5",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "February Workshop",
     description: "Educational workshop on streaming",
@@ -524,7 +524,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-6",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "March Music Concert",
     description: "Live music performance",
@@ -544,7 +544,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-7",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "April Product Demo",
     description: "New product demonstration",
@@ -564,7 +564,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-8",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "May Gaming Tournament",
     description: "Annual gaming competition",
@@ -583,7 +583,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-9",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "June Summer Festival",
     description: "Summer celebration event",
@@ -604,7 +604,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-10",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "July Tech Talk",
     description: "Monthly tech discussion",
@@ -625,7 +625,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-11",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "August Webinar Series",
     description: "Educational webinar",
@@ -645,7 +645,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-12",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "September Conference",
     description: "Fall conference and networking",
@@ -666,7 +666,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-13",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "January 2026 Launch",
     description: "New year product launch",
@@ -686,7 +686,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-14",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "March 2026 Expo",
     description: "Industry expo and showcase",
@@ -705,7 +705,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-15",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "June 2026 Summit",
     description: "Mid-year business summit",
@@ -725,7 +725,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-16",
-    userId: "user-2",
+    userId: "streamer-2",
 
     title: "September 2026 Festival",
     description: "Fall arts festival",
@@ -745,7 +745,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-17",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December 2026 Finale",
     description: "Year-end celebration",
@@ -764,7 +764,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-18",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December Holiday Stream",
     description: "Holiday season kickoff",
@@ -785,7 +785,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-19",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December Product Showcase",
     description: "Showcasing new products",
@@ -804,7 +804,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-20",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December Training Completed",
     description: "Staff training session finished",
@@ -825,7 +825,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-21",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December Live Workshop",
     description: "Interactive workshop session",
@@ -846,7 +846,7 @@ export const mockEvents: LiveEvent[] = [
   },
   {
     id: "event-22",
-    userId: "user-1",
+    userId: "streamer-1",
 
     title: "December Cancelled Event",
     description: "Event cancelled due to schedule conflict",
@@ -968,9 +968,9 @@ export const mockTransactions: WalletTransaction[] = [
   },
   // User transactions
   {
-    id: "txn-user-1",
-    walletId: "wallet-user-1",
-    userId: "user-1",
+    id: "txn-streamer-1",
+    walletId: "wallet-streamer-1",
+    userId: "streamer-1",
     type: "credit",
     category: "top_up",
     amount: 3000,
@@ -982,9 +982,9 @@ export const mockTransactions: WalletTransaction[] = [
     createdAt: new Date("2024-11-10"),
   },
   {
-    id: "txn-user-2",
-    walletId: "wallet-user-1",
-    userId: "user-1",
+    id: "txn-streamer-2",
+    walletId: "wallet-streamer-1",
+    userId: "streamer-1",
     type: "debit",
     category: "package_purchase",
     amount: 2499,
@@ -997,9 +997,9 @@ export const mockTransactions: WalletTransaction[] = [
     createdAt: new Date("2024-11-15T10:30:00"),
   },
   {
-    id: "txn-user-3",
-    walletId: "wallet-user-1",
-    userId: "user-1",
+    id: "txn-streamer-3",
+    walletId: "wallet-streamer-1",
+    userId: "streamer-1",
     type: "credit",
     category: "order_refund",
     amount: 999,
@@ -1070,23 +1070,23 @@ export const mockNotifications: Notification[] = [
   },
   {
     id: "notif-4",
-    userId: "user-1",
+    userId: "streamer-1",
     title: "Event Going Live",
     message: "Your event 'Tech Conference 2024' is now streaming",
     type: "success",
     isRead: true,
     readAt: new Date(Date.now() - 7200000),
-    link: "/dashboard/events",
+    link: "/streamer/events",
     createdAt: new Date(Date.now() - 7200000),
   },
   {
     id: "notif-5",
-    userId: "user-1",
+    userId: "streamer-1",
     title: "Low Wallet Balance",
     message: "Your wallet balance is below ₹500. Please recharge.",
     type: "warning",
     isRead: false,
-    link: "/dashboard/wallet",
+    link: "/streamer/wallet",
     createdAt: new Date(Date.now() - 86400000),
   },
   {
@@ -1116,23 +1116,23 @@ export const mockNotifications: Notification[] = [
 export const mockAdminStats: AdminStats = {
   totalRevenue: 245000,
   totalStudios: 3,
-  totalUsers: 85,
+  totalStreamers: 85,
   totalEvents: 457,
   activeEvents: 12,
   activeStudios: 2,
   revenueGrowth: 23.5,
-  userGrowth: 15.2,
+  streamerGrowth: 15.2,
 }
 
 export const mockStudioStats: StudioStats = {
   walletBalance: 15000,
   totalEvents: 234,
   activeEvents: 5,
-  activeUsers: 18,
+  activeStreamers: 18,
   monthlyRevenue: 28500,
 }
 
-export const mockUserStats: UserStats = {
+export const mockStreamerStats: StreamerStats = {
   walletBalance: 500,
   totalEvents: 15,
   activeEvents: 1,
@@ -1159,7 +1159,7 @@ export const mockStudioWalletSummary: WalletSummary = {
   lastTransaction: mockTransactions[5],
 }
 
-export const mockUserWalletSummary: WalletSummary = {
+export const mockStreamerWalletSummary: WalletSummary = {
   balance: 10000,
   totalCredits: 13499,
   totalDebits: 3499,
@@ -1168,10 +1168,10 @@ export const mockUserWalletSummary: WalletSummary = {
 }
 
 // Mock User Inventory
-export const mockUserInventory: UserInventory[] = [
+export const mockStreamerInventory: StreamerInventory[] = [
   {
     id: "inv-1",
-    userId: "user-1",
+    userId: "streamer-1",
     packageId: "pkg-2",
     package: mockPackages[1],
     totalQty: 20,
@@ -1182,7 +1182,7 @@ export const mockUserInventory: UserInventory[] = [
   },
   {
     id: "inv-2",
-    userId: "user-2",
+    userId: "streamer-2",
     packageId: "pkg-1",
     package: mockPackages[0],
     totalQty: 5,
@@ -1198,7 +1198,7 @@ export const mockCustomPrices: CustomPrice[] = [
   {
     id: "cp-1",
     packageId: "pkg-2",
-    ownerId: "user-1",
+    ownerId: "streamer-1",
     setById: "studio-1",
     price: 2200, // Discounted from 2499
     createdAt: new Date("2024-11-01"),
@@ -1208,12 +1208,12 @@ export const mockCustomPrices: CustomPrice[] = [
 
 // Mock Validity Prices
 export const mockValidityPrices: ValidityPrice[] = [
-  { id: "vp-1", packageId: "pkg-1", days: 7, priceStudio: 199, priceUser: 299, isActive: true },
-  { id: "vp-2", packageId: "pkg-1", days: 30, priceStudio: 599, priceUser: 799, isActive: true },
-  { id: "vp-3", packageId: "pkg-1", days: 90, priceStudio: 1499, priceUser: 1999, isActive: true },
-  { id: "vp-4", packageId: "pkg-2", days: 7, priceStudio: 399, priceUser: 599, isActive: true },
-  { id: "vp-5", packageId: "pkg-2", days: 30, priceStudio: 999, priceUser: 1499, isActive: true },
-  { id: "vp-6", packageId: "pkg-2", days: 90, priceStudio: 2499, priceUser: 3499, isActive: true },
+  { id: "vp-1", packageId: "pkg-1", days: 7, priceStudio: 199, priceStreamer: 299, isActive: true },
+  { id: "vp-2", packageId: "pkg-1", days: 30, priceStudio: 599, priceStreamer: 799, isActive: true },
+  { id: "vp-3", packageId: "pkg-1", days: 90, priceStudio: 1499, priceStreamer: 1999, isActive: true },
+  { id: "vp-4", packageId: "pkg-2", days: 7, priceStudio: 399, priceStreamer: 599, isActive: true },
+  { id: "vp-5", packageId: "pkg-2", days: 30, priceStudio: 999, priceStreamer: 1499, isActive: true },
+  { id: "vp-6", packageId: "pkg-2", days: 90, priceStudio: 2499, priceStreamer: 3499, isActive: true },
 ]
 
 // Mock Event Templates
@@ -1573,7 +1573,7 @@ export const mockPayments: Payment[] = [
   },
   {
     id: "pay-3",
-    userId: "user-1",
+    userId: "streamer-1",
     orderNumber: "PAY-O3M0Z-GHI3",
     amount: 3000,
     gstAmount: 540,
@@ -1873,8 +1873,8 @@ export const mockYouTubeBroadcasts: YouTubeBroadcast[] = [
 export const mockFacebookPages: FacebookPage[] = [
   {
     id: "fb-page-1",
-    ownerId: "user-1",
-    ownerType: "user",
+    ownerId: "streamer-1",
+    ownerType: "streamer",
     pageId: "123456789",
     pageName: "StreamMattic Events",
     pageThumbnail: "/facebook-page-logo.jpg",
@@ -1886,8 +1886,8 @@ export const mockFacebookPages: FacebookPage[] = [
   },
   {
     id: "fb-page-2",
-    ownerId: "user-1",
-    ownerType: "user",
+    ownerId: "streamer-1",
+    ownerType: "streamer",
     pageId: "987654321",
     pageName: "Tech Conference Live",
     pageThumbnail: "/tech-conference-logo.png",
@@ -1910,8 +1910,8 @@ export const mockRefundRequests: RefundRequest[] = [
     totalRefundAmount: 1770,
     cascadeTransactionIds: ["txn_cascade_001", "txn_cascade_002"],
     status: "pending",
-    requestedBy: "user-1",
-    requestedByRole: "user",
+    requestedBy: "streamer-1",
+    requestedByRole: "streamer",
     requestedAt: new Date("2025-03-28T10:00:00"),
     refundMethod: "wallet",
     createdAt: new Date("2025-03-28T10:00:00"),
@@ -1927,8 +1927,8 @@ export const mockRefundRequests: RefundRequest[] = [
     totalRefundAmount: 1180,
     cascadeTransactionIds: ["txn_cascade_003"],
     status: "approved",
-    requestedBy: "user-1",
-    requestedByRole: "user",
+    requestedBy: "streamer-1",
+    requestedByRole: "streamer",
     requestedAt: new Date("2025-12-01T14:30:00"),
     approvedBy: "admin-1",
     approvedAt: new Date("2025-12-02T09:00:00"),
@@ -1946,8 +1946,8 @@ export const mockRefundRequests: RefundRequest[] = [
     totalRefundAmount: 885,
     cascadeTransactionIds: ["txn_cascade_004"],
     status: "rejected",
-    requestedBy: "user-2",
-    requestedByRole: "user",
+    requestedBy: "streamer-2",
+    requestedByRole: "streamer",
     requestedAt: new Date("2025-02-19T16:00:00"),
     rejectedBy: "admin-1",
     rejectedAt: new Date("2025-02-20T10:00:00"),
@@ -1961,8 +1961,8 @@ export const mockRefundRequests: RefundRequest[] = [
 export const mockWalletAdjustments: WalletAdjustment[] = [
   {
     id: "adj_001",
-    targetUserId: "user-1",
-    targetUserType: "user",
+    targetUserId: "streamer-1",
+    targetUserType: "streamer",
     type: "credit",
     amount: 5000,
     reason: "Payment gateway success but wallet credit failed - Razorpay pay_ABC123",
@@ -1981,8 +1981,8 @@ export const mockWalletAdjustments: WalletAdjustment[] = [
   },
   {
     id: "adj_002",
-    targetUserId: "user-2",
-    targetUserType: "user",
+    targetUserId: "streamer-2",
+    targetUserType: "streamer",
     type: "credit",
     amount: 1000,
     reason: "Compensation for service downtime on Dec 3",
@@ -2218,9 +2218,9 @@ export const mockGSTConfigurations: GSTConfiguration[] = [
     updatedAt: new Date(),
   },
   {
-    id: "gst-user-1",
-    entityId: "user-1",
-    entityType: "user",
+    id: "gst-streamer-1",
+    entityId: "streamer-1",
+    entityType: "streamer",
     gstEnabled: false,
     gstPercentage: 18,
     businessName: "Alice Johnson",

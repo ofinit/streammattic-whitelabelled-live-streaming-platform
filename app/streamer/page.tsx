@@ -10,16 +10,16 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { useAuth } from "@/lib/auth-context"
-import { mockUserStats, mockEvents, mockOrders } from "@/lib/mock-data"
+import { mockStreamerStats, mockEvents, mockOrders } from "@/lib/mock-data"
 import { Radio, Wallet, Eye, Calendar, Package, Plus, Play } from "lucide-react"
 import type { LiveEvent, Order } from "@/lib/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-export default function UserDashboard() {
+export default function StreamerDashboard() {
   const { user } = useAuth()
   const router = useRouter()
-  const stats = mockUserStats
+  const stats = mockStreamerStats
 
   const [topUpOpen, setTopUpOpen] = useState(false)
 
@@ -29,7 +29,7 @@ export default function UserDashboard() {
   }
 
   const handleGoLive = (eventId: string) => {
-    router.push(`/dashboard/events/${eventId}/stream`)
+    router.push(`/streamer/events/${eventId}/stream`)
   }
 
   const eventColumns = [
@@ -150,7 +150,7 @@ export default function UserDashboard() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{stats.eventsRemaining} events remaining</span>
                     <Button size="sm" variant="outline" className="border-border bg-transparent" asChild>
-                      <Link href="/dashboard/packages">Upgrade Package</Link>
+                      <Link href="/streamer/packages">Upgrade Package</Link>
                     </Button>
                   </div>
                 </div>
@@ -159,7 +159,7 @@ export default function UserDashboard() {
                   <Package className="mb-4 h-12 w-12 text-muted-foreground" />
                   <p className="mb-4 text-muted-foreground">No active package</p>
                   <Button asChild>
-                    <Link href="/dashboard/packages">
+                    <Link href="/streamer/packages">
                       <Plus className="mr-2 h-4 w-4" />
                       Purchase Package
                     </Link>
@@ -176,7 +176,7 @@ export default function UserDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full justify-start" asChild>
-                <Link href="/dashboard/events/new">
+                <Link href="/streamer/events/new">
                   <Plus className="mr-2 h-4 w-4" />
                   Create New Event
                 </Link>
@@ -190,7 +190,7 @@ export default function UserDashboard() {
                 Top Up Wallet
               </Button>
               <Button variant="outline" className="w-full justify-start border-border bg-transparent" asChild>
-                <Link href="/dashboard/packages">
+                <Link href="/streamer/packages">
                   <Package className="mr-2 h-4 w-4" />
                   View Packages
                 </Link>
@@ -204,14 +204,14 @@ export default function UserDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">My Events</CardTitle>
             <Button size="sm" asChild>
-              <Link href="/dashboard/events/new">
+              <Link href="/streamer/events/new">
                 <Plus className="mr-2 h-4 w-4" />
                 New Event
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <DataTable columns={eventColumns} data={mockEvents.filter((e) => e.userId === "user-1").slice(0, 5)} />
+            <DataTable columns={eventColumns} data={mockEvents.filter((e) => e.userId === "streamer-1").slice(0, 5)} />
           </CardContent>
         </Card>
 
@@ -220,11 +220,11 @@ export default function UserDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Recent Orders</CardTitle>
             <Button size="sm" variant="ghost" className="text-primary" asChild>
-              <Link href="/dashboard/orders">View All</Link>
+              <Link href="/streamer/orders">View All</Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <DataTable columns={orderColumns} data={mockOrders.filter((o) => o.userId === "user-1").slice(0, 3)} />
+            <DataTable columns={orderColumns} data={mockOrders.filter((o) => o.userId === "streamer-1").slice(0, 3)} />
           </CardContent>
         </Card>
       </div>

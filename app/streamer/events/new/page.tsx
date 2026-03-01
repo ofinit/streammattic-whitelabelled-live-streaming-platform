@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ArrowRight, Calendar, Play, Video, Check, MessageSquare, Loader2, Wallet, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { mockEventTemplates, mockUsers, mockStudios } from "@/lib/mock-data"
+import { mockEventTemplates, mockStreamers, mockStudios } from "@/lib/mock-data"
 import type { StreamTypeKey } from "@/lib/types"
 import { toast } from "@/hooks/use-toast"
 import { StreamTypeSelector } from "@/components/events/stream-type-selector"
@@ -82,7 +82,7 @@ export default function ScheduleEventPage() {
     ? calculateEventPrice(
         formData.streamType as StreamTypeKey,
         formData.simulcastDestinations,
-        "user",
+        "streamer",
       )
     : null
 
@@ -90,12 +90,12 @@ export default function ScheduleEventPage() {
   const validateCascadeForSubmit = () => {
     if (!formData.streamType) return null
 
-    // Build ancestor chain: User -> Studio -> Admin
-    const currentUser = mockUsers[0] // In production, use actual auth user
-    const parentStudio = mockStudios.find((r) => r.id === currentUser.studioId)
+    // Build ancestor chain: Streamer -> Studio -> Admin
+    const currentStreamer = mockStreamers[0] // In production, use actual auth user
+    const parentStudio = mockStudios.find((r) => r.id === currentStreamer.studioId)
 
     const chain: AncestorInfo[] = [
-      { id: currentUser.id, name: currentUser.name, type: "user", walletBalance: currentUser.walletBalance, parentId: currentUser.studioId },
+      { id: currentStreamer.id, name: currentStreamer.name, type: "streamer", walletBalance: currentStreamer.walletBalance, parentId: currentStreamer.studioId },
     ]
 
     if (parentStudio) {
@@ -157,7 +157,7 @@ export default function ScheduleEventPage() {
       })
 
       // Navigate to stream control room
-      router.push(`/dashboard/events/${newEventId}/stream`)
+      router.push(`/streamer/events/${newEventId}/stream`)
     } catch (error) {
       toast({
         title: "Failed to create event",
@@ -181,7 +181,7 @@ export default function ScheduleEventPage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/dashboard/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -238,7 +238,7 @@ export default function ScheduleEventPage() {
               value={formData.streamType}
               onChange={(value) => setFormData({ ...formData, streamType: value })}
               showPricing={true}
-              userLevel="user"
+              userLevel="streamer"
             />
 
             {formData.streamType === "rtmp" && (
@@ -247,7 +247,7 @@ export default function ScheduleEventPage() {
                   value={formData.simulcastDestinations}
                   onChange={(value) => setFormData({ ...formData, simulcastDestinations: value })}
                   showPricing={true}
-                  userLevel="user"
+                  userLevel="streamer"
                 />
               </div>
             )}
@@ -325,8 +325,8 @@ export default function ScheduleEventPage() {
                 <div>
                   <Label>YouTube Channel *</Label>
                   <YouTubeChannelSelector
-                    ownerId="user-1"
-                    ownerType="user"
+                    ownerId="streamer-1"
+                    ownerType="streamer"
                     selectedChannelId={formData.youtubeChannelId || null}
                     onSelectChannel={(channelId) => setFormData({ ...formData, youtubeChannelId: channelId || "" })}
                     broadcastSettings={{

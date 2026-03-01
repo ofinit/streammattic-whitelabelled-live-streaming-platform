@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Loader2, User, Lock, Bell } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
-export default function UserSettingsPage() {
+export default function StreamerSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",

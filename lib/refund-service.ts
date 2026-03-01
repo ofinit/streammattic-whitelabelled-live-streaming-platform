@@ -5,7 +5,7 @@
  * Key principles:
  * - Admin has NO wallet (not part of cascade)
  * - ALL refunds require manual admin approval (no automatic refunds)
- * - Cascade reversal credits back studios/users (in reverse order)
+ * - Cascade reversal credits back studios/streamers (in reverse order)
  * - Each level loses their profit/margin on refund
  */
 
@@ -185,7 +185,7 @@ export function executeCascadeReversal(refundId: string, adminId: string): Casca
       cascadeReversalId: `cascade_rev_${refundId}`,
       level: originalTx.cascadeLevel || 0,
       entityId: originalTx.userId,
-      entityType: originalTx.cascadeLevel === 0 ? "user" : "studio",
+      entityType: originalTx.cascadeLevel === 0 ? "streamer" : "studio",
       originalDebitAmount: originalTx.amount,
       creditAmount: originalTx.amount, // Credit back exact amount debited
       originalProfit: 0, // Calculate from cascade

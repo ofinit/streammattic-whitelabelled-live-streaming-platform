@@ -23,7 +23,7 @@ export type PaymentGateway = "razorpay" | "instamojo" | "cashfree" | "manual"
 export type DNSStatus = "pending" | "verified" | "failed"
 
 // Base User
-export interface User {
+  export interface User {
   id: string
   email: string
   name: string
@@ -31,18 +31,20 @@ export interface User {
   role: UserRole
   status: UserStatus
   avatar?: string
+  customStreamPricing?: Partial<StreamTypePricing>
   createdAt: Date
   updatedAt: Date
-}
+  }
 
 // Reseller extends User with branding
-export interface Reseller extends User {
+  export interface Reseller extends User {
   role: "reseller"
   branding: ResellerBranding
   domain?: CustomDomain
   walletBalance: number
   totalEvents: number
-}
+  customStreamPricing?: Partial<StreamTypePricing>
+  }
 
 // Admin extends User
 export interface Admin extends User {
@@ -379,13 +381,15 @@ export interface SimulcastPricing {
   enabled: boolean
   }
 
-// Custom pricing per user
-export interface CustomPrice {
+// Custom stream pricing override per user or reseller
+// When set, overrides the master pricing from admin packages
+export interface CustomStreamPricing {
   id: string
-  packageId: string
-  ownerId: string
-  setById: string
-  price: number
+  targetId: string // userId or resellerId
+  targetType: "user" | "reseller"
+  setById: string // admin who set it
+  streamTypePricing?: Partial<StreamTypePricing> // only overridden types
+  note?: string // admin note for why custom pricing was set
   createdAt: Date
   updatedAt: Date
 }

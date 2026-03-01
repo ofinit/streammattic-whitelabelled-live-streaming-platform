@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { mockResellers } from "@/lib/mock-data"
-import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee } from "lucide-react"
 import type { Reseller } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 import { ResellerDomainDialog } from "@/components/admin/reseller-domain-dialog"
 import { ResellerYouTubeDialog } from "@/components/admin/reseller-youtube-dialog"
+import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
 
 export default function AdminResellersPage() {
   const { impersonate } = useAuth()
@@ -31,6 +33,7 @@ export default function AdminResellersPage() {
   const [editingReseller, setEditingReseller] = useState<Reseller | null>(null)
   const [domainReseller, setDomainReseller] = useState<Reseller | null>(null)
   const [youtubeReseller, setYoutubeReseller] = useState<Reseller | null>(null)
+  const [pricingReseller, setPricingReseller] = useState<Reseller | null>(null)
 
   const filteredResellers = mockResellers.filter((reseller) => {
     const matchesSearch =
@@ -115,12 +118,19 @@ export default function AdminResellersPage() {
               <Globe className="mr-2 h-4 w-4" />
               Manage Domain
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setYoutubeReseller(item)}>
-              <Youtube className="mr-2 h-4 w-4" />
-              YouTube API
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {item.status === "active" ? (
+<DropdownMenuItem onClick={() => setYoutubeReseller(item)}>
+  <Youtube className="mr-2 h-4 w-4" />
+  YouTube API
+</DropdownMenuItem>
+<DropdownMenuItem onClick={() => setPricingReseller(item)}>
+  <IndianRupee className="mr-2 h-4 w-4" />
+  Custom Pricing
+  {item.customStreamPricing && (
+    <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+  )}
+</DropdownMenuItem>
+<DropdownMenuSeparator />
+{item.status === "active" ? (
               <DropdownMenuItem className="text-destructive">
                 <Ban className="mr-2 h-4 w-4" />
                 Suspend
@@ -210,6 +220,20 @@ export default function AdminResellersPage() {
           open={!!youtubeReseller}
           onOpenChange={(open) => !open && setYoutubeReseller(null)}
           reseller={youtubeReseller}
+        />
+      )}
+
+      {pricingReseller && (
+        <CustomPricingDialog
+          open={!!pricingReseller}
+          onOpenChange={(open) => !open && setPricingReseller(null)}
+          targetName={pricingReseller.branding.platformName}
+          targetType="reseller"
+          existingCustomPricing={pricingReseller.customStreamPricing}
+          onSave={(pricing, _note) => {
+            pricingReseller.customStreamPricing = pricing
+            setPricingReseller(null)
+          }}
         />
       )}
     </div>

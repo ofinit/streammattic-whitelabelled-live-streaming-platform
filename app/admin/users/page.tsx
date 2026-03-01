@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge"
 import { UserFormDialog } from "@/components/dashboard/user-form-dialog"
 import { StatusChangeDialog } from "@/components/dashboard/status-change-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,8 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { mockUsers } from "@/lib/mock-data"
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck } from "lucide-react"
-import type { EndUser } from "@/lib/types"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee } from "lucide-react"
+import type { EndUser, StreamTypePricing } from "@/lib/types"
+import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
 
 export default function AdminUsersPage() {
   const router = useRouter()
@@ -30,6 +32,7 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<EndUser | null>(null)
+  const [pricingUser, setPricingUser] = useState<EndUser | null>(null)
   const [statusChangeTarget, setStatusChangeTarget] = useState<{
     user: EndUser
     targetStatus: "active" | "suspended"
@@ -119,12 +122,19 @@ export default function AdminUsersPage() {
               <LogIn className="mr-2 h-4 w-4" />
               Login as User
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setEditingUser(item)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {item.status === "active" ? (
+<DropdownMenuItem onClick={() => setEditingUser(item)}>
+  <Edit className="mr-2 h-4 w-4" />
+  Edit
+</DropdownMenuItem>
+<DropdownMenuItem onClick={() => setPricingUser(item)}>
+  <IndianRupee className="mr-2 h-4 w-4" />
+  Custom Pricing
+  {item.customStreamPricing && (
+    <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+  )}
+</DropdownMenuItem>
+<DropdownMenuSeparator />
+{item.status === "active" ? (
               <DropdownMenuItem
                 onClick={() => setStatusChangeTarget({ user: item, targetStatus: "suspended" })}
                 className="text-destructive"
@@ -228,6 +238,21 @@ export default function AdminUsersPage() {
           currentStatus={statusChangeTarget.user.status}
           targetStatus={statusChangeTarget.targetStatus}
           onConfirm={handleStatusChange}
+        />
+      )}
+
+      {pricingUser && (
+        <CustomPricingDialog
+          open={!!pricingUser}
+          onOpenChange={(open) => !open && setPricingUser(null)}
+          targetName={pricingUser.name}
+          targetType="user"
+          existingCustomPricing={pricingUser.customStreamPricing}
+          onSave={(pricing, _note) => {
+            // In production, save to API
+            pricingUser.customStreamPricing = pricing
+            setPricingUser(null)
+          }}
         />
       )}
     </div>

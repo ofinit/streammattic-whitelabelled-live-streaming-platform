@@ -1,85 +1,62 @@
-// API Client with token refresh interceptor
-// This file provides typed API methods for all backend endpoints
+// API Client - Internal Next.js API routes
+// Cookie-based session auth (httpOnly sm_session cookie)
+// All requests go to /api/* internal routes
 
-import Cookies from "js-cookie"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
-
-// Generic fetch wrapper with auth token handling
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = Cookies.get("accessToken")
-
   const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers,
+    credentials: "include", // Sends httpOnly cookies
   })
 
-  // Handle 401 - attempt token refresh
   if (response.status === 401) {
-    const refreshToken = Cookies.get("refreshToken")
-    if (refreshToken) {
-      try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        })
-
-        if (refreshResponse.ok) {
-          const { accessToken, refreshToken: newRefreshToken } = await refreshResponse.json()
-          Cookies.set("accessToken", accessToken, { expires: 1 })
-          Cookies.set("refreshToken", newRefreshToken, { expires: 7 })
-
-          // Retry original request with new token
-          const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...options,
-            headers: {
-              ...headers,
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
-          return retryResponse.json()
-        }
-      } catch {
-        // Refresh failed - redirect to login
-        Cookies.remove("accessToken")
-        Cookies.remove("refreshToken")
-        window.location.href = "/login"
-      }
+    // Session expired or invalid - redirect to login
+    if (typeof window !== "undefined") {
+      window.location.href = "/site/login"
     }
+    throw new Error("Unauthorized")
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "An error occurred" }))
-    throw new Error(error.message || `HTTP ${response.status}`)
+    const error = await response.json().catch(() => ({ error: "An error occurred" }))
+    throw new Error(error.error || error.message || `HTTP ${response.status}`)
   }
 
   return response.json()
 }
 
+// Helper for query string params
+function qs(params?: Record<string, any>): string {
+  if (!params) return ""
+  const filtered = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""))
+  if (Object.keys(filtered).length === 0) return ""
+  return "?" + new URLSearchParams(filtered as Record<string, string>).toString()
+}
+
 // Auth API
 export const authApi = {
   login: (email: string, password: string) =>
-    apiFetch<{ accessToken: string; refreshToken: string; user: any }>("/auth/login", {
+    apiFetch<{ user: any }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) =>
-    apiFetch("/auth/register", {
+  register: (data: { email: string; password: string; firstName: string; lastName: string; phone?: string }) =>
+    apiFetch<{ user: any }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   logout: () => apiFetch("/auth/logout", { method: "POST" }),
 
-  getMe: () => apiFetch<{ id: string; email: string; firstName: string; lastName: string; type: string }>("/auth/me"),
+  getMe: () => apiFetch<{ user: any }>("/auth/me"),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     apiFetch("/auth/change-password", {
@@ -87,257 +64,186 @@ export const authApi = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
-  refresh: (refreshToken: string) =>
-    apiFetch<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
-      method: "POST",
-      body: JSON.stringify({ refreshToken }),
-    }),
-
   impersonate: (userId: string) =>
-    apiFetch<{ accessToken: string }>(`/auth/impersonate/${userId}`, {
+    apiFetch<{ user: any }>("/auth/impersonate", {
       method: "POST",
+      body: JSON.stringify({ userId }),
     }),
 }
 
 // Users API
 export const usersApi = {
-  getAll: (params?: { page?: number; limit?: number; search?: string; status?: string }) =>
-    apiFetch<{ users: any[]; total: number; page: number; limit: number }>(
-      `/users?${new URLSearchParams(params as any).toString()}`,
-    ),
+  getAll: (params?: { page?: number; limit?: number; search?: string; status?: string; role?: string }) =>
+    apiFetch<{ users: any[]; total: number; page: number; limit: number }>(`/users${qs(params)}`),
 
-  getMyUsers: () => apiFetch<any[]>("/users/my-users"),
+  getById: (id: string) => apiFetch<{ user: any }>(`/users/${id}`),
 
-  getById: (id: string) => apiFetch<any>(`/users/${id}`),
-
-  create: (data: { email: string; password: string; firstName: string; lastName: string; type?: string }) =>
-    apiFetch("/users", {
+  create: (data: { email: string; password: string; name: string; phone?: string; role?: string }) =>
+    apiFetch<{ user: any }>("/users", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  update: (id: string, data: { firstName?: string; lastName?: string; mobile?: string }) =>
-    apiFetch(`/users/${id}`, {
+  update: (id: string, data: { name?: string; phone?: string; status?: string; role?: string; avatar?: string }) =>
+    apiFetch<{ user: any }>(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
-
-  changeStatus: (id: string, status: "ACTIVE" | "SUSPENDED") =>
-    apiFetch(`/users/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    }),
-
-  getHierarchy: (id: string) => apiFetch<any[]>(`/users/${id}/hierarchy`),
 }
 
 // Wallet API
 export const walletApi = {
-  getBalance: () => apiFetch<{ balance: number }>("/wallet/balance"),
+  getBalance: (userId?: string) =>
+    apiFetch<{ wallet: any }>(`/wallets${qs({ userId })}`),
 
-  getSummary: () => apiFetch<{ balance: number; totalCredits: number; totalDebits: number }>("/wallet/summary"),
+  getTransactions: (params?: { page?: number; limit?: number; category?: string; userId?: string }) =>
+    apiFetch<{ transactions: any[]; total: number; page: number; limit: number }>(`/wallets/transactions${qs(params)}`),
 
-  getTransactions: (params?: { page?: number; limit?: number; type?: string }) =>
-    apiFetch<{ transactions: any[]; total: number }>(
-      `/wallet/transactions?${new URLSearchParams(params as any).toString()}`,
-    ),
-
-  adjust: (userId: string, amount: number, type: "CREDIT" | "DEBIT", reason: string) =>
-    apiFetch("/wallet/adjust", {
+  adjust: (userId: string, amount: number, type: "credit" | "debit", category: string, reason?: string, notes?: string) =>
+    apiFetch<{ transaction: any; newBalance: number }>("/wallets/adjust", {
       method: "POST",
-      body: JSON.stringify({ userId, amount, type, reason }),
+      body: JSON.stringify({ userId, amount, type, category, reason, notes }),
     }),
 }
 
 // Credits API
 export const creditsApi = {
-  // Get current stream type pricing (admin-set)
-  getPricing: () => apiFetch<any>("/credits/pricing"),
+  getMyCredits: (userId?: string) =>
+    apiFetch<{ credits: any }>(`/credits${qs({ userId })}`),
 
-  // Get my credit balances
-  getMyCredits: () => apiFetch<any>("/credits/my-credits"),
+  getPricing: () =>
+    apiFetch<{ pricing: any; discountTiers: any[] }>("/credits/pricing"),
 
-  // Purchase credits (wallet -> credits)
   purchase: (streamType: string, quantity: number) =>
-    apiFetch("/credits/purchase", {
+    apiFetch<{ credits: any; transaction: any }>("/credits/purchase", {
       method: "POST",
       body: JSON.stringify({ streamType, quantity }),
-    }),
-
-  // Get purchase history
-  getPurchaseHistory: (params?: { page?: number; limit?: number }) =>
-    apiFetch<{ purchases: any[]; total: number }>(
-      `/credits/history?${new URLSearchParams(params as any).toString()}`,
-    ),
-
-  // Admin: Update stream type pricing
-  updatePricing: (data: any) =>
-    apiFetch("/credits/pricing", {
-      method: "PUT",
-      body: JSON.stringify(data),
     }),
 }
 
 // Orders API
 export const ordersApi = {
-  getMyOrders: (params?: { page?: number; limit?: number; status?: string; orderType?: string }) =>
-    apiFetch<{ orders: any[]; total: number }>(`/orders/my?${new URLSearchParams(params as any).toString()}`),
+  getAll: (params?: { page?: number; limit?: number; userId?: string }) =>
+    apiFetch<{ orders: any[]; total: number; page: number; limit: number }>(`/orders${qs(params)}`),
 
-  getAll: (params?: { page?: number; limit?: number; status?: string; orderType?: string }) =>
-    apiFetch<{ orders: any[]; total: number }>(`/orders?${new URLSearchParams(params as any).toString()}`),
-
-  getById: (id: string) => apiFetch<any>(`/orders/${id}`),
+  create: (data: { orderType: string; amount: number; description?: string; gateway?: string }) =>
+    apiFetch<{ order: any }>("/orders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 }
 
 // Events API
 export const eventsApi = {
-  getMyEvents: (params?: { page?: number; limit?: number; status?: string }) =>
-    apiFetch<{ events: any[]; total: number }>(`/events/my?${new URLSearchParams(params as any).toString()}`),
-
-  getById: (id: string) => apiFetch<any>(`/events/${id}`),
-
   getAll: (params?: { page?: number; limit?: number; status?: string }) =>
-    apiFetch<{ events: any[]; total: number }>(`/events?${new URLSearchParams(params as any).toString()}`),
+    apiFetch<{ events: any[]; total: number; page: number; limit: number }>(`/events${qs(params)}`),
 
-  getLive: () => apiFetch<any[]>("/events/live"),
-
-  getPublic: (userId: string, eventUrl: string) => apiFetch<any>(`/events/public/${userId}/${eventUrl}`),
+  getById: (id: string) => apiFetch<{ event: any }>(`/events/${id}`),
 
   create: (data: any) =>
-    apiFetch("/events", {
+    apiFetch<{ event: any }>("/events", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: any) =>
-    apiFetch(`/events/${id}`, {
+    apiFetch<{ event: any }>(`/events/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  updateStatus: (id: string, status: string) =>
-    apiFetch(`/events/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    }),
-
   delete: (id: string) => apiFetch(`/events/${id}`, { method: "DELETE" }),
-
-  getTemplates: () => apiFetch<any[]>("/events/templates"),
-
-  addComment: (eventId: string, guestName: string, message: string) =>
-    apiFetch(`/events/${eventId}/comments`, {
-      method: "POST",
-      body: JSON.stringify({ guestName, message }),
-    }),
-
-  getComments: (eventId: string) => apiFetch<any[]>(`/events/${eventId}/comments`),
-
-  getStatistics: (eventId: string) => apiFetch<any>(`/events/${eventId}/statistics`),
-
-  extendValidity: (eventId: string, days: number) =>
-    apiFetch(`/events/${eventId}/extend-validity`, {
-      method: "POST",
-      body: JSON.stringify({ days }),
-    }),
-}
-
-// Domains API
-export const domainsApi = {
-  getMyDomains: () => apiFetch<any[]>("/domains/my"),
-
-  add: (domain: string) =>
-    apiFetch("/domains", {
-      method: "POST",
-      body: JSON.stringify({ domain }),
-    }),
-
-  verify: (id: string) =>
-    apiFetch<{ verified: boolean; message: string }>(`/domains/${id}/verify`, {
-      method: "POST",
-    }),
-
-  setPrimary: (id: string) => apiFetch(`/domains/${id}/primary`, { method: "PATCH" }),
-
-  remove: (id: string) => apiFetch(`/domains/${id}`, { method: "DELETE" }),
-
-  getInstructions: (id: string) => apiFetch<{ records: any[] }>(`/domains/${id}/instructions`),
 }
 
 // Payments API
 export const paymentsApi = {
-  initiateRecharge: (amount: number, gateway?: string) =>
-    apiFetch<{ paymentUrl: string; orderId: string }>("/payments/recharge", {
-      method: "POST",
-      body: JSON.stringify({ amount, gateway }),
-    }),
-
-  getHistory: (params?: { page?: number; limit?: number }) =>
-    apiFetch<{ payments: any[]; total: number }>(`/payments/history?${new URLSearchParams(params as any).toString()}`),
-
-  getStatus: (id: string) => apiFetch<{ status: string; amount: number }>(`/payments/${id}/status`),
-
-  getGateways: () => apiFetch<any[]>("/payments/gateways"),
-
-  verifyCallback: (data: { paymentId: string; orderId: string; signature?: string }) =>
-    apiFetch<{ verified: boolean; message: string }>("/payments/verify", {
+  create: (data: { orderType: string; amount: number; gateway: "razorpay" | "instamojo"; description?: string }) =>
+    apiFetch<any>("/payments/create", {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  verifyRazorpay: (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; orderId: string }) =>
+    apiFetch<{ success: boolean }>("/payments/verify/razorpay", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  verifyInstamojo: (data: { paymentRequestId: string; paymentId?: string; orderId: string }) =>
+    apiFetch<{ success: boolean }>("/payments/verify/instamojo", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+}
+
+// Dashboard API
+export const dashboardApi = {
+  getStats: () => apiFetch<{ stats: any }>("/dashboard"),
+}
+
+// Notifications API
+export const notificationsApi = {
+  getAll: (params?: { page?: number; limit?: number; unread?: string }) =>
+    apiFetch<{ notifications: any[]; unreadCount: number; page: number; limit: number }>(`/notifications${qs(params)}`),
+
+  markAsRead: (notificationId?: string) =>
+    apiFetch<{ success: boolean }>("/notifications/read", {
+      method: "POST",
+      body: JSON.stringify(notificationId ? { notificationId } : { markAll: true }),
+    }),
+}
+
+// Settings API
+export const settingsApi = {
+  getAll: () => apiFetch<{ settings: any[] }>("/settings"),
+
+  get: (key: string) => apiFetch<{ setting: any }>(`/settings?key=${key}`),
+
+  update: (key: string, value: any) =>
+    apiFetch<{ setting: any }>("/settings", {
+      method: "PUT",
+      body: JSON.stringify({ key, value }),
     }),
 }
 
 // Branding API
 export const brandingApi = {
-  getMyBranding: () => apiFetch<any>("/branding/my"),
+  get: (userId?: string) => apiFetch<{ branding: any }>(`/branding${qs({ userId })}`),
 
-  updateMyBranding: (data: any) =>
-    apiFetch("/branding/my", {
+  update: (data: any) =>
+    apiFetch<{ branding: any }>("/branding", {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+}
 
-  updatePaymentGateway: (gateway: string, apiKey: string, apiSecret: string) =>
-    apiFetch("/branding/payment-gateway", {
+// Refunds API
+export const refundsApi = {
+  getAll: (params?: { page?: number; limit?: number }) =>
+    apiFetch<{ refunds: any[] }>(`/refunds${qs(params)}`),
+
+  create: (data: { orderId: string; refundType: string; amount: number; reason?: string }) =>
+    apiFetch<{ refund: any }>("/refunds", {
       method: "POST",
-      body: JSON.stringify({ gateway, apiKey, apiSecret }),
+      body: JSON.stringify(data),
     }),
-
-  getByDomain: (domain: string) => apiFetch<any>(`/branding/domain/${domain}`),
 }
 
-// Notifications API
-export const notificationsApi = {
-  getAll: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
-    apiFetch<{ notifications: any[]; total: number }>(
-      `/notifications?${new URLSearchParams(params as any).toString()}`,
-    ),
+// Domains API
+export const domainsApi = {
+  getAll: () => apiFetch<{ domains: any[] }>("/domains"),
 
-  getUnreadCount: () => apiFetch<{ count: number }>("/notifications/unread-count"),
-
-  markAsRead: (id: string) => apiFetch(`/notifications/${id}/read`, { method: "PATCH" }),
-
-  markAllAsRead: () => apiFetch("/notifications/read-all", { method: "PATCH" }),
-
-  delete: (id: string) => apiFetch(`/notifications/${id}`, { method: "DELETE" }),
+  add: (domain: string) =>
+    apiFetch<{ domain: any }>("/domains", {
+      method: "POST",
+      body: JSON.stringify({ domain }),
+    }),
 }
 
-// Streaming API
+// Streaming API (kept for existing routes)
 export const streamingApi = {
-  getServerStatus: () => apiFetch<{ status: string; activeStreams: number }>("/streaming/status"),
-
-  getStreamCredentials: (eventId: string) =>
-    apiFetch<{ rtmpUrl: string; streamKey: string; playbackUrl: string }>(`/streaming/${eventId}/credentials`),
-
-  regenerateStreamKey: (eventId: string) =>
-    apiFetch<{ streamKey: string }>(`/streaming/${eventId}/regenerate-key`, {
-      method: "POST",
-    }),
-
-  stopStream: (eventId: string) => apiFetch(`/streaming/${eventId}/stop`, { method: "POST" }),
-
-  getRecordings: (eventId: string) => apiFetch<any[]>(`/streaming/${eventId}/recordings`),
-
-  deleteRecording: (recordingId: string) => apiFetch(`/streaming/recordings/${recordingId}`, { method: "DELETE" }),
+  getServerStatus: () => apiFetch<any>("/streaming/stats"),
+  getBackendInfo: () => apiFetch<any>("/streaming/backend-info"),
 }
 
 export default {
@@ -347,9 +253,12 @@ export default {
   credits: creditsApi,
   orders: ordersApi,
   events: eventsApi,
-  domains: domainsApi,
   payments: paymentsApi,
-  branding: brandingApi,
+  dashboard: dashboardApi,
   notifications: notificationsApi,
+  settings: settingsApi,
+  branding: brandingApi,
+  refunds: refundsApi,
+  domains: domainsApi,
   streaming: streamingApi,
 }

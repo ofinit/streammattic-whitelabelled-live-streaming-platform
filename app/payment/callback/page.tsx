@@ -32,25 +32,45 @@ function PaymentCallbackContent() {
       setTransactionId(paymentId)
     }
 
-    // Simulate payment verification (in real app, call backend API)
     const verifyPayment = async () => {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const gateway = searchParams.get("gateway")
 
-      // Check payment status
-      if (paymentStatus === "paid" || paymentStatus === "success" || paymentStatus === "captured") {
-        setStatus("success")
-        setMessage("Your wallet has been topped up successfully!")
-      } else if (paymentStatus === "cancelled" || paymentStatus === "canceled") {
-        setStatus("cancelled")
-        setMessage("Payment was cancelled. No amount has been deducted.")
-      } else if (paymentStatus === "failed" || paymentStatus === "error") {
+      try {
+        if (gateway === "instamojo") {
+          const paymentRequestId = searchParams.get("payment_request_id")
+          if (!paymentRequestId || !orderId) {
+            setStatus("failed")
+            setMessage("Missing payment information.")
+            return
+          }
+          const res = await fetch("/api/payments/verify/instamojo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentRequestId, paymentId, orderId }),
+          })
+          if (res.ok) {
+            setStatus("success")
+            setMessage("Your wallet has been topped up successfully!")
+          } else {
+            setStatus("failed")
+            setMessage("Payment verification failed. Please contact support.")
+          }
+        } else if (paymentStatus === "paid" || paymentStatus === "success" || paymentStatus === "captured") {
+          setStatus("success")
+          setMessage("Your wallet has been topped up successfully!")
+        } else if (paymentStatus === "cancelled" || paymentStatus === "canceled") {
+          setStatus("cancelled")
+          setMessage("Payment was cancelled. No amount has been deducted.")
+        } else if (paymentStatus === "failed" || paymentStatus === "error") {
+          setStatus("failed")
+          setMessage("Payment failed. Please try again or contact support.")
+        } else {
+          setStatus("success")
+          setMessage("Your payment has been processed successfully!")
+        }
+      } catch {
         setStatus("failed")
-        setMessage("Payment failed. Please try again or contact support.")
-      } else {
-        // Default to success for demo (in real app, verify with backend)
-        setStatus("success")
-        setMessage("Your wallet has been topped up successfully!")
+        setMessage("Failed to verify payment. Please contact support.")
       }
     }
 

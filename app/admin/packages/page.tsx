@@ -110,13 +110,15 @@ export default function AdminPackagesPage() {
 
                     {/* User Price */}
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground md:hidden">User Price (paisa)</Label>
+                      <Label className="text-xs text-muted-foreground md:hidden">User Price</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={(pricing.userPrice / 100).toFixed(2)}
-                          onChange={(e) => updateStreamPrice(key, "userPrice", Math.round(Number(e.target.value) * 100))}
+                          step="0.01"
+                          min="0"
+                          defaultValue={pricing.userPrice / 100}
+                          onBlur={(e) => updateStreamPrice(key, "userPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pricing.enabled}
                         />
@@ -125,13 +127,15 @@ export default function AdminPackagesPage() {
 
                     {/* Reseller Price */}
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground md:hidden">Reseller Price (paisa)</Label>
+                      <Label className="text-xs text-muted-foreground md:hidden">Reseller Price</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                         <Input
                           type="number"
-                          value={(pricing.resellerPrice / 100).toFixed(2)}
-                          onChange={(e) => updateStreamPrice(key, "resellerPrice", Math.round(Number(e.target.value) * 100))}
+                          step="0.01"
+                          min="0"
+                          defaultValue={pricing.resellerPrice / 100}
+                          onBlur={(e) => updateStreamPrice(key, "resellerPrice", Math.round(Number(e.target.value) * 100))}
                           className="pl-7 bg-secondary border-0 h-9"
                           disabled={!pricing.enabled}
                         />
@@ -181,8 +185,10 @@ export default function AdminPackagesPage() {
                 <Input
                   id="annualPrice"
                   type="number"
-                  value={(resellerSubscription.price / 100).toFixed(2)}
-                  onChange={(e) =>
+                  step="1"
+                  min="0"
+                  defaultValue={resellerSubscription.price / 100}
+                  onBlur={(e) =>
                     setResellerSubscription((prev) => ({
                       ...prev,
                       price: Math.round(Number(e.target.value) * 100),

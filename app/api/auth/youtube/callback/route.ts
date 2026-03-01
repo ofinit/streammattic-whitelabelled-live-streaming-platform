@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     stateData = null
   }
 
-  const returnUrl = stateData?.returnUrl || "/dashboard/settings/youtube"
+  const returnUrl = stateData?.returnUrl || "/streamer/settings/youtube"
 
   if (error) {
     const errorUrl = new URL(returnUrl, url.origin)

@@ -37,9 +37,9 @@ export function EventPricingSummary({
   ancestorChain,
   onValidationChange,
 }: EventPricingSummaryProps) {
-  // Calculate user-level pricing
-  const userPricing = useMemo(() => {
-    return calculateEventPrice(streamType, simulcastDestinations, "user")
+  // Calculate streamer-level pricing
+  const streamerPricing = useMemo(() => {
+    return calculateEventPrice(streamType, simulcastDestinations, "streamer")
   }, [streamType, simulcastDestinations])
 
   // Validate cascade
@@ -77,7 +77,7 @@ export function EventPricingSummary({
             <StreamIcon className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">{streamTypeLabels[streamType]?.name}</span>
           </div>
-          <span className="font-medium">{formatCurrency(userPricing.streamPrice)}</span>
+          <span className="font-medium">{formatCurrency(streamerPricing.streamPrice)}</span>
         </div>
 
         {/* Simulcast Destinations */}
@@ -91,10 +91,10 @@ export function EventPricingSummary({
                 const Icon = label?.icon || Radio
                 const price =
                   dest === "youtube"
-                    ? userPricing.simulcastPrice / simulcastDestinations.length
+                    ? streamerPricing.simulcastPrice / simulcastDestinations.length
                     : dest === "facebook"
-                      ? userPricing.simulcastPrice / simulcastDestinations.length
-                      : userPricing.simulcastPrice / simulcastDestinations.length
+                      ? streamerPricing.simulcastPrice / simulcastDestinations.length
+                      : streamerPricing.simulcastPrice / simulcastDestinations.length
 
                 return (
                   <div key={dest} className="flex items-center justify-between">
@@ -114,13 +114,13 @@ export function EventPricingSummary({
         <Separator />
         <div className="flex items-center justify-between text-lg font-semibold">
           <span>Total</span>
-          <span className="text-primary">{formatCurrency(userPricing.total)}</span>
+          <span className="text-primary">{formatCurrency(streamerPricing.total)}</span>
         </div>
 
         {/* Wallet Balance */}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Your Wallet Balance</span>
-          <span className={userBalance >= userPricing.total ? "text-green-500" : "text-destructive"}>
+          <span className={userBalance >= streamerPricing.total ? "text-green-500" : "text-destructive"}>
             {formatCurrency(userBalance)}
           </span>
         </div>

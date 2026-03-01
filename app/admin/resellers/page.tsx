@@ -232,10 +232,12 @@ export default function AdminResellersPage() {
           existingCustomPricing={pricingReseller.customStreamPricing}
           existingAnnualOverride={(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription as { price: number; enabled: boolean } | null ?? null}
           existingPackOverrides={(pricingReseller as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; resellerPrice: number }> | null ?? null}
-          onSave={(pricing, _note, annualOverride, packOverrides) => {
+          existingValidityOverrides={(pricingReseller as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { userSurcharge: number; resellerSurcharge: number }> | null ?? null}
+          onSave={(pricing, _note, annualOverride, packOverrides, validityOverrides) => {
             pricingReseller.customStreamPricing = pricing
             ;(pricingReseller as unknown as Record<string, unknown>).customAnnualSubscription = annualOverride
             ;(pricingReseller as unknown as Record<string, unknown>).customPackPricing = packOverrides
+            ;(pricingReseller as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
             setPricingReseller(null)
           }}
         />

@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Package, Plus, Trash2 } from "lucide-react"
-import type { StreamTypePriceLevel, EventPack } from "@/lib/types"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Package, Plus, Trash2, Clock } from "lucide-react"
+import type { StreamTypePriceLevel, EventPack, ValidityTier } from "@/lib/types"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -35,14 +33,20 @@ export default function AdminPackagesPage() {
     enabled: true,
   })
 
+  const [eventPacksEnabled, setEventPacksEnabled] = useState(true)
   const [eventPacks, setEventPacks] = useState<EventPack[]>([
     { id: "pack-1", name: "Starter Pack", eventCount: 10, userPrice: 10000, resellerPrice: 5000, enabled: true, sortOrder: 1 },
     { id: "pack-2", name: "Growth Pack", eventCount: 50, userPrice: 40000, resellerPrice: 20000, enabled: true, sortOrder: 2 },
     { id: "pack-3", name: "Pro Pack", eventCount: 100, userPrice: 60000, resellerPrice: 30000, enabled: true, sortOrder: 3 },
     { id: "pack-4", name: "Enterprise Pack", eventCount: 500, userPrice: 200000, resellerPrice: 100000, enabled: true, sortOrder: 4 },
   ])
-  const [packExpiryDays, setPackExpiryDays] = useState(30)
-  const [packNeverExpires, setPackNeverExpires] = useState(false)
+
+  const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
+    { days: 60, userSurcharge: 200, resellerSurcharge: 100, enabled: true },
+    { days: 90, userSurcharge: 500, resellerSurcharge: 250, enabled: true },
+    { days: 180, userSurcharge: 1000, resellerSurcharge: 500, enabled: true },
+    { days: 365, userSurcharge: 2000, resellerSurcharge: 1000, enabled: true },
+  ])
 
   const [saved, setSaved] = useState(false)
 
@@ -70,6 +74,12 @@ export default function AdminPackagesPage() {
 
   const removePack = (id: string) => {
     setEventPacks((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  const updateValidityTier = (days: number, field: keyof ValidityTier, value: number | boolean) => {
+    setValidityTiers((prev) =>
+      prev.map((t) => (t.days === days ? { ...t, [field]: value } : t))
+    )
   }
 
   const updateStreamPrice = (key: string, field: keyof StreamTypePriceLevel, value: number | boolean) => {
@@ -195,7 +205,7 @@ export default function AdminPackagesPage() {
       </Card>
 
       {/* Event Packs */}
-      <Card className="border-border bg-card">
+      <Card className={`border-border bg-card transition-opacity ${!eventPacksEnabled ? "opacity-60" : ""}`}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -207,13 +217,21 @@ export default function AdminPackagesPage() {
                 <CardDescription>Sell prepaid event bundles at discounted rates</CardDescription>
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={addPack}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Pack
-            </Button>
+            <div className="flex items-center gap-3">
+              {eventPacksEnabled && (
+                <Button size="sm" variant="outline" onClick={addPack}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Pack
+                </Button>
+              )}
+              <Switch
+                checked={eventPacksEnabled}
+                onCheckedChange={setEventPacksEnabled}
+              />
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        {eventPacksEnabled && <CardContent className="space-y-4">
           {/* Table Header */}
           <div className="hidden md:grid md:grid-cols-[1fr_80px_120px_120px_60px_40px] items-center gap-3 px-4 text-sm font-medium text-muted-foreground">
             <span>Pack Name</span>
@@ -340,50 +358,121 @@ export default function AdminPackagesPage() {
             })}
           </div>
 
-          {/* Pack Settings */}
-          {eventPacks.length > 0 && (
-            <>
-              <Separator />
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <Label className="text-sm text-muted-foreground whitespace-nowrap">Expiry:</Label>
-                  {packNeverExpires ? (
-                    <span className="text-sm text-foreground">Never expires</span>
-                  ) : (
-                    <Select
-                      value={packExpiryDays.toString()}
-                      onValueChange={(v) => setPackExpiryDays(Number(v))}
-                    >
-                      <SelectTrigger className="w-[120px] h-9 bg-secondary border-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="30">30 days</SelectItem>
-                        <SelectItem value="60">60 days</SelectItem>
-                        <SelectItem value="90">90 days</SelectItem>
-                        <SelectItem value="180">180 days</SelectItem>
-                        <SelectItem value="365">365 days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="neverExpires"
-                    checked={packNeverExpires}
-                    onCheckedChange={(checked) => {
-                      setPackNeverExpires(!!checked)
-                      if (checked) setPackExpiryDays(0)
-                      else setPackExpiryDays(30)
-                    }}
-                  />
-                  <Label htmlFor="neverExpires" className="text-sm text-muted-foreground cursor-pointer">
-                    Never expires
-                  </Label>
+        </CardContent>}
+      </Card>
+
+      {/* Event Validity */}
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+              <Clock className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Event Validity</CardTitle>
+              <CardDescription>
+                Default validity for all stream types & event packs is <span className="text-foreground font-medium">30 days</span> (included in base price). Extended durations are chargeable.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Default validity info */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 mb-4">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-primary" />
+              <span className="font-medium">Default: 30 days</span>
+              <span className="text-muted-foreground">-- included free with every per-event stream & event pack purchase</span>
+            </div>
+          </div>
+
+          {/* Extended tiers header */}
+          <div className="hidden md:grid md:grid-cols-[100px_1fr_1fr_80px] items-center gap-4 px-4 pb-3 text-sm font-medium text-muted-foreground">
+            <span>Duration</span>
+            <span>User Surcharge</span>
+            <span>Reseller Surcharge</span>
+            <span className="text-center">Status</span>
+          </div>
+          <Separator className="mb-4 hidden md:block" />
+
+          <div className="space-y-3">
+            {validityTiers.map((tier) => (
+              <div
+                key={tier.days}
+                className={`rounded-lg border p-4 transition-colors ${
+                  tier.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
+                }`}
+              >
+                <div className="grid items-center gap-4 md:grid-cols-[100px_1fr_1fr_80px]">
+                  {/* Duration label */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{tier.days} days</span>
+                  </div>
+
+                  {/* User Surcharge */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground md:hidden">User Surcharge</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={tier.userSurcharge / 100}
+                        onBlur={(e) => updateValidityTier(tier.days, "userSurcharge", Math.round(Number(e.target.value) * 100))}
+                        className="pl-7 bg-secondary border-0 h-9"
+                        disabled={!tier.enabled}
+                      />
+                    </div>
+                    {tier.enabled && (
+                      <p className="text-[10px] text-muted-foreground px-1">
+                        +{"₹"}{(tier.userSurcharge / 100).toFixed(2)} per event
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Reseller Surcharge */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground md:hidden">Reseller Surcharge</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={tier.resellerSurcharge / 100}
+                        onBlur={(e) => updateValidityTier(tier.days, "resellerSurcharge", Math.round(Number(e.target.value) * 100))}
+                        className="pl-7 bg-secondary border-0 h-9"
+                        disabled={!tier.enabled}
+                      />
+                    </div>
+                    {tier.enabled && (
+                      <p className="text-[10px] text-muted-foreground px-1">
+                        +{"₹"}{(tier.resellerSurcharge / 100).toFixed(2)} per event
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Toggle */}
+                  <div className="flex items-center justify-center">
+                    <Switch
+                      checked={tier.enabled}
+                      onCheckedChange={(checked) => updateValidityTier(tier.days, "enabled", checked)}
+                    />
+                  </div>
                 </div>
               </div>
-            </>
-          )}
+            ))}
+          </div>
+
+          {/* Example calculation */}
+          <div className="mt-4 rounded-lg bg-secondary/50 p-4 space-y-2">
+            <p className="text-sm font-medium">Example</p>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>RTMP event base price: {"₹"}12.00 + 90-day validity surcharge: {"₹"}5.00 = <span className="text-foreground font-medium">{"₹"}17.00 total</span></p>
+              <p>Starter Pack (10 events): {"₹"}100.00 + 90-day surcharge {"₹"}5.00 x 10 = <span className="text-foreground font-medium">{"₹"}150.00 total</span></p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

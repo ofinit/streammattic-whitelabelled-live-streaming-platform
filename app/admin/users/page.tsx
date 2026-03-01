@@ -249,10 +249,12 @@ export default function AdminUsersPage() {
           targetType="user"
           existingCustomPricing={pricingUser.customStreamPricing}
           existingPackOverrides={(pricingUser as unknown as Record<string, unknown>).customPackPricing as Record<string, { userPrice: number; resellerPrice: number }> | null ?? null}
-          onSave={(pricing, _note, _annualOverride, packOverrides) => {
+          existingValidityOverrides={(pricingUser as unknown as Record<string, unknown>).customValiditySurcharges as Record<number, { userSurcharge: number; resellerSurcharge: number }> | null ?? null}
+          onSave={(pricing, _note, _annualOverride, packOverrides, validityOverrides) => {
             // In production, save to API
             pricingUser.customStreamPricing = pricing
             ;(pricingUser as unknown as Record<string, unknown>).customPackPricing = packOverrides
+            ;(pricingUser as unknown as Record<string, unknown>).customValiditySurcharges = validityOverrides
             setPricingUser(null)
           }}
         />

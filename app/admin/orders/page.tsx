@@ -80,14 +80,14 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Orders</h1>
-        <p className="text-muted-foreground">Manage and approve package orders from all users</p>
+        <p className="text-muted-foreground">Manage and approve package orders from all streamers</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by order # or user..."
+            placeholder="Search by order # or streamer..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"

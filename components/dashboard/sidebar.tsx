@@ -55,7 +55,7 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { title: "Resellers", href: "/admin/resellers", icon: Building2 },
+  { title: "Studios", href: "/admin/studios", icon: Building2 },
   { title: "Users", href: "/admin/users", icon: Users },
   { title: "Packages", href: "/admin/packages", icon: Package },
   { title: "Events", href: "/admin/events", icon: Radio },
@@ -70,17 +70,17 @@ const adminNav: NavItem[] = [
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
-const resellerNav: NavItem[] = [
-  { title: "Dashboard", href: "/reseller", icon: LayoutDashboard },
-  { title: "Events", href: "/reseller/events", icon: Radio },
-  { title: "Event Calendar", href: "/reseller/calendar", icon: Calendar },
-  { title: "Wallet", href: "/reseller/wallet", icon: Wallet },
-  { title: "Packages", href: "/reseller/packages", icon: Package },
-  { title: "Analytics", href: "/reseller/analytics", icon: BarChart3 },
-  { title: "Branding", href: "/reseller/branding", icon: Paintbrush },
-  { title: "Notifications", href: "/reseller/notifications", icon: Bell },
-  { title: "Integrations", href: "/reseller/settings/integrations", icon: Plug },
-  { title: "Settings", href: "/reseller/settings", icon: Settings },
+const studioNav: NavItem[] = [
+  { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
+  { title: "Events", href: "/studio/events", icon: Radio },
+  { title: "Event Calendar", href: "/studio/calendar", icon: Calendar },
+  { title: "Wallet", href: "/studio/wallet", icon: Wallet },
+  { title: "Packages", href: "/studio/packages", icon: Package },
+  { title: "Analytics", href: "/studio/analytics", icon: BarChart3 },
+  { title: "Branding", href: "/studio/branding", icon: Paintbrush },
+  { title: "Notifications", href: "/studio/notifications", icon: Bell },
+  { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
+  { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
 
 const userNav: NavItem[] = [
@@ -107,8 +107,8 @@ export function Sidebar() {
     switch (user?.role) {
       case "admin":
         return adminNav
-      case "reseller":
-        return resellerNav
+      case "studio":
+        return studioNav
       case "user":
         return userNav
       default:
@@ -265,9 +265,9 @@ export function Sidebar() {
                       <Users className="mr-2 h-4 w-4" />
                       Admin View
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => switchRole("reseller")}>
+                    <DropdownMenuItem onClick={() => switchRole("studio")}>
                       <Building2 className="mr-2 h-4 w-4" />
-                      Reseller View
+                      Studio View
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => switchRole("user")}>
                       <Users className="mr-2 h-4 w-4" />

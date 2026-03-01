@@ -15,14 +15,14 @@ import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function ResellerDashboard() {
+export default function StudioDashboard() {
   const { user } = useAuth()
 
-  // Use a demo reseller ID for now (will use real auth later)
-  const resellerId = user?.id || "b0000000-0000-0000-0000-000000000001"
+  // Use a demo studio ID for now (will use real auth later)
+  const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
 
   const { data, error, isLoading } = useSWR(
-    `/api/reseller/dashboard?resellerId=${resellerId}`,
+    `/api/studio/dashboard?studioId=${studioId}`,
     fetcher,
     { refreshInterval: 30000 }
   )
@@ -68,7 +68,7 @@ export default function ResellerDashboard() {
   if (error) {
     return (
       <div className="min-h-screen">
-        <Header title="Reseller Dashboard" subtitle={`Welcome back, ${user?.name}`} />
+        <Header title="Studio Dashboard" subtitle={`Welcome back, ${user?.name}`} />
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="flex items-center gap-3 p-6">
             <AlertCircle className="h-5 w-5 text-destructive" />
@@ -94,7 +94,7 @@ export default function ResellerDashboard() {
             <AlertDescription>
               Your wallet balance is ₹{walletBalance.toLocaleString()}. Low balance may block event creation.
               <Button variant="outline" size="sm" className="ml-4 bg-transparent" asChild>
-                <Link href="/reseller/wallet">Add Funds Now</Link>
+                <Link href="/studio/wallet">Add Funds Now</Link>
               </Button>
             </AlertDescription>
           </Alert>
@@ -126,13 +126,13 @@ export default function ResellerDashboard() {
         {/* Quick Actions */}
         <div className="flex gap-4">
           <Button className="bg-primary hover:bg-primary/90" asChild>
-            <Link href="/reseller/wallet">
+            <Link href="/studio/wallet">
               <Wallet className="mr-2 h-4 w-4" />
               Top Up Wallet
             </Link>
           </Button>
           <Button variant="outline" className="border-border bg-transparent" asChild>
-            <Link href="/reseller/events">
+            <Link href="/studio/events">
               <Plus className="mr-2 h-4 w-4" />
               Create Event
             </Link>
@@ -144,7 +144,7 @@ export default function ResellerDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Active Events</CardTitle>
             <Button size="sm" variant="ghost" className="text-primary" asChild>
-              <Link href="/reseller/events">View All Events</Link>
+              <Link href="/studio/events">View All Events</Link>
             </Button>
           </CardHeader>
           <CardContent>

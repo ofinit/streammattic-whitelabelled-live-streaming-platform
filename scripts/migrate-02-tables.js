@@ -1,28 +1,15 @@
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
+const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
 
-// Extract host from connection string for HTTP endpoint
-const match = DATABASE_URL.match(/:\/\/([^:]+):([^@]+)@([^/]+)\/(.+)/);
-if (!match) { console.error("Cannot parse DATABASE_URL"); process.exit(1); }
-const [, user, password, host, dbname] = match;
-const httpHost = host.replace(/\.us-east-\d+\./, ".").replace(".neon.tech", "-pooler.neon.tech");
-const API_URL = `https://${host.split(".")[0]}.neon.tech/sql`;
-
-async function exec(sql) {
-  const resp = await fetch(`https://${host}/sql`, {
+async function exec(query) {
+  const r = await fetch(API_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${password}`,
-      "Neon-Connection-String": DATABASE_URL,
-    },
-    body: JSON.stringify({ query: sql }),
+    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
+    body: JSON.stringify({ query, params: [] }),
   });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`HTTP ${resp.status}: ${text}`);
-  }
-  return resp.json();
+  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
+  return r.json();
 }
 
 const statements = [

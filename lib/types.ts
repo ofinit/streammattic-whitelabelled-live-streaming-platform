@@ -398,13 +398,24 @@ export interface EventPackSettings {
   streamTypeRestriction: "any" | (keyof StreamTypePricing)[]
 }
 
-// Event validity -- 30 days included free, extended durations have a surcharge
-export interface ValidityTier {
-  days: number
+// Event validity -- 30 days included free, extended durations have a per-stream-type surcharge
+export interface ValidityTierStreamSurcharge {
   userSurcharge: number // in paisa, added on top of base event/pack price
   resellerSurcharge: number
-  enabled: boolean
 }
+
+export interface ValidityTier {
+  days: number
+  enabled: boolean
+  surcharges: {
+    rtmp: ValidityTierStreamSurcharge
+    youtube_api: ValidityTierStreamSurcharge
+    youtube_embed: ValidityTierStreamSurcharge
+    third_party: ValidityTierStreamSurcharge
+  }
+}
+
+export type ValidityStreamKey = keyof ValidityTier["surcharges"]
 
 export interface EventValiditySettings {
   defaultDays: 30 // always 30, not configurable

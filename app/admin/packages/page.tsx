@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Package, Plus, Trash2, Clock } from "lucide-react"
-import type { StreamTypePriceLevel, EventPack, ValidityTier } from "@/lib/types"
+import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Package, Plus, Trash2, Clock, ChevronDown } from "lucide-react"
+import type { StreamTypePriceLevel, EventPack, ValidityTier, ValidityStreamKey } from "@/lib/types"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -42,11 +43,32 @@ export default function AdminPackagesPage() {
   ])
 
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
-    { days: 60, userSurcharge: 200, resellerSurcharge: 100, enabled: true },
-    { days: 90, userSurcharge: 500, resellerSurcharge: 250, enabled: true },
-    { days: 180, userSurcharge: 1000, resellerSurcharge: 500, enabled: true },
-    { days: 365, userSurcharge: 2000, resellerSurcharge: 1000, enabled: true },
+    { days: 60, enabled: true, surcharges: {
+      rtmp: { userSurcharge: 300, resellerSurcharge: 150 },
+      youtube_api: { userSurcharge: 200, resellerSurcharge: 100 },
+      youtube_embed: { userSurcharge: 100, resellerSurcharge: 50 },
+      third_party: { userSurcharge: 80, resellerSurcharge: 40 },
+    }},
+    { days: 90, enabled: true, surcharges: {
+      rtmp: { userSurcharge: 700, resellerSurcharge: 350 },
+      youtube_api: { userSurcharge: 500, resellerSurcharge: 250 },
+      youtube_embed: { userSurcharge: 250, resellerSurcharge: 125 },
+      third_party: { userSurcharge: 200, resellerSurcharge: 100 },
+    }},
+    { days: 180, enabled: true, surcharges: {
+      rtmp: { userSurcharge: 1200, resellerSurcharge: 600 },
+      youtube_api: { userSurcharge: 1000, resellerSurcharge: 500 },
+      youtube_embed: { userSurcharge: 500, resellerSurcharge: 250 },
+      third_party: { userSurcharge: 400, resellerSurcharge: 200 },
+    }},
+    { days: 365, enabled: true, surcharges: {
+      rtmp: { userSurcharge: 2500, resellerSurcharge: 1250 },
+      youtube_api: { userSurcharge: 2000, resellerSurcharge: 1000 },
+      youtube_embed: { userSurcharge: 1000, resellerSurcharge: 500 },
+      third_party: { userSurcharge: 800, resellerSurcharge: 400 },
+    }},
   ])
+  const [expandedTiers, setExpandedTiers] = useState<Record<number, boolean>>({})
 
   const [saved, setSaved] = useState(false)
 
@@ -76,10 +98,24 @@ export default function AdminPackagesPage() {
     setEventPacks((prev) => prev.filter((p) => p.id !== id))
   }
 
-  const updateValidityTier = (days: number, field: keyof ValidityTier, value: number | boolean) => {
+  const updateValidityTierEnabled = (days: number, enabled: boolean) => {
     setValidityTiers((prev) =>
-      prev.map((t) => (t.days === days ? { ...t, [field]: value } : t))
+      prev.map((t) => (t.days === days ? { ...t, enabled } : t))
     )
+  }
+
+  const updateValidityTierSurcharge = (days: number, streamKey: ValidityStreamKey, field: "userSurcharge" | "resellerSurcharge", value: number) => {
+    setValidityTiers((prev) =>
+      prev.map((t) =>
+        t.days === days
+          ? { ...t, surcharges: { ...t.surcharges, [streamKey]: { ...t.surcharges[streamKey], [field]: value } } }
+          : t
+      )
+    )
+  }
+
+  const toggleTierExpanded = (days: number) => {
+    setExpandedTiers((prev) => ({ ...prev, [days]: !prev[days] }))
   }
 
   const updateStreamPrice = (key: string, field: keyof StreamTypePriceLevel, value: number | boolean) => {
@@ -371,7 +407,7 @@ export default function AdminPackagesPage() {
             <div>
               <CardTitle>Event Validity</CardTitle>
               <CardDescription>
-                Default validity for all stream types & event packs is <span className="text-foreground font-medium">30 days</span> (included in base price). Extended durations are chargeable.
+                Default validity for all stream types & event packs is <span className="text-foreground font-medium">30 days</span> (included in base price). Extended durations have per-stream-type surcharges.
               </CardDescription>
             </div>
           </div>
@@ -386,91 +422,116 @@ export default function AdminPackagesPage() {
             </div>
           </div>
 
-          {/* Extended tiers header */}
-          <div className="hidden md:grid md:grid-cols-[100px_1fr_1fr_80px] items-center gap-4 px-4 pb-3 text-sm font-medium text-muted-foreground">
-            <span>Duration</span>
-            <span>User Surcharge</span>
-            <span>Reseller Surcharge</span>
-            <span className="text-center">Status</span>
-          </div>
-          <Separator className="mb-4 hidden md:block" />
-
           <div className="space-y-3">
-            {validityTiers.map((tier) => (
-              <div
-                key={tier.days}
-                className={`rounded-lg border p-4 transition-colors ${
-                  tier.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
-                }`}
-              >
-                <div className="grid items-center gap-4 md:grid-cols-[100px_1fr_1fr_80px]">
-                  {/* Duration label */}
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{tier.days} days</span>
-                  </div>
-
-                  {/* User Surcharge */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground md:hidden">User Surcharge</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={tier.userSurcharge / 100}
-                        onBlur={(e) => updateValidityTier(tier.days, "userSurcharge", Math.round(Number(e.target.value) * 100))}
-                        className="pl-7 bg-secondary border-0 h-9"
-                        disabled={!tier.enabled}
+            {validityTiers.map((tier) => {
+              const isExpanded = expandedTiers[tier.days] ?? false
+              return (
+                <Collapsible key={tier.days} open={isExpanded} onOpenChange={() => toggleTierExpanded(tier.days)}>
+                  <div
+                    className={`rounded-lg border transition-colors ${
+                      tier.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
+                    }`}
+                  >
+                    {/* Tier header row */}
+                    <div className="flex items-center justify-between p-4">
+                      <CollapsibleTrigger asChild disabled={!tier.enabled}>
+                        <button
+                          type="button"
+                          className="flex items-center gap-3 text-left"
+                          disabled={!tier.enabled}
+                        >
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded && tier.enabled ? "rotate-180" : ""}`} />
+                          <span className="font-medium text-sm">{tier.days} days</span>
+                          {tier.enabled && (
+                            <span className="text-xs text-muted-foreground">
+                              {streamTypes.map((st) => {
+                                const s = tier.surcharges[st.key]
+                                return `${st.label}: +₹${(s.userSurcharge / 100).toFixed(2)}`
+                              }).join(" / ")}
+                            </span>
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <Switch
+                        checked={tier.enabled}
+                        onCheckedChange={(checked) => updateValidityTierEnabled(tier.days, checked)}
                       />
                     </div>
-                    {tier.enabled && (
-                      <p className="text-[10px] text-muted-foreground px-1">
-                        +{"₹"}{(tier.userSurcharge / 100).toFixed(2)} per event
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Reseller Surcharge */}
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground md:hidden">Reseller Surcharge</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={tier.resellerSurcharge / 100}
-                        onBlur={(e) => updateValidityTier(tier.days, "resellerSurcharge", Math.round(Number(e.target.value) * 100))}
-                        className="pl-7 bg-secondary border-0 h-9"
-                        disabled={!tier.enabled}
-                      />
-                    </div>
-                    {tier.enabled && (
-                      <p className="text-[10px] text-muted-foreground px-1">
-                        +{"₹"}{(tier.resellerSurcharge / 100).toFixed(2)} per event
-                      </p>
-                    )}
-                  </div>
+                    {/* Expanded per-stream-type surcharges */}
+                    <CollapsibleContent>
+                      {tier.enabled && (
+                        <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3">
+                          {/* Sub-header */}
+                          <div className="hidden md:grid md:grid-cols-[1fr_140px_140px] items-center gap-3 px-2 text-xs font-medium text-muted-foreground">
+                            <span>Stream Type</span>
+                            <span>User Surcharge</span>
+                            <span>Reseller Surcharge</span>
+                          </div>
 
-                  {/* Toggle */}
-                  <div className="flex items-center justify-center">
-                    <Switch
-                      checked={tier.enabled}
-                      onCheckedChange={(checked) => updateValidityTier(tier.days, "enabled", checked)}
-                    />
+                          {streamTypes.map(({ key, label, icon: Icon }) => {
+                            const s = tier.surcharges[key]
+                            return (
+                              <div key={key} className="rounded-md bg-secondary/30 p-3">
+                                <div className="grid items-center gap-3 md:grid-cols-[1fr_140px_140px]">
+                                  {/* Stream label */}
+                                  <div className="flex items-center gap-2">
+                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">{label}</span>
+                                  </div>
+
+                                  {/* User Surcharge */}
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground md:hidden">User Surcharge</Label>
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        defaultValue={s.userSurcharge / 100}
+                                        onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "userSurcharge", Math.round(Number(e.target.value) * 100))}
+                                        className="pl-7 bg-secondary border-0 h-8 text-sm"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.userSurcharge / 100).toFixed(2)}/event</p>
+                                  </div>
+
+                                  {/* Reseller Surcharge */}
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground md:hidden">Reseller Surcharge</Label>
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        defaultValue={s.resellerSurcharge / 100}
+                                        onBlur={(e) => updateValidityTierSurcharge(tier.days, key, "resellerSurcharge", Math.round(Number(e.target.value) * 100))}
+                                        className="pl-7 bg-secondary border-0 h-8 text-sm"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground px-1">+{"₹"}{(s.resellerSurcharge / 100).toFixed(2)}/event</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </CollapsibleContent>
                   </div>
-                </div>
-              </div>
-            ))}
+                </Collapsible>
+              )
+            })}
           </div>
 
           {/* Example calculation */}
           <div className="mt-4 rounded-lg bg-secondary/50 p-4 space-y-2">
             <p className="text-sm font-medium">Example</p>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>RTMP event base price: {"₹"}12.00 + 90-day validity surcharge: {"₹"}5.00 = <span className="text-foreground font-medium">{"₹"}17.00 total</span></p>
-              <p>Starter Pack (10 events): {"₹"}100.00 + 90-day surcharge {"₹"}5.00 x 10 = <span className="text-foreground font-medium">{"₹"}150.00 total</span></p>
+              <p>RTMP event {"₹"}12.00 + 90-day RTMP surcharge {"₹"}{(validityTiers[1]?.surcharges.rtmp.userSurcharge / 100 || 7).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(12 + (validityTiers[1]?.surcharges.rtmp.userSurcharge / 100 || 7)).toFixed(2)} total</span></p>
+              <p>YouTube Embed event {"₹"}4.00 + 90-day YT Embed surcharge {"₹"}{(validityTiers[1]?.surcharges.youtube_embed.userSurcharge / 100 || 2.5).toFixed(2)} = <span className="text-foreground font-medium">{"₹"}{(4 + (validityTiers[1]?.surcharges.youtube_embed.userSurcharge / 100 || 2.5)).toFixed(2)} total</span></p>
             </div>
           </div>
         </CardContent>

@@ -217,7 +217,6 @@ export default function AdminWalletsPage() {
               packageName="Professional Package"
               userPrice={249900}
               resellerCost={100000}
-              adminCost={60000}
               userName="Alice Johnson"
               resellerName="LiveStream Pro"
             />

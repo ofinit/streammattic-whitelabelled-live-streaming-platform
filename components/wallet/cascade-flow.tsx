@@ -8,7 +8,6 @@ interface CascadeFlowProps {
   packageName: string
   userPrice: number
   resellerCost: number
-  adminCost: number
   userName?: string
   resellerName?: string
 }
@@ -17,12 +16,11 @@ export function CascadeFlow({
   packageName,
   userPrice,
   resellerCost,
-  adminCost,
   userName = "User",
   resellerName = "Reseller",
 }: CascadeFlowProps) {
   const resellerProfit = userPrice - resellerCost
-  const adminProfit = resellerCost - adminCost
+  const adminRevenue = resellerCost
 
   return (
     <Card>
@@ -83,9 +81,6 @@ export function CascadeFlow({
           {/* Arrow */}
           <div className="flex flex-col items-center py-1">
             <ArrowDown className="h-5 w-5 text-muted-foreground" />
-            <Badge variant="outline" className="mt-1 text-xs">
-              ₹{((resellerCost - adminCost) / 100).toLocaleString("en-IN")} profit
-            </Badge>
           </div>
 
           {/* Admin Level */}
@@ -101,8 +96,8 @@ export function CascadeFlow({
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-red-500">-₹{(adminCost / 100).toLocaleString("en-IN")}</p>
-                <p className="text-xs text-emerald-500">+₹{(adminProfit / 100).toLocaleString("en-IN")} margin</p>
+                <p className="font-semibold text-emerald-500">+₹{(adminRevenue / 100).toLocaleString("en-IN")}</p>
+                <p className="text-xs text-muted-foreground">Revenue</p>
               </div>
             </div>
           </div>
@@ -121,12 +116,8 @@ export function CascadeFlow({
               <span className="font-medium text-emerald-500">₹{(resellerProfit / 100).toLocaleString("en-IN")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Admin Profit</span>
-              <span className="font-medium text-emerald-500">₹{(adminProfit / 100).toLocaleString("en-IN")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Platform Cost</span>
-              <span className="font-medium">₹{(adminCost / 100).toLocaleString("en-IN")}</span>
+              <span className="text-muted-foreground">Admin Revenue</span>
+              <span className="font-medium text-emerald-500">₹{(adminRevenue / 100).toLocaleString("en-IN")}</span>
             </div>
           </div>
         </div>

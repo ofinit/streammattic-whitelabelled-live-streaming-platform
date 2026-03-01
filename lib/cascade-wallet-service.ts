@@ -3,8 +3,8 @@
  *
  * Handles hierarchical wallet debits for pay-per-event pricing.
  * 2-tier model: User/Reseller -> Admin
- * - Users pay userPrice, Admin keeps the difference from adminCost
- * - Resellers pay resellerPrice, Admin keeps the difference from adminCost
+ * - Users pay userPrice, Admin receives resellerPrice from reseller
+ * - Resellers pay resellerPrice to admin
  */
 
 import type {
@@ -22,94 +22,48 @@ import type {
 
 // Default stream type pricing (platform defaults)
 export const defaultStreamTypePricing: StreamTypePricing = {
-  rtmp: {
-    adminCost: 500,
-    resellerPrice: 700,
-    userPrice: 1500,
-  },
-  youtube_api: {
-    adminCost: 300,
-    resellerPrice: 400,
-    userPrice: 1000,
-  },
-  youtube_embed: {
-    adminCost: 100,
-    resellerPrice: 150,
-    userPrice: 500,
-  },
-  third_party: {
-    adminCost: 50,
-    resellerPrice: 100,
-    userPrice: 400,
-  },
+  rtmp: { userPrice: 1500, resellerPrice: 700, enabled: true },
+  youtube_api: { userPrice: 1000, resellerPrice: 400, enabled: true },
+  youtube_embed: { userPrice: 500, resellerPrice: 150, enabled: true },
+  third_party: { userPrice: 400, resellerPrice: 100, enabled: true },
 }
 
 // Default simulcast pricing
 export const defaultSimulcastPricing: SimulcastPricing = {
-  youtube: {
-    adminCost: 30,
-    resellerPrice: 40,
-    userPrice: 75,
-  },
-  facebook: {
-    adminCost: 30,
-    resellerPrice: 40,
-    userPrice: 75,
-  },
-  customRtmp: {
-    adminCost: 50,
-    resellerPrice: 60,
-    userPrice: 100,
-  },
+  youtube: { userPrice: 75, resellerPrice: 40, enabled: true },
+  facebook: { userPrice: 75, resellerPrice: 40, enabled: true },
+  customRtmp: { userPrice: 100, resellerPrice: 60, enabled: true },
 }
 
 // Get price for stream type at given level
 export function getStreamTypePrice(
   streamType: StreamTypeKey,
-  level: "admin" | "reseller" | "user",
+  level: "reseller" | "user",
   customPricing?: StreamTypePricing,
 ): number {
   const pricing = customPricing || defaultStreamTypePricing
   const streamPricing = pricing[streamType]
 
-  switch (level) {
-    case "admin":
-      return streamPricing.adminCost
-    case "reseller":
-      return streamPricing.resellerPrice
-    case "user":
-      return streamPricing.userPrice
-    default:
-      return streamPricing.userPrice
-  }
+  return level === "reseller" ? streamPricing.resellerPrice : streamPricing.userPrice
 }
 
 // Get price for simulcast destination at given level
 export function getSimulcastPrice(
   destination: "youtube" | "facebook" | "custom_rtmp",
-  level: "admin" | "reseller" | "user",
+  level: "reseller" | "user",
   customPricing?: SimulcastPricing,
 ): number {
   const pricing = customPricing || defaultSimulcastPricing
   const destPricing = pricing[destination === "custom_rtmp" ? "customRtmp" : destination]
 
-  switch (level) {
-    case "admin":
-      return destPricing.adminCost
-    case "reseller":
-      return destPricing.resellerPrice
-    case "user":
-      return destPricing.userPrice
-    default:
-      return destPricing.userPrice
-  }
+  return level === "reseller" ? destPricing.resellerPrice : destPricing.userPrice
 }
 
 // Calculate total event price for a user or reseller
 export function calculateEventPrice(
   streamType: StreamTypeKey,
   simulcastDestinations: ("youtube" | "facebook" | "custom_rtmp")[],
-  level: "admin" | "reseller" | "user",
+  level: "reseller" | "user",
   customStreamPricing?: StreamTypePricing,
   customSimulcastPricing?: SimulcastPricing,
 ): { streamPrice: number; simulcastPrice: number; total: number } {
@@ -171,9 +125,9 @@ export function validateCascade(
     const entity = ancestorChain[i]
     const isAdmin = entity.type === "admin"
 
-    // Determine price level
-    const priceLevel: "admin" | "reseller" | "user" =
-      entity.type === "user" ? "user" : entity.type === "reseller" ? "reseller" : "admin"
+    // Determine price level -- admin doesn't pay, only user and reseller
+    const priceLevel: "reseller" | "user" =
+      entity.type === "user" ? "user" : "reseller"
 
     // Calculate price at this level
     const { total: requiredAmount } = calculateEventPrice(

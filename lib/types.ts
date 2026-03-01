@@ -270,6 +270,10 @@ export interface PlatformSettings {
   imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
   platformDomain: string // admin's primary platform domain, e.g. "myplatform.io"
   resellerCnameTarget: string // CNAME target for reseller www records, e.g. "cname.vercel-dns.com"
+  resellerAnnualSubscription: {
+    price: number // Annual price in paisa for white-label + hosting
+    enabled: boolean
+  }
   createdAt: Date
   updatedAt: Date
   }
@@ -358,9 +362,9 @@ export interface StreamTypePricing {
 }
 
   export interface StreamTypePriceLevel {
-  adminCost: number // Platform cost (what admin pays)
-  resellerPrice: number // What reseller pays to admin
-  userPrice: number // What end user pays
+  userPrice: number // What end user pays (in paisa)
+  resellerPrice: number // What reseller pays to admin (in paisa)
+  enabled: boolean // Whether this stream type is available
   }
 
 export interface SimulcastPricing {
@@ -370,9 +374,9 @@ export interface SimulcastPricing {
 }
 
   export interface SimulcastPriceLevel {
-  adminCost: number
-  resellerPrice: number
   userPrice: number
+  resellerPrice: number
+  enabled: boolean
   }
 
 // Custom pricing per user

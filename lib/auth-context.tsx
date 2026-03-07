@@ -1,5 +1,7 @@
 "use client"
 
+import { signIn, signOut as nextAuthSignOut } from "next-auth/react"
+
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import type { UserRole } from "./types"
 
@@ -101,15 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
+      if (res && !res.error) {
+        // successfully created next-auth session, let's refresh user
+        await fetchCurrentUser()
         setIsLoading(false)
         return true
       }
@@ -120,11 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return false
     }
-  }, [])
+  }, [fetchCurrentUser])
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      await nextAuthSignOut({ redirect: false })
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => { }) // clean up old session gracefully if it existed
     } catch { /* ignore */ }
     setUser(null)
     setOriginalUser(null)

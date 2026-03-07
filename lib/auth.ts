@@ -129,10 +129,23 @@ export async function clearSessionCookie() {
 // AUTH HELPERS (get current user from request)
 // ============================================================
 
+import { auth } from "@/auth"
+
 export async function getCurrentUser() {
-  const token = await getSessionCookie()
-  if (!token) return null
-  return getSessionUser(token)
+  const session = await auth()
+
+  // Return the NextAuth session user
+  if (!session?.user?.id) return null
+
+  // Refetch full user data for full fidelity (or just use what's in the session token)
+  const sql = getDb()
+  const rows = await sql`
+    SELECT id, email, name, phone, role, status, avatar, email_verified, created_at, updated_at
+    FROM users 
+    WHERE id = ${session.user.id}
+  `
+  if (rows.length === 0) return null
+  return toCamel(rows[0] as Record<string, unknown>)
 }
 
 export async function requireAuth() {

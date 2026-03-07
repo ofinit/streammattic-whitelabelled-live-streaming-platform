@@ -31,8 +31,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check session cookie exists
-  const sessionToken = request.cookies.get("sm_session")?.value
+  // Check session cookie exists (support both dev and prod secure cookies)
+  const sessionToken =
+    request.cookies.get("authjs.session-token")?.value ||
+    request.cookies.get("__Secure-authjs.session-token")?.value ||
+    request.cookies.get("sm_session")?.value; // fallback for current active sessions
+
   if (!sessionToken) {
     // Redirect to login for protected pages, return 401 for API
     if (pathname.startsWith("/api/")) {

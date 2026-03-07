@@ -1,0 +1,290 @@
+"use client"
+
+import type React from "react"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
+import { useBranding } from "@/lib/branding-context"
+import { useSidebar } from "@/lib/sidebar-context"
+import { BrandedLogo } from "@/components/branding/branded-logo"
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  Calendar,
+  Wallet,
+  ShoppingCart,
+  Settings,
+  Paintbrush,
+  Globe,
+  CreditCard,
+  BarChart3,
+  Radio,
+  Bell,
+  LogOut,
+  ChevronDown,
+  Building2,
+  Mail,
+  Server,
+  Youtube,
+  Plug,
+  PanelLeftClose,
+  PanelLeft,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+interface NavItem {
+  title: string
+  href: string
+  icon: React.ElementType
+  badge?: number
+}
+
+const adminNav: NavItem[] = [
+  { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { title: "Studios", href: "/admin/studios", icon: Building2 },
+  { title: "Streamers", href: "/admin/streamers", icon: Users },
+  { title: "Pricing", href: "/admin/packages", icon: Package },
+  { title: "Events", href: "/admin/events", icon: Radio },
+  { title: "Event Calendar", href: "/admin/calendar", icon: Calendar },
+  { title: "Streaming", href: "/admin/streaming", icon: Server }, // Added streaming server page
+  { title: "Wallets", href: "/admin/wallets", icon: Wallet },
+  { title: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: 8 },
+  { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { title: "Payment Gateways", href: "/admin/payments", icon: CreditCard },
+  { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },
+  { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
+  { title: "Settings", href: "/admin/settings", icon: Settings },
+]
+
+const studioNav: NavItem[] = [
+  { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
+  { title: "Events", href: "/studio/events", icon: Radio },
+  { title: "Event Calendar", href: "/studio/calendar", icon: Calendar },
+  { title: "Wallet", href: "/studio/wallet", icon: Wallet },
+  { title: "Pricing", href: "/studio/packages", icon: Package },
+  { title: "Analytics", href: "/studio/analytics", icon: BarChart3 },
+  { title: "Branding", href: "/studio/branding", icon: Paintbrush },
+  { title: "Notifications", href: "/studio/notifications", icon: Bell },
+  { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
+  { title: "Settings", href: "/studio/settings", icon: Settings },
+]
+
+const streamerNav: NavItem[] = [
+  { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
+  { title: "My Events", href: "/streamer/events", icon: Radio },
+  { title: "Schedule Event", href: "/streamer/events/new", icon: Calendar },
+  { title: "Event Calendar", href: "/streamer/calendar", icon: Calendar },
+  { title: "Wallet", href: "/streamer/wallet", icon: Wallet },
+  { title: "Pricing", href: "/streamer/packages", icon: Package },
+  { title: "Orders", href: "/streamer/orders", icon: ShoppingCart },
+  { title: "Analytics", href: "/streamer/analytics", icon: BarChart3 },
+  { title: "Notifications", href: "/streamer/notifications", icon: Bell },
+  { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
+  { title: "Settings", href: "/streamer/settings", icon: Settings },
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const { user, logout, switchRole } = useAuth()
+  const { isWhiteLabel } = useBranding()
+  const { isCollapsed, toggleSidebar } = useSidebar()
+
+  const getNavItems = (): NavItem[] => {
+    switch (user?.role) {
+      case "admin":
+        return adminNav
+      case "studio":
+        return studioNav
+      case "streamer":
+        return streamerNav
+      default:
+        return []
+    }
+  }
+
+  const navItems = getNavItems()
+  const initials = user?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen border-r border-sidebar-border bg-sidebar-background transition-all duration-300",
+          isCollapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-3">
+            {!isCollapsed && (
+              <div className="flex items-center gap-2 px-1">
+                <BrandedLogo size="sm" />
+              </div>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  className={cn(
+                    "h-9 w-9 shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    isCollapsed && "mx-auto",
+                  )}
+                >
+                  {isCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+            </Tooltip>
+          </div>
+
+          <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href
+              const linkContent = (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    isCollapsed && "justify-center px-2",
+                  )}
+                >
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">{item.title}</span>
+                      {item.badge && (
+                        <Badge
+                          variant="secondary"
+                          className="h-5 min-w-5 justify-center bg-primary text-primary-foreground"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                  {isCollapsed && item.badge && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute -right-1 -top-1 h-4 min-w-4 justify-center bg-primary text-primary-foreground text-xs"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              )
+
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <div className="relative">{linkContent}</div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="flex items-center gap-2">
+                      {item.title}
+                      {item.badge && (
+                        <Badge
+                          variant="secondary"
+                          className="h-5 min-w-5 justify-center bg-primary text-primary-foreground"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              }
+
+              return linkContent
+            })}
+          </nav>
+
+          <div className="border-t border-sidebar-border p-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn("w-full gap-3 px-3", isCollapsed ? "justify-center" : "justify-start")}
+                >
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <>
+                      <div className="flex flex-1 flex-col items-start text-left">
+                        <span className="text-sm font-medium text-sidebar-foreground">{user?.name}</span>
+                        <span className="text-xs capitalize text-muted-foreground">{user?.role}</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align={isCollapsed ? "center" : "end"}
+                side={isCollapsed ? "right" : "top"}
+                className="w-56"
+              >
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {!isWhiteLabel && (
+                  <>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role (Demo)</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => switchRole("admin")}>
+                      <Users className="mr-2 h-4 w-4" />
+                      Admin View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => switchRole("studio")}>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Studio View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => switchRole("streamer")}>
+                      <Users className="mr-2 h-4 w-4" />
+                      Streamer View
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </aside>
+    </TooltipProvider>
+  )
+}

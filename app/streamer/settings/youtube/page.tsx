@@ -10,19 +10,20 @@ import { YouTubeChannelCard } from "@/components/youtube/youtube-channel-card"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { useToast } from "@/hooks/use-toast"
 import useSWR from "swr"
+import { useAuth } from "@/lib/auth-context"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
-
-// TODO: Replace with real auth context values
-const OWNER_ID = "streamer-1"
-const OWNER_TYPE = "streamer" as const
 
 export default function YouTubeSettingsPage() {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
   const { toast } = useToast()
+  const { user } = useAuth()
+
+  const OWNER_ID = user?.id || ""
+  const OWNER_TYPE = (user?.role || "streamer") as "streamer" | "studio" | "admin"
 
   const { data, isLoading, mutate } = useSWR(
-    `/api/youtube/channels?ownerId=${OWNER_ID}&ownerType=${OWNER_TYPE}`,
+    OWNER_ID ? `/api/youtube/channels?ownerId=${OWNER_ID}&ownerType=${OWNER_TYPE}` : null,
     fetcher
   )
 

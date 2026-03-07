@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 import type { Branding, BrandingService } from "@/lib/types"
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
   Film,
   Radio,
@@ -78,7 +78,7 @@ function SiteHeader({ branding }: { branding: Branding }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/site" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           {branding.companyLogo ? (
             <img src={branding.companyLogoDark || branding.companyLogo} alt={branding.brandName} className="h-8" />
           ) : (
@@ -118,7 +118,7 @@ function SiteHeader({ branding }: { branding: Branding }) {
               </Button>
             </a>
           )}
-          <Link href="/site/login">
+          <Link href="/login">
             <Button variant="outline" size="sm">
               Login
             </Button>
@@ -155,7 +155,7 @@ function SiteHeader({ branding }: { branding: Branding }) {
                   Contact Us
                 </Button>
               </a>
-              <Link href="/site/login" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full">
                   Login
                 </Button>
@@ -355,11 +355,10 @@ function GallerySection({ branding }: { branding: Branding }) {
             <button
               key={cat}
               onClick={() => setActiveFilter(cat)}
-              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
-                activeFilter === cat
-                  ? "text-white"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${activeFilter === cat
+                ? "text-white"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
               style={activeFilter === cat ? { backgroundColor: branding.themeColor } : undefined}
             >
               {cat}
@@ -444,9 +443,8 @@ function TestimonialsSection({ branding }: { branding: Branding }) {
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  className={`h-2 rounded-full transition-all ${
-                    i === current ? "w-8" : "w-2 bg-muted-foreground/30"
-                  }`}
+                  className={`h-2 rounded-full transition-all ${i === current ? "w-8" : "w-2 bg-muted-foreground/30"
+                    }`}
                   style={i === current ? { backgroundColor: branding.themeColor } : undefined}
                   aria-label={`Go to testimonial ${i + 1}`}
                 />
@@ -680,7 +678,7 @@ function SiteFooter({ branding }: { branding: Branding }) {
 
 // --- Main Page ---
 
-export default function SiteLandingPage() {
+export function StudioLandingPage() {
   const branding = useLandingBranding()
 
   return (

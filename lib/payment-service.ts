@@ -194,10 +194,9 @@ export async function processSuccessfulPayment(params: {
     await sql`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = ${params.userId}`
   }
 
-  // Handle validity extensions or credit purchases if they existed here
-  if (orderType === "credit_purchase") {
-    // TODO: the original code didn't actually handle credit purchases inside processSuccessfulPayment!
-  }
+  // Note: credit_purchases do not flow through processSuccessfulPayment 
+  // because they are paid for using wallet balance directly (see /api/credits/purchase).
+  // Other internal charges like validity_extension follow a similar wallet-based pattern.
 
   // Create notification
   await sql`

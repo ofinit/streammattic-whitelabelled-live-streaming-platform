@@ -104,11 +104,11 @@ export function PlatformLandingPage() {
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                             </Link>
-                            <Link href="/demo/white-label">
+                            <a href="#how-it-works">
                                 <Button variant="outline" size="lg" className="w-full sm:w-auto text-md h-12 px-8">
-                                    View Demo Previews
+                                    How It Works
                                 </Button>
-                            </Link>
+                            </a>
                         </div>
                     </div>
 
@@ -257,7 +257,7 @@ export function PlatformLandingPage() {
                 </section>
 
                 {/* How it Works / Trust */}
-                <section className="px-6 py-24">
+                <section id="how-it-works" className="px-6 py-24 scroll-mt-24">
                     <div className="mx-auto max-w-7xl">
                         <div className="grid md:grid-cols-2 gap-16 items-center">
                             <div>

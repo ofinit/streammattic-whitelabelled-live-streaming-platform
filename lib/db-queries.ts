@@ -227,7 +227,7 @@ export async function getRevenueTotal(filters?: { studioId?: string; days?: numb
   }
 
   const where = `WHERE ${conditions.join(" AND ")}`
-  const rows = await sql(`SELECT COALESCE(SUM(total), 0)::numeric AS total FROM orders ${where}`, params)
+  const rows = await sql(`SELECT COALESCE(SUM(total_price), 0)::numeric AS total FROM orders ${where}`, params)
   return Number((rows[0] as { total: string }).total)
 }
 
@@ -353,17 +353,17 @@ export async function getAdminDashboardStats() {
     SELECT
       (SELECT COUNT(*)::int FROM users WHERE role = 'studio') AS total_studios,
       (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') AS active_studios,
-      (SELECT COUNT(*)::int FROM users WHERE role = 'user') AS total_users,
-      (SELECT COUNT(*)::int FROM users WHERE role = 'user' AND status = 'active') AS active_users,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'streamer') AS total_users,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'streamer' AND status = 'active') AS active_users,
       (SELECT COUNT(*)::int FROM events) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE status = 'completed') AS completed_events,
+      (SELECT COUNT(*)::int FROM events WHERE status = 'ended') AS completed_events,
       (SELECT COUNT(*)::int FROM orders) AS total_orders,
       (SELECT COUNT(*)::int FROM orders WHERE status = 'completed') AS completed_orders,
       (SELECT COUNT(*)::int FROM orders WHERE status = 'pending') AS pending_orders,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed') AS total_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
       (SELECT COALESCE(SUM(balance), 0)::numeric FROM wallets) AS total_wallet_balance,
       (SELECT COUNT(*)::int FROM packages WHERE is_active = true) AS active_packages
   `
@@ -381,10 +381,10 @@ export async function getStudioDashboardStats(studioId: string) {
       (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId}) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'completed') AS completed_events,
+      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'ended') AS completed_events,
       (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
       (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
   `
   return toCamel(rows[0] as Record<string, unknown>)

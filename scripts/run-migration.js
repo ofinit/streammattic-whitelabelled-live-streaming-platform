@@ -121,7 +121,7 @@ const seedSettings = [
   { key: "validity_extensions", value: {defaultDays:30,extensions:[{days:60,creditCost:1,label:"60 Days (+1 credit)",enabled:true},{days:90,creditCost:2,label:"90 Days (+2 credits)",enabled:true},{days:180,creditCost:4,label:"180 Days (+4 credits)",enabled:true},{days:365,creditCost:8,label:"365 Days (+8 credits)",enabled:true}]} },
   { key: "simulcast_pricing", value: {youtube:{price:75,enabled:true,label:"YouTube"},facebook:{price:75,enabled:true,label:"Facebook"},custom_rtmp:{price:100,enabled:true,label:"Custom RTMP"}} },
   { key: "studio_subscription", value: {enabled:true,annualPrice:1800000,label:"Studio Annual Subscription",description:"White-label platform access and hosting"} },
-  { key: "gst_config", value: {enabled:true,percentage:18,gstin:"",companyName:"StreamMattic",companyAddress:""} },
+  { key: "gst_config", value: {enabled:true,percentage:18,gstin:"",companyName:"StreamLivee",companyAddress:""} },
   { key: "payment_gateways", value: {razorpay:{enabled:true,label:"Razorpay"},instamojo:{enabled:true,label:"Instamojo"}} },
 ];
 
@@ -167,10 +167,10 @@ async function run() {
   // Seed admin user
   console.log("Seeding admin...");
   try {
-    const check = await execSql(`SELECT id FROM users WHERE email = 'admin@streammattic.com'`);
+    const check = await execSql(`SELECT id FROM users WHERE email = 'admin@streamlivee.com'`);
     const hasAdmin = check?.rows?.length > 0;
     if (!hasAdmin) {
-      await execSql(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streammattic.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
+      await execSql(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streamlivee.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
       await execSql(`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`);
       await execSql(`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`);
       console.log("Admin created");

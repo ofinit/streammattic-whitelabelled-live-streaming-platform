@@ -1,4 +1,4 @@
--- StreamMattic Seed Data
+-- StreamLivee Seed Data
 -- Admin user password: Admin@123 (bcrypt hash below)
 -- Hash generated with 12 salt rounds
 
@@ -128,7 +128,7 @@ INSERT INTO platform_settings (key, value) VALUES
   "percentage": 18.00,
   "platformGstNumber": "",
   "platformPanNumber": "",
-  "platformBusinessName": "StreamMattic",
+  "platformBusinessName": "StreamLivee",
   "platformBusinessAddress": ""
 }'::jsonb);
 

@@ -108,7 +108,7 @@ export default function YouTubeSettingsPage() {
         <Alert className="bg-muted/50 border-border">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Connect your YouTube channels to create live broadcasts directly from StreamMattic. You can connect multiple
+            Connect your YouTube channels to create live broadcasts directly from StreamLivee. You can connect multiple
             channels and choose which one to use for each event.
           </AlertDescription>
         </Alert>
@@ -179,7 +179,7 @@ export default function YouTubeSettingsPage() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
                   2
                 </span>
-                <span>Grant StreamMattic permission to manage your live streams</span>
+                <span>Grant StreamLivee permission to manage your live streams</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
@@ -191,7 +191,7 @@ export default function YouTubeSettingsPage() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
                   4
                 </span>
-                <span>StreamMattic will automatically create the broadcast and provide RTMP credentials</span>
+                <span>StreamLivee will automatically create the broadcast and provide RTMP credentials</span>
               </li>
             </ol>
           </CardContent>

@@ -39,7 +39,7 @@ export default function LoginPage() {
     const success = await login(email, password)
     if (success) {
       // Redirect based on role
-      if (email === "admin@streammattic.com") {
+      if (email === "admin@streamlivee.com" || email === "admin@streammattic.com") {
         router.push("/admin")
       } else if (email.includes("livestream.pro") || email.includes("streamhub")) {
         router.push("/studio")
@@ -154,7 +154,7 @@ export default function LoginPage() {
                 <p className="mb-2 text-sm font-medium text-foreground">Demo Credentials</p>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <p>
-                    <span className="text-foreground">Admin:</span> admin@streammattic.com
+                    <span className="text-foreground">Admin:</span> admin@streamlivee.com
                   </p>
                   <p>
                     <span className="text-foreground">Studio:</span> john@livestream.pro
@@ -182,7 +182,7 @@ export default function LoginPage() {
           {/* Show studio info when in white-label mode */}
           {isWhiteLabel && studio && (
             <div className="text-center text-sm text-muted-foreground">
-              <p>Powered by StreamMattic</p>
+              <p>Powered by StreamLivee</p>
             </div>
           )}
         </div>

@@ -125,7 +125,18 @@ export default function IntegrationsSettingsPage() {
                 <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink className="h-3 w-3" /></a></li>
                 <li>Create or select a project and enable the <strong>YouTube Data API v3</strong></li>
                 <li>Go to Credentials and create an <strong>OAuth 2.0 Client ID</strong> (Web application)</li>
-                <li>Add <code className="rounded bg-secondary px-1.5 py-0.5 text-xs font-mono text-foreground">{typeof window !== "undefined" ? `${window.location.origin}/api/auth/youtube/callback` : "/api/auth/youtube/callback"}</code> as an Authorized redirect URI</li>
+                <li>Add this exact URL as an <strong>Authorized redirect URI</strong> in Google Console:
+                  <p className="mt-1.5 font-mono text-xs bg-secondary rounded px-2 py-1.5 text-foreground break-all">
+                    {typeof window !== "undefined"
+                      ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/auth/youtube/callback`
+                      : "/api/auth/youtube/callback"}
+                  </p>
+                  {typeof window !== "undefined" && !process.env.NEXT_PUBLIC_APP_URL && (
+                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                      For production, set <code className="rounded bg-secondary px-1">NEXT_PUBLIC_APP_URL</code> to your live site (e.g. <code className="rounded bg-secondary px-1">https://www.streamlivee.com</code>) in your hosting environment so this URI matches.
+                    </p>
+                  )}
+                </li>
                 <li>Copy the Client ID and Client Secret below</li>
               </ol>
             </div>

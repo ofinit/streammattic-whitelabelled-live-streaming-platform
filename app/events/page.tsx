@@ -21,7 +21,7 @@ export default function PublicEventsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Radio className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-foreground">StreamMattic</span>
+            <span className="text-lg font-semibold text-foreground">StreamLivee</span>
           </Link>
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">

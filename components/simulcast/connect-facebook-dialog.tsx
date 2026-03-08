@@ -53,7 +53,7 @@ export function ConnectFacebookDialog({ open, onOpenChange, onSuccess }: Connect
             <Facebook className="h-5 w-5 text-[#1877F2]" />
             Connect Facebook Page
           </DialogTitle>
-          <DialogDescription>Connect your Facebook Page to stream directly from StreamMattic</DialogDescription>
+          <DialogDescription>Connect your Facebook Page to stream directly from StreamLivee</DialogDescription>
         </DialogHeader>
 
         {step === "info" && (

@@ -56,7 +56,7 @@ export const POST = withAuth(async (user, request) => {
     }
 
     // Instamojo
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "https://www.streamlivee.com"
     const imPayment = await createInstamojoPayment({
       amount,
       purpose: description || `${orderType} payment`,

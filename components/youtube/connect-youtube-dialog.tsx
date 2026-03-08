@@ -99,7 +99,7 @@ export function ConnectYouTubeDialog({
             Connect YouTube Channel
           </DialogTitle>
           <DialogDescription>
-            Link your YouTube channel to create live broadcasts directly from StreamMattic
+            Link your YouTube channel to create live broadcasts directly from StreamLivee
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +124,7 @@ export function ConnectYouTubeDialog({
 
           <Alert className="bg-muted/50 border-border">
             <AlertDescription className="text-xs">
-              StreamMattic will request permission to manage your YouTube live streams. We will never post videos or
+              StreamLivee will request permission to manage your YouTube live streams. We will never post videos or
               access your private content without your action.
             </AlertDescription>
           </Alert>

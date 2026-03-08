@@ -39,7 +39,7 @@ async function main() {
   // Using gen_random_uuid() and crypt() from pgcrypto
   try {
     await exec(`INSERT INTO users (email, name, phone, password_hash, role, status, email_verified)
-      VALUES ('admin@streammattic.com', 'Platform Admin', '+919999999999',
+      VALUES ('admin@streamlivee.com', 'Platform Admin', '+919999999999',
       '$2b$10$rQZ8kHwM5.TA3j5V3j5V3eK8X8X8X8X8X8X8X8X8X8X8X8X8X8',
       'admin', 'active', true)
       ON CONFLICT (email) DO NOTHING`);
@@ -49,7 +49,7 @@ async function main() {
   // Create wallet for admin
   try {
     await exec(`INSERT INTO wallets (user_id, balance, currency)
-      SELECT id, 0, 'INR' FROM users WHERE email = 'admin@streammattic.com'
+      SELECT id, 0, 'INR' FROM users WHERE email = 'admin@streamlivee.com'
       ON CONFLICT (user_id) DO NOTHING`);
     console.log("OK: Admin wallet created");
   } catch (e) { console.log("Admin wallet:", e.message.substring(0, 100)); }
@@ -57,14 +57,14 @@ async function main() {
   // Create user_credits for admin
   try {
     await exec(`INSERT INTO user_credits (user_id)
-      SELECT id FROM users WHERE email = 'admin@streammattic.com'
+      SELECT id FROM users WHERE email = 'admin@streamlivee.com'
       ON CONFLICT (user_id) DO NOTHING`);
     console.log("OK: Admin credits created");
   } catch (e) { console.log("Admin credits:", e.message.substring(0, 100)); }
 
   // Platform settings
   const settings = [
-    { key: 'platform_name', value: { name: 'StreamMattic', tagline: 'Professional Live Streaming Platform' } },
+    { key: 'platform_name', value: { name: 'StreamLivee', tagline: 'Professional Live Streaming Platform' } },
     { key: 'stream_type_pricing', value: {
       rtmp: { basePrice: 1500, enabled: true, label: 'RTMP Server', description: 'Use OBS/Wirecast' },
       youtube_api: { basePrice: 1000, enabled: true, label: 'YouTube API', description: 'Direct broadcast', recommended: true },
@@ -112,7 +112,7 @@ async function main() {
       custom_rtmp: { pricePerEvent: 100, enabled: true }
     }},
     { key: 'studio_annual_subscription', value: { price: 1800000, enabled: true } },
-    { key: 'gst_config', value: { enabled: true, percentage: 18, gstNumber: '', businessName: 'StreamMattic' } },
+    { key: 'gst_config', value: { enabled: true, percentage: 18, gstNumber: '', businessName: 'StreamLivee' } },
     { key: 'payment_gateways', value: {
       razorpay: { enabled: false, keyId: '', keySecret: '' },
       instamojo: { enabled: false, apiKey: '', authToken: '', sandbox: true }

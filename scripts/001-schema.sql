@@ -1,4 +1,4 @@
--- StreamMattic Production Database Schema
+-- StreamLivee Production Database Schema
 -- Neon PostgreSQL
 
 -- Enable UUID generation

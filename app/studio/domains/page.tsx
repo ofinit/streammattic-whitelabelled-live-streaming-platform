@@ -25,7 +25,7 @@ export default function StudioDomainsPage() {
         id: existingDomain?.id || `dom-${Date.now()}`,
         userId: "b0000000-0000-0000-0000-000000000001",
         domain: domain.trim(),
-        verificationToken: `streammattic-verify-${Math.random().toString(36).substring(2, 34)}`,
+        verificationToken: `streamlivee-verify-${Math.random().toString(36).substring(2, 34)}`,
         verificationStatus: "pending",
         sslStatus: "pending",
         isPrimary: true,

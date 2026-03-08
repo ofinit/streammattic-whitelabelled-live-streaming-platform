@@ -120,7 +120,7 @@ export default function WhiteLabelDemoPage() {
                       <Globe className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold">StreamMattic (Platform Default)</p>
+                      <p className="font-semibold">StreamLivee (Platform Default)</p>
                       <p className="text-sm text-muted-foreground">Default platform branding</p>
                     </div>
                   </div>

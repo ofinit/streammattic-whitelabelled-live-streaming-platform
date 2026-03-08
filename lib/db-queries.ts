@@ -406,12 +406,12 @@ export async function getPlatformSetting(key: string) {
   )
 }
 
-export async function setPlatformSetting(key: string, value: unknown, userId?: string) {
+export async function setPlatformSetting(key: string, value: unknown, _userId?: string) {
   const sql = getDb()
   await sql`
-    INSERT INTO platform_settings (key, value, updated_by)
-    VALUES (${key}, ${JSON.stringify(value)}::jsonb, ${userId ?? null})
-    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}::jsonb, updated_by = ${userId ?? null}, updated_at = NOW()
+    INSERT INTO platform_settings (key, value)
+    VALUES (${key}, ${JSON.stringify(value)}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}::jsonb, updated_at = NOW()
   `
 
   // Invalidate cache immediately on write

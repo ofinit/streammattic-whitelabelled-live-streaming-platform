@@ -1,4 +1,4 @@
-# StreamMattic - White-Label Live Streaming Platform
+# StreamLivee - White-Label Live Streaming Platform
 
 ## Complete Technical Documentation
 
@@ -490,7 +490,7 @@ interface StreamingProvider {
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_APP_URL` | Public app URL |
+| `NEXT_PUBLIC_APP_URL` | Public app URL (e.g. `https://www.streamlivee.com`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token |
 | `CLOUDFLARE_API_TOKEN` | For DNS management |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare zone ID |
@@ -500,7 +500,7 @@ interface StreamingProvider {
 ## 12. File Structure
 
 ```
-streammattic/
+streamlivee/
 ├── app/
 │   ├── admin/                 # Admin dashboard pages
 │   │   ├── analytics/
@@ -612,4 +612,4 @@ For technical support or questions, contact the platform administrator.
 
 ---
 
-*This documentation was auto-generated for StreamMattic v1.0.0*
+*This documentation was auto-generated for StreamLivee v1.0.0*

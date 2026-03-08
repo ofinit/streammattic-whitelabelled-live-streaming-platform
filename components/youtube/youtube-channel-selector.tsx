@@ -71,7 +71,7 @@ export function YouTubeChannelSelector({
         <Alert className="bg-muted/50 border-border">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No YouTube channels connected. Connect a channel to create broadcasts directly from StreamMattic.
+            No YouTube channels connected. Connect a channel to create broadcasts directly from StreamLivee.
           </AlertDescription>
         </Alert>
 

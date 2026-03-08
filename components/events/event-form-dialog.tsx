@@ -198,7 +198,7 @@ export function EventFormDialog({ open, onOpenChange, event, onSave }: EventForm
 
   const generateCredentials = () => {
     const streamKey = `live_${Math.random().toString(36).substring(2, 15)}`
-    const rtmpUrl = "rtmp://stream.streammattic.com/live"
+    const rtmpUrl = "rtmp://stream.streamlivee.com/live"
     return { rtmpUrl, streamKey }
   }
 

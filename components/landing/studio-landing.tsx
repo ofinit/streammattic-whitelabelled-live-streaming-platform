@@ -669,7 +669,7 @@ function SiteFooter({ branding }: { branding: Branding }) {
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} {branding.brandName}. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground/50">Powered by StreamMattic</p>
+          <p className="text-xs text-muted-foreground/50">Powered by StreamLivee</p>
         </div>
       </div>
     </footer>

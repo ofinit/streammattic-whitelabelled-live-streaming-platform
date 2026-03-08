@@ -34,11 +34,11 @@ async function main() {
   console.log("Generated hash for admin:", hash.substring(0, 30) + "...");
 
   // Update admin user
-  await exec(`UPDATE users SET password_hash = '${hash}' WHERE email = 'admin@streammattic.com'`);
+  await exec(`UPDATE users SET password_hash = '${hash}' WHERE email IN ('admin@streamlivee.com', 'admin@streammattic.com')`);
   console.log("Admin password updated successfully");
 
   // Verify
-  const result = await exec("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streammattic.com'");
+  const result = await exec("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streamlivee.com'");
   const admin = result.rows[0];
   console.log("Admin user:", admin.email, admin.role, admin.status);
   console.log("Password hash starts with:", admin.password_hash.substring(0, 20));

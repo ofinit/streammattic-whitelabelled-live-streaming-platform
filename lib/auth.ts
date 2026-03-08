@@ -1,7 +1,7 @@
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 
-const JWT_SECRET = process.env.JWT_SECRET || "streammattic-default-secret-change-in-production"
+const JWT_SECRET = process.env.JWT_SECRET || "streamlivee-default-secret-change-in-production"
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
 

@@ -29,7 +29,7 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
   const [isVerifying, setIsVerifying] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
-  const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${studio.id}`
+  const verificationToken = existingDomain?.verificationToken || `streamlivee-verify-${studio.id}`
 
   // TODO: In production, fetch these from PlatformSettings via API
   const VERCEL_A_RECORD_IP = "76.76.21.21"

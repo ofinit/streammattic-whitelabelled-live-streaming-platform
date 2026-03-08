@@ -42,7 +42,7 @@ export function lookupByDomain(hostname: string): DomainLookupResult {
 
 // Lookup studio by subdomain
 export function lookupBySubdomain(hostname: string): DomainLookupResult {
-  const match = hostname.match(/^([^.]+)\.streammattic\.com$/)
+  const match = hostname.match(/^([^.]+)\.streamlivee\.com$/)
   if (!match) {
     return { found: false, studio: null, domain: null, branding: null }
   }
@@ -98,7 +98,7 @@ export function getEventUrl(eventId: string, studioId?: string): string {
   const studio = mockStudios.find((r) => r.id === studioId)
   if (studio) {
     const slug = studio.branding.platformName.toLowerCase().replace(/\s+/g, "-")
-    return `https://${slug}.streammattic.com/watch/${eventId}`
+    return `https://${slug}.streamlivee.com/watch/${eventId}`
   }
 
   return `/watch/${eventId}`

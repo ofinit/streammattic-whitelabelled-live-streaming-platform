@@ -407,7 +407,7 @@ export default function StudioSetupPage() {
                     </p>
                     <p>
                       <span className="text-muted-foreground">TXT Record:</span> _verify.
-                      {domainData.customDomain} → streammattic-verify=xxxxx
+                      {domainData.customDomain} → streamlivee-verify=xxxxx
                     </p>
                   </div>
                 </div>

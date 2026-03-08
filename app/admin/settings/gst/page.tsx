@@ -23,7 +23,7 @@ export default function AdminGSTSettingsPage() {
     gstPercentage: existingConfig?.gstPercentage || 18,
     gstNumber: existingConfig?.gstNumber || "",
     panNumber: existingConfig?.panNumber || "",
-    businessName: existingConfig?.businessName || "StreamMattic Platform Pvt Ltd",
+    businessName: existingConfig?.businessName || "StreamLivee Platform Pvt Ltd",
     businessAddress: existingConfig?.businessAddress || "",
     city: existingConfig?.city || "",
     state: existingConfig?.state || "",

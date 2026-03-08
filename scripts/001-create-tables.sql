@@ -1,4 +1,4 @@
--- StreamMattic Phase 1: Core Tables
+-- StreamLivee Phase 1: Core Tables
 -- 12 tables for Neon PostgreSQL
 
 -- Enable UUID extension
@@ -346,13 +346,13 @@ CREATE INDEX IF NOT EXISTS idx_payments_gateway_order ON payments(gateway_order_
 -- ===== TABLE 12: platform_settings =====
 CREATE TABLE IF NOT EXISTS platform_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  platform_name VARCHAR(255) DEFAULT 'StreamMattic',
+  platform_name VARCHAR(255) DEFAULT 'StreamLivee',
   logo TEXT,
   favicon TEXT,
   primary_color VARCHAR(20) DEFAULT '#10b981',
   default_currency VARCHAR(10) DEFAULT 'INR',
-  rtmp_server_url TEXT DEFAULT 'rtmp://stream.streammattic.com/live',
-  hls_server_url TEXT DEFAULT 'https://cdn.streammattic.com',
+  rtmp_server_url TEXT DEFAULT 'rtmp://stream.streamlivee.com/live',
+  hls_server_url TEXT DEFAULT 'https://cdn.streamlivee.com',
   max_events_per_user INT DEFAULT 50,
   max_viewers_per_event INT DEFAULT 1000,
   maintenance_mode BOOLEAN DEFAULT false,

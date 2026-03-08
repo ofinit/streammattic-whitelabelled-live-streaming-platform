@@ -1,4 +1,4 @@
-# StreamMattic - White-Label Live Streaming Platform
+# StreamLivee - White-Label Live Streaming Platform
 
 ## Complete Technical Documentation
 
@@ -27,7 +27,7 @@
 
 ## 1. Project Overview
 
-StreamMattic is a multi-tenant white-label live streaming platform that allows:
+StreamLivee is a multi-tenant white-label live streaming platform that allows:
 
 - **Platform Admin** to manage the entire platform, studios, and streamers
 - **Studios** to create their own branded streaming portals with custom domains
@@ -500,7 +500,7 @@ interface StreamingProvider {
 ## 12. File Structure
 
 ```
-streammattic/
+streamlivee/
 ├── app/
 │   ├── admin/                 # Admin dashboard pages
 │   │   ├── analytics/
@@ -583,7 +583,7 @@ psql $DATABASE_URL < scripts/002-seed.sql
 ### 2. Default Admin Login
 
 ```
-Email: admin@streammattic.com
+Email: admin@streamlivee.com
 Password: Admin@123
 ```
 
@@ -612,4 +612,4 @@ For technical support or questions, contact the platform administrator.
 
 ---
 
-*This documentation was auto-generated for StreamMattic v1.0.0*
+*This documentation was auto-generated for StreamLivee v1.0.0*

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import useSWR from "swr"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield, Users } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -25,6 +26,7 @@ export default function IntegrationsSettingsPage() {
     google_client_id: "",
     google_client_secret: "",
     encryption_key: "",
+    youtube_config_enabled: false,
   })
   const [hasEdited, setHasEdited] = useState(false)
 
@@ -32,6 +34,12 @@ export default function IntegrationsSettingsPage() {
   const displayClientId = hasEdited ? formData.google_client_id : (data?.google_client_id ?? "")
   const displayClientSecret = hasEdited ? formData.google_client_secret : (data?.google_client_secret ?? "")
   const displayEncryptionKey = hasEdited ? formData.encryption_key : (data?.encryption_key ?? "")
+  const effectiveYoutubeConfigEnabled = hasEdited ? formData.youtube_config_enabled : (data?.youtube_config_enabled ?? false)
+
+  useEffect(() => {
+    if (data && !hasEdited)
+      setFormData((prev) => ({ ...prev, youtube_config_enabled: Boolean(data?.youtube_config_enabled) }))
+  }, [data?.youtube_config_enabled, hasEdited])
 
   const handleFieldChange = (field: string, value: string) => {
     if (!hasEdited) {
@@ -58,6 +66,8 @@ export default function IntegrationsSettingsPage() {
       if (formData.encryption_key && !formData.encryption_key.startsWith("****")) {
         payload.encryption_key = formData.encryption_key
       }
+
+      payload.youtube_config_enabled = effectiveYoutubeConfigEnabled
 
       if (Object.keys(payload).length === 0) {
         toast({ title: "No changes to save" })
@@ -90,6 +100,37 @@ export default function IntegrationsSettingsPage() {
       <Header title="Integrations" subtitle="Configure third-party service credentials" />
 
       <div className="space-y-6 max-w-2xl">
+        {/* Toggle: Show YouTube API Configuration in streamer/studio dashboards */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Show YouTube API Configuration in their dashboard</CardTitle>
+                  <CardDescription>
+                    By default you configure YouTube API for everyone. Enable this to show the YouTube API Configuration screen in streamer and studio dashboards so they can view and configure it themselves if required.
+                  </CardDescription>
+                </div>
+              </div>
+              <Switch
+                checked={effectiveYoutubeConfigEnabled}
+                onCheckedChange={(checked) => {
+                  setHasEdited(true)
+                  setFormData((prev) => ({ ...prev, youtube_config_enabled: checked }))
+                }}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Default: OFF. When OFF, only admins see and manage YouTube API Configuration; streamers and studios use the platform credentials. When ON, they can open the configuration page in their dashboard and configure by themselves.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* YouTube / Google OAuth */}
         <Card className="border-border bg-card">
           <CardHeader>
@@ -226,7 +267,7 @@ export default function IntegrationsSettingsPage() {
                 Save Credentials
               </Button>
               {hasEdited && (
-                <Button variant="outline" onClick={() => { setHasEdited(false); setFormData({ google_client_id: "", google_client_secret: "", encryption_key: "" }) }}>
+                <Button variant="outline" onClick={() => { setHasEdited(false); setFormData({ google_client_id: "", google_client_secret: "", encryption_key: "", youtube_config_enabled: data?.youtube_config_enabled ?? false }) }}>
                   Cancel
                 </Button>
               )}

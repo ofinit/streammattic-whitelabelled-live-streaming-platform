@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db"
+import { getPlatformSetting } from "@/lib/db-queries"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 
 export const GET = withAuth(async (user, request) => {
@@ -13,10 +14,18 @@ export const GET = withAuth(async (user, request) => {
   }
 
   // Admin gets all settings, non-admin gets only public settings
-  const publicKeys = ["credit_pricing", "discount_tiers", "validity_defaults", "payment_gateways"]
-  const rows = user.role === "admin"
-    ? await sql`SELECT key, value, updated_at FROM platform_settings ORDER BY key`
-    : await sql`SELECT key, value FROM platform_settings WHERE key = ANY(${publicKeys}) ORDER BY key`
+  const publicKeys = ["credit_pricing", "discount_tiers", "validity_defaults", "payment_gateways", "youtube_config_enabled"]
+  let rows: { key: string; value: unknown }[] =
+    user.role === "admin"
+      ? (await sql`SELECT key, value, updated_at FROM platform_settings ORDER BY key`) as { key: string; value: unknown }[]
+      : (await sql`SELECT key, value FROM platform_settings WHERE key = ANY(${publicKeys}) ORDER BY key`) as { key: string; value: unknown }[]
+
+  // For studio/streamer, add per-entity override so they can override master toggle
+  if (user.role === "studio" || user.role === "streamer") {
+    const overrideKey = `youtube_config_override_${user.role}:${user.id}`
+    const overrideVal = await getPlatformSetting(overrideKey)
+    rows = [...rows, { key: "youtube_config_override", value: overrideVal }]
+  }
 
   return jsonOk({ settings: rows })
 })

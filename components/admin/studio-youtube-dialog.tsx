@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,44 @@ export function StudioYouTubeDialog({ open, onOpenChange, studio }: StudioYouTub
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [overrideAllowed, setOverrideAllowed] = useState(false)
+  const [overrideLoading, setOverrideLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open || !studio?.id) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/youtube-override?entityType=studio&entityId=${encodeURIComponent(studio.id)}`
+        )
+        if (!cancelled && res.ok) {
+          const data = await res.json()
+          setOverrideAllowed(Boolean(data?.allowed))
+        }
+      } catch {
+        if (!cancelled) setOverrideAllowed(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [open, studio?.id])
+
+  const handleOverrideChange = async (checked: boolean) => {
+    setOverrideAllowed(checked)
+    setOverrideLoading(true)
+    try {
+      const res = await fetch("/api/admin/youtube-override", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityType: "studio", entityId: studio.id, allowed: checked }),
+      })
+      if (!res.ok) throw new Error("Failed to save")
+    } catch {
+      setOverrideAllowed(!checked)
+    } finally {
+      setOverrideLoading(false)
+    }
+  }
 
   const handleTestConnection = async () => {
     setIsTesting(true)
@@ -81,6 +120,24 @@ export function StudioYouTubeDialog({ open, onOpenChange, studio }: StudioYouTub
             Configure YouTube API credentials for {studio.name} to enable live streaming.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Override: show YouTube API Configuration in this studio's dashboard */}
+        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+          <div className="space-y-0.5">
+            <Label htmlFor="studio-override" className="text-sm font-medium cursor-pointer">
+              Show YouTube API Configuration in this studio&apos;s dashboard
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              When ON, this studio will see the Integrations page and can view and configure YouTube API themselves. When OFF, they follow the platform setting (admin configures for all by default).
+            </p>
+          </div>
+          <Switch
+            id="studio-override"
+            checked={overrideAllowed}
+            onCheckedChange={handleOverrideChange}
+            disabled={overrideLoading}
+          />
+        </div>
 
         <div className="space-y-6 pt-2">
           {/* Existing Connected Channels */}

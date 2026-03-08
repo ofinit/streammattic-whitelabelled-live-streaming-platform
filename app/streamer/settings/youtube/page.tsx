@@ -5,7 +5,7 @@ import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Youtube, Plus, Info, Loader2 } from "lucide-react"
+import { Youtube, Plus, Info, Loader2, Lock } from "lucide-react"
 import { YouTubeChannelCard } from "@/components/youtube/youtube-channel-card"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -22,8 +22,20 @@ export default function YouTubeSettingsPage() {
   const OWNER_ID = user?.id || ""
   const OWNER_TYPE = (user?.role || "streamer") as "streamer" | "studio" | "admin"
 
+  const { data: settingsData } = useSWR<{ settings?: { key: string; value: unknown }[] }>("/api/settings", fetcher)
+  const platformYoutubeEnabled =
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
+  const override = settingsData?.settings?.find((s) => s.key === "youtube_config_override")?.value
+  const youtubeConfigEnabled =
+    override === true || override === "true"
+      ? true
+      : override === false || override === "false"
+        ? false
+        : Boolean(platformYoutubeEnabled)
+
   const { data, isLoading, mutate } = useSWR(
-    OWNER_ID ? `/api/youtube/channels?ownerId=${OWNER_ID}&ownerType=${OWNER_TYPE}` : null,
+    OWNER_ID && youtubeConfigEnabled ? `/api/youtube/channels?ownerId=${OWNER_ID}&ownerType=${OWNER_TYPE}` : null,
     fetcher
   )
 
@@ -100,11 +112,24 @@ export default function YouTubeSettingsPage() {
     })
   }
 
+  const settingsLoaded = settingsData !== undefined
+  const disabled = settingsLoaded && !youtubeConfigEnabled
+
   return (
     <div className="min-h-screen">
       <Header title="YouTube Channels" subtitle="Manage your connected YouTube channels for live streaming" />
 
       <div className="space-y-6 max-w-3xl">
+        {disabled && (
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <Lock className="h-4 w-4 text-amber-500" />
+            <AlertDescription>
+              The platform is configured by the administrator for everyone. The option to view and configure YouTube API in your dashboard is not enabled. If you need to configure it yourself, ask your administrator to enable it for you.
+            </AlertDescription>
+          </Alert>
+        )}
+        {!disabled && (
+          <>
         <Alert className="bg-muted/50 border-border">
           <Info className="h-4 w-4" />
           <AlertDescription>
@@ -196,8 +221,11 @@ export default function YouTubeSettingsPage() {
             </ol>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
 
+      {youtubeConfigEnabled && (
       <ConnectYouTubeDialog
         open={showConnectDialog}
         onOpenChange={setShowConnectDialog}
@@ -206,6 +234,7 @@ export default function YouTubeSettingsPage() {
         returnUrl="/streamer/settings/youtube"
         onSuccess={handleConnectSuccess}
       />
+      )}
     </div>
   )
 }

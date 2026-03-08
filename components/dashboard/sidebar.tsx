@@ -4,6 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import useSWR from "swr"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 import { useBranding } from "@/lib/branding-context"
@@ -97,20 +98,40 @@ const streamerNav: NavItem[] = [
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]
 
+const settingsFetcher = (url: string) => fetch(url).then((r) => r.json())
+
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout, switchRole } = useAuth()
   const { isWhiteLabel } = useBranding()
   const { isCollapsed, toggleSidebar } = useSidebar()
+  const { data: settingsData } = useSWR<{ settings?: { key: string; value: unknown }[] }>(
+    user?.role === "streamer" || user?.role === "studio" ? "/api/settings" : null,
+    settingsFetcher,
+  )
+  const platformYoutubeEnabled =
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
+  const override = settingsData?.settings?.find((s) => s.key === "youtube_config_override")?.value
+  const youtubeConfigEnabled =
+    override === true || override === "true"
+      ? true
+      : override === false || override === "false"
+        ? false
+        : Boolean(platformYoutubeEnabled)
 
   const getNavItems = (): NavItem[] => {
     switch (user?.role) {
       case "admin":
         return adminNav
-      case "studio":
+      case "studio": {
+        if (!youtubeConfigEnabled) return studioNav.filter((item) => item.href !== "/studio/settings/integrations")
         return studioNav
-      case "streamer":
+      }
+      case "streamer": {
+        if (!youtubeConfigEnabled) return streamerNav.filter((item) => item.href !== "/streamer/settings/youtube")
         return streamerNav
+      }
       default:
         return []
     }

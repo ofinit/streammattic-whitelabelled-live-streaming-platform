@@ -20,7 +20,7 @@ export function PlatformLandingPage() {
         },
         {
             title: "Pay-Per-Event Scaling",
-            description: "No massive monthly subscriptions. You only pay for the streaming credits you actually utilize per event. Let your platform grow strictly alongside your revenue.",
+            description: "No massive monthly subscriptions. You only pay for the streaming credits you actually use per event. Scale with usage.",
             icon: Zap,
             theme: "text-amber-400 bg-amber-500/10 border-amber-500/20"
         },
@@ -32,19 +32,19 @@ export function PlatformLandingPage() {
         },
         {
             title: "Zero-Code Deployments",
-            description: "You provide the video content, we handle the video CDNs, HLS transcoding, secure ticketing, and password protections dynamically on the edge.",
+            description: "You provide the video content, we handle the video CDNs, HLS transcoding, access control, and password protections dynamically on the edge.",
             icon: Activity,
             theme: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
         },
         {
-            title: "Monetization & Gateways",
-            description: "Pre-integrated Payment Gateways like Razorpay and Instamojo. Sell digital tickets, virtual seats, and charge users directly securely with local tax support.",
+            title: "Payments & Credits",
+            description: "Platform-level payment gateways (Razorpay, Instamojo) for wallet top-ups. Streamers and studios use credits for streaming.",
             icon: Banknote,
             theme: "text-violet-400 bg-violet-500/10 border-violet-500/20"
         },
         {
             title: "Streamer Management",
-            description: "Allow your clients to run independent streams through your portal. Automatically manage their cascading credits, schedules, and permissions securely.",
+            description: "Studios and streamers use the platform to run and manage live streams. Studio accounts get a branded portal on their custom domain; credits, schedules, and permissions are managed on the platform.",
             icon: Users,
             theme: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
         }
@@ -62,7 +62,6 @@ export function PlatformLandingPage() {
                     <nav className="hidden md:flex items-center gap-8">
                         <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Platform</a>
                         <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-                        <a href="#solutions" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Solutions</a>
                         <Link href="/login">
                             <Button variant="outline" size="sm">Sign In</Button>
                         </Link>
@@ -93,8 +92,7 @@ export function PlatformLandingPage() {
                         </h1>
 
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-7 duration-1000 delay-300">
-                            Launch your own high-performance live streaming business instantly.
-                            Monetize events, host independent streamers, and stream directly under your custom domain with zero coding required.
+                            Run live streaming at scale or launch your own white-label platform on a custom domain—with zero coding required.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
@@ -232,7 +230,7 @@ export function PlatformLandingPage() {
                     </div>
                 </section>
 
-                {/* Features Split */}
+                {/* Features */}
                 <section id="features" className="px-6 py-24 bg-card/20 border-y border-border/40">
                     <div className="mx-auto max-w-7xl">
                         <div className="text-center mb-20 max-w-3xl mx-auto">
@@ -280,8 +278,8 @@ export function PlatformLandingPage() {
                                     <li className="flex gap-4">
                                         <div className="flex-shrink-0 mt-1"><CheckCircle2 className="h-6 w-6 text-primary" /></div>
                                         <div>
-                                            <h4 className="font-semibold text-lg text-foreground">3. Sell Credits</h4>
-                                            <p className="text-muted-foreground">Allow sub-streamers to sign up and buy your stream credits via Razorpay with instant atomic settlement.</p>
+                                            <h4 className="font-semibold text-lg text-foreground">3. Use Credits</h4>
+                                            <p className="text-muted-foreground">Studios and streamers sign up on the platform and use stream credits to run their streams.</p>
                                         </div>
                                     </li>
                                 </ul>
@@ -346,6 +344,12 @@ export function PlatformLandingPage() {
                 <div className="container mx-auto px-6">
                     <BrandedLogo size="sm" className="mx-auto mb-4 opacity-50 grayscale" />
                     <p>© {new Date().getFullYear()} StreamLivee Software. All rights reserved.</p>
+                    <p className="mt-2">
+                        Powered by{" "}
+                        <a href="https://www.ofinit.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            OfinIT
+                        </a>
+                    </p>
                 </div>
             </footer>
         </div>

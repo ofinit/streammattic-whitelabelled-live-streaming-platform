@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { BrandedLogo } from "@/components/branding/branded-logo"
@@ -14,7 +14,7 @@ import Link from "next/link"
 
 const POLL_INTERVAL_MS = 2000
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isWhiteLabel, studio } = useBranding()
@@ -223,5 +223,13 @@ export default function LoginPage() {
       </footer>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <LoginPageContent />
+    </Suspense>
   )
 }

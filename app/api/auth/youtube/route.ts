@@ -30,9 +30,10 @@ export async function POST(request: Request) {
 
     const redirectUri =
       process.env.YOUTUBE_OAUTH_REDIRECT_URI ||
-      `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/auth/youtube/callback`
+      `${process.env.NEXT_PUBLIC_APP_URL || "https://www.streamlivee.com"}/api/auth/youtube/callback`
 
-    const oauthUrl = getYouTubeOAuthUrl(redirectUri, state)
+    const studioId = ownerType === "studio" ? ownerId : undefined
+    const oauthUrl = await getYouTubeOAuthUrl(redirectUri, state, studioId)
 
     return NextResponse.json({ url: oauthUrl })
   } catch (err) {

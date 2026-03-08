@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/login/callback",
+  "/admin/login",
+  "/handler",
+  "/auth",
   "/site",
   "/site/login",
   "/site/register",
@@ -43,6 +47,12 @@ export function middleware(request: NextRequest) {
     // Redirect to login for protected pages, return 401 for API
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    // Admin routes: redirect to admin login
+    if (pathname.startsWith("/admin")) {
+      const loginUrl = new URL("/admin/login", request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
     }
     const loginUrl = new URL("/site/login", request.url)
     loginUrl.searchParams.set("redirect", pathname)

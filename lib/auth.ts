@@ -1,7 +1,9 @@
+import { createHmac, timingSafeEqual } from "crypto"
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 
 const JWT_SECRET = process.env.JWT_SECRET || "streamlivee-default-secret-change-in-production"
+const AUTH_SECRET = process.env.AUTH_SECRET || JWT_SECRET
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
 
@@ -43,6 +45,31 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   )
   const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("")
   return hashHex === expectedHash
+}
+
+// ============================================================
+// ONE-TIME TOKEN (Stack Auth exchange)
+// ============================================================
+
+export function createOneTimeToken(userId: string): string {
+  const payload = JSON.stringify({ userId, exp: Date.now() + 60 * 1000 })
+  const payloadB64 = Buffer.from(payload, "utf8").toString("base64url")
+  const sig = createHmac("sha256", AUTH_SECRET).update(payloadB64).digest("base64url")
+  return `${payloadB64}.${sig}`
+}
+
+export function verifyOneTimeToken(token: string): { userId: string } | null {
+  try {
+    const [payloadB64, sig] = token.split(".")
+    if (!payloadB64 || !sig) return null
+    const expected = createHmac("sha256", AUTH_SECRET).update(payloadB64).digest("base64url")
+    if (expected.length !== sig.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"))
+    if (!payload.userId || !payload.exp || Date.now() > payload.exp) return null
+    return { userId: payload.userId }
+  } catch {
+    return null
+  }
 }
 
 // ============================================================

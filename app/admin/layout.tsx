@@ -3,24 +3,31 @@
 import type React from "react"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const { isCollapsed } = useSidebar()
+  const isLoginPage = pathname === "/admin/login"
 
   useEffect(() => {
+    if (isLoginPage) return
     if (!isAuthenticated) {
-      router.push("/")
+      router.push("/admin/login")
     } else if (user?.role !== "admin") {
-      router.push("/")
+      router.push("/login")
     }
-  }, [isAuthenticated, user, router])
+  }, [isLoginPage, isAuthenticated, user, router])
+
+  if (isLoginPage) {
+    return <>{children}</>
+  }
 
   if (!isAuthenticated || user?.role !== "admin") {
     return null

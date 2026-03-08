@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getDb, toCamel } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth"; // We reuse the PBKDF2 verifier
+import { verifyPassword, verifyOneTimeToken } from "@/lib/auth";
 import type { NextAuthConfig } from "next-auth";
 
 declare module "next-auth" {
@@ -24,26 +24,40 @@ export const authConfig: NextAuthConfig = {
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null;
 
-                const email = (credentials.email as string).toLowerCase().trim();
-                const sql = getDb();
-                const rows = await sql`SELECT * FROM users WHERE email = ${email}`;
+                const email = (credentials.email as string).trim();
+                const password = credentials.password as string;
 
+                // Stack Auth one-time token exchange
+                if (email === "__stack__") {
+                    const parsed = verifyOneTimeToken(password);
+                    if (!parsed) return null;
+                    const sql = getDb();
+                    const rows = await sql`SELECT id, email, name, role, status FROM users WHERE id = ${parsed.userId}`;
+                    if (rows.length === 0) return null;
+                    const dbUser = rows[0] as Record<string, unknown>;
+                    if (dbUser.status === "suspended" || dbUser.status === "deactivated") return null;
+                    return {
+                        id: dbUser.id as string,
+                        email: dbUser.email as string,
+                        name: dbUser.name as string,
+                        role: dbUser.role as string,
+                        status: dbUser.status as string,
+                    };
+                }
+
+                const emailNorm = email.toLowerCase().trim();
+                const sql = getDb();
+                const rows = await sql`SELECT * FROM users WHERE email = ${emailNorm}`;
                 if (rows.length === 0) return null;
 
                 const dbUser = rows[0] as Record<string, unknown>;
-
                 if (dbUser.status === "suspended" || dbUser.status === "deactivated") {
                     throw new Error("Account is suspended or deactivated");
                 }
 
-                const passwordValid = await verifyPassword(
-                    credentials.password as string,
-                    dbUser.password_hash as string
-                );
-
+                const passwordValid = await verifyPassword(password, dbUser.password_hash as string);
                 if (!passwordValid) return null;
 
-                // Return the clean user without password hash
                 return {
                     id: dbUser.id as string,
                     email: dbUser.email as string,

@@ -21,9 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { mockStreamers } from "@/lib/mock-data"
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee } from "lucide-react"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
 import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
+import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
+import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
 
 export default function AdminStreamersPage() {
   const router = useRouter()
@@ -33,6 +35,8 @@ export default function AdminStreamersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingStreamer, setEditingStreamer] = useState<Streamer | null>(null)
   const [pricingStreamer, setPricingStreamer] = useState<Streamer | null>(null)
+  const [youtubeOverrideStreamer, setYoutubeOverrideStreamer] = useState<Streamer | null>(null)
+  const [addFundsStreamer, setAddFundsStreamer] = useState<Streamer | null>(null)
   const [statusChangeTarget, setStatusChangeTarget] = useState<{
     user: Streamer
     targetStatus: "active" | "suspended"
@@ -120,20 +124,29 @@ export default function AdminStreamersPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleImpersonate(item)}>
               <LogIn className="mr-2 h-4 w-4" />
-              Login as Streamer
+              View as Streamer
             </DropdownMenuItem>
-<DropdownMenuItem onClick={() => setEditingStreamer(item)}>
-  <Edit className="mr-2 h-4 w-4" />
-  Edit
-</DropdownMenuItem>
-<DropdownMenuItem onClick={() => setPricingStreamer(item)}>
-  <IndianRupee className="mr-2 h-4 w-4" />
-  Custom Pricing
-  {item.customPricing && (
-    <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
-  )}
-</DropdownMenuItem>
-<DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setEditingStreamer(item)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setAddFundsStreamer(item)}>
+              <Wallet className="mr-2 h-4 w-4" />
+              Add Funds
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setPricingStreamer(item)}>
+              <IndianRupee className="mr-2 h-4 w-4" />
+              Custom Pricing
+              {item.customPricing && (
+                <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setYoutubeOverrideStreamer(item)}>
+              <Youtube className="mr-2 h-4 w-4" />
+              YouTube API access
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
 {item.status === "active" ? (
               <DropdownMenuItem
                 onClick={() => setStatusChangeTarget({ user: item, targetStatus: "suspended" })}
@@ -251,6 +264,28 @@ export default function AdminStreamersPage() {
           onSave={(pricing, _note) => {
             pricingStreamer.customPricing = pricing
             setPricingStreamer(null)
+          }}
+        />
+      )}
+
+      <StreamerYouTubeOverrideDialog
+        open={!!youtubeOverrideStreamer}
+        onOpenChange={(open) => !open && setYoutubeOverrideStreamer(null)}
+        streamer={youtubeOverrideStreamer}
+      />
+
+      {addFundsStreamer && (
+        <AdjustWalletDialog
+          open={!!addFundsStreamer}
+          onOpenChange={(open) => !open && setAddFundsStreamer(null)}
+          targetUser={{
+            id: addFundsStreamer.id,
+            name: addFundsStreamer.name,
+            balance: (addFundsStreamer.walletBalance ?? 0) * 100,
+          }}
+          onConfirm={(amount, type, reason) => {
+            console.log("Adjust wallet:", addFundsStreamer.name, type, amount, reason)
+            setAddFundsStreamer(null)
           }}
         />
       )}

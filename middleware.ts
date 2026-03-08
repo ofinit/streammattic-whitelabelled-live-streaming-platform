@@ -21,9 +21,10 @@ const ROLE_PREFIXES: Record<string, string[]> = {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public paths, static assets, and API routes that handle their own auth
+  // Allow public paths, NextAuth routes, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
+    pathname.startsWith("/api/auth") || // NextAuth (signin, callback, error, etc.)
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/placeholder") ||

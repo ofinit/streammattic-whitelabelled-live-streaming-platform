@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import { useBranding } from "@/lib/branding-context"
@@ -16,11 +16,21 @@ import Link from "next/link"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, isLoading, switchRole } = useAuth()
   const { branding, isWhiteLabel, studio } = useBranding()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+
+  // Show error when redirected from NextAuth (e.g. /api/auth/error)
+  useEffect(() => {
+    const authError = searchParams.get("error")
+    if (authError) {
+      setError(authError === "Unauthorized" ? "Invalid email or password." : "Sign-in failed. Please try again.")
+      router.replace("/login", { scroll: false })
+    }
+  }, [searchParams, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

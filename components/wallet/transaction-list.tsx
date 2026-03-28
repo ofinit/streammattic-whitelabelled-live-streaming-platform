@@ -7,26 +7,11 @@ import type { WalletTransaction } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, CreditCard, Wand2, Globe, Server } from "lucide-react"
+import { formatWalletTransactionCategory } from "@/lib/wallet-category-labels"
 
 interface TransactionListProps {
   transactions: WalletTransaction[]
   showUser?: boolean
-}
-
-const categoryLabels: Record<string, string> = {
-  top_up: "Wallet Recharge",
-  credit_purchase: "Credit Purchase",
-  service_charge: "Service Charge",
-  order_refund: "Refund",
-  adjustment: "Adjustment",
-  manual_adjustment: "Manual Adjustment",
-  payment_recovery: "Payment Recovery",
-  compensation: "Compensation",
-  correction: "Correction",
-  goodwill: "Goodwill Credit",
-  ai_image_generation: "AI Image Generation",
-  whitelabel_hosting: "Whitelabel & Hosting",
-  domain_registration: "Domain Registration",
 }
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -78,7 +63,7 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="text-xs">
-                  {categoryLabels[txn.category] || txn.category}
+                  {formatWalletTransactionCategory(txn.category)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {format(new Date(txn.createdAt), "MMM d, yyyy 'at' h:mm a")}

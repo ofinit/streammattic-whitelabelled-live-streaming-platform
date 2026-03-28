@@ -2,27 +2,11 @@
  * Fix admin password: Production DB has bcrypt hash but app expects PBKDF2.
  * Run: node --env-file=.env.local scripts/db-fix-admin-password.js
  */
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   console.error("DATABASE_URL not set. Run with: node --env-file=.env.local scripts/db-fix-admin-password.js");
   process.exit(1);
-}
-
-const url = new URL(DATABASE_URL.replace("postgres://", "https://").replace("postgresql://", "https://"));
-const API_URL = `https://${url.hostname}/sql`;
-
-async function sql(query, params = []) {
-  const resp = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Neon-Connection-String": DATABASE_URL,
-    },
-    body: JSON.stringify({ query, params }),
-  });
-  const text = await resp.text();
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text.substring(0, 300)}`);
-  return JSON.parse(text);
 }
 
 // PBKDF2 hash (matches lib/auth.ts hashPassword)
@@ -50,11 +34,13 @@ async function hashPassword(password) {
 }
 
 async function run() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   const password = "Admin@123"; // Matches documentation
   console.log("Updating admin password to PBKDF2 format...");
   const hash = await hashPassword(password);
 
-  await sql(
+  await client.query(
     `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email IN ($2, $3)`,
     [hash, "admin@streamlivee.com", "admin@streammattic.com"]
   );
@@ -62,6 +48,7 @@ async function run() {
   console.log("Done. You can now login with:");
   console.log("  Email: admin@streamlivee.com");
   console.log("  Password: Admin@123");
+  await client.end();
 }
 
 run().catch((e) => {

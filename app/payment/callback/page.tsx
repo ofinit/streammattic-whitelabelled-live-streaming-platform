@@ -34,6 +34,7 @@ function PaymentCallbackContent() {
 
     const verifyPayment = async () => {
       const gateway = searchParams.get("gateway")
+      const flow = searchParams.get("flow")
 
       try {
         if (gateway === "instamojo") {
@@ -49,6 +50,10 @@ function PaymentCallbackContent() {
             body: JSON.stringify({ paymentRequestId, paymentId, orderId }),
           })
           if (res.ok) {
+            if (flow === "studio_upgrade") {
+              router.replace("/upgrade/studio/success?upgraded=1")
+              return
+            }
             setStatus("success")
             setMessage("Your wallet has been topped up successfully!")
           } else {
@@ -75,7 +80,7 @@ function PaymentCallbackContent() {
     }
 
     verifyPayment()
-  }, [searchParams])
+  }, [searchParams, router])
 
   const statusConfig = {
     processing: {

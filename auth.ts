@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { getDb, toCamel } from "@/lib/db";
-import { verifyPassword, verifyOneTimeToken } from "@/lib/auth";
+import { verifyPassword, verifyOneTimeToken, getOrCreateUserByOAuth, getDemoPassword, isDemoEmail, getOrCreateDemoUser } from "@/lib/auth";
 import type { NextAuthConfig } from "next-auth";
 
 declare module "next-auth" {
@@ -12,9 +13,20 @@ declare module "next-auth" {
     }
 }
 
+const googleClientId = process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+
 export const authConfig: NextAuthConfig = {
     trustHost: true,
     providers: [
+        ...(googleClientId && googleClientSecret
+            ? [
+                GoogleProvider({
+                    clientId: googleClientId,
+                    clientSecret: googleClientSecret,
+                }),
+            ]
+            : []),
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -45,6 +57,31 @@ export const authConfig: NextAuthConfig = {
                     };
                 }
 
+                // Demo logins: fixed emails + shared demo password (no DB password check)
+                if (isDemoEmail(email) && password === getDemoPassword()) {
+                    try {
+                        const dbUser = await getOrCreateDemoUser(email);
+                        if (dbUser) {
+                            return {
+                                id: dbUser.id as string,
+                                email: dbUser.email as string,
+                                name: dbUser.name as string,
+                                role: dbUser.role as string,
+                                status: dbUser.status as string,
+                            };
+                        }
+                        throw new Error("Demo user could not be created.");
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        console.error("Demo login getOrCreateDemoUser error:", err);
+                        throw new Error(
+                            msg.includes("DATABASE_URL") || msg.includes("relation") || msg.includes("does not exist")
+                                ? "Database not set up. Set DATABASE_URL in .env.local and run: npm run db:migrate"
+                                : "Demo login failed. Check DATABASE_URL and run npm run db:migrate to create the database schema."
+                        );
+                    }
+                }
+
                 const emailNorm = email.toLowerCase().trim();
                 const sql = getDb();
                 const rows = await sql`SELECT * FROM users WHERE email = ${emailNorm}`;
@@ -73,11 +110,23 @@ export const authConfig: NextAuthConfig = {
         error: "/login",
     },
     callbacks: {
-        async jwt({ token, user, trigger, session }) {
+        async jwt({ token, user, account, trigger, session }) {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
                 token.status = user.status;
+            }
+            // Sync OAuth (e.g. Google) user to our DB and set token from our user row
+            if (account?.provider && account.provider !== "credentials" && user?.email) {
+                const dbUser = await getOrCreateUserByOAuth({
+                    email: user.email,
+                    name: user.name ?? undefined,
+                });
+                if (dbUser) {
+                    token.id = (dbUser as { id: string }).id;
+                    token.role = (dbUser as { role?: string }).role;
+                    token.status = (dbUser as { status?: string }).status;
+                }
             }
 
             // Impersonation logic handling from session updates

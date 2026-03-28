@@ -99,10 +99,15 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
       )
     }
 
+    const baseId = videoId || ""
+    const liveParams = "autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&modestbranding=1"
+    const replayParams = "autoplay=1&mute=1&rel=0&iv_load_policy=3&modestbranding=1"
+    const src = `https://www.youtube.com/embed/${baseId}?${isLive ? liveParams : replayParams}`
+
     return (
       <div ref={containerRef} className="relative aspect-video rounded-lg overflow-hidden bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${videoId || ""}?autoplay=1&mute=1`}
+          src={src}
           title={eventTitle}
           className="absolute inset-0 h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

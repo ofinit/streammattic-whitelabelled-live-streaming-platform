@@ -1,3 +1,4 @@
+import { TEMPLATE_DEFAULT_HERO_BACKDROP } from "@/lib/template-default-media"
 import type {
   User,
   Studio,
@@ -256,29 +257,7 @@ export const masterValiditySettings: EventValiditySettings = {
   ],
 }
 
-// Helper: Get the best price for a quantity
-export function getBestPriceForQuantity(
-  streamType: StreamTypeKey,
-  quantity: number,
-  pricing: StreamTypePricing = masterStreamTypePricing,
-): { pricePerEvent: number; tierLabel?: string; totalPrice: number; savings: number } {
-  const config = pricing[streamType]
-  let pricePerEvent = config.basePrice
-  let tierLabel: string | undefined
-
-  // Find the best matching tier (highest minQty that's <= quantity)
-  for (const tier of config.volumeDiscountTiers) {
-    if (quantity >= tier.minQty) {
-      pricePerEvent = tier.pricePerEvent
-      tierLabel = tier.label
-    }
-  }
-
-  const totalPrice = pricePerEvent * quantity
-  const savings = (config.basePrice * quantity) - totalPrice
-
-  return { pricePerEvent, tierLabel, totalPrice, savings }
-}
+export { getBestPriceForQuantity } from "./stream-type-pricing"
 
 // Mock Orders (credit purchases, wallet recharges, service charges)
 export const mockOrders: Order[] = [
@@ -1186,15 +1165,55 @@ export const mockEventTemplates: EventTemplate[] = [
   {
     id: "tpl-wedding",
     name: "Wedding",
-    thumbnail: "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding"] ?? "/templates/wedding-template.jpg",
     category: "Wedding",
     isActive: true,
     sortOrder: 2,
   },
   {
+    id: "tpl-wedding-garden",
+    name: "Ethereal Garden Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-garden"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.5,
+  },
+  {
+    id: "tpl-wedding-midnight",
+    name: "Midnight Elegance Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-midnight"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.55,
+  },
+  {
+    id: "tpl-wedding-coastal",
+    name: "Coastal Breeze Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-coastal"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.56,
+  },
+  {
+    id: "tpl-wedding-celestial",
+    name: "Celestial Dreams Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-celestial"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.57,
+  },
+  {
+    id: "tpl-corporate-tech-forward",
+    name: "Tech Forward Summit",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",
+    category: "Corporate",
+    isActive: true,
+    sortOrder: 2.95,
+  },
+  {
     id: "tpl-corporate",
     name: "Corporate Event",
-    thumbnail: "/templates/corporate-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate"] ?? "",
     category: "Corporate",
     isActive: true,
     sortOrder: 3,

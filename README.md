@@ -1,30 +1,24 @@
 # Streammattic.com
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+*Whitelabelled live streaming platform*
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/team-ofinit/v0-streammattic-whitelabelled-live-streaming-platform)
 [![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/tVlixt0Wqe4)
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+This repository contains the StreamLivee / Streammattic whitelabelled live streaming platform. It can run locally, on any VPS, or in Docker.
 
-## Deployment
+## Templates
 
-Your project is live at:
+Event watch-page templates (`tpl-*`) are documented in **[docs/TEMPLATE_IMPLEMENTATION_PLAYBOOK.md](docs/TEMPLATE_IMPLEMENTATION_PLAYBOOK.md)** — includes what the Wedding template implements and a tiered checklist for adding or completing other templates.
 
-**[https://vercel.com/team-ofinit/v0-streammattic-whitelabelled-live-streaming-platform](https://vercel.com/team-ofinit/v0-streammattic-whitelabelled-live-streaming-platform)**
+## Deploy (generic)
 
-## Build your app
+- **Local:** Set `DATABASE_URL` to your local Postgres, then `npm run dev`.
+- **VPS / production:** Run `npm run build` then `npm start`. Set `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL` (or `NEXT_PUBLIC_APP_URL`), and optionally `UPLOAD_DIR` for file uploads. See `.env.example` for all options.
+- **Docker:** From project root run `docker-compose up --build`. The app will use the `postgres` service; set `AUTH_SECRET` and optionally `NEXTAUTH_URL`/`NEXT_PUBLIC_APP_URL` via `.env` or environment. Uploads are stored in a named volume; for backups see `scripts/README-BACKUP-RESTORE.md`.
 
-Continue building your app on:
+## Optional: Streamer → Studio upgrade CTA
 
-**[https://v0.app/chat/tVlixt0Wqe4](https://v0.app/chat/tVlixt0Wqe4)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+- **`NEXT_PUBLIC_STUDIO_SALES_EMAIL`** — If set, the streamer dashboard and [`/streamer/upgrade`](app/streamer/upgrade/page.tsx) show a **Contact sales** button with a `mailto:` link for studio / white-label onboarding.
+- Studio annual pricing shown to streamers comes from the **`studio_annual_subscription`** platform setting (configured in **Admin → Pricing**). Streamers receive this key only via `GET /api/settings` (not exposed to other non-admin roles in that aggregate response).

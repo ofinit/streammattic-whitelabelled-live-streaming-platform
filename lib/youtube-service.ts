@@ -171,30 +171,30 @@ export async function revokeAccess(encryptedAccessToken: string): Promise<boolea
 export async function getValidAccessToken(channelDbId: string): Promise<string> {
   const sql = getDb()
   const rows = await sql`
-    SELECT encrypted_access_token, encrypted_refresh_token, token_expires_at, owner_id, owner_type
+    SELECT access_token_encrypted, refresh_token_encrypted, token_expires_at, owner_id, owner_type
     FROM youtube_channels WHERE id = ${channelDbId} AND is_active = true
   `
   if (rows.length === 0) throw new Error("Channel not found or inactive")
 
-  const channel = rows[0] as { encrypted_access_token: string; encrypted_refresh_token: string; token_expires_at: string; owner_id: string; owner_type: string }
+  const channel = rows[0] as { access_token_encrypted: string; refresh_token_encrypted: string; token_expires_at: string; owner_id: string; owner_type: string }
   const expiresAt = new Date(channel.token_expires_at)
   const studioId = channel.owner_type === "studio" ? channel.owner_id : undefined
 
   // If token expires in less than 5 minutes, refresh it (use same credentials as when token was created)
   if (expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
-    const { accessToken, expiresIn } = await refreshAccessToken(channel.encrypted_refresh_token, studioId)
+    const { accessToken, expiresIn } = await refreshAccessToken(channel.refresh_token_encrypted, studioId)
     const newEncrypted = encrypt(accessToken)
     const newExpiresAt = new Date(Date.now() + expiresIn * 1000)
 
     await sql`
       UPDATE youtube_channels
-      SET encrypted_access_token = ${newEncrypted}, token_expires_at = ${newExpiresAt.toISOString()}, updated_at = NOW()
+      SET access_token_encrypted = ${newEncrypted}, token_expires_at = ${newExpiresAt.toISOString()}, updated_at = NOW()
       WHERE id = ${channelDbId}
     `
     return accessToken
   }
 
-  return decrypt(channel.encrypted_access_token)
+  return decrypt(channel.access_token_encrypted)
 }
 
 // ──────────────────────────────────────
@@ -498,7 +498,7 @@ export async function saveChannel(params: {
     INSERT INTO youtube_channels (
       owner_id, owner_type, channel_id, channel_title, channel_thumbnail,
       subscriber_count, video_count,
-      encrypted_access_token, encrypted_refresh_token, token_expires_at, scopes
+      access_token_encrypted, refresh_token_encrypted, token_expires_at, scopes
     ) VALUES (
       ${params.ownerId}, ${params.ownerType}, ${params.channelId}, ${params.channelTitle}, ${params.channelThumbnail},
       ${params.subscriberCount}, ${params.videoCount},
@@ -510,8 +510,8 @@ export async function saveChannel(params: {
       channel_thumbnail = EXCLUDED.channel_thumbnail,
       subscriber_count = EXCLUDED.subscriber_count,
       video_count = EXCLUDED.video_count,
-      encrypted_access_token = EXCLUDED.encrypted_access_token,
-      encrypted_refresh_token = EXCLUDED.encrypted_refresh_token,
+      access_token_encrypted = EXCLUDED.access_token_encrypted,
+      refresh_token_encrypted = EXCLUDED.refresh_token_encrypted,
       token_expires_at = EXCLUDED.token_expires_at,
       scopes = EXCLUDED.scopes,
       is_active = true,
@@ -539,7 +539,7 @@ export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | 
 export async function disconnectChannel(channelDbId: string, ownerId: string, ownerType: string): Promise<boolean> {
   const sql = getDb()
   const rows = await sql`
-    SELECT encrypted_access_token FROM youtube_channels
+    SELECT access_token_encrypted FROM youtube_channels
     WHERE id = ${channelDbId} AND owner_id = ${ownerId} AND owner_type = ${ownerType}
   `
 
@@ -547,7 +547,7 @@ export async function disconnectChannel(channelDbId: string, ownerId: string, ow
 
   // Revoke the token at Google
   try {
-    await revokeAccess(rows[0].encrypted_access_token)
+    await revokeAccess(rows[0].access_token_encrypted)
   } catch {
     // Continue even if revocation fails -- still mark inactive locally
   }

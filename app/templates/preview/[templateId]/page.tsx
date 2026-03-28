@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react";
 import { mockEventTemplates } from "@/lib/mock-data"
 import type { EventTemplate } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,12 @@ import Link from "next/link"
 // Existing templates
 import { DefaultTemplate } from "@/components/templates/default-template"
 import { WeddingTemplate } from "@/components/templates/wedding-template"
+import { WeddingGardenTemplate } from "@/components/templates/wedding-garden-template"
+import { WeddingMidnightTemplate } from "@/components/templates/wedding-midnight-template"
+import { WeddingCoastalTemplate } from "@/components/templates/wedding-coastal-template"
+import { WeddingCelestialTemplate } from "@/components/templates/wedding-celestial-template"
 import { CorporateTemplate } from "@/components/templates/corporate-template"
+import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
 import { ChristianTemplate } from "@/components/templates/christian-template"
 import { MuslimTemplate } from "@/components/templates/muslim-template"
@@ -58,6 +63,27 @@ const templateContent: Record<string, { title: string; description: string }> = 
   "tpl-wedding": {
     title: "Sarah & Michael's Wedding",
     description: "Join us to celebrate the union of two hearts",
+  },
+  "tpl-wedding-garden": {
+    title: "Emma & James",
+    description: "Join us among the gardens for our ceremony — live with family and friends near and far.",
+  },
+  "tpl-wedding-midnight": {
+    title: "Alexander & Victoria",
+    description: "Join us for a midnight celebration — live from the city skyline.",
+  },
+  "tpl-wedding-coastal": {
+    title: "Luna & Marco",
+    description: "Tying the knot by the sea — live with family and friends near and far.",
+  },
+  "tpl-wedding-celestial": {
+    title: "Orion & Stella",
+    description: "Written in the stars — join our live union beneath the night sky.",
+  },
+  "tpl-corporate-tech-forward": {
+    title: "TechForward 2026 | Annual Innovation Summit",
+    description:
+      "Join 50,000+ innovators, developers, and visionaries for the premier tech event — live keynotes and Q&A.",
   },
   "tpl-corporate": {
     title: "Annual Tech Summit 2024",
@@ -193,7 +219,8 @@ const templateContent: Record<string, { title: string; description: string }> = 
   },
 }
 
-export default function TemplatePreviewPage({ params }: { params: { templateId: string } }) {
+export default function TemplatePreviewPage(props: { params: Promise<{ templateId: string }> }) {
+  const params = use(props.params);
   const [template, setTemplate] = useState<EventTemplate | null>(null)
 
   useEffect(() => {
@@ -231,6 +258,16 @@ export default function TemplatePreviewPage({ params }: { params: { templateId: 
       return <DefaultTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-wedding":
       return <WeddingTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-garden":
+      return <WeddingGardenTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-midnight":
+      return <WeddingMidnightTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-coastal":
+      return <WeddingCoastalTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-celestial":
+      return <WeddingCelestialTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-corporate-tech-forward":
+      return <CorporateTechForwardTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate":
       return <CorporateTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-concert":

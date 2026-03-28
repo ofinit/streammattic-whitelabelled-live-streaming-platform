@@ -159,12 +159,17 @@ export async function clearSessionCookie() {
 import { auth } from "@/auth"
 
 export async function getCurrentUser() {
-  const session = await auth()
+  // Check custom sm_session cookie first (set by demo-login and /api/auth/login)
+  const sessionToken = await getSessionCookie()
+  if (sessionToken) {
+    const user = await getSessionUser(sessionToken)
+    if (user) return user
+  }
 
-  // Return the NextAuth session user
+  // Fallback: check NextAuth session
+  const session = await auth()
   if (!session?.user?.id) return null
 
-  // Refetch full user data for full fidelity (or just use what's in the session token)
   const sql = getDb()
   const rows = await sql`
     SELECT id, email, name, phone, role, status, avatar, email_verified, created_at, updated_at
@@ -222,7 +227,69 @@ export async function createUser(data: {
   return user
 }
 
+/** Get existing user by email, or create one (e.g. for OAuth). Uses a random password so login is only via OAuth. */
+export async function getOrCreateUserByOAuth(profile: { email: string; name?: string | null }) {
+  const sql = getDb()
+  const email = profile.email?.toLowerCase().trim()
+  if (!email) return null
+  let rows = await sql`SELECT id, email, name, role, status FROM users WHERE email = ${email}`
+  if (rows.length > 0) {
+    const u = rows[0] as Record<string, unknown>
+    if (u.status === "suspended" || u.status === "deactivated") return null
+    return toCamel(u)
+  }
+  const newUser = await createUser({
+    email,
+    password: crypto.randomUUID(),
+    name: (profile.name || email.split("@")[0]).trim() || "User",
+    role: "streamer",
+  })
+  return newUser as Record<string, unknown>
+}
+
 export async function updateLastLogin(userId: string) {
   const sql = getDb()
   await sql`UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ${userId}`
+}
+
+// Demo logins: fixed emails and shared password (env DEMO_PASSWORD or "Demo@123")
+const DEMO_ACCOUNTS: { email: string; name: string; role: "admin" | "studio" | "streamer" }[] = [
+  { email: "admin@streammattic.com", name: "Platform Admin", role: "admin" },
+  { email: "john@livestream.pro", name: "Demo Studio", role: "studio" },
+  { email: "alice@example.com", name: "Demo Streamer", role: "streamer" },
+]
+
+export function getDemoPassword(): string {
+  return process.env.DEMO_PASSWORD || "Demo@123"
+}
+
+export function isDemoEmail(email: string): boolean {
+  const norm = email.toLowerCase().trim()
+  return DEMO_ACCOUNTS.some((a) => a.email.toLowerCase() === norm)
+}
+
+export function getDemoAccountByEmail(email: string): (typeof DEMO_ACCOUNTS)[0] | null {
+  const norm = email.toLowerCase().trim()
+  return DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === norm) ?? null
+}
+
+/** Get existing user by demo email, or create one (all roles including admin) so demo works without seed. */
+export async function getOrCreateDemoUser(email: string): Promise<Record<string, unknown> | null> {
+  const sql = getDb()
+  const account = getDemoAccountByEmail(email)
+  if (!account) return null
+  const emailNorm = account.email.toLowerCase()
+  const rows = await sql`SELECT id, email, name, role, status FROM users WHERE email = ${emailNorm}`
+  if (rows.length > 0) {
+    const u = rows[0] as Record<string, unknown>
+    if (u.status === "suspended" || u.status === "deactivated") return null
+    return toCamel(u) as Record<string, unknown>
+  }
+  const newUser = await createUser({
+    email: account.email,
+    password: getDemoPassword(),
+    name: account.name,
+    role: account.role,
+  })
+  return newUser as Record<string, unknown>
 }

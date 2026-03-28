@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -54,7 +56,7 @@ export function PlatformLandingPage() {
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
                     <Link href="/" className="flex items-center gap-3">
                         <BrandedLogo size="lg" />
                     </Link>

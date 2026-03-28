@@ -4,6 +4,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/login/callback",
+  "/signup",
   "/admin/login",
   "/handler",
   "/auth",
@@ -28,6 +29,9 @@ export function middleware(request: NextRequest) {
   // Allow public paths, NextAuth routes, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
+    pathname.startsWith("/api/favicon/") ||
+    /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
+    pathname.startsWith("/api/watch/") ||
     pathname.startsWith("/api/auth") || // NextAuth (signin, callback, error, etc.)
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||

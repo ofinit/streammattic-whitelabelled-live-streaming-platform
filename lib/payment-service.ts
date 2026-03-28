@@ -198,9 +198,13 @@ export async function processSuccessfulPayment(params: {
   // because they are paid for using wallet balance directly (see /api/credits/purchase).
   // Other internal charges like validity_extension follow a similar wallet-based pattern.
 
-  // Create notification
+  const notifMessage =
+    orderType === "studio_upgrade"
+      ? "Welcome to Studio! Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding."
+      : `Your payment of Rs ${(params.amount / 100).toFixed(2)} has been processed successfully.`
+
   await sql`
     INSERT INTO notifications (user_id, type, title, message)
-    VALUES (${params.userId}, 'payment', 'Payment Successful', ${'Your payment of Rs ' + (params.amount / 100).toFixed(2) + ' has been processed successfully.'})
+    VALUES (${params.userId}, 'payment', 'Payment Successful', ${notifMessage})
   `
 }

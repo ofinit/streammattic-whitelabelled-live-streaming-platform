@@ -157,8 +157,8 @@ export async function autoConfigureDomain(
   const isSubdomain = domainParts.length > 2
   const subdomain = isSubdomain ? domainParts.slice(0, -2).join(".") : ""
 
-  const vercelCname = "cname.vercel-dns.com"
-  const vercelIp = "76.76.21.21"
+  const vercelCname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
+  const vercelIp = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
 
   try {
     // 1. Create routing record (CNAME for subdomain, A for root)

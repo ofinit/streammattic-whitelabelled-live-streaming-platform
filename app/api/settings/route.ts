@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db"
 import { getPlatformSetting } from "@/lib/db-queries"
+import { invalidateCache } from "@/lib/redis"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 
 export const GET = withAuth(async (user, request) => {
@@ -14,7 +15,15 @@ export const GET = withAuth(async (user, request) => {
   }
 
   // Admin gets all settings, non-admin gets only public settings
-  const publicKeys = ["credit_pricing", "discount_tiers", "validity_defaults", "payment_gateways", "youtube_config_enabled"]
+  const publicKeys = [
+    "credit_pricing",
+    "discount_tiers",
+    "validity_defaults",
+    /** Admin-configured extension tiers + default window (see Admin → Pricing) */
+    "validity_extensions",
+    "payment_gateways",
+    "youtube_config_enabled",
+  ]
   let rows: { key: string; value: unknown }[] =
     user.role === "admin"
       ? (await sql`SELECT key, value, updated_at FROM platform_settings ORDER BY key`) as { key: string; value: unknown }[]
@@ -25,6 +34,12 @@ export const GET = withAuth(async (user, request) => {
     const overrideKey = `youtube_config_override_${user.role}:${user.id}`
     const overrideVal = await getPlatformSetting(overrideKey)
     rows = [...rows, { key: "youtube_config_override", value: overrideVal }]
+  }
+
+  // Streamers: show admin-configured studio annual subscription (for upgrade CTA / pricing)
+  if (user.role === "streamer") {
+    const studioSub = await getPlatformSetting("studio_annual_subscription")
+    rows = [...rows, { key: "studio_annual_subscription", value: studioSub }]
   }
 
   return jsonOk({ settings: rows })
@@ -43,6 +58,8 @@ export const PUT = withRole(["admin"], async (adminUser, request) => {
     ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}, updated_at = NOW()
     RETURNING *
   `
+
+  await invalidateCache(`platform_setting:${key}`)
 
   return jsonOk({ setting: rows[0] })
 })

@@ -223,7 +223,7 @@ export default function IntegrationsSettingsPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                The OAuth 2.0 Client Secret. Stored encrypted in the database.
+                The OAuth 2.0 Client Secret. Stored securely in the database.
                 {data?.has_google_client_secret && !hasEdited && " Currently set (masked)."}
               </p>
             </div>

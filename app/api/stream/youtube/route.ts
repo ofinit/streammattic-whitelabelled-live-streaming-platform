@@ -18,12 +18,78 @@ import { initEncryptionKeyFromDb } from "@/lib/encryption"
  *
  * Actions: create, transition, go-live, health, delete, status
  */
+/** Ensure youtube_broadcasts table and owner_type column exist (local dev schema may be missing them) */
+async function ensureYoutubeSchema(): Promise<void> {
+  const db = getDb()
+  // Add owner_type to youtube_channels if not present
+  await db`
+    ALTER TABLE youtube_channels
+      ADD COLUMN IF NOT EXISTS owner_type TEXT NOT NULL DEFAULT 'studio'
+  `.catch(() => {/* column already exists or ALTER not supported - safe to ignore */})
+
+  // Create youtube_broadcasts if not present
+  await db`
+    CREATE TABLE IF NOT EXISTS youtube_broadcasts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      event_id TEXT NOT NULL,
+      youtube_channel_id UUID NOT NULL REFERENCES youtube_channels(id) ON DELETE CASCADE,
+      broadcast_id TEXT NOT NULL,
+      stream_id TEXT,
+      rtmp_url TEXT,
+      stream_key TEXT,
+      broadcast_status TEXT DEFAULT 'created',
+      privacy_status TEXT DEFAULT 'unlisted',
+      scheduled_start TIMESTAMPTZ,
+      actual_start TIMESTAMPTZ,
+      actual_end TIMESTAMPTZ,
+      enable_dvr BOOLEAN DEFAULT true,
+      enable_auto_start BOOLEAN DEFAULT true,
+      enable_auto_stop BOOLEAN DEFAULT true,
+      enable_low_latency BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await db`CREATE INDEX IF NOT EXISTS idx_youtube_broadcasts_event ON youtube_broadcasts(event_id)`.catch(() => {})
+}
+
 export async function POST(request: Request) {
   try {
-    await initEncryptionKeyFromDb()
     const body = await request.json()
-    const { action, channelDbId } = body
+    const { action } = body
 
+    // status: DB-only lookup by eventId; no channel or token needed
+    if (action === "status") {
+      const { eventId } = body
+      if (!eventId) {
+        return NextResponse.json({ error: "eventId is required" }, { status: 400 })
+      }
+      const db = getDb()
+      try {
+        const rows = await db`
+          SELECT * FROM youtube_broadcasts
+          WHERE event_id = ${eventId}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+        if (!rows.length) {
+          return NextResponse.json({ broadcast: null })
+        }
+        return NextResponse.json({ broadcast: toCamel(rows[0]) })
+      } catch (statusErr) {
+        // Table may not exist yet — run migration and return null
+        const msg = (statusErr as Error).message || ""
+        if (msg.includes("does not exist") || msg.includes("relation") || msg.includes("column")) {
+          await ensureYoutubeSchema().catch(() => {})
+          return NextResponse.json({ broadcast: null })
+        }
+        throw statusErr
+      }
+    }
+
+    await initEncryptionKeyFromDb()
+    await ensureYoutubeSchema()
+    const { channelDbId } = body
     if (!channelDbId) {
       return NextResponse.json({ error: "channelDbId is required" }, { status: 400 })
     }
@@ -50,12 +116,25 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "eventId is required" }, { status: 400 })
         }
 
+        // Resolve a valid scheduled start time for YouTube.
+        // YouTube requires the time to be in the future and within ~6 months.
+        // If the event's scheduled time is in the past or missing, use 5 minutes from now.
+        const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000
+        const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
+        let resolvedScheduledStart = fiveMinutesFromNow
+        if (scheduledStartTime) {
+          const parsed = new Date(scheduledStartTime)
+          if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now() + 60_000 && parsed.getTime() < Date.now() + SIX_MONTHS_MS) {
+            resolvedScheduledStart = parsed
+          }
+        }
+
         // Create broadcast + stream on YouTube
         const broadcast = await createLiveBroadcast(
           accessToken,
           title || "Untitled Broadcast",
           description || "",
-          scheduledStartTime ? new Date(scheduledStartTime) : new Date(),
+          resolvedScheduledStart,
           privacyStatus || "unlisted",
           {
             enableDvr: enableDvr ?? true,
@@ -75,7 +154,7 @@ export async function POST(request: Request) {
           ) VALUES (
             ${eventId}, ${channelDbId}, ${broadcast.broadcastId}, ${broadcast.streamId},
             ${broadcast.rtmpUrl}, ${broadcast.streamKey}, ${"created"}, ${privacyStatus || "unlisted"},
-            ${scheduledStartTime ? new Date(scheduledStartTime) : new Date()},
+            ${resolvedScheduledStart},
             ${enableDvr ?? true}, ${enableAutoStart ?? true},
             ${enableAutoStop ?? true}, ${enableLowLatency ?? false}
           )
@@ -180,27 +259,6 @@ export async function POST(request: Request) {
         `
 
         return NextResponse.json({ success: deleted })
-      }
-
-      case "status": {
-        // Get broadcast status from DB for a given event
-        const { eventId } = body
-        if (!eventId) {
-          return NextResponse.json({ error: "eventId is required" }, { status: 400 })
-        }
-
-        const rows = await db`
-          SELECT * FROM youtube_broadcasts
-          WHERE event_id = ${eventId}
-          ORDER BY created_at DESC
-          LIMIT 1
-        `
-
-        if (!rows.length) {
-          return NextResponse.json({ broadcast: null })
-        }
-
-        return NextResponse.json({ broadcast: toCamel(rows[0]) })
       }
 
       default:

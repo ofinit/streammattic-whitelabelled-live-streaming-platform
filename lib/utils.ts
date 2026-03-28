@@ -49,6 +49,27 @@ export function formatRelativeTime(date: string | Date): string {
   return formatDate(date)
 }
 
+/**
+ * Event list / dashboards: show scheduled start with clock time and timezone label.
+ * Uses the event's IANA timezone when provided (matches watch page behavior).
+ */
+export function formatEventScheduledDisplay(scheduledAt: string | Date, timezone?: string | null): string {
+  const d = new Date(scheduledAt)
+  if (Number.isNaN(d.getTime())) return ""
+  const tzRaw = timezone != null ? String(timezone).trim() : ""
+  const tz = tzRaw && tzRaw !== "UTC" ? tzRaw : undefined
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    ...(tz ? { timeZone: tz } : {}),
+    timeZoneName: "shortGeneric",
+  }).format(d)
+}
+
 export function slugify(str: string): string {
   return str
     .toLowerCase()

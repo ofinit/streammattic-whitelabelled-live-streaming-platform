@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1350" viewBox="0 0 2400 1350" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="corpHeroBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="45%" stop-color="#0c1424"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <radialGradient id="corpOrbBlue" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0066ff" stop-opacity="0.35"/>
+      <stop offset="55%" stop-color="#0066ff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0066ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="corpOrbCyan" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.22"/>
+      <stop offset="60%" stop-color="#00d4aa" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#00d4aa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="corpOrbAccent" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff6b6b" stop-opacity="0.12"/>
+      <stop offset="70%" stop-color="#ff6b6b" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ff6b6b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="corpHorizon" x1="50%" y1="100%" x2="50%" y2="40%">
+      <stop offset="0%" stop-color="#0066ff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="corpGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" stroke="#3b82f6" stroke-opacity="0.07" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="2400" height="1350" fill="url(#corpHeroBase)"/>
+  <rect width="2400" height="1350" fill="url(#corpGrid)"/>
+  <ellipse cx="2100" cy="180" rx="520" ry="380" fill="url(#corpOrbBlue)"/>
+  <ellipse cx="220" cy="1120" rx="420" ry="320" fill="url(#corpOrbCyan)"/>
+  <ellipse cx="1200" cy="620" rx="280" ry="220" fill="url(#corpOrbAccent)"/>
+  <rect width="2400" height="1350" fill="url(#corpHorizon)"/>
+  <g opacity="0.14" stroke="#22d3ee" stroke-width="0.75">
+    <line x1="0" y1="420" x2="2400" y2="420"/>
+    <line x1="0" y1="780" x2="2400" y2="780"/>
+    <line x1="800" y1="0" x2="800" y2="1350"/>
+    <line x1="1600" y1="0" x2="1600" y2="1350"/>
+  </g>
+  <g opacity="0.06" fill="#e2e8f0">
+    <rect x="180" y="200" width="3" height="14" rx="1"/>
+    <rect x="196" y="206" width="3" height="8" rx="1"/>
+    <rect x="212" y="198" width="3" height="16" rx="1"/>
+    <rect x="1980" y="980" width="3" height="12" rx="1"/>
+    <rect x="1994" y="972" width="3" height="20" rx="1"/>
+    <rect x="2008" y="988" width="3" height="8" rx="1"/>
+    <rect x="1100" y="120" width="3" height="10" rx="1"/>
+    <rect x="1288" y="1180" width="3" height="14" rx="1"/>
+  </g>
+</svg>

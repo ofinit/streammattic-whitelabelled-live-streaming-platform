@@ -17,6 +17,11 @@ export interface TemplateFieldGroup {
   fields: TemplateField[]
 }
 
+// Standard event media (player image, hero image, photo gallery, photographer logo & contact)
+// are implemented as a shared block in the event form (Design tab) and stored on the event
+// (hero_image_url, player_image_url, etc.), not in template_data. All templates use that
+// same block plus the template-specific groups below.
+
 // Template category to fields mapping
 export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
   // Default/General - Minimal fields
@@ -486,7 +491,26 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
       fields: [
         { key: "companyName", label: "Company Name", type: "text", required: true },
         { key: "companyLogo", label: "Company Logo", type: "image" },
-        { key: "companyTagline", label: "Company Tagline", type: "text" },
+        { key: "companyTagline", label: "Company Tagline", type: "text", placeholder: "2026 Summit" },
+        {
+          key: "brandMark",
+          label: "Brand mark (nav initials)",
+          type: "text",
+          maxLength: 4,
+          placeholder: "TF",
+        },
+        {
+          key: "heroLeadLine",
+          label: "Hero headline — lead line (Tech Forward skin)",
+          type: "text",
+          placeholder: "THE FUTURE",
+        },
+        {
+          key: "heroAccentLine",
+          label: "Hero headline — gradient line",
+          type: "text",
+          placeholder: "IS NOW",
+        },
       ],
     },
     {
@@ -914,66 +938,81 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
   ],
 }
 
-// Helper function to get template key from template ID or category
-export function getTemplateFieldKey(templateId: string, category: string): string {
-  // Map template IDs to field definition keys
-  const templateIdToKey: Record<string, string> = {
-    "tpl-default": "default",
-    "tpl-wedding": "wedding",
-    "tpl-corporate": "corporate",
-    "tpl-concert": "concert",
-    "tpl-christian": "christian",
-    "tpl-muslim": "islamic",
-    "tpl-hindu": "hindu",
-    "tpl-sports": "sports",
-    "tpl-political": "political",
-    "tpl-school": "school",
-    "tpl-birthday": "birthday",
-    "tpl-funeral": "funeral",
-    "tpl-indian-festival": "indian-festival",
-    "tpl-gaming": "gaming",
-    "tpl-podcast": "podcast",
-    "tpl-movie-premiere": "movie-premiere",
-    "tpl-award-ceremony": "award-ceremony",
-    "tpl-comedy-show": "comedy-show",
-    "tpl-product-launch": "product-launch",
-    "tpl-webinar": "webinar",
-    "tpl-auction": "auction",
-    "tpl-real-estate": "real-estate",
-    "tpl-baby-shower": "baby-shower",
-    "tpl-graduation": "graduation",
-    "tpl-engagement": "engagement",
-    "tpl-anniversary": "anniversary",
-    "tpl-reunion": "reunion",
-    "tpl-chinese-festival": "chinese-festival",
-    "tpl-christmas": "christmas",
-    "tpl-eid": "eid",
-    "tpl-thanksgiving": "thanksgiving",
-    "tpl-halloween": "halloween",
-    "tpl-fitness": "fitness",
-    "tpl-yoga": "yoga",
-    "tpl-charity": "charity",
+/** Merge two field defs for the same key (e.g. select options from Christian + Islamic ceremonyType). */
+function mergeTemplateFieldForUnified(existing: TemplateField, incoming: TemplateField): TemplateField {
+  const base = { ...existing, required: false }
+  if (base.type === "select" && incoming.type === "select") {
+    const seen = new Set<string>()
+    const opts: { value: string; label: string }[] = []
+    for (const o of [...(base.options ?? []), ...(incoming.options ?? [])]) {
+      if (!seen.has(o.value)) {
+        seen.add(o.value)
+        opts.push(o)
+      }
+    }
+    return { ...base, options: opts.length > 0 ? opts : base.options }
   }
+  return base
+}
 
-  // First try to match by template ID
-  if (templateIdToKey[templateId]) {
-    return templateIdToKey[templateId]
+/**
+ * Single form for every template except Default: union of all non-default field defs (deduped by key).
+ * Default (`tpl-default`) still uses only `templateFieldDefinitions.default` — unchanged.
+ */
+function buildMergedNonDefaultFieldGroups(): TemplateFieldGroup[] {
+  const byKey = new Map<string, TemplateField>()
+  for (const [defName, groups] of Object.entries(templateFieldDefinitions)) {
+    if (defName === "default") continue
+    for (const g of groups) {
+      for (const f of g.fields) {
+        const cur = byKey.get(f.key)
+        if (!cur) {
+          byKey.set(f.key, { ...f, required: false })
+        } else {
+          byKey.set(f.key, mergeTemplateFieldForUnified(cur, f))
+        }
+      }
+    }
   }
-
-  // Fallback to category-based matching (lowercase, replace spaces with dashes)
-  const categoryKey = category.toLowerCase().replace(/\s+/g, "-")
-  if (templateFieldDefinitions[categoryKey]) {
-    return categoryKey
+  const sorted = [...byKey.values()].sort((a, b) =>
+    a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+  )
+  const chunkSize = 16
+  const totalChunks = Math.max(1, Math.ceil(sorted.length / chunkSize))
+  const out: TemplateFieldGroup[] = []
+  for (let i = 0; i < sorted.length; i += chunkSize) {
+    const slice = sorted.slice(i, i + chunkSize)
+    const n = Math.floor(i / chunkSize) + 1
+    out.push({
+      title: totalChunks > 1 ? `Event details (${n} of ${totalChunks})` : "Event details",
+      fields: slice,
+    })
   }
+  return out
+}
 
-  // Default fallback
-  return "default"
+let cachedMergedNonDefaultGroups: TemplateFieldGroup[] | null = null
+
+export function getMergedNonDefaultTemplateFieldGroups(): TemplateFieldGroup[] {
+  if (!cachedMergedNonDefaultGroups) {
+    cachedMergedNonDefaultGroups = buildMergedNonDefaultFieldGroups()
+  }
+  return cachedMergedNonDefaultGroups
+}
+
+/**
+ * Logical schema key: `default` only for tpl-default; everything else shares the merged field set.
+ */
+export function getTemplateFieldKey(templateId: string, _category: string): string {
+  return templateId === "tpl-default" ? "default" : "unified"
 }
 
 // Get fields for a specific template
-export function getTemplateFields(templateId: string, category: string): TemplateFieldGroup[] {
-  const key = getTemplateFieldKey(templateId, category)
-  return templateFieldDefinitions[key] || templateFieldDefinitions.default
+export function getTemplateFields(templateId: string, _category: string): TemplateFieldGroup[] {
+  if (templateId === "tpl-default") {
+    return templateFieldDefinitions.default
+  }
+  return getMergedNonDefaultTemplateFieldGroups()
 }
 
 // Validate template data

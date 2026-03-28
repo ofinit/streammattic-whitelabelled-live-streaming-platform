@@ -3,38 +3,29 @@
  * Run: node --env-file=.env.local scripts/db-inspect.js
  * Or: $env:DATABASE_URL=(Get-Content .env.local | Where-Object {$_ -match '^DATABASE_URL='} | ForEach-Object {$_ -replace '^DATABASE_URL=',''}) ; node scripts/db-inspect.js
  */
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   console.error("DATABASE_URL not set. Run with: node --env-file=.env.local scripts/db-inspect.js");
   process.exit(1);
 }
 
-const url = new URL(DATABASE_URL.replace("postgres://", "https://").replace("postgresql://", "https://"));
-const API_URL = `https://${url.hostname}/sql`;
-
-async function sql(query, params = []) {
-  const resp = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Neon-Connection-String": DATABASE_URL,
-    },
-    body: JSON.stringify({ query, params }),
-  });
-  const text = await resp.text();
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text.substring(0, 300)}`);
-  return JSON.parse(text);
+async function sql(client, query, params = []) {
+  const result = await client.query(query, params);
+  return { rows: result.rows };
 }
 
 async function run() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   console.log("=== Production DB Inspection ===\n");
 
   // 1. Connection test
-  const conn = await sql("SELECT current_database() as db, current_user as usr");
+  const conn = await sql(client, "SELECT current_database() as db, current_user as usr");
   console.log("Connected:", conn.rows?.[0] || conn);
 
   // 2. List tables
-  const tables = await sql(`
+  const tables = await sql(client, `
     SELECT table_name FROM information_schema.tables
     WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     ORDER BY table_name
@@ -46,7 +37,7 @@ async function run() {
   console.log("\nRow counts:");
   for (const t of tableNames) {
     try {
-      const r = await sql(`SELECT COUNT(*)::int as c FROM "${t}"`);
+      const r = await sql(client, `SELECT COUNT(*)::int as c FROM "${t}"`);
       const c = r.rows?.[0]?.c ?? r.rows?.[0]?.c ?? "?";
       console.log("  " + t + ": " + c);
     } catch (e) {
@@ -55,7 +46,7 @@ async function run() {
   }
 
   // 4. Check ENUMs
-  const enums = await sql(`
+  const enums = await sql(client, `
     SELECT t.typname, array_agg(e.enumlabel ORDER BY e.enumsortorder) as values
     FROM pg_type t
     JOIN pg_enum e ON t.oid = e.enumtypid
@@ -66,13 +57,13 @@ async function run() {
   (enums.rows || []).forEach((r) => console.log("  " + r.typname + ":", (r.values || []).join(", ")));
 
   // 5. Check for schema drift: user_role values in DB
-  const roleCheck = await sql(`
+  const roleCheck = await sql(client, `
     SELECT role::text, COUNT(*) as cnt FROM users GROUP BY role
   `);
   console.log("\nUser roles in DB:", (roleCheck.rows || []).map((r) => r.role + ": " + r.cnt).join(", "));
 
   // 6. Check sessions table structure
-  const sessCols = await sql(`
+  const sessCols = await sql(client, `
     SELECT column_name, data_type FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'sessions'
     ORDER BY ordinal_position
@@ -92,17 +83,17 @@ async function run() {
   console.log("youtube_channels table:", hasYoutube ? "exists" : "MISSING");
 
   // 10. Sample admin user (no password)
-  const admins = await sql(`SELECT id, email, name, role, status FROM users WHERE role = 'admin' LIMIT 3`);
+  const admins = await sql(client, `SELECT id, email, name, role, status FROM users WHERE role = 'admin' LIMIT 3`);
   console.log("\nAdmin users:", (admins.rows || []).length);
   (admins.rows || []).forEach((r) => console.log("  -", r.email, "(" + r.status + ")"));
 
   // 11. Check events and orders columns
-  const eventsCols = await sql(`
+  const eventsCols = await sql(client, `
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'events'
     ORDER BY ordinal_position
   `);
-  const ordersCols = await sql(`
+  const ordersCols = await sql(client, `
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'orders'
     ORDER BY ordinal_position
@@ -116,6 +107,7 @@ async function run() {
   console.log("  orders.total/total_price:", ordersHasTotal ? "exists" : "check");
 
   console.log("\n=== Inspection complete ===");
+  await client.end();
 }
 
 run().catch((e) => {

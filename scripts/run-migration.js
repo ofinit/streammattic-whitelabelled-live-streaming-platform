@@ -1,5 +1,6 @@
-// Migration script using Neon SQL-over-HTTP API directly via fetch
-// No npm packages needed - works in any Node.js environment
+// Migration script using pg (works with any PostgreSQL)
+
+const { Client } = require("pg");
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -7,26 +8,9 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-// Parse DATABASE_URL to extract host and auth for the HTTP SQL API
-// Format: postgres://user:password@host/dbname?sslmode=require
-const url = new URL(DATABASE_URL.replace("postgres://", "https://").replace("postgresql://", "https://"));
-const httpHost = url.hostname;
-const API_URL = `https://${httpHost}/sql`;
-
-async function execSql(query) {
-  const resp = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Neon-Connection-String": DATABASE_URL,
-    },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`HTTP ${resp.status}: ${text.substring(0, 200)}`);
-  }
-  return resp.json();
+async function execSql(client, query) {
+  const result = await client.query(query);
+  return result;
 }
 
 const statements = [
@@ -70,6 +54,8 @@ const statements = [
   `CREATE TABLE platform_settings (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), key TEXT NOT NULL UNIQUE, value JSONB NOT NULL DEFAULT '{}', updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE TABLE events (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, title TEXT NOT NULL, description TEXT, thumbnail TEXT, stream_type stream_type_key NOT NULL, stream_key TEXT, rtmp_url TEXT, hls_url TEXT, youtube_url TEXT, embed_code TEXT, status event_status NOT NULL DEFAULT 'draft', scheduled_at TIMESTAMPTZ, started_at TIMESTAMPTZ, ended_at TIMESTAMPTZ, max_viewers INT DEFAULT 0, current_viewers INT DEFAULT 0, total_views INT DEFAULT 0, is_password_protected BOOLEAN NOT NULL DEFAULT false, event_password TEXT, allow_chat BOOLEAN NOT NULL DEFAULT true, allow_reactions BOOLEAN NOT NULL DEFAULT true, simulcast_config JSONB DEFAULT '[]', template_id UUID, template_data JSONB DEFAULT '{}', validity_expires_at TIMESTAMPTZ, credits_consumed INT DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX idx_events_user ON events(user_id)`,
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE`,
+  `CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug)`,
   `CREATE INDEX idx_events_status ON events(status)`,
   `CREATE INDEX idx_events_scheduled ON events(scheduled_at)`,
   `CREATE INDEX idx_events_stream ON events(stream_type)`,
@@ -99,21 +85,13 @@ const statements = [
   `CREATE TABLE youtube_channels (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, channel_id TEXT NOT NULL, channel_title TEXT, channel_thumbnail TEXT, subscriber_count INT DEFAULT 0, video_count INT DEFAULT 0, access_token_encrypted TEXT, refresh_token_encrypted TEXT, token_status youtube_token_status NOT NULL DEFAULT 'valid', token_expires_at TIMESTAMPTZ, is_active BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX idx_ytc_owner ON youtube_channels(owner_id)`,
   `CREATE TABLE event_templates (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, thumbnail TEXT, category TEXT, is_active BOOLEAN NOT NULL DEFAULT true, sort_order INT DEFAULT 0, fields JSONB DEFAULT '{}', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
-];
-
-const triggers = [
-  `CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $f$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $f$ LANGUAGE plpgsql`,
-  `DROP TRIGGER IF EXISTS trg_users_upd ON users; CREATE TRIGGER trg_users_upd BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_wallets_upd ON wallets; CREATE TRIGGER trg_wallets_upd BEFORE UPDATE ON wallets FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_credits_upd ON user_credits; CREATE TRIGGER trg_credits_upd BEFORE UPDATE ON user_credits FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_orders_upd ON orders; CREATE TRIGGER trg_orders_upd BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_branding_upd ON studio_branding; CREATE TRIGGER trg_branding_upd BEFORE UPDATE ON studio_branding FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_gwconfig_upd ON payment_gateway_configs; CREATE TRIGGER trg_gwconfig_upd BEFORE UPDATE ON payment_gateway_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_gst_upd ON gst_configurations; CREATE TRIGGER trg_gst_upd BEFORE UPDATE ON gst_configurations FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_invoices_upd ON invoices; CREATE TRIGGER trg_invoices_upd BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_refunds_upd ON refund_requests; CREATE TRIGGER trg_refunds_upd BEFORE UPDATE ON refund_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_adj_upd ON wallet_adjustments; CREATE TRIGGER trg_adj_upd BEFORE UPDATE ON wallet_adjustments FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
-  `DROP TRIGGER IF EXISTS trg_ytc_upd ON youtube_channels; CREATE TRIGGER trg_ytc_upd BEFORE UPDATE ON youtube_channels FOR EACH ROW EXECUTE FUNCTION update_updated_at()`,
+  // packages table (and its enum types)
+  `CREATE TYPE package_type AS ENUM ('event_pack', 'validity', 'addon', 'pay_per_event')`,
+  `CREATE TYPE pricing_model AS ENUM ('fixed', 'tiered', 'per_event', 'custom')`,
+  `CREATE TABLE packages (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, slug TEXT UNIQUE NOT NULL, type package_type NOT NULL DEFAULT 'event_pack', pricing_model pricing_model NOT NULL DEFAULT 'fixed', description TEXT DEFAULT '', price NUMERIC(12,2) NOT NULL DEFAULT 0, base_price_reseller NUMERIC(12,2) DEFAULT 0, base_price_user NUMERIC(12,2) DEFAULT 0, duration INT DEFAULT 30, max_events INT DEFAULT 1, max_concurrent_viewers INT DEFAULT 100, features JSONB DEFAULT '[]', is_active BOOLEAN DEFAULT true, sort_order INT DEFAULT 0, min_qty INT DEFAULT 1, max_qty INT DEFAULT 100, stream_type_pricing JSONB, simulcast_pricing JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
+  `CREATE INDEX idx_packages_slug ON packages(slug)`,
+  `CREATE INDEX idx_packages_active ON packages(is_active)`,
+  `CREATE INDEX idx_packages_type ON packages(type)`,
 ];
 
 const seedSettings = [
@@ -126,13 +104,16 @@ const seedSettings = [
 ];
 
 async function run() {
-  console.log("Starting migration via Neon HTTP API...");
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
+  const exec = (q) => execSql(client, q);
+
+  console.log("Starting migration (pg)...");
   let ok = 0, skip = 0, fail = 0;
 
-  // Schema statements
   for (let i = 0; i < statements.length; i++) {
     try {
-      await execSql(statements[i]);
+      await exec(statements[i]);
       ok++;
       if (i % 10 === 0) console.log(`Progress: ${i+1}/${statements.length}`);
     } catch (err) {
@@ -147,52 +128,48 @@ async function run() {
   }
   console.log(`Schema: ${ok} ok, ${skip} skipped, ${fail} failed`);
 
-  // Triggers (multi-statement, need to split)
   console.log("Creating triggers...");
-  // First create the function
-  await execSql(`CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $f$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $f$ LANGUAGE plpgsql`);
-
+  await exec(`CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $f$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $f$ LANGUAGE plpgsql`);
   const triggerTables = ["users","wallets","user_credits","orders","studio_branding","payment_gateway_configs","gst_configurations","invoices","refund_requests","wallet_adjustments","youtube_channels"];
   for (const t of triggerTables) {
     const tname = `trg_${t.replace(/_/g,"")}_upd`;
     try {
-      await execSql(`DROP TRIGGER IF EXISTS ${tname} ON ${t}`);
-      await execSql(`CREATE TRIGGER ${tname} BEFORE UPDATE ON ${t} FOR EACH ROW EXECUTE FUNCTION update_updated_at()`);
-    } catch(e) {
-      console.error(`Trigger ${t}:`, e?.message?.substring(0,80));
+      await exec(`DROP TRIGGER IF EXISTS ${tname} ON ${t}`);
+      await exec(`CREATE TRIGGER ${tname} BEFORE UPDATE ON ${t} FOR EACH ROW EXECUTE FUNCTION update_updated_at()`);
+    } catch (e) {
+      console.error(`Trigger ${t}:`, e?.message?.substring(0, 80));
     }
   }
   console.log("Triggers done");
 
-  // Seed admin user
   console.log("Seeding admin...");
   try {
-    const check = await execSql(`SELECT id FROM users WHERE email = 'admin@streamlivee.com'`);
+    const check = await client.query(`SELECT id FROM users WHERE email = 'admin@streamlivee.com'`);
     const hasAdmin = check?.rows?.length > 0;
     if (!hasAdmin) {
-      await execSql(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streamlivee.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
-      await execSql(`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`);
-      await execSql(`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`);
+      await exec(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streamlivee.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
+      await exec(`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`);
+      await exec(`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`);
       console.log("Admin created");
     } else {
       console.log("Admin already exists");
     }
   } catch (e) {
-    console.error("Admin seed error:", e?.message?.substring(0,150));
+    console.error("Admin seed error:", e?.message?.substring(0, 150));
   }
 
-  // Seed platform settings
   console.log("Seeding settings...");
   for (const s of seedSettings) {
     try {
       const val = JSON.stringify(s.value).replace(/'/g, "''");
-      await execSql(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
+      await exec(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
     } catch (e) {
-      console.error(`Setting ${s.key}:`, e?.message?.substring(0,100));
+      console.error(`Setting ${s.key}:`, e?.message?.substring(0, 100));
     }
   }
   console.log("Settings seeded");
+  await client.end();
   console.log("MIGRATION COMPLETE!");
 }
 
-run().catch(e => { console.error("Fatal:", e); process.exit(1); });
+run().catch((e) => { console.error("Fatal:", e); process.exit(1); });

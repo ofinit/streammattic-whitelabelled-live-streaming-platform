@@ -19,6 +19,12 @@ yarn-error.log*
 # env files
 .env*
 
+# local DB backups (contain production data)
+/backups/
+
+# uploaded files (filesystem storage)
+/uploads/
+
 # vercel
 .vercel
 

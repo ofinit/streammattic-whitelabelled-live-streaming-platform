@@ -66,11 +66,11 @@ export async function GET(request: Request) {
       INSERT INTO youtube_channels (
         owner_id, owner_type, channel_id, channel_title, channel_thumbnail,
         subscriber_count, video_count,
-        encrypted_access_token, encrypted_refresh_token, token_expires_at,
+        access_token_encrypted, refresh_token_encrypted, token_expires_at,
         scopes, is_active
       ) VALUES (
         ${stateData.ownerId}, ${stateData.ownerType},
-        ${channel.id}, ${channel.title}, ${channel.thumbnail || null},
+        ${channel.channelId}, ${channel.channelTitle}, ${channel.channelThumbnail || null},
         ${channel.subscriberCount || 0}, ${channel.videoCount || 0},
         ${encryptedAccessToken}, ${encryptedRefreshToken}, ${tokenExpiresAt},
         ${"youtube.force-ssl youtube.readonly"}, ${true}
@@ -81,8 +81,8 @@ export async function GET(request: Request) {
         channel_thumbnail = EXCLUDED.channel_thumbnail,
         subscriber_count = EXCLUDED.subscriber_count,
         video_count = EXCLUDED.video_count,
-        encrypted_access_token = EXCLUDED.encrypted_access_token,
-        encrypted_refresh_token = EXCLUDED.encrypted_refresh_token,
+        access_token_encrypted = EXCLUDED.access_token_encrypted,
+        refresh_token_encrypted = EXCLUDED.refresh_token_encrypted,
         token_expires_at = EXCLUDED.token_expires_at,
         is_active = true,
         updated_at = NOW()
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 
     // 5. Redirect back with success
     const successUrl = new URL(returnUrl, url.origin)
-    successUrl.searchParams.set("yt_connected", channel.title)
+    successUrl.searchParams.set("yt_connected", channel.channelTitle)
     return NextResponse.redirect(successUrl.toString())
   } catch (err) {
     console.error("YouTube OAuth callback error:", err)

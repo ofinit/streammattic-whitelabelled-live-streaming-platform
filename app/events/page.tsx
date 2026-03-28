@@ -48,7 +48,7 @@ export default function PublicEventsPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {liveEvents.map((event) => (
-                <Link key={event.id} href={`/watch/${event.id}`}>
+                <Link key={event.id} href={`/${event.slug || event.id}`}>
                   <Card className="group overflow-hidden border-border bg-card transition-all hover:border-primary/50">
                     <div className="relative aspect-video bg-secondary">
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function PublicEventsPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {upcomingEvents.map((event) => (
-                <Link key={event.id} href={`/watch/${event.id}`}>
+                <Link key={event.id} href={`/${event.slug || event.id}`}>
                   <Card className="group overflow-hidden border-border bg-card transition-all hover:border-primary/50">
                     <div className="relative aspect-video bg-secondary">
                       <div className="absolute inset-0 flex items-center justify-center">

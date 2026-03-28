@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,10 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown } from "lucide-react"
-import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier } from "@/lib/types"
+import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown, Loader2 } from "lucide-react"
+import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTypePricing } from "@/lib/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { masterStreamTypePricing, masterSimulcastPricing, masterValiditySettings } from "@/lib/mock-data"
+import { toast } from "sonner"
+import {
+  parseStreamTypePricing,
+  parseSimulcastPricing,
+  serializeSimulcastPricing,
+} from "@/lib/stream-type-pricing"
+import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -20,24 +27,33 @@ const streamTypes = [
   { key: "third_party" as const, label: "Third Party", description: "External embed", icon: Globe },
 ]
 
-type StreamPricingState = Record<string, StreamTypePriceConfig>
+function cloneStreamPricing(source: StreamTypePricing): StreamTypePricing {
+  return JSON.parse(JSON.stringify(source)) as StreamTypePricing
+}
+
+function buildValidityExtensionsPayload(defaultDays: number, tiers: ValidityTier[]) {
+  return {
+    defaultDays,
+    options: tiers.map((t) => ({
+      days: t.days,
+      extraDays: Math.max(0, t.days - defaultDays),
+      creditCost: t.creditCost,
+      label: t.label ?? `${t.days} days`,
+      enabled: t.enabled,
+    })),
+  }
+}
 
 export default function AdminPricingPage() {
-  // Initialize from master pricing
-  const [streamPricing, setStreamPricing] = useState<StreamPricingState>(() => {
-    const state: StreamPricingState = {}
-    for (const key of Object.keys(masterStreamTypePricing)) {
-      const config = masterStreamTypePricing[key as keyof typeof masterStreamTypePricing]
-      state[key] = { ...config, volumeDiscountTiers: [...config.volumeDiscountTiers] }
-    }
-    return state
-  })
+  const [streamPricing, setStreamPricing] = useState<StreamTypePricing>(() => cloneStreamPricing(masterStreamTypePricing))
 
   const [simulcastPricing, setSimulcastPricing] = useState({ ...masterSimulcastPricing })
 
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>(
-    masterValiditySettings.extendedTiers.map((t) => ({ ...t }))
+    masterValiditySettings.extendedTiers.map((t) => ({ ...t })),
   )
+
+  const [validityDefaultDays, setValidityDefaultDays] = useState(30)
 
   const [studioSubscription, setStudioSubscription] = useState({
     price: 1800000, // 18,000 INR in paisa
@@ -45,17 +61,58 @@ export default function AdminPricingPage() {
   })
 
   const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({ rtmp: true })
-  const [saved, setSaved] = useState(false)
+  const [settingsLoadState, setSettingsLoadState] = useState<"loading" | "ready" | "error">("loading")
+  const [saving, setSaving] = useState(false)
+
+  const loadSettings = useCallback(async () => {
+    setSettingsLoadState("loading")
+    try {
+      const res = await fetch("/api/settings")
+      const data = (await res.json()) as { settings?: { key: string; value: unknown }[]; error?: string }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load settings")
+      }
+      const rows = data.settings ?? []
+      const map = Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, unknown>
+
+      setStreamPricing(
+        parseStreamTypePricing(map.stream_type_pricing ?? null, map.volume_discount_tiers ?? null),
+      )
+      setSimulcastPricing(parseSimulcastPricing(map.simulcast_pricing ?? null))
+      const ve = parseValidityExtensionsSetting(map.validity_extensions ?? null)
+      setValidityDefaultDays(ve.defaultDays)
+      setValidityTiers(ve.tiers.map((t) => ({ ...t })))
+
+      const sub = map.studio_annual_subscription
+      if (sub && typeof sub === "object" && sub !== null) {
+        const s = sub as Record<string, unknown>
+        setStudioSubscription({
+          price: typeof s.price === "number" ? s.price : 1_800_000,
+          enabled: s.enabled !== false,
+        })
+      }
+
+      setSettingsLoadState("ready")
+    } catch (e) {
+      console.error(e)
+      setSettingsLoadState("error")
+      toast.error(e instanceof Error ? e.message : "Failed to load pricing settings")
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadSettings()
+  }, [loadSettings])
 
   // Stream type pricing updates
-  const updateBasePrice = (key: string, value: number) => {
+  const updateBasePrice = (key: keyof StreamTypePricing, value: number) => {
     setStreamPricing((prev) => ({
       ...prev,
       [key]: { ...prev[key], basePrice: value },
     }))
   }
 
-  const toggleStreamType = (key: string, enabled: boolean) => {
+  const toggleStreamType = (key: keyof StreamTypePricing, enabled: boolean) => {
     setStreamPricing((prev) => ({
       ...prev,
       [key]: { ...prev[key], enabled },
@@ -63,7 +120,7 @@ export default function AdminPricingPage() {
   }
 
   // Volume discount tier management
-  const addDiscountTier = (streamKey: string) => {
+  const addDiscountTier = (streamKey: keyof StreamTypePricing) => {
     setStreamPricing((prev) => {
       const config = prev[streamKey]
       const lastTier = config.volumeDiscountTiers[config.volumeDiscountTiers.length - 1]
@@ -82,7 +139,12 @@ export default function AdminPricingPage() {
     })
   }
 
-  const updateDiscountTier = (streamKey: string, idx: number, field: keyof VolumeDiscountTier, value: string | number) => {
+  const updateDiscountTier = (
+    streamKey: keyof StreamTypePricing,
+    idx: number,
+    field: keyof VolumeDiscountTier,
+    value: string | number,
+  ) => {
     setStreamPricing((prev) => {
       const config = prev[streamKey]
       const tiers = config.volumeDiscountTiers.map((t, i) =>
@@ -92,7 +154,7 @@ export default function AdminPricingPage() {
     })
   }
 
-  const removeDiscountTier = (streamKey: string, idx: number) => {
+  const removeDiscountTier = (streamKey: keyof StreamTypePricing, idx: number) => {
     setStreamPricing((prev) => {
       const config = prev[streamKey]
       return {
@@ -112,9 +174,66 @@ export default function AdminPricingPage() {
     )
   }
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const streamPayload = cloneStreamPricing(streamPricing)
+      const flatCreditPricing = {
+        rtmp: Math.max(1, Math.round(streamPricing.rtmp.basePrice / 100)),
+        youtube_api: Math.max(1, Math.round(streamPricing.youtube_api.basePrice / 100)),
+        youtube_embed: Math.max(1, Math.round(streamPricing.youtube_embed.basePrice / 100)),
+        third_party: Math.max(1, Math.round(streamPricing.third_party.basePrice / 100)),
+      }
+      const puts: { key: string; value: unknown }[] = [
+        { key: "stream_type_pricing", value: streamPayload },
+        { key: "simulcast_pricing", value: serializeSimulcastPricing(simulcastPricing) },
+        {
+          key: "validity_extensions",
+          value: buildValidityExtensionsPayload(validityDefaultDays, validityTiers),
+        },
+        { key: "studio_annual_subscription", value: studioSubscription },
+        { key: "credit_pricing", value: flatCreditPricing },
+      ]
+
+      for (const { key, value } of puts) {
+        const res = await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, value }),
+        })
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        if (!res.ok) {
+          toast.error(body.error || `Failed to save ${key}`)
+          return
+        }
+      }
+
+      toast.success("Pricing saved to database")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (settingsLoadState === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-muted-foreground">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm">Loading pricing from database…</p>
+      </div>
+    )
+  }
+
+  if (settingsLoadState === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <p className="text-muted-foreground">Could not load pricing settings.</p>
+        <Button type="button" onClick={() => void loadSettings()}>
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -309,7 +428,9 @@ export default function AdminPricingPage() {
             <div>
               <CardTitle>Event Validity Extensions</CardTitle>
               <CardDescription>
-                Default validity is <span className="text-foreground font-medium">30 days</span> (free with event creation). Extensions cost additional credits of the same stream type.
+                Default validity is{" "}
+                <span className="text-foreground font-medium">{validityDefaultDays} days</span> (free with event creation).
+                Extensions cost additional credits of the same stream type.
               </CardDescription>
             </div>
           </div>
@@ -319,7 +440,7 @@ export default function AdminPricingPage() {
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 mb-4">
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-primary" />
-              <span className="font-medium">Default: 30 days</span>
+              <span className="font-medium">Default: {validityDefaultDays} days</span>
               <span className="text-muted-foreground">-- included free with every event creation (1 credit)</span>
             </div>
           </div>
@@ -346,7 +467,9 @@ export default function AdminPricingPage() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">{tier.days} days</span>
-                    <span className="text-xs text-muted-foreground">(+{tier.days - 30} extra days)</span>
+                    <span className="text-xs text-muted-foreground">
+                      (+{Math.max(0, tier.days - validityDefaultDays)} extra days)
+                    </span>
                   </div>
 
                   {/* Credit Cost */}
@@ -390,7 +513,7 @@ export default function AdminPricingPage() {
           <div className="mt-4 rounded-lg bg-secondary/50 p-4 space-y-2">
             <p className="text-sm font-medium">Example</p>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>Create RTMP event = 1 RTMP credit (includes 30 days validity)</p>
+              <p>Create RTMP event = 1 RTMP credit (includes {validityDefaultDays} days validity)</p>
               <p>Extend to 90 days = +{validityTiers.find((t) => t.days === 90)?.creditCost ?? 2} RTMP credits</p>
               <p className="text-foreground font-medium">Total: {1 + (validityTiers.find((t) => t.days === 90)?.creditCost ?? 2)} RTMP credits for a 90-day event</p>
             </div>
@@ -512,11 +635,11 @@ export default function AdminPricingPage() {
 
       {/* Save */}
       <div className="flex items-center gap-3">
-        <Button onClick={handleSave}>
-          <Save className="mr-2 h-4 w-4" />
+        <Button type="button" onClick={() => void handleSave()} disabled={saving}>
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Save Changes
         </Button>
-        {saved && <span className="text-sm text-emerald-500">Changes saved successfully!</span>}
+        <span className="text-xs text-muted-foreground">Persists to platform_settings (Postgres).</span>
       </div>
     </div>
   )

@@ -18,6 +18,7 @@ function AdminLoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [demoLoading, setDemoLoading] = useState(false)
 
   useEffect(() => {
     const authError = searchParams.get("error")
@@ -93,16 +94,45 @@ function AdminLoginContent() {
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign in
               </Button>
+              <div className="pt-3 border-t border-border">
+                <p className="text-center text-xs text-muted-foreground mb-2">Quick try</p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={demoLoading}
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    setError("")
+                    setDemoLoading(true)
+                    try {
+                      const redirectTo = searchParams.get("redirect") || "/admin"
+                      const res = await fetch("/api/auth/demo-login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ role: "admin" }),
+                      })
+                      const data = await res.json().catch(() => ({}))
+                      if (!res.ok || !data.ok) {
+                        setError(data.error || "Demo login failed. Run: npm run db:migrate")
+                        setDemoLoading(false)
+                        return
+                      }
+                      // Session cookie is now set server-side; do a hard redirect
+                      window.location.replace(redirectTo)
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "Something went wrong.")
+                      setDemoLoading(false)
+                    }
+                  }}
+                >
+                  {demoLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Admin demo
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Not an admin?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Sign in for Studio or Streamer
-          </Link>
-        </p>
       </div>
     </div>
   )

@@ -7,12 +7,16 @@ interface SidebarContextType {
   isCollapsed: boolean
   toggleSidebar: () => void
   setCollapsed: (collapsed: boolean) => void
+  /** Mobile drawer (< md); desktop sidebar is unchanged */
+  mobileNavOpen: boolean
+  setMobileNavOpen: (open: boolean) => void
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   // Load preference from localStorage on mount
   useEffect(() => {
@@ -36,7 +40,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, toggleSidebar, setCollapsed }}>{children}</SidebarContext.Provider>
+    <SidebarContext.Provider
+      value={{ isCollapsed, toggleSidebar, setCollapsed, mobileNavOpen, setMobileNavOpen }}
+    >
+      {children}
+    </SidebarContext.Provider>
   )
 }
 

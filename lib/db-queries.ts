@@ -122,6 +122,18 @@ export async function getWalletTransactions(walletId: string, limit = 20, offset
   return toCamelRows(rows as Record<string, unknown>[])
 }
 
+/** Wallet ledger rows for a user (credits, debits, all categories). */
+export async function getWalletTransactionsByUserId(userId: string, limit = 20) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT * FROM wallet_transactions
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return toCamelRows(rows as Record<string, unknown>[])
+}
+
 // ============================================================
 // CREDITS
 // ============================================================
@@ -253,7 +265,8 @@ export async function getEvents(filters?: {
     params.push(filters.userId)
   }
   if (filters?.studioId) {
-    conditions.push(`e.studio_id = $${paramIdx++}`)
+    // Events are owned by user_id; for studio users their user_id IS their studioId
+    conditions.push(`e.user_id = $${paramIdx++}`)
     params.push(filters.studioId)
   }
   if (filters?.status) {
@@ -275,7 +288,7 @@ export async function getEvents(filters?: {
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
     ${where}
-    ORDER BY e.scheduled_start DESC NULLS LAST, e.created_at DESC
+    ORDER BY e.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `, params)
 
@@ -305,7 +318,7 @@ export async function getEventCount(filters?: { userId?: string; studioId?: stri
     params.push(filters.userId)
   }
   if (filters?.studioId) {
-    conditions.push(`studio_id = $${paramIdx++}`)
+    conditions.push(`user_id = $${paramIdx++}`)
     params.push(filters.studioId)
   }
   if (filters?.status) {
@@ -378,16 +391,41 @@ export async function getStudioDashboardStats(studioId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId}) AS total_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'live') AS live_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'ended') AS completed_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId}) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'ended') AS completed_events,
+      (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${studioId}) AS total_views,
       (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
       (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
       (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
       (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
   `
   return toCamel(rows[0] as Record<string, unknown>)
+}
+
+// ============================================================
+// DASHBOARD STATS (streamer)
+// ============================================================
+
+export async function getStreamerDashboardStats(userId: string) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId}) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'scheduled') AS scheduled_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'ended') AS completed_events,
+      (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${userId}) AS total_views,
+      (SELECT COALESCE(balance, 0)::bigint FROM wallets WHERE user_id = ${userId}) AS wallet_balance
+  `
+  return toCamel(rows[0] as Record<string, unknown>)
+}
+
+export async function getUserCreditsRowByUserId(userId: string) {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM user_credits WHERE user_id = ${userId}`
+  return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
 // ============================================================

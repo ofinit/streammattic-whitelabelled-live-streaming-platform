@@ -13,6 +13,7 @@ import { Menu, X, Loader2, Mail } from "lucide-react"
 import Link from "next/link"
 
 const POLL_INTERVAL_MS = 2000
+const DEFAULT_CALLBACK = "/streamer"
 
 function LoginPageContent() {
   const router = useRouter()
@@ -21,10 +22,20 @@ function LoginPageContent() {
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [loginSessionId, setLoginSessionId] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [credentialsLoading, setCredentialsLoading] = useState(false)
+  const [googleEnabled, setGoogleEnabled] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    fetch("/api/auth/providers")
+      .then((r) => r.json())
+      .then((data) => setGoogleEnabled(!!data?.google))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const authError = searchParams.get("error")
@@ -82,6 +93,29 @@ function LoginPageContent() {
       if (pollRef.current) clearInterval(pollRef.current)
     }
   }, [magicLinkSent, loginSessionId, router])
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    if (!email.trim() || !password) return
+    setCredentialsLoading(true)
+    try {
+      const result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+      })
+      if (result?.error) {
+        setError("Invalid email or password.")
+        return
+      }
+      router.push(result?.url || DEFAULT_CALLBACK)
+    } catch {
+      setError("Something went wrong.")
+    } finally {
+      setCredentialsLoading(false)
+    }
+  }
 
   const handleMagicLinkRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -141,15 +175,69 @@ function LoginPageContent() {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle>Sign in to your account</CardTitle>
-              <CardDescription>Use a magic link or Stack Auth. Platform administrators use the admin login.</CardDescription>
+              <CardDescription>Sign in with your preferred method. Platform administrators use the admin login.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               {!magicLinkSent ? (
                 <>
+                  {googleEnabled && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                        onClick={() => signIn("google", { callbackUrl: DEFAULT_CALLBACK })}
+                      >
+                        Sign in with Google
+                      </Button>
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-border" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <form onSubmit={handleCredentialsSubmit} className="space-y-3">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="bg-secondary border-border"
+                      required
+                    />
+                    <Label htmlFor="login-password">Password</Label>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-secondary border-border"
+                      required
+                    />
+                    <Button type="submit" className="w-full" size="lg" disabled={credentialsLoading}>
+                      {credentialsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in with email and password"}
+                    </Button>
+                  </form>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">Or email a magic link (no password)</span>
+                    </div>
+                  </div>
                   <form onSubmit={handleMagicLinkRequest} className="space-y-3">
-                    <Label htmlFor="magic-email">Email a magic link</Label>
+                    <Label htmlFor="magic-email" className="sr-only">Email a magic link</Label>
                     <div className="flex gap-2">
                       <Input
                         id="magic-email"
@@ -165,17 +253,6 @@ function LoginPageContent() {
                       </Button>
                     </div>
                   </form>
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">Or</span>
-                    </div>
-                  </div>
-                  <Button asChild variant="outline" className="w-full" size="lg">
-                    <Link href="/handler/signin">Sign in with Stack Auth</Link>
-                  </Button>
                 </>
               ) : (
                 <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
@@ -194,6 +271,52 @@ function LoginPageContent() {
                 </div>
               )}
 
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wide">Demo logins</p>
+                <p className="text-center text-xs text-muted-foreground">Use these to try the platform. Password: Demo@123</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    { label: "Admin",    role: "admin",    dest: "/admin"    },
+                    { label: "Studio",   role: "studio",   dest: "/studio"   },
+                    { label: "Streamer", role: "streamer", dest: "/streamer" },
+                  ].map(({ label, role, dest }) => (
+                  <Button
+                    key={role}
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="text-xs"
+                    disabled={credentialsLoading}
+                    onClick={async () => {
+                      setError("")
+                      setCredentialsLoading(true)
+                      try {
+                        const res = await fetch("/api/auth/demo-login", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ role }),
+                        })
+                        const data = await res.json().catch(() => ({}))
+                        if (!res.ok || !data.ok) {
+                          setError(data.error || "Demo login failed. Set DATABASE_URL and run: npm run db:migrate")
+                          return
+                        }
+                        window.location.replace(dest)
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Something went wrong.")
+                      } finally {
+                        setCredentialsLoading(false)
+                      }
+                    }}
+                  >
+                    {label}
+                  </Button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+              </p>
               <p className="text-center text-sm text-muted-foreground">
                 Admin? <Link href="/admin/login" className="text-primary hover:underline">Sign in here</Link>
               </p>

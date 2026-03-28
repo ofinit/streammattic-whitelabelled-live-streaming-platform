@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, Shield, Globe } from "lucide-react"
+import { Loader2, User, Lock, Bell, Shield, Globe, ImageIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
 export default function AdminSettingsPage() {
@@ -41,9 +41,68 @@ export default function AdminSettingsPage() {
   })
   const [domainSettings, setDomainSettings] = useState({
     platformDomain: "",
-    studioCnameTarget: "cname.vercel-dns.com",
+    studioCnameTarget: process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com",
   })
   const [domainSaved, setDomainSaved] = useState(false)
+
+  const [platformFaviconUrl, setPlatformFaviconUrl] = useState("")
+  const [platformFaviconLoading, setPlatformFaviconLoading] = useState(false)
+  const [platformFaviconSaving, setPlatformFaviconSaving] = useState(false)
+  const [platformFaviconMessage, setPlatformFaviconMessage] = useState<"ok" | "err" | null>(null)
+
+  const parseSettingsValue = useCallback((raw: unknown): string => {
+    if (raw == null) return ""
+    if (typeof raw === "string") return raw.trim()
+    if (typeof raw === "object" && raw !== null && "url" in raw && typeof (raw as { url: unknown }).url === "string") {
+      return (raw as { url: string }).url.trim()
+    }
+    return ""
+  }, [])
+
+  useEffect(() => {
+    if (user?.role !== "admin" || isLoading) return
+    let cancelled = false
+    setPlatformFaviconLoading(true)
+    void fetch("/api/settings", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { settings?: { key: string; value: unknown }[] } | null) => {
+        if (cancelled || !data?.settings) return
+        const row = data.settings.find((s) => s.key === "platform_favicon_url")
+        setPlatformFaviconUrl(parseSettingsValue(row?.value))
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPlatformFaviconLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.role, isLoading, parseSettingsValue])
+
+  const handlePlatformFaviconSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPlatformFaviconMessage(null)
+    setPlatformFaviconSaving(true)
+    try {
+      const trimmed = platformFaviconUrl.trim()
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "platform_favicon_url",
+          value: trimmed.length > 0 ? trimmed : null,
+        }),
+      })
+      if (!res.ok) throw new Error("save failed")
+      setPlatformFaviconMessage("ok")
+    } catch {
+      setPlatformFaviconMessage("err")
+    } finally {
+      setPlatformFaviconSaving(false)
+      setTimeout(() => setPlatformFaviconMessage(null), 4000)
+    }
+  }
 
   const handleDomainSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -261,6 +320,43 @@ export default function AdminSettingsPage() {
                 }
               />
             </div>
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
+                  <ImageIcon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Platform favicon</p>
+                  <p className="text-sm text-muted-foreground">
+                    Shown on every page (including streamers and public events). Leave empty to use the default red live
+                    icon, or per-studio favicons when no platform favicon is set.
+                  </p>
+                </div>
+              </div>
+              <form onSubmit={handlePlatformFaviconSave} className="space-y-2">
+                <Label htmlFor="platformFaviconUrl">Favicon URL</Label>
+                <Input
+                  id="platformFaviconUrl"
+                  type="url"
+                  placeholder="https://cdn.example.com/favicon.ico"
+                  value={platformFaviconUrl}
+                  onChange={(e) => setPlatformFaviconUrl(e.target.value)}
+                  disabled={platformFaviconLoading}
+                  className="bg-secondary border-0"
+                />
+                {platformFaviconMessage === "ok" && (
+                  <p className="text-sm text-emerald-500">Platform favicon saved. Refresh open tabs to see it.</p>
+                )}
+                {platformFaviconMessage === "err" && (
+                  <p className="text-sm text-destructive">Could not save. Try again or check you are logged in as admin.</p>
+                )}
+                <Button type="submit" disabled={platformFaviconSaving || platformFaviconLoading}>
+                  {platformFaviconSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save platform favicon
+                </Button>
+              </form>
+            </div>
           </CardContent>
         </Card>
 
@@ -296,13 +392,13 @@ export default function AdminSettingsPage() {
                 <Label htmlFor="cnameTarget">Studio CNAME Target</Label>
                 <Input
                   id="cnameTarget"
-                  placeholder="cname.vercel-dns.com"
+                  placeholder={process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"}
                   value={domainSettings.studioCnameTarget}
                   onChange={(e) => setDomainSettings({ ...domainSettings, studioCnameTarget: e.target.value })}
                   className="bg-secondary border-0"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {"Studios' www CNAME records will point here. Default: cname.vercel-dns.com (Vercel). Change only if using a custom proxy or CDN."}
+                  Studios&apos; www CNAME records will point here. Set via NEXT_PUBLIC_PLATFORM_CNAME_TARGET for VPS/Docker, or leave default.
                 </p>
               </div>
               <Separator />
@@ -312,8 +408,8 @@ export default function AdminSettingsPage() {
                   When you configure a studio domain (e.g. clientbrand.com), they will need:
                 </p>
                 <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
-                  <p>A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; 76.76.21.21</p>
-                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.studioCnameTarget || "cname.vercel-dns.com"}</p>
+                  <p>A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"}</p>
+                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.studioCnameTarget || process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"}</p>
                   <p>TXT &nbsp;&nbsp;&nbsp; _verify.clientbrand.com &rarr; (auto-generated)</p>
                 </div>
               </div>

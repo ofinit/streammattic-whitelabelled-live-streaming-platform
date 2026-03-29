@@ -9,7 +9,10 @@ export type WatchPageSkin =
   | "weddingMidnight"
   | "weddingCoastal"
   | "weddingCelestial"
+  | "weddingTraditionalHindu"
   | "corporateTechForward"
+  | "birthdayParty"
+  | "memorialService"
 
 /** Extend when adding a new Tier-C watch layout. */
 export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> = {
@@ -18,7 +21,10 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-midnight": "weddingMidnight",
   "tpl-wedding-coastal": "weddingCoastal",
   "tpl-wedding-celestial": "weddingCelestial",
+  "tpl-wedding-traditional-hindu": "weddingTraditionalHindu",
   "tpl-corporate-tech-forward": "corporateTechForward",
+  "tpl-birthday": "birthdayParty",
+  "tpl-funeral": "memorialService",
 }
 
 export function getWatchPageSkin(templateId: string): WatchPageSkin {

@@ -17,6 +17,9 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   /** Celestial Dreams — night sky / Milky Way */
   "tpl-wedding-celestial":
     "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=2400&q=80",
+  /** Shubh Vivah — brass diyas / temple lamps (spiritual, prayer, ritual) */
+  "tpl-wedding-traditional-hindu":
+    "https://images.unsplash.com/photo-1771929712047-3e7022669175?auto=format&fit=crop&w=2400&q=80",
   /** Tech Forward Summit — dark grid + blue/cyan/neon orbs (matches watch skin `#0a0a0a` palette) */
   "tpl-corporate-tech-forward": "/templates/corporate-tech-forward-hero.svg",
   /** Classic corporate — same bundled hero as Tech Forward */

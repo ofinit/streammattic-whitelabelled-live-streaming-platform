@@ -1,5 +1,7 @@
 /* Celestial Dreams: Cinzel + Space Grotesk (not loaded via next/font — avoids runtime ReferenceError in some Next/Turbopack setups) */
 @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Space+Grotesk:wght@300;400;500;700&display=swap");
+/* Memorial service hero — Cinzel + Crimson Text + Montserrat */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -94,8 +96,14 @@
   /* Celestial Dreams wedding (@import Google Fonts at top of this file) */
   --font-celestial-display: "Cinzel", ui-serif, Georgia, serif;
   --font-celestial-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-memorial-display: "Cinzel", ui-serif, Georgia, serif;
+  --font-memorial-serif: "Crimson Text", ui-serif, Georgia, serif;
+  --font-memorial-sans: var(--font-garden-sans), "Montserrat", system-ui, sans-serif;
   /* Corporate Tech Forward (Space Grotesk via next/font — layout) */
   --font-corporate-tech-display-stack: var(--font-corporate-tech-display), "Space Grotesk", system-ui, sans-serif;
+  /* Traditional Hindu wedding — Playfair + Cormorant (next/font in layout) */
+  --font-hindu-wedding-display: var(--font-serif);
+  --font-hindu-wedding-serif: var(--font-garden-serif);
   --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -447,6 +455,98 @@
     }
   }
 
+  /* Traditional Hindu wedding (tpl-wedding-traditional-hindu) */
+  @keyframes hinduRotateMandala {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes hinduFloatDiya {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-5deg);
+      opacity: 0.85;
+    }
+    50% {
+      transform: translateY(-24px) rotate(5deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes hinduPetalFall {
+    0% {
+      transform: translateY(-80px) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.85;
+    }
+    90% {
+      opacity: 0.85;
+    }
+    100% {
+      transform: translateY(110vh) translateX(48px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes hinduElephantWalk {
+    0% {
+      transform: translateX(-35vw);
+    }
+    100% {
+      transform: translateX(135vw);
+    }
+  }
+
+  @keyframes hinduStringSway {
+    0%,
+    100% {
+      transform: rotate(-2deg);
+    }
+    50% {
+      transform: rotate(2deg);
+    }
+  }
+
+  @keyframes hinduPeacock {
+    0%,
+    100% {
+      transform: rotate(-6deg) scale(1);
+    }
+    50% {
+      transform: rotate(6deg) scale(1.05);
+    }
+  }
+
+  @keyframes hinduBell {
+    0%,
+    85%,
+    100% {
+      transform: rotate(0deg);
+    }
+    90% {
+      transform: rotate(16deg);
+    }
+    95% {
+      transform: rotate(-16deg);
+    }
+  }
+
+  @keyframes hinduLotus {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.08) rotate(4deg);
+    }
+  }
+
   /* Corporate Tech Forward (tpl-corporate-tech-forward) */
   @keyframes corpTechGridMove {
     0% {
@@ -672,6 +772,110 @@
     font-family: var(--font-celestial-sans);
   }
 
+  .font-hindu-wedding-display {
+    font-family: var(--font-hindu-wedding-display);
+  }
+
+  .font-hindu-wedding-serif {
+    font-family: var(--font-hindu-wedding-serif);
+  }
+
+  .hindu-wedding-scallop {
+    background-image: radial-gradient(circle at 50% 100%, #ff1493 0%, #ff69b4 40%, transparent 45%);
+    background-size: 80px 60px;
+    background-repeat: repeat-x;
+  }
+
+  .hindu-wedding-marigold-chain {
+    background: radial-gradient(circle at 20px 20px, #ffb84d 0%, #ff8c00 30%, #ff6b00 50%, transparent 55%),
+      radial-gradient(circle at 60px 20px, #ffb84d 0%, #ff8c00 30%, #ff6b00 50%, transparent 55%);
+    background-size: 80px 40px;
+    background-repeat: repeat-x;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  }
+
+  .hindu-wedding-string {
+    --hindu-garland-tile: 30px;
+    --hindu-garland-tassel-reserve: 22px;
+    position: relative;
+    z-index: 0;
+    overflow: visible;
+    animation: hinduStringSway 3s ease-in-out infinite;
+    transform-origin: top center;
+    /* Wide enough for leaf pseudo-element (keeps greens inside layout box) */
+    min-width: 1.5rem;
+  }
+
+  /*
+   * One seamless vertical tile: marigold + mango leaf, then repeat-y.
+   * Explicit circle/ellipse radii — `circle` without a length uses farthest-corner and blows up the tile.
+   * Tile height must match snapHinduStrandHeight() in wedding-traditional-hindu-watch-view.tsx (default 30px).
+   */
+  .hindu-wedding-string::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--hindu-garland-tassel-reserve, 22px);
+    z-index: 0;
+    background:
+      radial-gradient(circle 10px at 50% 11px, #ffb84d 0%, #f97316 36%, #9a3412 54%, transparent 58%),
+      radial-gradient(ellipse 12px 5px at 50% 24px, #2e8b57 0%, #166534 70%, transparent 76%);
+    background-size: 100% var(--hindu-garland-tile, 30px);
+    background-repeat: repeat-y;
+    background-position: top center;
+  }
+
+  .hindu-wedding-tassel {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 12px solid #ffd700;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  }
+
+  .hindu-wedding-bangle {
+    height: 10px;
+    background: repeating-linear-gradient(
+      90deg,
+      #ffd700 0px,
+      #ffd700 18px,
+      #dc143c 18px,
+      #dc143c 36px,
+      #228b22 36px,
+      #228b22 54px,
+      #ff8c00 54px,
+      #ff8c00 72px,
+      #ffd700 72px,
+      #ffd700 90px
+    );
+  }
+
+  .hindu-wedding-diya {
+    animation: hinduFloatDiya 15s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.45));
+  }
+
+  .hindu-wedding-petal {
+    top: -48px;
+    animation: hinduPetalFall 12s linear infinite;
+  }
+
+  .hindu-wedding-reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition:
+      opacity 0.85s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+      transform 0.85s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .hindu-wedding-reveal--visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   /* Used inside hero `relative` section so stars sit above nebula but below copy */
   .celestial-star-dot {
     position: absolute;
@@ -886,6 +1090,163 @@
     animation: corpTechLivePulse 2s ease-in-out infinite;
   }
 
+  .font-memorial-display {
+    font-family: var(--font-memorial-display);
+  }
+
+  .font-memorial-serif {
+    font-family: var(--font-memorial-serif);
+  }
+
+  .font-memorial-sans {
+    font-family: var(--font-memorial-sans);
+  }
+
+  @keyframes memorialDescendLight {
+    0% {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.28;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+
+  @keyframes memorialDoveFly {
+    0% {
+      transform: translateX(100px) translateY(0) scale(0.85);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.55;
+    }
+    88% {
+      opacity: 0.55;
+    }
+    100% {
+      transform: translateX(calc(-100vw - 160px)) translateY(-48px) scale(1.05);
+      opacity: 0;
+    }
+  }
+
+  @keyframes memorialPhotoGlow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 16px rgba(201, 169, 97, 0.35));
+    }
+    50% {
+      filter: drop-shadow(0 0 26px rgba(201, 169, 97, 0.55));
+    }
+  }
+
+  @keyframes memorialCandleFlicker {
+    0%,
+    100% {
+      opacity: 1;
+      filter: brightness(1);
+    }
+    50% {
+      opacity: 0.88;
+      filter: brightness(1.12);
+    }
+  }
+
+  @keyframes memorialFadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes memorialGentleBounce {
+    0%,
+    100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(-50%) translateY(-8px);
+    }
+  }
+
+  .memorial-light-ray {
+    background: linear-gradient(to bottom, transparent, #c9a961, transparent);
+    animation-name: memorialDescendLight;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .memorial-dove {
+    right: -80px;
+    left: auto;
+    animation-name: memorialDoveFly;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .memorial-photo-glow {
+    animation: memorialPhotoGlow 3.2s ease-in-out infinite;
+  }
+
+  .memorial-candle-flicker {
+    animation: memorialCandleFlicker 2s ease-in-out infinite;
+  }
+
+  @keyframes birthdayPartyConfettiFall {
+    0% {
+      transform: translateY(-12px) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(110vh) rotate(720deg);
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes birthdayPartyBalloon {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-18px);
+    }
+  }
+
+  @keyframes birthdayPartyPatternShift {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 40px 40px;
+    }
+  }
+
+  .birthday-party-confetti {
+    animation-name: birthdayPartyConfettiFall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .birthday-party-balloon {
+    animation-name: birthdayPartyBalloon;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .birthday-party-dot-pattern {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.12) 2px, transparent 2px);
+    background-size: 40px 40px;
+    animation: birthdayPartyPatternShift 20s linear infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .corp-tech-grid-bg,
     .corp-tech-orb,
@@ -900,6 +1261,15 @@
     }
     .corp-tech-data-stream {
       opacity: 0;
+    }
+    .memorial-light-ray,
+    .memorial-dove,
+    .memorial-photo-glow,
+    .memorial-candle-flicker,
+    .birthday-party-confetti,
+    .birthday-party-balloon,
+    .birthday-party-dot-pattern {
+      animation: none !important;
     }
   }
 }

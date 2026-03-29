@@ -20,6 +20,7 @@ export function getTemplateDefaultTitleRem(templateId: string): number {
     case "tpl-wedding-garden":
     case "tpl-wedding-coastal":
     case "tpl-wedding-celestial":
+    case "tpl-wedding-traditional-hindu":
     case "tpl-engagement":
     case "tpl-anniversary":
       return 3.5
@@ -59,7 +60,7 @@ export function getTemplateDefaultTitleRem(templateId: string): number {
     case "tpl-thanksgiving":
     case "tpl-halloween":
     case "tpl-funeral":
-      return 2.5
+      return 3.25
     case "tpl-default":
     default:
       return 1.875
@@ -155,6 +156,8 @@ export function titleFallbackFontClass(templateId: string, hasGoogleFont: boolea
   if (templateId === "tpl-wedding-midnight") return "font-midnight-display"
   if (templateId === "tpl-wedding-coastal") return "font-coastal-script"
   if (templateId === "tpl-wedding-celestial") return "font-celestial-display"
+  if (templateId === "tpl-wedding-traditional-hindu") return "font-hindu-wedding-display"
+  if (templateId === "tpl-funeral") return "font-memorial-display"
   return "font-sans"
 }
 

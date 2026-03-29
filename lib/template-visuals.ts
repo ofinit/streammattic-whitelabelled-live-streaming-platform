@@ -137,6 +137,7 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-wedding-midnight": "border-l-4 border-l-amber-500",
   "tpl-wedding-coastal": "border-l-4 border-l-teal-500",
   "tpl-wedding-celestial": "border-l-4 border-l-violet-500",
+  "tpl-wedding-traditional-hindu": "border-l-4 border-l-amber-600",
   "tpl-corporate": "border-l-4 border-l-blue-400",
   "tpl-corporate-tech-forward": "border-l-4 border-l-cyan-400",
   "tpl-concert": "border-l-4 border-l-violet-400",
@@ -211,7 +212,8 @@ export function extractTemplateBannerContent(
     templateId === "tpl-wedding-garden" ||
     templateId === "tpl-wedding-midnight" ||
     templateId === "tpl-wedding-coastal" ||
-    templateId === "tpl-wedding-celestial"
+    templateId === "tpl-wedding-celestial" ||
+    templateId === "tpl-wedding-traditional-hindu"
   ) {
     const couple = [d.brideName, d.groomName].filter(Boolean).join(" & ")
     const lines: string[] = []
@@ -305,12 +307,15 @@ export function extractTemplateBannerContent(
 
   if (templateId === "tpl-funeral") {
     const lines: string[] = []
+    pushUnique(lines, d.memorialTagline)
+    pushUnique(lines, d.memorialQuote)
+    pushUnique(lines, d.memorialVenueDetails)
     pushUnique(lines, d.familyName)
     pushUnique(lines, d.tributeMessage || d.welcomeMessage)
     pushUnique(lines, eventDescription)
     return {
       headline: d.deceasedName || eventTitle,
-      accent: d.deceasedName ? eventTitle : null,
+      accent: (d.memorialHeadline as string | undefined)?.trim() || null,
       lines,
     }
   }

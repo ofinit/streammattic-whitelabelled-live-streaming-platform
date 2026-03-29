@@ -14,6 +14,7 @@ import { WeddingGardenTemplate } from "@/components/templates/wedding-garden-tem
 import { WeddingMidnightTemplate } from "@/components/templates/wedding-midnight-template"
 import { WeddingCoastalTemplate } from "@/components/templates/wedding-coastal-template"
 import { WeddingCelestialTemplate } from "@/components/templates/wedding-celestial-template"
+import { WeddingTraditionalHinduTemplate } from "@/components/templates/wedding-traditional-hindu-template"
 import { CorporateTemplate } from "@/components/templates/corporate-template"
 import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
@@ -54,7 +55,21 @@ import { FitnessTemplate } from "@/components/templates/fitness-template"
 import { YogaTemplate } from "@/components/templates/yoga-template"
 import { CharityTemplate } from "@/components/templates/charity-template"
 
-const templateContent: Record<string, { title: string; description: string }> = {
+const templateContent: Record<
+  string,
+  {
+    title: string
+    description: string
+    celebrationHeadline?: string
+    deceasedName?: string
+    memorialHeadline?: string
+    memorialTagline?: string
+    memorialQuote?: string
+    eventSubtitle?: string
+    memorialLifeDates?: string
+    primaryServiceDateLabel?: string
+  }
+> = {
   // Existing templates
   "tpl-default": {
     title: "Live Stream Event",
@@ -79,6 +94,10 @@ const templateContent: Record<string, { title: string; description: string }> = 
   "tpl-wedding-celestial": {
     title: "Orion & Stella",
     description: "Written in the stars — join our live union beneath the night sky.",
+  },
+  "tpl-wedding-traditional-hindu": {
+    title: "Vikram & Ananya",
+    description: "Shubh Vivah — join our sacred union with blessings from both families.",
   },
   "tpl-corporate-tech-forward": {
     title: "TechForward 2026 | Annual Innovation Summit",
@@ -122,8 +141,16 @@ const templateContent: Record<string, { title: string; description: string }> = 
     description: "Join us for a special celebration",
   },
   "tpl-funeral": {
-    title: "Memorial Service",
-    description: "Celebrating a life well lived",
+    title: "Celebration of Life",
+    description:
+      "Join us virtually to honor a beloved life — with music, memories, and shared comfort for family and friends.",
+    deceasedName: "Robert James Anderson",
+    memorialTagline: "A life beautifully lived deserves to be beautifully remembered",
+    memorialQuote:
+      "Those we love don't go away — they walk beside us every day. Unseen, unheard, but always near.",
+    eventSubtitle: "Virtual memorial · Family & friends welcome",
+    memorialLifeDates: "January 15, 1950 — December 20, 2024",
+    primaryServiceDateLabel: "Saturday, December 28, 2024 · 2:00 PM (EST)",
   },
   "tpl-indian-festival": {
     title: "Diwali Celebration",
@@ -266,6 +293,8 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <WeddingCoastalTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-wedding-celestial":
       return <WeddingCelestialTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-traditional-hindu":
+      return <WeddingTraditionalHinduTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate-tech-forward":
       return <CorporateTechForwardTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate":
@@ -287,7 +316,19 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
     case "tpl-birthday":
       return <BirthdayTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-funeral":
-      return <FuneralTemplate eventTitle={content.title} eventDescription={content.description} />
+      return (
+        <FuneralTemplate
+          eventTitle={content.title}
+          eventDescription={content.description}
+          deceasedName={content.deceasedName}
+          memorialHeadline={content.memorialHeadline}
+          memorialTagline={content.memorialTagline}
+          memorialQuote={content.memorialQuote}
+          eventSubtitle={content.eventSubtitle}
+          memorialLifeDates={content.memorialLifeDates}
+          primaryServiceDateLabel={content.primaryServiceDateLabel}
+        />
+      )
     case "tpl-indian-festival":
       return <IndianFestivalTemplate eventTitle={content.title} eventDescription={content.description} />
     // Entertainment & Media templates

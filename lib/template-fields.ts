@@ -145,6 +145,13 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
       title: "Party Details",
       fields: [
         { key: "partyTheme", label: "Party Theme", type: "text", placeholder: "Superhero, Princess, etc." },
+        {
+          key: "celebrationHeadline",
+          label: "Celebration headline",
+          type: "text",
+          placeholder: "Happy Birthday!",
+          helpText: "Shown on the watch hero (e.g. Happy Birthday!)",
+        },
         { key: "birthdayMessage", label: "Birthday Message", type: "textarea", maxLength: 200 },
       ],
     },
@@ -185,6 +192,18 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
         { key: "familyName", label: "Family Name", type: "text" },
         { key: "tributeMessage", label: "Tribute Message", type: "textarea", maxLength: 500 },
         { key: "inLieuOf", label: "In Lieu of Flowers", type: "textarea", placeholder: "Donations may be made to..." },
+      ],
+    },
+    {
+      title: "Memorial page copy",
+      fields: [
+        { key: "memorialHeadline", label: "Hero headline", type: "text", placeholder: "In Loving Memory" },
+        { key: "memorialTagline", label: "Tagline", type: "textarea", maxLength: 200 },
+        { key: "memorialQuote", label: "Quote", type: "textarea", maxLength: 400 },
+        { key: "memorialVenueDetails", label: "Venue / address", type: "textarea", maxLength: 400 },
+        { key: "dressCode", label: "Dress code", type: "textarea", maxLength: 200 },
+        { key: "orderOfService", label: "Order of service", type: "textarea", placeholder: "One line per step, optional: Title | detail" },
+        { key: "footerVerse", label: "Footer verse / note", type: "textarea", maxLength: 400 },
       ],
     },
   ],

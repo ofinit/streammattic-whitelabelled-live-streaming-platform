@@ -35,6 +35,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getDefaultTemplateHeroBackdropUrl } from "@/lib/template-default-media"
 import { EventTemplateBanner } from "./event-template-banner"
 import { CorporateTechForwardWatchView } from "./corporate-tech-forward-watch-view"
+import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-watch-view"
+import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
 import { cn } from "@/lib/utils"
 import {
   cardTitleFontSizeStyle,
@@ -82,7 +84,10 @@ type WatchChromeTheme =
   | "midnight"
   | "coastal"
   | "celestial"
+  | "traditionalHindu"
   | "corporateTech"
+  | "memorial"
+  | "birthdayParty"
 
 const GALLERY_AUTO_SCROLL_MS = 4500
 
@@ -102,9 +107,15 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
             ? "border-teal-300/70"
             : theme === "celestial"
               ? "border-violet-500/50"
-              : theme === "corporateTech"
-                ? "border-blue-500/40"
-                : "border-border"
+              : theme === "traditionalHindu"
+                ? "border-amber-400/65"
+                : theme === "corporateTech"
+                  ? "border-blue-500/40"
+                  : theme === "memorial"
+                    ? "border-[#c9a961]/70"
+                    : theme === "birthdayParty"
+                      ? "border-[#ffd93d]/80"
+                      : "border-border"
 
   const galleryFocusRing =
     theme === "wedding"
@@ -117,9 +128,15 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
             ? "focus-visible:ring-teal-400/80"
             : theme === "celestial"
               ? "focus-visible:ring-yellow-400/70"
-              : theme === "corporateTech"
-                ? "focus-visible:ring-blue-400/70"
-                : "focus-visible:ring-ring"
+              : theme === "traditionalHindu"
+                ? "focus-visible:ring-amber-500/70"
+                : theme === "corporateTech"
+                  ? "focus-visible:ring-blue-400/70"
+                  : theme === "memorial"
+                    ? "focus-visible:ring-[#c9a961]/80"
+                    : theme === "birthdayParty"
+                      ? "focus-visible:ring-[#ffd93d]/80"
+                      : "focus-visible:ring-ring"
 
   const getStepWidth = useCallback(() => {
     const el = scrollRef.current
@@ -222,9 +239,15 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                         ? "border-teal-300/80 bg-white/95 text-[#006d77] hover:bg-teal-50"
                         : theme === "celestial"
                           ? "border-yellow-500/40 bg-black/85 text-yellow-200 hover:bg-violet-950/80"
-                          : theme === "corporateTech"
-                            ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
-                            : ""
+                          : theme === "traditionalHindu"
+                            ? "border-amber-400/80 bg-[#FFF8DC]/95 text-red-900 hover:bg-amber-50"
+                            : theme === "corporateTech"
+                              ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
+                              : theme === "memorial"
+                                ? "border-[#c9a961]/80 bg-[#f8f5f0]/95 text-[#2c3e50] hover:bg-[#ecf0f1]"
+                                : theme === "birthdayParty"
+                                  ? "border-[#ffd93d]/90 bg-white/95 text-purple-900 hover:bg-amber-50"
+                                  : ""
               }`}
               aria-label="Scroll gallery left"
               onClick={() => scrollGalleryBy(-1)}
@@ -246,9 +269,15 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                         ? "border-teal-300/80 bg-white/95 text-[#006d77] hover:bg-teal-50"
                         : theme === "celestial"
                           ? "border-yellow-500/40 bg-black/85 text-yellow-200 hover:bg-violet-950/80"
-                          : theme === "corporateTech"
-                            ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
-                            : ""
+                          : theme === "traditionalHindu"
+                            ? "border-amber-400/80 bg-[#FFF8DC]/95 text-red-900 hover:bg-amber-50"
+                            : theme === "corporateTech"
+                              ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
+                              : theme === "memorial"
+                                ? "border-[#c9a961]/80 bg-[#f8f5f0]/95 text-[#2c3e50] hover:bg-[#ecf0f1]"
+                                : theme === "birthdayParty"
+                                  ? "border-[#ffd93d]/90 bg-white/95 text-purple-900 hover:bg-amber-50"
+                                  : ""
               }`}
               aria-label="Scroll gallery right"
               onClick={() => scrollGalleryBy(1)}
@@ -389,6 +418,15 @@ interface CelestialStar {
   delay: string
 }
 
+/** Confetti — Birthday Party watch skin */
+interface BirthdayConfettiPiece {
+  id: number
+  left: string
+  duration: string
+  delay: string
+  color: string
+}
+
 export function WatchEventContent({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<LiveEvent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -417,6 +455,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [midnightParticles, setMidnightParticles] = useState<MidnightParticle[]>([])
   const [coastalBubbles, setCoastalBubbles] = useState<CoastalBubble[]>([])
   const [celestialStars, setCelestialStars] = useState<CelestialStar[]>([])
+  const [birthdayConfetti, setBirthdayConfetti] = useState<BirthdayConfettiPiece[]>([])
 
   const fetchWatchEvent = useCallback(async (): Promise<LiveEvent | null> => {
     try {
@@ -629,9 +668,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             ? "coastal"
             : watchSkin === "weddingCelestial"
               ? "celestial"
-              : watchSkin === "corporateTechForward"
-                ? "corporateTech"
-                : "default"
+              : watchSkin === "weddingTraditionalHindu"
+                ? "traditionalHindu"
+                : watchSkin === "corporateTechForward"
+                  ? "corporateTech"
+                  : watchSkin === "memorialService"
+                    ? "memorial"
+                    : watchSkin === "birthdayParty"
+                      ? "birthdayParty"
+                      : "default"
 
   useEffect(() => {
     if (!event) return
@@ -737,6 +782,23 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         size: `${Math.random() * 2.5 + 1}px`,
         duration: `${Math.random() * 7 + 5}s`,
         delay: `${Math.random() * 10}s`,
+      })),
+    )
+  }, [watchSkin])
+
+  useEffect(() => {
+    if (watchSkin !== "birthdayParty") {
+      setBirthdayConfetti([])
+      return
+    }
+    const colors = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#c56cf0", "#ff922b"] as const
+    setBirthdayConfetti(
+      Array.from({ length: 40 }, (_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        duration: `${Math.random() * 4 + 5}s`,
+        delay: `${Math.random() * 5}s`,
+        color: colors[Math.floor(Math.random() * colors.length)]!,
       })),
     )
   }, [watchSkin])
@@ -857,7 +919,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     watchSkin !== "weddingMidnight" &&
     watchSkin !== "weddingCoastal" &&
     watchSkin !== "weddingCelestial" &&
-    watchSkin !== "corporateTechForward"
+    watchSkin !== "weddingTraditionalHindu" &&
+    watchSkin !== "corporateTechForward" &&
+    watchSkin !== "memorialService" &&
+    watchSkin !== "birthdayParty"
   ) {
     const tz = evRawTop.timezone as string | undefined
     const tzId = tz && tz !== "UTC" ? tz : undefined
@@ -1075,6 +1140,28 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       })()
     : ""
 
+  /** Mock player: date line + time line (same tz rules as primaryDateFormatted) */
+  const streamPlaceholderSchedule: { dateLine: string; timeLine: string } | null = event.scheduledAt
+    ? (() => {
+        const d = new Date(event.scheduledAt as unknown as string)
+        const tz = tzForDate !== "UTC" ? tzForDate : undefined
+        const dateLine = d.toLocaleDateString("en-US", {
+          timeZone: tz,
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+        const timeStr = d.toLocaleTimeString("en-US", { timeZone: tz, hour: "2-digit", minute: "2-digit" })
+        const tzLabel = tz
+          ? new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortGeneric" })
+              .formatToParts(d)
+              .find((p) => p.type === "timeZoneName")?.value ?? tz
+          : "UTC"
+        return { dateLine, timeLine: `${timeStr} ${tzLabel}` }
+      })()
+    : null
+
   const DEFAULT_STREAM_SHELL = "relative aspect-video w-full bg-black"
   const WEDDING_STREAM_SHELL =
     "relative aspect-video w-full rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-950 via-rose-950/40 to-zinc-900 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] border border-white/10"
@@ -1088,19 +1175,29 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     "relative aspect-video w-full overflow-hidden rounded-3xl border border-[rgba(255,215,0,0.22)] bg-[#1a1f3d]/75 shadow-[0_8px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl"
   const CORPORATE_TECH_STREAM_SHELL =
     "relative aspect-video w-full overflow-hidden rounded-2xl border border-blue-500/35 bg-zinc-950 shadow-[0_12px_48px_rgba(0,102,255,0.14)] backdrop-blur-sm"
+  const TRADITIONAL_HINDU_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-3xl border-[3px] border-amber-400/85 bg-gradient-to-br from-red-950/95 via-orange-950/90 to-amber-950/95 shadow-[0_12px_48px_rgba(185,28,28,0.22)] backdrop-blur-sm"
+  const MEMORIAL_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-2xl border-[3px] border-[#c9a961] bg-gradient-to-br from-[#1e3c72]/40 via-[#2a5298]/30 to-[#34495e]/40 shadow-[0_15px_50px_rgba(0,0,0,0.35)]"
+  const BIRTHDAY_PARTY_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-3xl border-[5px] border-[#ffd93d] bg-gradient-to-br from-[#667eea]/25 via-[#764ba2]/20 to-[#f093fb]/25 shadow-xl"
 
   /** Garden / coastal shells are light/frosted — use dark type (readable on glass bg) */
   const streamPlaceholderTitleClass =
-    streamChrome === "garden" || streamChrome === "coastal"
+    streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty"
       ? streamChrome === "garden"
         ? "text-lg font-semibold text-emerald-950"
-        : "font-coastal-sans text-lg font-semibold text-[#006d77]"
+        : streamChrome === "coastal"
+          ? "font-coastal-sans text-lg font-semibold text-[#006d77]"
+          : "text-lg font-semibold text-amber-100"
       : "text-lg font-medium text-white"
   const streamPlaceholderSubClass =
-    streamChrome === "garden" || streamChrome === "coastal"
+    streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty"
       ? streamChrome === "garden"
         ? "text-sm font-medium text-emerald-900/90"
-        : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
+        : streamChrome === "coastal"
+          ? "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
+          : "text-sm font-medium text-amber-100/85"
       : "text-sm text-white/60"
 
   const renderStreamPlayer = (shellClassName: string) => (
@@ -1183,7 +1280,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   <p
                     className={cn(
                       streamPlaceholderSubClass,
-                      (streamChrome === "garden" || streamChrome === "coastal") && "max-w-sm text-center",
+                      (streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty") &&
+                        "max-w-sm text-center",
                     )}
                   >
                     The YouTube broadcast is being set up. Please wait a moment and refresh.
@@ -1207,8 +1305,19 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       <Radio className="h-10 w-10 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse [animation-duration:1.5s]" />
                     </div>
                   </div>
-                  <p className={streamPlaceholderTitleClass}>Live Stream Active</p>
-                  <p className={streamPlaceholderSubClass}>Stream will begin shortly</p>
+                  <div className="flex max-w-lg flex-col items-center gap-1 px-2 text-center">
+                    {streamPlaceholderSchedule ? (
+                      <>
+                        <p className={streamPlaceholderTitleClass}>{streamPlaceholderSchedule.dateLine}</p>
+                        <p className={streamPlaceholderSubClass}>{streamPlaceholderSchedule.timeLine}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className={streamPlaceholderTitleClass}>Date to be announced</p>
+                        <p className={streamPlaceholderSubClass}>Time to be announced</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1233,9 +1342,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                         ? "bg-[#e29578] text-white"
                         : streamChrome === "celestial"
                           ? "bg-red-600 text-white shadow-[0_0_16px_rgba(239,68,68,0.45)]"
-                          : streamChrome === "corporateTech"
-                            ? "bg-red-600 text-white shadow-[0_0_16px_rgba(239,68,68,0.45)]"
-                            : "bg-red-600 text-white"
+                          : streamChrome === "traditionalHindu"
+                            ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-[0_0_14px_rgba(234,88,12,0.4)]"
+                            : streamChrome === "corporateTech"
+                              ? "bg-red-600 text-white shadow-[0_0_16px_rgba(239,68,68,0.45)]"
+                              : streamChrome === "memorial"
+                                ? "bg-[#c9a961] text-[#1a1a2e]"
+                                : streamChrome === "birthdayParty"
+                                  ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white"
+                                  : "bg-red-600 text-white"
                   }
                 >
                   <span className="mr-1 h-2 w-2 animate-pulse rounded-full bg-white" />
@@ -1254,9 +1369,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                             ? "border-white/60 bg-white/70 font-coastal-sans text-xs text-[#006d77]"
                             : streamChrome === "celestial"
                               ? "border-yellow-500/35 bg-black/65 font-mono text-xs text-yellow-200/90"
-                              : streamChrome === "corporateTech"
-                                ? "border-blue-500/35 bg-black/70 font-corporate-tech-display text-xs text-blue-100"
-                                : "border-white/30 bg-black/50 text-white"
+                              : streamChrome === "traditionalHindu"
+                                ? "border-amber-400/70 bg-[#FFF8DC]/90 font-hindu-wedding-display text-xs text-red-900"
+                                : streamChrome === "corporateTech"
+                                  ? "border-blue-500/35 bg-black/70 font-corporate-tech-display text-xs text-blue-100"
+                                  : streamChrome === "memorial"
+                                    ? "border-[#c9a961]/70 bg-black/60 font-memorial-display text-xs text-[#f5e6c8]"
+                                    : streamChrome === "birthdayParty"
+                                      ? "border-[#ffd93d]/80 bg-purple-950/50 text-amber-100"
+                                      : "border-white/30 bg-black/50 text-white"
                   }
                 >
                   <Eye className="mr-1 h-3 w-3" />
@@ -1288,9 +1409,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       ? "bg-gradient-to-t from-[#006d77]/90 via-[#0d9488]/35 to-transparent"
                       : streamChrome === "celestial"
                         ? "bg-gradient-to-t from-[#0b0d17] via-violet-950/75 to-transparent"
-                        : streamChrome === "corporateTech"
-                          ? "bg-gradient-to-t from-[#0a0a0a] via-blue-950/50 to-transparent"
-                          : "bg-gradient-to-t from-black/80 to-transparent"
+                        : streamChrome === "traditionalHindu"
+                          ? "bg-gradient-to-t from-red-950/90 via-orange-950/55 to-transparent"
+                          : streamChrome === "corporateTech"
+                            ? "bg-gradient-to-t from-[#0a0a0a] via-blue-950/50 to-transparent"
+                            : streamChrome === "memorial"
+                              ? "bg-gradient-to-t from-[#1e3c72]/95 via-[#2a5298]/45 to-transparent"
+                              : streamChrome === "birthdayParty"
+                                ? "bg-gradient-to-t from-purple-950/90 via-fuchsia-900/40 to-transparent"
+                                : "bg-gradient-to-t from-black/80 to-transparent"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
@@ -1373,162 +1500,189 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   )
 
   const renderLiveChatBody = () => {
+    const chatSkin: WatchChromeTheme =
+      streamChrome === "memorial" ? "wedding" : streamChrome === "birthdayParty" ? "garden" : streamChrome
+
     const headerClass =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "border-transparent bg-gradient-to-r from-amber-600 to-orange-500 text-white"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "border-transparent bg-emerald-700 text-white"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "border-b border-amber-500/25 bg-black text-amber-100"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "border-b border-teal-400/30 bg-gradient-to-r from-[#006d77] to-[#4a9d96] text-white"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "border-b border-violet-500/30 bg-gradient-to-r from-purple-950/90 via-[#1a1f3d] to-indigo-950/90 text-yellow-100"
-                : streamChrome === "corporateTech"
-                  ? "border-b border-blue-500/25 bg-gradient-to-r from-slate-950 via-blue-950/60 to-slate-950 text-sky-50"
-                  : "border-border"
+                : chatSkin === "traditionalHindu"
+                  ? "border-b border-amber-500/40 bg-gradient-to-r from-red-700 via-orange-600 to-rose-700 text-amber-50"
+                  : chatSkin === "corporateTech"
+                    ? "border-b border-blue-500/25 bg-gradient-to-r from-slate-950 via-blue-950/60 to-slate-950 text-sky-50"
+                    : "border-border"
     const titleClass =
-      streamChrome === "default"
+      chatSkin === "default"
         ? "text-foreground"
-        : streamChrome === "midnight"
+        : chatSkin === "midnight"
           ? "text-amber-100"
-          : streamChrome === "celestial"
+          : chatSkin === "celestial"
             ? "font-celestial-display tracking-[0.06em] text-yellow-300/95"
-            : streamChrome === "corporateTech"
-              ? "font-corporate-tech-display tracking-tight text-sky-100"
-              : "text-white"
+            : chatSkin === "traditionalHindu"
+              ? "font-hindu-wedding-display tracking-tight text-amber-100"
+              : chatSkin === "corporateTech"
+                ? "font-corporate-tech-display tracking-tight text-sky-100"
+                : "text-white"
     const iconClass =
-      streamChrome === "default"
+      chatSkin === "default"
         ? "text-primary"
-        : streamChrome === "midnight"
+        : chatSkin === "midnight"
           ? "text-amber-400"
-          : streamChrome === "celestial"
+          : chatSkin === "celestial"
             ? "text-yellow-400"
-            : streamChrome === "corporateTech"
-              ? "text-blue-400"
-              : "text-white"
+            : chatSkin === "traditionalHindu"
+              ? "text-amber-200"
+              : chatSkin === "corporateTech"
+                ? "text-blue-400"
+                : "text-white"
     const metaClass =
-      streamChrome === "default"
+      chatSkin === "default"
         ? "text-muted-foreground"
-        : streamChrome === "midnight"
+        : chatSkin === "midnight"
           ? "text-amber-400/80"
-          : streamChrome === "celestial"
+          : chatSkin === "celestial"
             ? "text-violet-300/85"
-            : streamChrome === "corporateTech"
-              ? "text-zinc-400"
-              : "text-white/90"
+            : chatSkin === "traditionalHindu"
+              ? "text-amber-200/90"
+              : chatSkin === "corporateTech"
+                ? "text-zinc-400"
+                : "text-white/90"
     const scrollBg =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "bg-stone-50"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "bg-emerald-50/60"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "bg-zinc-950"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "bg-[#edf6f9]/95"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "bg-[#0b0d17]"
-                : streamChrome === "corporateTech"
-                  ? "bg-[#0a0a0a]"
-                  : ""
+                : chatSkin === "traditionalHindu"
+                  ? "bg-orange-50/95"
+                  : chatSkin === "corporateTech"
+                    ? "bg-[#0a0a0a]"
+                    : ""
     const avFallback =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "bg-rose-200 text-rose-800 text-xs"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "bg-emerald-200 text-emerald-900 text-xs"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "bg-amber-950/60 font-mono text-amber-200 text-xs"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "bg-[#83c5be]/55 font-coastal-sans text-[#006d77] text-xs"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "bg-violet-950/70 font-mono text-yellow-200/90 text-xs"
-                : streamChrome === "corporateTech"
-                  ? "bg-slate-800 font-corporate-tech-display text-blue-200 text-xs"
-                  : "bg-primary/20 text-primary text-xs"
+                : chatSkin === "traditionalHindu"
+                  ? "bg-amber-200/90 font-hindu-wedding-display text-red-900 text-xs"
+                  : chatSkin === "corporateTech"
+                    ? "bg-slate-800 font-corporate-tech-display text-blue-200 text-xs"
+                    : "bg-primary/20 text-primary text-xs"
     const msgUser =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "text-rose-900"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "text-emerald-950"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "font-mono text-xs font-semibold text-amber-200"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "font-coastal-sans text-sm font-semibold text-[#006d77]"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "font-mono text-xs font-semibold text-yellow-300/90"
-                : streamChrome === "corporateTech"
-                  ? "font-corporate-tech-display text-sm font-semibold text-sky-200"
-                  : "text-foreground"
+                : chatSkin === "traditionalHindu"
+                  ? "font-hindu-wedding-display text-sm font-semibold text-red-900"
+                  : chatSkin === "corporateTech"
+                    ? "font-corporate-tech-display text-sm font-semibold text-sky-200"
+                    : "text-foreground"
     const msgTime =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "text-rose-600/70"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "text-emerald-700/80"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "font-mono text-[10px] text-amber-600/70"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "font-coastal-sans text-xs text-slate-500"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "font-mono text-[10px] text-violet-500/80"
-                : streamChrome === "corporateTech"
-                  ? "font-corporate-tech-display text-[10px] text-zinc-500"
-                  : "text-muted-foreground"
+                : chatSkin === "traditionalHindu"
+                  ? "font-hindu-wedding-serif text-xs text-red-800/70"
+                  : chatSkin === "corporateTech"
+                    ? "font-corporate-tech-display text-[10px] text-zinc-500"
+                    : "text-muted-foreground"
     const msgBody =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "text-rose-800/85"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "text-emerald-900/85"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "font-mono text-sm text-zinc-300"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "font-coastal-sans text-sm text-slate-700"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "font-mono text-sm text-zinc-300"
-                : streamChrome === "corporateTech"
-                  ? "font-sans text-sm text-zinc-300"
-                  : "text-muted-foreground"
+                : chatSkin === "traditionalHindu"
+                  ? "font-hindu-wedding-serif text-sm text-red-950/90"
+                  : chatSkin === "corporateTech"
+                    ? "font-sans text-sm text-zinc-300"
+                    : "text-muted-foreground"
     const formBorder =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "border-rose-200/70 bg-white"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "border-emerald-200/80 bg-white/95"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "border-t border-amber-500/20 bg-black"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "border-t border-teal-200/80 bg-white/85"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "border-t border-violet-600/30 bg-black/35"
-                : streamChrome === "corporateTech"
-                  ? "border-t border-blue-500/20 bg-black/50"
-                  : "border-border"
+                : chatSkin === "traditionalHindu"
+                  ? "border-t border-amber-400/70 bg-white/90"
+                  : chatSkin === "corporateTech"
+                    ? "border-t border-blue-500/20 bg-black/50"
+                    : "border-border"
     const inputClass =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "flex-1 rounded-full border-rose-200 bg-white shadow-sm"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "flex-1 rounded-full border-emerald-200 bg-white shadow-sm"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "flex-1 border border-amber-500/30 bg-black/80 font-mono text-sm text-amber-100 placeholder:text-zinc-600"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "flex-1 rounded-full border border-teal-200 bg-white font-coastal-sans text-sm text-slate-800 shadow-sm placeholder:text-slate-400"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "flex-1 border border-violet-600/40 bg-black/40 font-mono text-sm text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-yellow-500/40"
-                : streamChrome === "corporateTech"
-                  ? "flex-1 border border-white/10 bg-black/60 text-sm text-white placeholder:text-zinc-600 focus-visible:ring-blue-500/40"
-                  : "flex-1 bg-secondary border-0"
+                : chatSkin === "traditionalHindu"
+                  ? "flex-1 rounded-full border border-amber-400/80 bg-white font-hindu-wedding-serif text-sm text-red-950 shadow-sm placeholder:text-red-900/40 focus-visible:ring-amber-500/40"
+                  : chatSkin === "corporateTech"
+                    ? "flex-1 border border-white/10 bg-black/60 text-sm text-white placeholder:text-zinc-600 focus-visible:ring-blue-500/40"
+                    : "flex-1 bg-secondary border-0"
     const sendBtn =
-      streamChrome === "wedding"
+      chatSkin === "wedding"
         ? "rounded-full bg-amber-600 hover:bg-amber-700 text-white"
-        : streamChrome === "garden"
+        : chatSkin === "garden"
           ? "rounded-full bg-emerald-700 hover:bg-emerald-800 text-white"
-          : streamChrome === "midnight"
+          : chatSkin === "midnight"
             ? "border border-amber-500/40 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25"
-            : streamChrome === "coastal"
+            : chatSkin === "coastal"
               ? "rounded-full bg-gradient-to-br from-[#e29578] to-[#d4846a] text-white hover:opacity-95"
-              : streamChrome === "celestial"
+              : chatSkin === "celestial"
                 ? "border border-yellow-500/35 bg-gradient-to-r from-purple-700 to-indigo-800 text-yellow-100 hover:opacity-95"
-                : streamChrome === "corporateTech"
-                  ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : ""
+                : chatSkin === "traditionalHindu"
+                  ? "rounded-full bg-gradient-to-r from-orange-500 to-red-600 text-white hover:opacity-95"
+                  : chatSkin === "corporateTech"
+                    ? "bg-blue-600 text-white hover:bg-blue-500"
+                    : ""
 
     const chatTitle =
       streamChrome === "wedding"
@@ -1541,9 +1695,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "Message in a Bottle"
               : streamChrome === "celestial"
                 ? "Cosmic Messages"
-                : streamChrome === "corporateTech"
-                  ? "Live discussion"
-                  : "Live Chat"
+                : streamChrome === "traditionalHindu"
+                  ? "Blessings & Wishes"
+                  : streamChrome === "memorial"
+                    ? "Condolences"
+                    : streamChrome === "birthdayParty"
+                      ? "Birthday wishes"
+                      : streamChrome === "corporateTech"
+                        ? "Live discussion"
+                        : "Live Chat"
     const chatPlaceholder =
       streamChrome === "wedding"
         ? "Send your wishes..."
@@ -1555,9 +1715,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "Cast your message..."
               : streamChrome === "celestial"
                 ? "Transmit..."
-                : streamChrome === "corporateTech"
-                  ? "Join the conversation..."
-                  : "Send a message..."
+                : streamChrome === "traditionalHindu"
+                  ? "Send your blessings..."
+                  : streamChrome === "memorial"
+                    ? "Share a memory…"
+                    : streamChrome === "birthdayParty"
+                      ? "Send birthday love…"
+                      : streamChrome === "corporateTech"
+                        ? "Join the conversation..."
+                        : "Send a message..."
 
     const chatMessageList = (
       <div className="space-y-4">
@@ -1628,11 +1794,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const heroFromEvent = typeof heroImageUrl === "string" ? heroImageUrl.trim() : ""
   const couplePhotoRaw = weddingFields.couplePhoto
   const couplePhotoTrimmed = typeof couplePhotoRaw === "string" ? couplePhotoRaw.trim() : ""
+  const celebrantPhotoRaw = weddingFields.celebrantPhoto
+  const celebrantPhotoTrimmed = typeof celebrantPhotoRaw === "string" ? celebrantPhotoRaw.trim() : ""
   const heroBackdropUrl =
-    heroFromEvent ||
-    couplePhotoTrimmed ||
-    getDefaultTemplateHeroBackdropUrl(watchTemplateId) ||
-    ""
+    watchTemplateId === "tpl-funeral"
+      ? heroFromEvent
+      : watchTemplateId === "tpl-birthday"
+        ? heroFromEvent ||
+          celebrantPhotoTrimmed ||
+          getDefaultTemplateHeroBackdropUrl(watchTemplateId) ||
+          ""
+        : heroFromEvent || couplePhotoTrimmed || getDefaultTemplateHeroBackdropUrl(watchTemplateId) || ""
   const eventSubtitle = (evRawTop.subtitle as string | undefined)?.trim() || ""
   /** Hero line below divider: event description only — no static or template fallbacks */
   const weddingHeroDescription = typeof event.description === "string" ? event.description.trim() : ""
@@ -1644,7 +1816,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       detailsTheme === "midnight" ||
       detailsTheme === "coastal" ||
       detailsTheme === "celestial" ||
-      detailsTheme === "corporateTech"
+      detailsTheme === "traditionalHindu" ||
+      detailsTheme === "corporateTech" ||
+      detailsTheme === "memorial" ||
+      detailsTheme === "birthdayParty"
     const panelShell =
       detailsTheme === "wedding"
         ? "border-amber-200/50 bg-[#fefae0]"
@@ -1656,9 +1831,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "border-teal-200/55 bg-[#edf6f9] text-slate-800 [&_h3]:text-[#006d77]"
               : detailsTheme === "celestial"
                 ? "border-violet-600/35 bg-[#0b0d17] text-zinc-200 [&_h3]:text-yellow-300/90"
-                : detailsTheme === "corporateTech"
-                  ? "border-blue-500/30 bg-[#0a0a0a] text-zinc-200 [&_h3]:text-sky-300"
-                  : "border-border"
+                : detailsTheme === "traditionalHindu"
+                  ? "border-amber-400/55 bg-[#FFF8DC] text-red-950 [&_h3]:text-red-800"
+                  : detailsTheme === "corporateTech"
+                    ? "border-blue-500/30 bg-[#0a0a0a] text-zinc-200 [&_h3]:text-sky-300"
+                    : detailsTheme === "memorial"
+                      ? "border-[#c9a961]/40 bg-[#f8f5f0] text-[#2c3e50] [&_h3]:text-[#c9a961]"
+                      : detailsTheme === "birthdayParty"
+                        ? "border-[#ffd93d]/50 bg-gradient-to-br from-[#faf5ff] to-[#fff7ed] text-purple-950 [&_h3]:text-purple-800"
+                        : "border-border"
     const galleryBorder =
       detailsTheme === "wedding"
         ? "border-amber-200/60"
@@ -1670,9 +1851,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "border-teal-200/65"
               : detailsTheme === "celestial"
                 ? "border-violet-600/40"
-                : detailsTheme === "corporateTech"
-                  ? "border-blue-500/35"
-                  : "border-border"
+                : detailsTheme === "traditionalHindu"
+                  ? "border-amber-400/65"
+                  : detailsTheme === "corporateTech"
+                    ? "border-blue-500/35"
+                    : detailsTheme === "memorial"
+                      ? "border-[#c9a961]/55"
+                      : detailsTheme === "birthdayParty"
+                        ? "border-[#ffd93d]/70"
+                        : "border-border"
     const shareBtn =
       detailsTheme === "wedding"
         ? "border-amber-300/80 bg-white/50 text-amber-950 hover:bg-white/70"
@@ -1684,9 +1871,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "border-teal-300/80 bg-white/80 font-coastal-sans text-[#006d77] hover:bg-white"
               : detailsTheme === "celestial"
                 ? "border-yellow-500/35 bg-black/50 font-mono text-yellow-200/90 hover:bg-violet-950/40"
-                : detailsTheme === "corporateTech"
-                  ? "border-blue-500/35 bg-black/50 font-corporate-tech-display text-sky-200 hover:bg-blue-950/30"
-                  : "border-border bg-transparent"
+                : detailsTheme === "traditionalHindu"
+                  ? "border-amber-400/70 bg-white/90 font-hindu-wedding-display text-red-900 hover:bg-amber-50"
+                  : detailsTheme === "corporateTech"
+                    ? "border-blue-500/35 bg-black/50 font-corporate-tech-display text-sky-200 hover:bg-blue-950/30"
+                    : detailsTheme === "memorial"
+                      ? "border-[#c9a961]/70 bg-white/80 font-memorial-display text-[#2c3e50] hover:bg-white"
+                      : detailsTheme === "birthdayParty"
+                        ? "border-[#ffd93d]/80 bg-white/90 font-semibold text-purple-900 hover:bg-amber-50"
+                        : "border-border bg-transparent"
     const photoNameClass =
       detailsTheme === "wedding"
         ? "font-medium text-stone-900"
@@ -1698,9 +1891,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "font-coastal-sans font-medium text-[#006d77]"
               : detailsTheme === "celestial"
                 ? "font-celestial-display font-medium text-yellow-200/95"
-                : detailsTheme === "corporateTech"
-                  ? "font-corporate-tech-display font-medium text-sky-200"
-                  : "font-medium text-foreground"
+                : detailsTheme === "traditionalHindu"
+                  ? "font-hindu-wedding-display font-medium text-red-900"
+                  : detailsTheme === "corporateTech"
+                    ? "font-corporate-tech-display font-medium text-sky-200"
+                    : detailsTheme === "memorial"
+                      ? "font-memorial-serif font-medium text-[#34495e]"
+                      : detailsTheme === "birthdayParty"
+                        ? "font-medium text-purple-900"
+                        : "font-medium text-foreground"
     const photoLinksClass =
       detailsTheme === "wedding"
         ? "flex flex-wrap gap-x-3 gap-y-1 text-stone-700"
@@ -1712,9 +1911,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "flex flex-wrap gap-x-3 gap-y-1 font-coastal-sans text-sm text-slate-700"
               : detailsTheme === "celestial"
                 ? "flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm text-violet-200/85"
-                : detailsTheme === "corporateTech"
-                  ? "flex flex-wrap gap-x-3 gap-y-1 font-sans text-sm text-zinc-400"
-                  : "flex flex-wrap gap-x-3 gap-y-0 text-muted-foreground"
+                : detailsTheme === "traditionalHindu"
+                  ? "flex flex-wrap gap-x-3 gap-y-1 font-hindu-wedding-serif text-sm text-red-900/85"
+                  : detailsTheme === "corporateTech"
+                    ? "flex flex-wrap gap-x-3 gap-y-1 font-sans text-sm text-zinc-400"
+                    : detailsTheme === "memorial"
+                      ? "flex flex-wrap gap-x-3 gap-y-1 font-memorial-serif text-sm text-[#5a6c7d]"
+                      : detailsTheme === "birthdayParty"
+                        ? "flex flex-wrap gap-x-3 gap-y-1 text-sm text-purple-800/90"
+                        : "flex flex-wrap gap-x-3 gap-y-0 text-muted-foreground"
 
     return (
     <div className={`border-b p-4 lg:p-6 ${panelShell}`}>
@@ -2989,6 +3194,276 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-10 pt-8">
           {renderDetailsPanel("celestial")}
         </div>
+      </div>
+    )
+  }
+
+  if (watchSkin === "weddingTraditionalHindu") {
+    const hinduHeroBackdrop =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-wedding-traditional-hindu") || ""
+    const hinduQuote = (weddingFields.customMessage ?? "").trim()
+
+    return (
+      <WeddingTraditionalHinduWatchView
+        event={event}
+        watchTemplateId={watchTemplateId}
+        coupleHero={coupleHero}
+        coupleParts={coupleParts}
+        weddingHeroDescription={weddingHeroDescription}
+        eventSubtitle={eventSubtitle}
+        customQuote={hinduQuote}
+        primaryDateFormatted={primaryDateFormatted}
+        eventDates={eventDates}
+        formatExtraDate={formatExtraDate}
+        showScheduledPageEnabled={showScheduledPageEnabled}
+        countdown={countdown}
+        allowChat={!!event.allowChat}
+        showChat={showChat}
+        renderStreamPlayer={renderStreamPlayer}
+        renderLiveChatBody={renderLiveChatBody}
+        detailsPanel={
+          <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-8">{renderDetailsPanel("traditionalHindu")}</div>
+        }
+        streamShellClassName={TRADITIONAL_HINDU_STREAM_SHELL}
+        heroBackdropUrl={hinduHeroBackdrop}
+        titleHeroRem={titleHeroRem}
+        googleTitleFont={googleTitleFont}
+      />
+    )
+  }
+
+  if (watchSkin === "memorialService") {
+    const deceasedNameDisplay = (weddingFields.deceasedName ?? "").trim() || event.title
+    const deceasedPhotoMemorial =
+      typeof weddingFields.deceasedPhoto === "string" ? weddingFields.deceasedPhoto.trim() : ""
+
+    return (
+      <MemorialServiceWatchView
+        event={event}
+        heroBackdropUrl={heroBackdropUrl}
+        deceasedName={deceasedNameDisplay}
+        deceasedPhotoUrl={deceasedPhotoMemorial}
+        birthDateLabel={formatMemorialDate(
+          weddingFields.birthDate != null && String(weddingFields.birthDate).trim() !== ""
+            ? String(weddingFields.birthDate).trim()
+            : undefined,
+        )}
+        passedDateLabel={formatMemorialDate(
+          weddingFields.passedDate != null && String(weddingFields.passedDate).trim() !== ""
+            ? String(weddingFields.passedDate).trim()
+            : undefined,
+        )}
+        memorialHeadline={(weddingFields.memorialHeadline ?? "").trim()}
+        memorialTagline={(weddingFields.memorialTagline ?? "").trim()}
+        memorialQuote={(weddingFields.memorialQuote ?? "").trim()}
+        memorialVenueDetails={(weddingFields.memorialVenueDetails ?? "").trim()}
+        dressCode={(weddingFields.dressCode ?? "").trim()}
+        orderOfServiceText={(weddingFields.orderOfService ?? "").trim()}
+        footerVerse={(weddingFields.footerVerse ?? "").trim()}
+        tributeMessage={(weddingFields.tributeMessage ?? "").trim()}
+        inLieuOf={(weddingFields.inLieuOf ?? "").trim()}
+        eventSubtitle={eventSubtitle}
+        eventDescription={typeof event.description === "string" ? event.description.trim() : ""}
+        primaryDateFormatted={primaryDateFormatted}
+        showScheduledPageEnabled={showScheduledPageEnabled}
+        countdown={countdown}
+        allowChat={!!event.allowChat}
+        showChat={showChat}
+        setShowChat={setShowChat}
+        renderStreamPlayer={renderStreamPlayer}
+        renderLiveChatBody={renderLiveChatBody}
+        detailsPanel={
+          <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-8">{renderDetailsPanel("memorial")}</div>
+        }
+        streamShellClassName={MEMORIAL_STREAM_SHELL}
+        photoGalleryUrls={photoGalleryUrls}
+        titleHeroRem={titleHeroRem}
+        googleTitleFont={googleTitleFont}
+        titleFallbackFontClass={titleFallbackFontClass(watchTemplateId, !!googleTitleFont)}
+        heroTitleFontSizeStyle={heroTitleFontSizeStyle}
+      />
+    )
+  }
+
+  if (watchSkin === "birthdayParty") {
+    const scrollToBirthdayStream = () =>
+      document.getElementById("birthday-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const celebrantDisplay = (weddingFields.celebrantName ?? "").trim() || event.title
+    const celebrationHeadline = (weddingFields.celebrationHeadline ?? "").trim() || "Happy Birthday!"
+    const partyTheme = (weddingFields.partyTheme ?? "").trim()
+    const ageRaw = weddingFields.celebrantAge
+    const ageLine =
+      ageRaw !== undefined && ageRaw !== null && String(ageRaw).trim() !== ""
+        ? `Turning ${String(ageRaw).trim()}`
+        : ""
+    const birthdayStory =
+      (weddingFields.birthdayMessage ?? "").trim() ||
+      (typeof event.description === "string" ? event.description.trim() : "")
+    const birthdayHeroBackdrop =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-birthday") || ""
+
+    return (
+      <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-gradient-to-br from-[#667eea]/15 via-[#f093fb]/12 to-[#ffd93d]/20 text-purple-950">
+        <div className="pointer-events-none fixed inset-0 z-0 opacity-90 birthday-party-dot-pattern" aria-hidden />
+        <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
+          {birthdayConfetti.map((c) => (
+            <span
+              key={c.id}
+              className="birthday-party-confetti fixed top-[-12px] h-2 w-2 rounded-sm opacity-90"
+              style={{
+                left: c.left,
+                backgroundColor: c.color,
+                animationDuration: c.duration,
+                animationDelay: c.delay,
+              }}
+            />
+          ))}
+        </div>
+        {["12%", "28%", "55%", "72%", "88%"].map((left, i) => (
+          <span
+            key={left}
+            className="birthday-party-balloon pointer-events-none fixed top-[102%] z-[1] text-3xl opacity-85 md:text-4xl"
+            style={{ left, animationDuration: `${20 + i * 3}s`, animationDelay: `${i * 1.2}s` }}
+            aria-hidden
+          >
+            🎈
+          </span>
+        ))}
+
+        <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden px-4 py-12">
+          {birthdayHeroBackdrop ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${birthdayHeroBackdrop})` }}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-fuchsia-600 to-amber-400" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/50" aria-hidden />
+          <div className="relative z-10 mx-auto max-w-4xl text-center">
+            {partyTheme ? (
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-200/95 md:text-sm">
+                {partyTheme}
+              </p>
+            ) : null}
+            <p className="mt-3 text-2xl font-bold text-amber-100 drop-shadow-md md:text-4xl">{celebrationHeadline}</p>
+            <h1
+              className={cn(
+                "mt-4 font-bold leading-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]",
+                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+              )}
+              style={{
+                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...heroTitleFontSizeStyle(titleHeroRem),
+              }}
+            >
+              {celebrantDisplay}
+            </h1>
+            {ageLine ? <p className="mt-4 text-lg font-medium text-amber-50 md:text-xl">{ageLine}</p> : null}
+            {birthdayStory ? (
+              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/90">{birthdayStory}</p>
+            ) : null}
+            <div className={cn("mx-auto max-w-2xl", birthdayStory ? "mt-8" : "mt-6")}>
+              {event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
+                <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+                  {[
+                    { label: "Days", value: countdown.days },
+                    { label: "Hours", value: countdown.hours },
+                    { label: "Minutes", value: countdown.minutes },
+                    { label: "Seconds", value: countdown.seconds },
+                  ].map((item) => (
+                    <div key={item.label} className="min-w-[72px] text-center">
+                      <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md md:text-3xl">
+                        {String(item.value).padStart(2, "0")}
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-amber-200/95">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : primaryDateFormatted ? (
+                <p className="text-center text-sm font-semibold uppercase tracking-widest text-amber-100">
+                  {primaryDateFormatted}
+                </p>
+              ) : (
+                <p className="text-center text-lg text-amber-100/95">Date &amp; time TBA</p>
+              )}
+            </div>
+            <Button
+              asChild
+              className="mt-10 h-auto rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:opacity-95"
+            >
+              <a
+                href="#birthday-stream"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 no-underline"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToBirthdayStream()
+                }}
+              >
+                <Play className="h-5 w-5" />
+                Watch Live Stream
+              </a>
+            </Button>
+          </div>
+          <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-amber-200">
+            <ChevronDown className="h-7 w-7 animate-bounce opacity-90" />
+          </div>
+        </section>
+
+        <section id="birthday-stream" className="scroll-mt-4 bg-gradient-to-b from-white to-amber-50/80 px-4 py-16 md:px-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-12 text-center">
+              {(event.scheduledAt || eventDates.length > 0) && (
+                <ul className="mx-auto mb-8 flex w-full max-w-2xl list-none flex-col items-center gap-4 px-2">
+                  {event.scheduledAt && primaryDateFormatted ? (
+                    <li className="text-center text-sm font-semibold uppercase tracking-widest text-purple-800">
+                      Main event · {primaryDateFormatted}
+                    </li>
+                  ) : null}
+                  {eventDates.map((d) => (
+                    <li
+                      key={d.id}
+                      className="text-center text-sm font-semibold uppercase tracking-widest text-purple-800"
+                    >
+                      {(d.label || "Session").trim()} · {formatExtraDate(d)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h2 className="mt-2 text-4xl font-bold text-purple-900 md:text-5xl">Party live stream</h2>
+            </div>
+
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-8 lg:items-start",
+                event.allowChat ? "lg:grid-cols-3" : "",
+              )}
+            >
+              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+                {renderStreamPlayer(BIRTHDAY_PARTY_STREAM_SHELL)}
+                {birthdayStory ? (
+                  <div className="rounded-xl border border-[#ffd93d]/60 bg-white p-6 text-center shadow-md">
+                    <p className="whitespace-pre-wrap text-purple-900">{birthdayStory}</p>
+                  </div>
+                ) : null}
+              </div>
+
+              {event.allowChat ? (
+                <div
+                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-[#ffd93d]/90 bg-white/95 shadow-xl backdrop-blur-sm lg:min-h-[600px] ${
+                    showChat ? "flex" : "hidden lg:flex"
+                  }`}
+                >
+                  {renderLiveChatBody()}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6">{renderDetailsPanel("birthdayParty")}</div>
       </div>
     )
   }

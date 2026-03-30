@@ -1,0 +1,20 @@
+# Stream-Livee on CloudJiffy: app container only; PostgreSQL is managed on a separate Jelastic node.
+# Usage:
+#   cp .env.production.example .env.production   # on the VPS, then edit secrets
+#   docker compose -f docker-compose.cloudjiffy.yml --env-file .env.production up -d --build
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  uploads_data:

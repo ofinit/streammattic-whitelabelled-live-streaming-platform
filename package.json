@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "start": "next start",
     "db:migrate": "node --env-file=.env.local scripts/run-migration.js",
+    "db:migrate:production": "node --env-file=.env.production scripts/run-migration.js",
     "db:backup": "node --env-file=.env.local scripts/backup-db.js",
     "db:backup:api": "node --env-file=.env.local scripts/backup-db.js --api",
     "db:restore": "node --env-file=.env.local scripts/restore-local.js",

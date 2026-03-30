@@ -4,7 +4,7 @@
 
 **Version:** 1.0.0  
 **Last Updated:** March 2026  
-**Stack:** Next.js 16, React 19, TypeScript, Neon PostgreSQL, TailwindCSS 4
+**Stack:** Next.js 16, React 19, TypeScript, PostgreSQL, TailwindCSS 4
 
 ---
 
@@ -52,12 +52,12 @@ StreamMattic is a multi-tenant white-label live streaming platform that allows:
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript 5 |
 | UI | React 19, TailwindCSS 4, shadcn/ui |
-| Database | Neon PostgreSQL (Serverless) |
-| Authentication | Custom cookie-based sessions |
+| Database | PostgreSQL (managed or self-hosted) |
+| Authentication | Custom cookie-based sessions (NextAuth) |
 | Payments | Razorpay, Instamojo |
 | Streaming | Nimble Streamer, SRS, Nginx-RTMP, MediaMTX |
-| File Storage | Vercel Blob |
-| Deployment | Vercel |
+| File Storage | Local filesystem (`/app/uploads` in Docker; see `UPLOAD_DIR`) |
+| Deployment | Docker / VPS (e.g. CloudJiffy Jelastic); see `docs/deploy-cloudjiffy.md` |
 
 ### Application Structure
 
@@ -473,8 +473,8 @@ interface StreamingProvider {
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | Neon PostgreSQL connection string |
-| `JWT_SECRET` | Secret for session tokens (change in production!) |
+| `DATABASE_URL` | PostgreSQL connection string (any standard Postgres host) |
+| `AUTH_SECRET` | Secret for auth/session signing (required in production; change from defaults!) |
 
 ### Payment Gateways
 
@@ -491,7 +491,8 @@ interface StreamingProvider {
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_APP_URL` | Public app URL (e.g. `https://www.streamlivee.com`) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob storage token |
+| `NEXT_PUBLIC_PLATFORM_A_RECORD_IP` | Optional: apex DNS target shown in admin domain help (your app server IP) |
+| `NEXT_PUBLIC_PLATFORM_CNAME_TARGET` | Optional: CNAME target for subdomains in admin domain help |
 | `CLOUDFLARE_API_TOKEN` | For DNS management |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare zone ID |
 
@@ -559,8 +560,9 @@ streamlivee/
 │   ├── types.ts               # TypeScript type definitions
 │   └── utils.ts               # Utility functions
 ├── scripts/
-│   ├── 001-schema.sql         # Database schema
-│   └── 002-seed.sql           # Seed data
+│   ├── run-migration.js       # Canonical schema migration (uses DATABASE_URL)
+│   ├── jelastic-init-db.sql   # Optional: create DB user on CloudJiffy Postgres
+│   └── ...
 ├── middleware.ts              # Route protection
 ├── package.json
 └── tsconfig.json
@@ -573,11 +575,11 @@ streamlivee/
 ### 1. Database Setup
 
 ```bash
-# Run schema
-psql $DATABASE_URL < scripts/001-schema.sql
+# Apply schema (uses DATABASE_URL from .env.local or your env file)
+npm run db:migrate
 
-# Run seed data
-psql $DATABASE_URL < scripts/002-seed.sql
+# Production / CloudJiffy VPS: copy .env.production.example to .env.production, then:
+# npm run db:migrate:production
 ```
 
 ### 2. Default Admin Login
@@ -590,18 +592,20 @@ Password: Admin@123
 ### 3. Environment Setup
 
 ```bash
-# .env.local
+# .env.local (see .env.example)
 DATABASE_URL=postgresql://...
-JWT_SECRET=your-secure-secret-here
-RAZORPAY_KEY_ID=rzp_test_xxx
-RAZORPAY_KEY_SECRET=xxx
+AUTH_SECRET=your-secure-secret-here
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+# RAZORPAY_KEY_ID=rzp_test_xxx
+# RAZORPAY_KEY_SECRET=xxx
 ```
 
 ### 4. Run Development Server
 
 ```bash
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 ---

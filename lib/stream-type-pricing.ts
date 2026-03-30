@@ -81,6 +81,16 @@ function clonePricing(source: StreamTypePricing): StreamTypePricing {
   return JSON.parse(JSON.stringify(source)) as StreamTypePricing
 }
 
+/**
+ * Coerce platform JSON `enabled` fields to boolean. Some stacks surface `"false"` as a string;
+ * `!== false` alone would incorrectly keep those stream types enabled.
+ */
+export function parseEnabledFlag(value: unknown, defaultValue = true): boolean {
+  if (value === false || value === "false" || value === 0) return false
+  if (value === true || value === "true" || value === 1) return true
+  return defaultValue
+}
+
 export function getDefaultStreamTypePricing(): StreamTypePricing {
   return clonePricing(INTERNAL_DEFAULT_STREAM_TYPE_PRICING)
 }
@@ -131,7 +141,7 @@ export function parseStreamTypePricing(streamRaw: unknown, volumeDiscountRaw?: u
     }
     const b = block as Record<string, unknown>
     const basePrice = typeof b.basePrice === "number" ? b.basePrice : baseFallback.basePrice
-    const enabled = b.enabled !== false
+    const enabled = parseEnabledFlag(b.enabled, true)
 
     let tiers: VolumeDiscountTier[] = []
     if (Array.isArray(b.volumeDiscountTiers)) {
@@ -180,7 +190,7 @@ export function parseSimulcastPricing(raw: unknown): SimulcastPricing {
         : typeof b.pricePerEvent === "number"
           ? b.pricePerEvent
           : fallbackPrice
-    return { price, enabled: b.enabled !== false }
+    return { price, enabled: parseEnabledFlag(b.enabled, fallbackEnabled) }
   }
 
   const youtube = pick(o.youtube, 75, true)

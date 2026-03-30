@@ -1,4 +1,4 @@
-import { Pool } from "pg"
+import { Pool, type PoolClient } from "pg"
 
 const DATABASE_URL = process.env.DATABASE_URL
 let pool: Pool | null = null
@@ -63,4 +63,23 @@ export function toCamel<T extends Record<string, unknown>>(row: T): T {
 // Apply toCamel to an array of rows
 export function toCamelRows<T extends Record<string, unknown>>(rows: T[]): T[] {
   return rows.map(toCamel)
+}
+
+/**
+ * Run multiple statements in a single transaction (commit/rollback).
+ */
+export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const pool = getPool()
+  const client = await pool.connect()
+  try {
+    await client.query("BEGIN")
+    const result = await fn(client)
+    await client.query("COMMIT")
+    return result
+  } catch (e) {
+    await client.query("ROLLBACK")
+    throw e
+  } finally {
+    client.release()
+  }
 }

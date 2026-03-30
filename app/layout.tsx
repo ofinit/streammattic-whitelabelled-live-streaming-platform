@@ -1,15 +1,20 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import {
+  Amiri,
   Cormorant_Garamond,
+  Fredoka,
+  Great_Vibes,
   Inter,
   Italiana,
   Lato,
   Montserrat,
   Pacifico,
   Playfair_Display,
+  Poppins,
   Quicksand,
   Rajdhani,
+  Raleway,
   Space_Grotesk,
 } from "next/font/google"
 import "./globals.css"
@@ -70,6 +75,14 @@ const montserratGarden = Montserrat({
   display: "swap",
 })
 
+/** Animated Christian wedding (rose & faith) — script + body */
+const greatVibesChristianRose = Great_Vibes({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-great-vibes-christian-rose",
+  display: "swap",
+})
+
 /** Midnight Elegance wedding (Italiana + Rajdhani) */
 const italianaMidnight = Italiana({
   subsets: ["latin"],
@@ -108,6 +121,36 @@ const spaceGroteskCorporate = Space_Grotesk({
   display: "swap",
 })
 
+/** Muslim Nikah wedding — Amiri (Arabic + Latin) + Raleway body */
+const amiriNikah = Amiri({
+  subsets: ["latin", "arabic"],
+  weight: ["400", "700"],
+  variable: "--font-amiri-nikah",
+  display: "swap",
+})
+
+const ralewayNikah = Raleway({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-raleway-nikah",
+  display: "swap",
+})
+
+/** Birthday party template — Fredoka + Poppins */
+const fredokaBirthday = Fredoka({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-fredoka-birthday",
+  display: "swap",
+})
+
+const poppinsBirthday = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
+  variable: "--font-poppins-birthday",
+  display: "swap",
+})
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -116,7 +159,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${playfair.variable} ${lato.variable} ${cormorantGarden.variable} ${montserratGarden.variable} ${italianaMidnight.variable} ${rajdhaniMidnight.variable} ${pacificoCoastal.variable} ${quicksandCoastal.variable} ${spaceGroteskCorporate.variable}`}
+      className={`dark ${inter.variable} ${playfair.variable} ${lato.variable} ${cormorantGarden.variable} ${montserratGarden.variable} ${greatVibesChristianRose.variable} ${italianaMidnight.variable} ${rajdhaniMidnight.variable} ${pacificoCoastal.variable} ${quicksandCoastal.variable} ${spaceGroteskCorporate.variable} ${amiriNikah.variable} ${ralewayNikah.variable} ${fredokaBirthday.variable} ${poppinsBirthday.variable}`}
     >
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
         <StackProvider>

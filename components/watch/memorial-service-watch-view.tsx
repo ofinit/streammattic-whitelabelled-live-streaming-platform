@@ -18,9 +18,6 @@ export type MemorialWatchViewProps = {
   memorialHeadline: string
   memorialTagline: string
   memorialQuote: string
-  memorialVenueDetails: string
-  dressCode: string
-  orderOfServiceText: string
   footerVerse: string
   tributeMessage: string
   inLieuOf: string
@@ -72,9 +69,6 @@ export function MemorialServiceWatchView({
   memorialHeadline,
   memorialTagline,
   memorialQuote,
-  memorialVenueDetails,
-  dressCode,
-  orderOfServiceText,
   footerVerse,
   tributeMessage,
   inLieuOf,
@@ -96,36 +90,6 @@ export function MemorialServiceWatchView({
   titleFallbackFontClass,
   heroTitleFontSizeStyle,
 }: MemorialWatchViewProps) {
-  const scrollToStream = () =>
-    document.getElementById("memorial-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
-
-  const orderSteps = useMemo(() => {
-    const lines = orderOfServiceText
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-    if (lines.length === 0) {
-      return [
-        { title: "Welcome & opening", detail: "Family & officiant" },
-        { title: "Musical reflection", detail: "" },
-        { title: "Tributes & memories", detail: "" },
-        { title: "Closing", detail: "" },
-      ]
-    }
-    return lines.map((line) => {
-      const m = line.match(/^[\d]+[\).\s]+\s*(.+)$/)
-      const rest = m ? m[1]!.trim() : line
-      const pipe = rest.indexOf("|")
-      if (pipe > -1) {
-        return {
-          title: rest.slice(0, pipe).trim(),
-          detail: rest.slice(pipe + 1).trim(),
-        }
-      }
-      return { title: rest, detail: "" }
-    })
-  }, [orderOfServiceText])
-
   const rays = useMemo(
     () =>
       Array.from({ length: 10 }, (_, i) => ({
@@ -137,7 +101,6 @@ export function MemorialServiceWatchView({
     [],
   )
 
-  const venueForCard = memorialVenueDetails.trim()
   const heroTopLine = memorialHeroTopLine(eventSubtitle, memorialHeadline)
 
   return (
@@ -149,7 +112,7 @@ export function MemorialServiceWatchView({
         />
         {heroBackdropUrl ? (
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-25"
+            className="absolute inset-0 bg-cover bg-center opacity-40"
             style={{ backgroundImage: `url(${heroBackdropUrl})` }}
             aria-hidden
           />
@@ -163,7 +126,7 @@ export function MemorialServiceWatchView({
           {rays.map((r) => (
             <span
               key={r.id}
-              className="memorial-light-ray absolute top-0 h-[100px] w-0.5"
+              className="memorial-light-ray absolute top-0 h-[150px] w-0.5"
               style={{ left: r.left, animationDuration: r.duration, animationDelay: r.delay }}
             />
           ))}
@@ -193,7 +156,7 @@ export function MemorialServiceWatchView({
               </div>
             </div>
             <span
-              className="memorial-candle-flicker pointer-events-none absolute -bottom-1 left-1/2 z-[2] -translate-x-1/2 text-2xl md:text-3xl"
+              className="memorial-candle-flicker pointer-events-none absolute -bottom-1 left-1/2 z-[2] -translate-x-1/2 text-4xl leading-none md:text-5xl"
               aria-hidden
             >
               🕯️
@@ -305,125 +268,49 @@ export function MemorialServiceWatchView({
             )}
           </div>
 
-          <ButtonMemorialScroll onClick={scrollToStream} />
+          <ButtonMemorialScroll />
         </div>
 
         <button
           type="button"
           className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-[#c9a961] motion-safe:animate-[memorialGentleBounce_2s_ease-in-out_infinite]"
-          aria-label="Scroll to service details"
-          onClick={() => document.getElementById("memorial-details")?.scrollIntoView({ behavior: "smooth" })}
+          aria-label="Scroll to live stream"
+          onClick={() => document.getElementById("memorial-stream")?.scrollIntoView({ behavior: "smooth" })}
         >
           <ChevronDown className="h-7 w-7 opacity-90" />
         </button>
       </section>
 
-      <section id="memorial-details" className="relative z-[2] bg-white px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-5xl">
-          <header className="mb-10 text-center md:mb-14">
-            <div className="mb-3 text-3xl text-[#c9a961] md:text-4xl" aria-hidden>
-              ⚘
-            </div>
-            <h2 className="font-memorial-display text-2xl text-[#2c3e50] md:text-4xl">Memorial Service Details</h2>
-            <p className="mt-2 font-memorial-serif text-base italic text-[#7f8c8d] md:text-lg">
-              Join us as we celebrate a life well lived
-            </p>
-          </header>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-            <MemorialDetailCard
-              icon="📅"
-              title="Date & time"
-              body={
-                event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {[
-                      { label: "Days", value: countdown.days },
-                      { label: "Hours", value: countdown.hours },
-                      { label: "Min", value: countdown.minutes },
-                      { label: "Sec", value: countdown.seconds },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-lg border border-[#c9a961]/35 bg-white px-2 py-2 text-center shadow-sm"
-                      >
-                        <p className="font-memorial-display text-lg font-semibold text-[#2c3e50] tabular-nums">
-                          {String(item.value).padStart(2, "0")}
-                        </p>
-                        <p className="font-memorial-sans text-[10px] font-medium uppercase tracking-wider text-[#7f8c8d]">
-                          {item.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : primaryDateFormatted ? (
-                  primaryDateFormatted
-                ) : (
-                  "To be announced"
-                )
-              }
-            />
-            <MemorialDetailCard
-              icon="📍"
-              title="Location"
-              body={venueForCard || "Details to follow"}
-            />
-            <MemorialDetailCard
-              icon="👔"
-              title="Dress code"
-              body={dressCode.trim() || "Respectful, subdued attire welcome."}
-            />
-          </div>
-
-          {inLieuOf ? (
-            <div className="mt-10 rounded-xl border border-[#c9a961]/30 bg-[#f8f5f0] p-5 text-center md:mt-12 md:p-8">
+      {inLieuOf ? (
+        <section className="relative z-[2] bg-white px-4 pb-16 pt-8 md:pb-24 md:pt-12">
+          <div className="mx-auto max-w-5xl">
+            <div className="rounded-xl border border-[#c9a961]/30 bg-[#f8f5f0] p-5 text-center md:p-8">
               <h3 className="font-memorial-display text-lg text-[#2c3e50] md:text-xl">In lieu of flowers</h3>
               <p className="mt-2 whitespace-pre-wrap font-memorial-serif text-sm text-[#5a6c7d] md:text-base">
                 {inLieuOf}
               </p>
             </div>
-          ) : null}
-
-          <div className="mx-auto mt-12 max-w-2xl rounded-2xl border-l-[5px] border-[#c9a961] bg-[#ecf0f1] p-6 md:mt-16 md:p-10">
-            <h3 className="text-center font-memorial-display text-xl text-[#2c3e50] md:text-2xl">Order of service</h3>
-            <ul className="mt-6 space-y-3">
-              {orderSteps.map((step, i) => (
-                <li
-                  key={`${i}-${step.title}`}
-                  className="flex gap-3 rounded-lg bg-white p-3 shadow-sm md:gap-4 md:p-4"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#c9a961] font-memorial-sans text-sm font-semibold text-white md:h-10 md:w-10">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 text-left">
-                    <p className="font-memorial-serif text-base font-semibold text-[#2c3e50]">{step.title}</p>
-                    {step.detail ? (
-                      <p className="mt-0.5 font-memorial-serif text-sm italic text-[#7f8c8d]">{step.detail}</p>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section
         id="memorial-stream"
-        className="scroll-mt-4 bg-gradient-to-br from-[#2c3e50] to-[#34495e] px-4 py-16 md:py-24"
+        className="scroll-mt-4 border-t border-[#e8e4dc] bg-white px-4 py-16 md:py-24"
       >
         <div className="mx-auto max-w-7xl">
           <header className="mb-8 text-center md:mb-10">
-            <div className="mb-2 text-3xl md:text-4xl" aria-hidden>
-              🎥
-            </div>
-            <h2 className="font-memorial-display text-2xl text-white md:text-4xl">Live memorial service</h2>
-            <p className="mt-2 font-memorial-serif text-sm text-white/80 md:text-base">
-              Join virtually if you cannot attend in person
-            </p>
-            <span className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-white/25 bg-white/10 px-5 py-2.5 font-memorial-sans text-sm font-medium text-white backdrop-blur-md md:text-base">
+            <h2 className="font-memorial-display text-2xl text-black md:text-4xl">Live memorial service</h2>
+            {primaryDateFormatted ? (
+              <p className="mt-3 font-memorial-serif text-sm font-medium text-black md:text-base">
+                {primaryDateFormatted}
+              </p>
+            ) : (
+              <p className="mt-3 font-memorial-serif text-sm text-neutral-600 md:text-base">Date &amp; time to be announced</p>
+            )}
+            <span className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-[#c9a961]/45 bg-white px-5 py-2.5 font-memorial-sans text-sm font-medium text-black md:text-base">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500 shadow-[0_0_10px_#f44]" />
-              LIVE STREAM
+              Watch Live Stream
             </span>
           </header>
 
@@ -436,8 +323,8 @@ export function MemorialServiceWatchView({
             <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
               {renderStreamPlayer(streamShellClassName)}
               {eventDescription ? (
-                <div className="rounded-2xl border border-[#c9a961]/40 bg-white/10 p-6 text-center backdrop-blur-sm">
-                  <p className="font-memorial-serif text-sm leading-relaxed text-white/90 md:text-base">{eventDescription}</p>
+                <div className="rounded-2xl border border-[#c9a961]/35 bg-[#f8f5f0] p-6 text-center">
+                  <p className="font-memorial-serif text-sm leading-relaxed text-neutral-900 md:text-base">{eventDescription}</p>
                 </div>
               ) : null}
             </div>
@@ -457,7 +344,7 @@ export function MemorialServiceWatchView({
             <div className="mt-6 flex justify-center lg:hidden">
               <button
                 type="button"
-                className="rounded-full border border-white/30 bg-white/10 px-5 py-2 font-memorial-sans text-sm text-white"
+                className="rounded-full border border-[#c9a961]/45 bg-white px-5 py-2 font-memorial-sans text-sm text-neutral-900 shadow-sm hover:bg-[#f8f5f0]"
                 onClick={() => setShowChat(!showChat)}
               >
                 {showChat ? "Hide condolences" : "Open condolences"}
@@ -507,30 +394,19 @@ export function MemorialServiceWatchView({
   )
 }
 
-function ButtonMemorialScroll({ onClick }: { onClick: () => void }) {
+function ButtonMemorialScroll() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <a
+      href="#memorial-stream"
       className="mt-10 inline-flex items-center gap-2 rounded-full border-2 border-[#c9a961]/80 bg-white/95 px-6 py-3 font-memorial-sans text-sm font-semibold text-[#2c3e50] shadow-md transition hover:bg-white md:mt-12 md:px-8 md:text-base"
+      onClick={(e) => {
+        e.preventDefault()
+        document.getElementById("memorial-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }}
     >
-      <Play className="h-4 w-4 text-[#c9a961] md:h-5 md:w-5" />
-      Watch live stream
-    </button>
-  )
-}
-
-function MemorialDetailCard({ icon, title, body }: { icon: string; title: string; body: ReactNode }) {
-  return (
-    <div className="rounded-xl border-t-4 border-[#c9a961] bg-[#f8f5f0] p-6 text-center shadow-md transition hover:-translate-y-0.5 hover:shadow-lg md:p-8">
-      <div className="mb-3 text-3xl md:text-4xl" aria-hidden>
-        {icon}
-      </div>
-      <h3 className="font-memorial-display text-lg font-semibold text-[#2c3e50] md:text-xl">{title}</h3>
-      <div className="mt-3 font-memorial-serif text-sm leading-relaxed text-[#7f8c8d] md:text-base">
-        {typeof body === "string" ? <span className="whitespace-pre-line">{body}</span> : body}
-      </div>
-    </div>
+      <Play className="h-4 w-4 text-[#c9a961] md:h-5 md:w-5" aria-hidden />
+      Watch Live Stream
+    </a>
   )
 }
 

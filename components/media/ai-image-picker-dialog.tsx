@@ -2,12 +2,14 @@
 
 import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
 import useSWR from "swr"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Wand2, Upload, Wallet } from "lucide-react"
 import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -19,6 +21,11 @@ export type AiImagePickerDialogProps = {
   disabled?: boolean
   /** When set, passed to POST /api/upload as `subdir` (e.g. event hero/player assets). */
   uploadSubdir?: string
+  /**
+   * When true (Memorial / Birthday templates), choosing a file opens a circular crop step before upload
+   * so the hero image matches the circular profile frame on the watch page.
+   */
+  circularHeroCrop?: boolean
 }
 
 /**
@@ -30,9 +37,12 @@ export function AiImagePickerDialog({
   children,
   disabled,
   uploadSubdir,
+  circularHeroCrop,
 }: AiImagePickerDialogProps) {
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const cropObjectUrlRef = useRef<string | null>(null)
   const [prompt, setPrompt] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [error, setError] = useState("")
@@ -59,6 +69,58 @@ export function AiImagePickerDialog({
 
   const refreshWallet = () => mutateWallet()
 
+  const endCircularCrop = useCallback(() => {
+    if (cropObjectUrlRef.current) {
+      URL.revokeObjectURL(cropObjectUrlRef.current)
+      cropObjectUrlRef.current = null
+    }
+    setCropImageSrc(null)
+  }, [])
+
+  const startCircularCrop = useCallback(
+    (file: File) => {
+      setError("")
+      if (cropObjectUrlRef.current) {
+        URL.revokeObjectURL(cropObjectUrlRef.current)
+      }
+      const url = URL.createObjectURL(file)
+      cropObjectUrlRef.current = url
+      setCropImageSrc(url)
+      setDialogOpen(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    },
+    [],
+  )
+
+  const handleCroppedBlob = useCallback(
+    async (blob: Blob) => {
+      const file = new File([blob], "hero-profile.jpg", { type: "image/jpeg" })
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        if (uploadSubdir) {
+          formData.append("subdir", uploadSubdir)
+        }
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+        const data = await res.json()
+        if (data.error) {
+          toast.error(data.error)
+          return
+        }
+        if (data.url) {
+          await onImageUrl(data.url)
+          endCircularCrop()
+        }
+      } catch {
+        toast.error("Failed to upload image. Please try again.")
+      }
+    },
+    [endCircularCrop, onImageUrl, uploadSubdir],
+  )
+
   const handleFileUpload = useCallback(
     async (file: File) => {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
@@ -68,6 +130,11 @@ export function AiImagePickerDialog({
       }
       if (file.size > 4 * 1024 * 1024) {
         setError("File too large. Maximum size is 4MB.")
+        return
+      }
+
+      if (circularHeroCrop) {
+        startCircularCrop(file)
         return
       }
 
@@ -99,7 +166,7 @@ export function AiImagePickerDialog({
         setUploading(false)
       }
     },
-    [onImageUrl, uploadSubdir],
+    [circularHeroCrop, onImageUrl, startCircularCrop, uploadSubdir],
   )
 
   const handleGenerate = async () => {
@@ -160,6 +227,7 @@ export function AiImagePickerDialog({
   }, [])
 
   return (
+    <>
     <Dialog
       open={dialogOpen}
       onOpenChange={(open) => {
@@ -179,6 +247,12 @@ export function AiImagePickerDialog({
         <div className="space-y-6 pt-2">
           <div className="space-y-3">
             <Label className="text-sm font-medium">Upload Image (Free)</Label>
+            {circularHeroCrop ? (
+              <p className="text-xs text-muted-foreground">
+                This template uses a circular profile photo on the watch page. After you choose a file, you can zoom and
+                align the image inside the circle before uploading.
+              </p>
+            ) : null}
             <div
               className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                 dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
@@ -274,5 +348,18 @@ export function AiImagePickerDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {cropImageSrc ? (
+      <CircularProfileCropDialog
+        open
+        imageSrc={cropImageSrc}
+        onOpenChange={(open) => {
+          if (!open) endCircularCrop()
+        }}
+        onConfirm={handleCroppedBlob}
+        title="Position photo in circle"
+      />
+    ) : null}
+    </>
   )
 }

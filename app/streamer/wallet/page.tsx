@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
-import { TopUpDialog } from "@/components/wallet/top-up-dialog"
+import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
 import { mockTransactions, mockStreamerWalletSummary } from "@/lib/mock-data"
 import { CreditCard, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -15,11 +15,6 @@ export default function StreamerWalletPage() {
 
   // Filter transactions for this streamer
   const streamerTransactions = mockTransactions.filter((t) => t.userId === "streamer-1")
-
-  const handleTopUp = (amount: number, gateway: string) => {
-    // In real app, this would redirect to payment gateway
-    console.log(`Initiating payment of ${amount} via ${gateway}`)
-  }
 
   return (
     <div className="space-y-6">
@@ -107,7 +102,7 @@ export default function StreamerWalletPage() {
         </TabsContent>
       </Tabs>
 
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} onConfirm={handleTopUp} />
+      <WalletRechargeCheckout open={topUpOpen} onOpenChange={setTopUpOpen} />
     </div>
   )
 }

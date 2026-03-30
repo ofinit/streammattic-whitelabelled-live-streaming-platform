@@ -13,11 +13,7 @@ import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTyp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { masterStreamTypePricing, masterSimulcastPricing, masterValiditySettings } from "@/lib/mock-data"
 import { toast } from "sonner"
-import {
-  parseStreamTypePricing,
-  parseSimulcastPricing,
-  serializeSimulcastPricing,
-} from "@/lib/stream-type-pricing"
+import { parseStreamTypePricing, parseSimulcastPricing } from "@/lib/stream-type-pricing"
 import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
 
 const streamTypes = [
@@ -31,17 +27,23 @@ function cloneStreamPricing(source: StreamTypePricing): StreamTypePricing {
   return JSON.parse(JSON.stringify(source)) as StreamTypePricing
 }
 
-function buildValidityExtensionsPayload(defaultDays: number, tiers: ValidityTier[]) {
-  return {
-    defaultDays,
-    options: tiers.map((t) => ({
-      days: t.days,
-      extraDays: Math.max(0, t.days - defaultDays),
-      creditCost: t.creditCost,
-      label: t.label ?? `${t.days} days`,
-      enabled: t.enabled,
-    })),
+const STREAM_TYPE_KEYS = ["rtmp", "youtube_api", "youtube_embed", "third_party"] as const
+
+/** API requires ≥1 paisa per volume tier; clamp so accidental 0 does not reject the whole save */
+function sanitizeStreamPricingForSave(source: StreamTypePricing): StreamTypePricing {
+  const out = cloneStreamPricing(source)
+  for (const key of STREAM_TYPE_KEYS) {
+    const cfg = out[key]
+    out[key] = {
+      ...cfg,
+      volumeDiscountTiers: cfg.volumeDiscountTiers.map((t) => ({
+        ...t,
+        minQty: Math.max(1, Math.round(Number(t.minQty)) || 1),
+        pricePerEvent: Math.max(1, Math.round(Number(t.pricePerEvent)) || 1),
+      })),
+    }
   }
+  return out
 }
 
 export default function AdminPricingPage() {
@@ -177,38 +179,32 @@ export default function AdminPricingPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const streamPayload = cloneStreamPricing(streamPricing)
-      const flatCreditPricing = {
-        rtmp: Math.max(1, Math.round(streamPricing.rtmp.basePrice / 100)),
-        youtube_api: Math.max(1, Math.round(streamPricing.youtube_api.basePrice / 100)),
-        youtube_embed: Math.max(1, Math.round(streamPricing.youtube_embed.basePrice / 100)),
-        third_party: Math.max(1, Math.round(streamPricing.third_party.basePrice / 100)),
-      }
-      const puts: { key: string; value: unknown }[] = [
-        { key: "stream_type_pricing", value: streamPayload },
-        { key: "simulcast_pricing", value: serializeSimulcastPricing(simulcastPricing) },
-        {
-          key: "validity_extensions",
-          value: buildValidityExtensionsPayload(validityDefaultDays, validityTiers),
-        },
-        { key: "studio_annual_subscription", value: studioSubscription },
-        { key: "credit_pricing", value: flatCreditPricing },
-      ]
-
-      for (const { key, value } of puts) {
-        const res = await fetch("/api/settings", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, value }),
-        })
-        const body = (await res.json().catch(() => ({}))) as { error?: string }
-        if (!res.ok) {
-          toast.error(body.error || `Failed to save ${key}`)
-          return
+      const res = await fetch("/api/admin/pricing", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          streamTypePricing: sanitizeStreamPricingForSave(streamPricing),
+          simulcastPricing: { ...simulcastPricing },
+          validityDefaultDays,
+          validityTiers: validityTiers.map((t) => ({ ...t })),
+          studioSubscription: { ...studioSubscription },
+        }),
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Not signed in. Open Admin Login, sign in, then try again.")
+        } else if (res.status === 403) {
+          toast.error("Admin role required to save pricing.")
+        } else {
+          toast.error(body.error || "Failed to save pricing")
         }
+        return
       }
 
       toast.success("Pricing saved to database")
+      setStreamPricing((prev) => sanitizeStreamPricingForSave(prev))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed")
     } finally {
@@ -261,66 +257,90 @@ export default function AdminPricingPage() {
             const config = streamPricing[key]
             const isExpanded = expandedStreams[key] ?? false
             return (
-              <Collapsible key={key} open={isExpanded} onOpenChange={() => setExpandedStreams((prev) => ({ ...prev, [key]: !prev[key] }))}>
-                <div
-                  className={`rounded-lg border transition-colors ${
-                    config.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
-                  }`}
+              <div
+                key={key}
+                className={`rounded-lg border transition-colors ${
+                  config.enabled ? "border-border bg-card" : "border-border/50 bg-muted/30 opacity-60"
+                }`}
+              >
+                <Collapsible
+                  open={isExpanded}
+                  onOpenChange={(open) => setExpandedStreams((prev) => ({ ...prev, [key]: open }))}
+                  className="min-w-0 w-full"
                 >
-                  {/* Stream type header */}
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="flex min-w-0 flex-col gap-0">
+                    {/* Header: title row + Base price + enable toggle (toggle beside base price) */}
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 p-4">
                       <CollapsibleTrigger asChild disabled={!config.enabled}>
-                        <button type="button" className="flex items-center gap-3 text-left flex-1" disabled={!config.enabled}>
-                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded && config.enabled ? "rotate-180" : ""}`} />
-                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                            config.enabled ? "bg-primary/10" : "bg-muted"
-                          }`}>
+                        <button
+                          type="button"
+                          className="flex min-w-[12rem] flex-1 items-center gap-3 text-left md:min-w-0"
+                          disabled={!config.enabled}
+                        >
+                          <ChevronDown
+                            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isExpanded && config.enabled ? "rotate-180" : ""}`}
+                          />
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                              config.enabled ? "bg-primary/10" : "bg-muted"
+                            }`}
+                          >
                             <Icon className={`h-5 w-5 ${config.enabled ? "text-primary" : "text-muted-foreground"}`} />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{label}</span>
                               {recommended && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                                  Recommended
+                                </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">{description}</p>
                           </div>
                           {config.volumeDiscountTiers.length > 0 && !isExpanded && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-2 shrink-0">
+                            <Badge variant="secondary" className="ml-2 shrink-0 text-[10px] px-1.5 py-0">
                               {config.volumeDiscountTiers.length} tier{config.volumeDiscountTiers.length !== 1 ? "s" : ""}
                             </Badge>
                           )}
                         </button>
                       </CollapsibleTrigger>
 
-                      {/* Base price inline */}
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">Base Price</Label>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+                        <Label className="whitespace-nowrap text-xs text-muted-foreground">Base Price</Label>
                         <div className="relative w-28">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            {"₹"}
+                          </span>
                           <Input
                             type="number"
                             step="0.01"
                             min="0"
-                            defaultValue={config.basePrice / 100}
-                            onBlur={(e) => updateBasePrice(key, Math.round(Number(e.target.value) * 100))}
-                            className="pl-7 bg-secondary border-0 h-9"
+                            value={config.basePrice / 100}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              const n = parseFloat(v)
+                              if (v === "" || Number.isNaN(n)) return
+                              updateBasePrice(key, Math.round(n * 100))
+                            }}
+                            className="h-9 border-0 bg-secondary pl-7"
                             disabled={!config.enabled}
+                          />
+                        </div>
+                        <div
+                          className="relative z-10 flex shrink-0 items-center border-l border-border/60 pl-2 sm:pl-3"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <Switch
+                            checked={config.enabled}
+                            onCheckedChange={(checked) => toggleStreamType(key, checked)}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <Switch
-                      checked={config.enabled}
-                      onCheckedChange={(checked) => toggleStreamType(key, checked)}
-                    />
-                  </div>
-
-                  {/* Volume Discount Tiers */}
-                  <CollapsibleContent>
+                      {/* Volume Discount Tiers */}
+                      <CollapsibleContent>
                     {config.enabled && (
                       <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3">
                         <div className="flex items-center justify-between">
@@ -344,21 +364,44 @@ export default function AdminPricingPage() {
                         )}
 
                         {config.volumeDiscountTiers.map((tier, idx) => {
-                          const discount = config.basePrice > 0
-                            ? Math.round((1 - tier.pricePerEvent / config.basePrice) * 100)
-                            : 0
+                          const base = config.basePrice
+                          const tierP = tier.pricePerEvent
+                          let discountLabel: string
+                          let discountClass: string
+                          if (base <= 0) {
+                            discountLabel = "Set a base price to see discount"
+                            discountClass = "text-muted-foreground"
+                          } else {
+                            const pct = Math.round((1 - tierP / base) * 100)
+                            if (pct > 0) {
+                              discountLabel = `${pct}% off vs base`
+                              discountClass = "text-emerald-500"
+                            } else if (pct < 0) {
+                              discountLabel = `${Math.abs(pct)}% above base`
+                              discountClass = "text-amber-600 dark:text-amber-500"
+                            } else {
+                              discountLabel = "0% off (same as base)"
+                              discountClass = "text-muted-foreground"
+                            }
+                          }
                           return (
                             <div key={idx} className="rounded-md bg-secondary/30 p-3">
-                              <div className="grid items-center gap-3 md:grid-cols-[120px_120px_1fr_40px]">
+                              <div className="grid items-start gap-3 md:grid-cols-[120px_120px_1fr_40px]">
                                 {/* Min Qty */}
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground md:hidden">Min Quantity</Label>
                                   <Input
                                     type="number"
-                                    min="2"
-                                    defaultValue={tier.minQty}
-                                    onBlur={(e) => updateDiscountTier(key, idx, "minQty", Number(e.target.value))}
-                                    className="bg-secondary border-0 h-8 text-sm"
+                                    min="1"
+                                    value={tier.minQty}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (v === "") return
+                                      const n = Number(v)
+                                      if (Number.isNaN(n)) return
+                                      updateDiscountTier(key, idx, "minQty", Math.round(n))
+                                    }}
+                                    className="h-8 border-0 bg-secondary text-sm"
                                   />
                                 </div>
 
@@ -366,34 +409,43 @@ export default function AdminPricingPage() {
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground md:hidden">Price/Event</Label>
                                   <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                      {"₹"}
+                                    </span>
                                     <Input
                                       type="number"
                                       step="0.01"
                                       min="0"
-                                      defaultValue={tier.pricePerEvent / 100}
-                                      onBlur={(e) => updateDiscountTier(key, idx, "pricePerEvent", Math.round(Number(e.target.value) * 100))}
-                                      className="pl-7 bg-secondary border-0 h-8 text-sm"
+                                      value={tier.pricePerEvent === 0 ? "" : tier.pricePerEvent / 100}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        if (v === "") {
+                                          updateDiscountTier(key, idx, "pricePerEvent", 0)
+                                          return
+                                        }
+                                        const n = parseFloat(v)
+                                        if (Number.isNaN(n)) return
+                                        updateDiscountTier(key, idx, "pricePerEvent", Math.round(n * 100))
+                                      }}
+                                      className="h-8 border-0 bg-secondary pl-7 text-sm"
                                     />
                                   </div>
-                                  {discount > 0 && (
-                                    <p className="text-[10px] text-emerald-500 px-1">{discount}% discount</p>
-                                  )}
+                                  <p className={`px-1 text-[10px] leading-tight ${discountClass}`}>{discountLabel}</p>
                                 </div>
 
                                 {/* Label */}
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground md:hidden">Label</Label>
                                   <Input
-                                    defaultValue={tier.label ?? ""}
-                                    onBlur={(e) => updateDiscountTier(key, idx, "label", e.target.value)}
-                                    className="bg-secondary border-0 h-8 text-sm"
+                                    value={tier.label ?? ""}
+                                    onChange={(e) => updateDiscountTier(key, idx, "label", e.target.value)}
+                                    className="h-8 border-0 bg-secondary text-sm"
                                     placeholder="e.g. Starter Pack"
                                   />
                                 </div>
 
                                 {/* Delete */}
-                                <div className="flex items-center justify-center">
+                                <div className="flex justify-center pt-1 md:pt-0 md:items-center">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -411,8 +463,9 @@ export default function AdminPricingPage() {
                       </div>
                     )}
                   </CollapsibleContent>
-                </div>
-              </Collapsible>
+                  </div>
+                </Collapsible>
+              </div>
             )
           })}
         </CardContent>
@@ -615,14 +668,14 @@ export default function AdminPricingPage() {
                   type="number"
                   step="1"
                   min="0"
-                  defaultValue={studioSubscription.price / 100}
-                  onBlur={(e) =>
-                    setStudioSubscription((prev) => ({
-                      ...prev,
-                      price: Math.round(Number(e.target.value) * 100),
-                    }))
-                  }
-                  className="pl-7 bg-secondary border-0"
+                  value={studioSubscription.price / 100}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    const n = parseFloat(v)
+                    if (v === "" || Number.isNaN(n)) return
+                    setStudioSubscription((prev) => ({ ...prev, price: Math.round(n * 100) }))
+                  }}
+                  className="border-0 bg-secondary pl-7"
                 />
               </div>
               <p className="text-xs text-muted-foreground">

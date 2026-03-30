@@ -4,6 +4,7 @@ import {
   getUserCreditsRowByUserId,
   getWalletTransactionsByUserId,
 } from "@/lib/db-queries"
+import { getPublicStreamCreditPricing } from "@/lib/credit-pricing-snapshot"
 import { normalizeUserCreditsRow } from "@/lib/normalize-user-credits"
 import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 
@@ -16,11 +17,12 @@ export const GET = withAuth(async (user) => {
   const studioId = user.id as string
 
   try {
-    const [statsRaw, creditsRow, events, transactions] = await Promise.all([
+    const [statsRaw, creditsRow, events, transactions, creditPricing] = await Promise.all([
       getStudioDashboardStats(studioId),
       getUserCreditsRowByUserId(studioId),
       getEvents({ studioId, limit: 10 }),
       getWalletTransactionsByUserId(studioId, 5),
+      getPublicStreamCreditPricing(),
     ])
 
     const credits = normalizeUserCreditsRow(creditsRow ?? undefined)
@@ -33,7 +35,7 @@ export const GET = withAuth(async (user) => {
       totalCreditsRemaining,
     }
 
-    return jsonOk({ stats, events, transactions })
+    return jsonOk({ stats, events, transactions, creditPricing })
   } catch (error) {
     console.error("[studio/dashboard] Error:", error)
     return jsonError("Failed to load studio dashboard data", 500)

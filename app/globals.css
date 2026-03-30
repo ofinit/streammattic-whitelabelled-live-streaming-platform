@@ -101,9 +101,20 @@
   --font-memorial-sans: var(--font-garden-sans), "Montserrat", system-ui, sans-serif;
   /* Corporate Tech Forward (Space Grotesk via next/font — layout) */
   --font-corporate-tech-display-stack: var(--font-corporate-tech-display), "Space Grotesk", system-ui, sans-serif;
+  /* Christian wedding rose (Great Vibes + Cormorant + Montserrat via layout) */
+  --font-christian-rose-script: var(--font-great-vibes-christian-rose), "Great Vibes", cursive;
+  --font-christian-rose-serif: var(--font-garden-serif);
+  --font-christian-rose-sans: var(--font-garden-sans);
   /* Traditional Hindu wedding — Playfair + Cormorant (next/font in layout) */
   --font-hindu-wedding-display: var(--font-serif);
   --font-hindu-wedding-serif: var(--font-garden-serif);
+  /* Muslim Nikah wedding (Amiri + Raleway + Playfair display via --font-serif) */
+  --font-nikah-amiri: var(--font-amiri-nikah), "Amiri", Georgia, serif;
+  --font-nikah-sans: var(--font-raleway-nikah), "Raleway", system-ui, sans-serif;
+  --font-nikah-display: var(--font-serif);
+  /* Birthday party (Fredoka + Poppins via next/font in layout) */
+  --font-birthday-display: var(--font-fredoka-birthday), "Fredoka", system-ui, sans-serif;
+  --font-birthday-sans: var(--font-poppins-birthday), "Poppins", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -734,6 +745,14 @@
     font-family: var(--font-coastal-sans), "Quicksand", system-ui, sans-serif;
   }
 
+  .font-birthday-display {
+    font-family: var(--font-birthday-display);
+  }
+
+  .font-birthday-sans {
+    font-family: var(--font-birthday-sans);
+  }
+
   .coastal-sand-texture-bg {
     background-color: #edf6f9;
     background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
@@ -1199,54 +1218,6 @@
     animation: memorialCandleFlicker 2s ease-in-out infinite;
   }
 
-  @keyframes birthdayPartyConfettiFall {
-    0% {
-      transform: translateY(-12px) rotate(0deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(110vh) rotate(720deg);
-      opacity: 0.35;
-    }
-  }
-
-  @keyframes birthdayPartyBalloon {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-18px);
-    }
-  }
-
-  @keyframes birthdayPartyPatternShift {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 40px 40px;
-    }
-  }
-
-  .birthday-party-confetti {
-    animation-name: birthdayPartyConfettiFall;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-  }
-
-  .birthday-party-balloon {
-    animation-name: birthdayPartyBalloon;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-  }
-
-  .birthday-party-dot-pattern {
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.12) 2px, transparent 2px);
-    background-size: 40px 40px;
-    animation: birthdayPartyPatternShift 20s linear infinite;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .corp-tech-grid-bg,
     .corp-tech-orb,
@@ -1265,10 +1236,7 @@
     .memorial-light-ray,
     .memorial-dove,
     .memorial-photo-glow,
-    .memorial-candle-flicker,
-    .birthday-party-confetti,
-    .birthday-party-balloon,
-    .birthday-party-dot-pattern {
+    .memorial-candle-flicker {
       animation: none !important;
     }
   }

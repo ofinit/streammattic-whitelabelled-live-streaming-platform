@@ -17,6 +17,7 @@ import {
   Send,
   Lock,
   Play,
+  Cake,
   Calendar,
   Share2,
   Maximize,
@@ -87,7 +88,6 @@ type WatchChromeTheme =
   | "traditionalHindu"
   | "corporateTech"
   | "memorial"
-  | "birthdayParty"
 
 const GALLERY_AUTO_SCROLL_MS = 4500
 
@@ -113,9 +113,7 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                   ? "border-blue-500/40"
                   : theme === "memorial"
                     ? "border-[#c9a961]/70"
-                    : theme === "birthdayParty"
-                      ? "border-[#ffd93d]/80"
-                      : "border-border"
+                    : "border-border"
 
   const galleryFocusRing =
     theme === "wedding"
@@ -134,9 +132,7 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                   ? "focus-visible:ring-blue-400/70"
                   : theme === "memorial"
                     ? "focus-visible:ring-[#c9a961]/80"
-                    : theme === "birthdayParty"
-                      ? "focus-visible:ring-[#ffd93d]/80"
-                      : "focus-visible:ring-ring"
+                    : "focus-visible:ring-ring"
 
   const getStepWidth = useCallback(() => {
     const el = scrollRef.current
@@ -245,9 +241,7 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                               ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
                               : theme === "memorial"
                                 ? "border-[#c9a961]/80 bg-[#f8f5f0]/95 text-[#2c3e50] hover:bg-[#ecf0f1]"
-                                : theme === "birthdayParty"
-                                  ? "border-[#ffd93d]/90 bg-white/95 text-purple-900 hover:bg-amber-50"
-                                  : ""
+                                : ""
               }`}
               aria-label="Scroll gallery left"
               onClick={() => scrollGalleryBy(-1)}
@@ -275,9 +269,7 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
                               ? "border-blue-500/40 bg-black/90 text-blue-200 hover:bg-blue-950/40"
                               : theme === "memorial"
                                 ? "border-[#c9a961]/80 bg-[#f8f5f0]/95 text-[#2c3e50] hover:bg-[#ecf0f1]"
-                                : theme === "birthdayParty"
-                                  ? "border-[#ffd93d]/90 bg-white/95 text-purple-900 hover:bg-amber-50"
-                                  : ""
+                                : ""
               }`}
               aria-label="Scroll gallery right"
               onClick={() => scrollGalleryBy(1)}
@@ -418,12 +410,49 @@ interface CelestialStar {
   delay: string
 }
 
-/** Confetti — Birthday Party watch skin */
+/** Floating hearts — Christian wedding rose skin */
+interface ChristianRoseHeart {
+  id: number
+  left: string
+  duration: string
+  size: number
+  delay: string
+  /** Horizontal sway (px) at each leg of the rise — per heart for organic drift */
+  d0: number
+  d1: number
+  d2: number
+  d3: number
+  d4: number
+}
+
+/** Floating stars / crescents — Muslim Nikah watch skin */
+interface NikahStarParticle {
+  id: number
+  left: string
+  duration: string
+  delay: string
+  size: number
+  symbol: "✦" | "☪"
+}
+
+/** Floating emoji — birthday party watch skin */
+interface BirthdayFloatParticle {
+  id: number
+  left: string
+  duration: string
+  delay: string
+  size: number
+  symbol: string
+}
+
+/** Small square confetti — birthday party watch skin */
 interface BirthdayConfettiPiece {
   id: number
   left: string
   duration: string
   delay: string
+  size: number
+  heightMul: number
   color: string
 }
 
@@ -455,7 +484,14 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [midnightParticles, setMidnightParticles] = useState<MidnightParticle[]>([])
   const [coastalBubbles, setCoastalBubbles] = useState<CoastalBubble[]>([])
   const [celestialStars, setCelestialStars] = useState<CelestialStar[]>([])
+  const [roseHearts, setRoseHearts] = useState<ChristianRoseHeart[]>([])
+  const roseHeartIdRef = useRef(0)
+  const [nikahStars, setNikahStars] = useState<NikahStarParticle[]>([])
+  const nikahStarIdRef = useRef(0)
+  const [birthdayFloaters, setBirthdayFloaters] = useState<BirthdayFloatParticle[]>([])
+  const birthdayFloaterIdRef = useRef(0)
   const [birthdayConfetti, setBirthdayConfetti] = useState<BirthdayConfettiPiece[]>([])
+  const birthdayConfettiIdRef = useRef(0)
 
   const fetchWatchEvent = useCallback(async (): Promise<LiveEvent | null> => {
     try {
@@ -670,12 +706,12 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "celestial"
               : watchSkin === "weddingTraditionalHindu"
                 ? "traditionalHindu"
-                : watchSkin === "corporateTechForward"
-                  ? "corporateTech"
-                  : watchSkin === "memorialService"
-                    ? "memorial"
-                    : watchSkin === "birthdayParty"
-                      ? "birthdayParty"
+                : watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
+                  ? "wedding"
+                  : watchSkin === "corporateTechForward"
+                    ? "corporateTech"
+                    : watchSkin === "memorialService"
+                      ? "memorial"
                       : "default"
 
   useEffect(() => {
@@ -719,6 +755,124 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       }
     })
     setWeddingPetals(petals)
+  }, [watchSkin])
+
+  useEffect(() => {
+    if (watchSkin !== "christianWeddingRose") {
+      setRoseHearts([])
+      return
+    }
+    roseHeartIdRef.current = 0
+    const driftPx = () => Math.round((Math.random() - 0.5) * 72)
+    const makeHeart = (): ChristianRoseHeart => {
+      roseHeartIdRef.current += 1
+      const durationSec = Math.random() * 5 + 8
+      return {
+        id: roseHeartIdRef.current,
+        left: `${Math.random() * 94 + 3}%`,
+        duration: `${durationSec}s`,
+        size: Math.random() * 36 + 44,
+        delay: `${(-Math.random() * durationSec).toFixed(2)}s`,
+        d0: driftPx(),
+        d1: driftPx(),
+        d2: driftPx(),
+        d3: driftPx(),
+        d4: driftPx(),
+      }
+    }
+    setRoseHearts(Array.from({ length: 12 }, () => makeHeart()))
+    const add = () => {
+      setRoseHearts((prev) => {
+        const durationSec = Math.random() * 5 + 8
+        roseHeartIdRef.current += 1
+        const h: ChristianRoseHeart = {
+          id: roseHeartIdRef.current,
+          left: `${Math.random() * 94 + 3}%`,
+          duration: `${durationSec}s`,
+          size: Math.random() * 36 + 44,
+          delay: `${(-Math.random() * Math.min(durationSec, 10)).toFixed(2)}s`,
+          d0: driftPx(),
+          d1: driftPx(),
+          d2: driftPx(),
+          d3: driftPx(),
+          d4: driftPx(),
+        }
+        return [...prev, h].slice(-16)
+      })
+    }
+    const interval = window.setInterval(add, 2200)
+    return () => window.clearInterval(interval)
+  }, [watchSkin])
+
+  useEffect(() => {
+    if (watchSkin !== "muslimWeddingNikah") {
+      setNikahStars([])
+      return
+    }
+    nikahStarIdRef.current = 0
+    const makeStar = (): NikahStarParticle => {
+      nikahStarIdRef.current += 1
+      const durationSec = Math.random() * 12 + 14
+      return {
+        id: nikahStarIdRef.current,
+        left: `${Math.random() * 100}%`,
+        duration: `${durationSec}s`,
+        delay: `${Math.random() * 5}s`,
+        size: Math.random() * 28 + 26,
+        symbol: Math.random() > 0.5 ? "✦" : "☪",
+      }
+    }
+    setNikahStars(Array.from({ length: 10 }, () => makeStar()))
+    const add = () => {
+      setNikahStars((prev) => [...prev.slice(-22), makeStar()])
+    }
+    const interval = window.setInterval(add, 3500)
+    return () => window.clearInterval(interval)
+  }, [watchSkin])
+
+  useEffect(() => {
+    if (watchSkin !== "birthdayParty") {
+      setBirthdayFloaters([])
+      setBirthdayConfetti([])
+      return
+    }
+    birthdayFloaterIdRef.current = 0
+    birthdayConfettiIdRef.current = 0
+    const symbols = ["🎈", "🎉", "🎊", "🎁", "🥳"]
+    const confettiColors = ["#fde047", "#7dd3fc", "#86efac", "#fb923c", "#9f1239", "#fbcfe8", "#c084fc", "#f9a8d4"]
+    const make = (): BirthdayFloatParticle => {
+      birthdayFloaterIdRef.current += 1
+      const durationSec = Math.random() * 8 + 12
+      return {
+        id: birthdayFloaterIdRef.current,
+        left: `${Math.random() * 100}%`,
+        duration: `${durationSec}s`,
+        delay: `${Math.random() * 4}s`,
+        size: Math.random() * 16 + 20,
+        symbol: symbols[Math.floor(Math.random() * symbols.length)]!,
+      }
+    }
+    const makeConfetti = (): BirthdayConfettiPiece => {
+      birthdayConfettiIdRef.current += 1
+      const durationSec = Math.random() * 8 + 12
+      return {
+        id: birthdayConfettiIdRef.current,
+        left: `${Math.random() * 100}%`,
+        duration: `${durationSec}s`,
+        delay: `${Math.random() * 5}s`,
+        size: Math.random() * 5 + 6,
+        heightMul: Math.random() > 0.5 ? 1.15 : 1,
+        color: confettiColors[Math.floor(Math.random() * confettiColors.length)]!,
+      }
+    }
+    setBirthdayFloaters(Array.from({ length: 12 }, () => make()))
+    setBirthdayConfetti(Array.from({ length: 42 }, () => makeConfetti()))
+    const add = () => {
+      setBirthdayFloaters((prev) => [...prev.slice(-26), make()])
+      setBirthdayConfetti((prev) => [...prev.slice(-48), makeConfetti(), makeConfetti()])
+    }
+    const interval = window.setInterval(add, 2800)
+    return () => window.clearInterval(interval)
   }, [watchSkin])
 
   useEffect(() => {
@@ -782,23 +936,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         size: `${Math.random() * 2.5 + 1}px`,
         duration: `${Math.random() * 7 + 5}s`,
         delay: `${Math.random() * 10}s`,
-      })),
-    )
-  }, [watchSkin])
-
-  useEffect(() => {
-    if (watchSkin !== "birthdayParty") {
-      setBirthdayConfetti([])
-      return
-    }
-    const colors = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#c56cf0", "#ff922b"] as const
-    setBirthdayConfetti(
-      Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        duration: `${Math.random() * 4 + 5}s`,
-        delay: `${Math.random() * 5}s`,
-        color: colors[Math.floor(Math.random() * colors.length)]!,
       })),
     )
   }, [watchSkin])
@@ -889,7 +1026,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const evRawTop = event as unknown as Record<string, unknown>
   const templateId = watchTemplateId
   const templateData = parseWatchTemplateData(evRawTop.templateData)
-  const showTemplateBanner = !!(templateId && templateId !== "tpl-default")
+  /** Include tpl-default so event title uses template default (or custom) font + size from Design settings */
+  const showTemplateBanner = !!templateId?.trim()
 
   const titleMeta = templateData as Record<string, unknown>
   const googleTitleFont = resolveTitleGoogleFontFamily(titleMeta)
@@ -920,9 +1058,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     watchSkin !== "weddingCoastal" &&
     watchSkin !== "weddingCelestial" &&
     watchSkin !== "weddingTraditionalHindu" &&
+    watchSkin !== "christianWeddingRose" &&
+    watchSkin !== "muslimWeddingNikah" &&
+    watchSkin !== "birthdayParty" &&
     watchSkin !== "corporateTechForward" &&
-    watchSkin !== "memorialService" &&
-    watchSkin !== "birthdayParty"
+    watchSkin !== "memorialService"
   ) {
     const tz = evRawTop.timezone as string | undefined
     const tzId = tz && tz !== "UTC" ? tz : undefined
@@ -1038,8 +1178,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             </Badge>
           </div>
           <div className="absolute top-4 right-4">
-            <Badge className="bg-red-600/80 text-white gap-1">
-              <span className="h-2 w-2 rounded-full bg-white animate-pulse inline-block" />
+            <Badge className="border border-zinc-500/40 bg-zinc-600/90 text-white gap-1">
+              <span className="h-2 w-2 rounded-full bg-zinc-200 animate-pulse inline-block" />
               LIVE
             </Badge>
           </div>
@@ -1179,25 +1319,25 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     "relative aspect-video w-full overflow-hidden rounded-3xl border-[3px] border-amber-400/85 bg-gradient-to-br from-red-950/95 via-orange-950/90 to-amber-950/95 shadow-[0_12px_48px_rgba(185,28,28,0.22)] backdrop-blur-sm"
   const MEMORIAL_STREAM_SHELL =
     "relative aspect-video w-full overflow-hidden rounded-2xl border-[3px] border-[#c9a961] bg-gradient-to-br from-[#1e3c72]/40 via-[#2a5298]/30 to-[#34495e]/40 shadow-[0_15px_50px_rgba(0,0,0,0.35)]"
-  const BIRTHDAY_PARTY_STREAM_SHELL =
-    "relative aspect-video w-full overflow-hidden rounded-3xl border-[5px] border-[#ffd93d] bg-gradient-to-br from-[#667eea]/25 via-[#764ba2]/20 to-[#f093fb]/25 shadow-xl"
+  const CHRISTIAN_ROSE_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-2xl border border-[#f4c2c2]/90 bg-black shadow-[0_12px_40px_rgba(139,79,92,0.28)]"
+  const NIKAH_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-[20px] border-4 border-[#d4af37] bg-black shadow-[0_15px_50px_rgba(0,0,0,0.35)]"
+  const BIRTHDAY_STREAM_SHELL =
+    "relative aspect-video w-full overflow-hidden rounded-2xl border-4 border-pink-300 bg-black shadow-[0_20px_50px_rgba(255,107,157,0.28)]"
 
   /** Garden / coastal shells are light/frosted — use dark type (readable on glass bg) */
   const streamPlaceholderTitleClass =
-    streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty"
+    streamChrome === "garden" || streamChrome === "coastal"
       ? streamChrome === "garden"
         ? "text-lg font-semibold text-emerald-950"
-        : streamChrome === "coastal"
-          ? "font-coastal-sans text-lg font-semibold text-[#006d77]"
-          : "text-lg font-semibold text-amber-100"
+        : "font-coastal-sans text-lg font-semibold text-[#006d77]"
       : "text-lg font-medium text-white"
   const streamPlaceholderSubClass =
-    streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty"
+    streamChrome === "garden" || streamChrome === "coastal"
       ? streamChrome === "garden"
         ? "text-sm font-medium text-emerald-900/90"
-        : streamChrome === "coastal"
-          ? "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
-          : "text-sm font-medium text-amber-100/85"
+        : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
       : "text-sm text-white/60"
 
   const renderStreamPlayer = (shellClassName: string) => (
@@ -1280,8 +1420,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   <p
                     className={cn(
                       streamPlaceholderSubClass,
-                      (streamChrome === "garden" || streamChrome === "coastal" || streamChrome === "birthdayParty") &&
-                        "max-w-sm text-center",
+                      (streamChrome === "garden" || streamChrome === "coastal") && "max-w-sm text-center",
                     )}
                   >
                     The YouTube broadcast is being set up. Please wait a moment and refresh.
@@ -1334,26 +1473,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               </Badge>
             ) : (
               <>
-                <Badge
-                  className={
-                    streamChrome === "wedding"
-                      ? "bg-rose-600 text-white"
-                      : streamChrome === "coastal"
-                        ? "bg-[#e29578] text-white"
-                        : streamChrome === "celestial"
-                          ? "bg-red-600 text-white shadow-[0_0_16px_rgba(239,68,68,0.45)]"
-                          : streamChrome === "traditionalHindu"
-                            ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-[0_0_14px_rgba(234,88,12,0.4)]"
-                            : streamChrome === "corporateTech"
-                              ? "bg-red-600 text-white shadow-[0_0_16px_rgba(239,68,68,0.45)]"
-                              : streamChrome === "memorial"
-                                ? "bg-[#c9a961] text-[#1a1a2e]"
-                                : streamChrome === "birthdayParty"
-                                  ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white"
-                                  : "bg-red-600 text-white"
-                  }
-                >
-                  <span className="mr-1 h-2 w-2 animate-pulse rounded-full bg-white" />
+                <Badge className="border border-zinc-500/50 bg-zinc-600 text-white shadow-none">
+                  <span className="mr-1 inline-block h-2 w-2 animate-pulse rounded-full bg-zinc-200" />
                   LIVE
                 </Badge>
                 <Badge
@@ -1373,11 +1494,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                                 ? "border-amber-400/70 bg-[#FFF8DC]/90 font-hindu-wedding-display text-xs text-red-900"
                                 : streamChrome === "corporateTech"
                                   ? "border-blue-500/35 bg-black/70 font-corporate-tech-display text-xs text-blue-100"
-                                  : streamChrome === "memorial"
+                                    : streamChrome === "memorial"
                                     ? "border-[#c9a961]/70 bg-black/60 font-memorial-display text-xs text-[#f5e6c8]"
-                                    : streamChrome === "birthdayParty"
-                                      ? "border-[#ffd93d]/80 bg-purple-950/50 text-amber-100"
-                                      : "border-white/30 bg-black/50 text-white"
+                                    : "border-white/30 bg-black/50 text-white"
                   }
                 >
                   <Eye className="mr-1 h-3 w-3" />
@@ -1415,9 +1534,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                             ? "bg-gradient-to-t from-[#0a0a0a] via-blue-950/50 to-transparent"
                             : streamChrome === "memorial"
                               ? "bg-gradient-to-t from-[#1e3c72]/95 via-[#2a5298]/45 to-transparent"
-                              : streamChrome === "birthdayParty"
-                                ? "bg-gradient-to-t from-purple-950/90 via-fuchsia-900/40 to-transparent"
-                                : "bg-gradient-to-t from-black/80 to-transparent"
+                              : "bg-gradient-to-t from-black/80 to-transparent"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
@@ -1500,8 +1617,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   )
 
   const renderLiveChatBody = () => {
-    const chatSkin: WatchChromeTheme =
-      streamChrome === "memorial" ? "wedding" : streamChrome === "birthdayParty" ? "garden" : streamChrome
+    const chatSkin: WatchChromeTheme = streamChrome === "memorial" ? "wedding" : streamChrome
 
     const headerClass =
       chatSkin === "wedding"
@@ -1699,9 +1815,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   ? "Blessings & Wishes"
                   : streamChrome === "memorial"
                     ? "Condolences"
-                    : streamChrome === "birthdayParty"
-                      ? "Birthday wishes"
-                      : streamChrome === "corporateTech"
+                    : streamChrome === "corporateTech"
                         ? "Live discussion"
                         : "Live Chat"
     const chatPlaceholder =
@@ -1719,9 +1833,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   ? "Send your blessings..."
                   : streamChrome === "memorial"
                     ? "Share a memory…"
-                    : streamChrome === "birthdayParty"
-                      ? "Send birthday love…"
-                      : streamChrome === "corporateTech"
+                    : streamChrome === "corporateTech"
                         ? "Join the conversation..."
                         : "Send a message..."
 
@@ -1794,16 +1906,12 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const heroFromEvent = typeof heroImageUrl === "string" ? heroImageUrl.trim() : ""
   const couplePhotoRaw = weddingFields.couplePhoto
   const couplePhotoTrimmed = typeof couplePhotoRaw === "string" ? couplePhotoRaw.trim() : ""
-  const celebrantPhotoRaw = weddingFields.celebrantPhoto
-  const celebrantPhotoTrimmed = typeof celebrantPhotoRaw === "string" ? celebrantPhotoRaw.trim() : ""
+  /** Funeral & birthday: hero image is for the circular profile + OG only — not a full-bleed hero background */
   const heroBackdropUrl =
     watchTemplateId === "tpl-funeral"
-      ? heroFromEvent
-      : watchTemplateId === "tpl-birthday"
-        ? heroFromEvent ||
-          celebrantPhotoTrimmed ||
-          getDefaultTemplateHeroBackdropUrl(watchTemplateId) ||
-          ""
+      ? ""
+      : watchTemplateId === "tpl-birthday-party"
+        ? couplePhotoTrimmed || getDefaultTemplateHeroBackdropUrl(watchTemplateId) || ""
         : heroFromEvent || couplePhotoTrimmed || getDefaultTemplateHeroBackdropUrl(watchTemplateId) || ""
   const eventSubtitle = (evRawTop.subtitle as string | undefined)?.trim() || ""
   /** Hero line below divider: event description only — no static or template fallbacks */
@@ -1819,7 +1927,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       detailsTheme === "traditionalHindu" ||
       detailsTheme === "corporateTech" ||
       detailsTheme === "memorial" ||
-      detailsTheme === "birthdayParty"
+      watchSkin === "birthdayParty"
     const panelShell =
       detailsTheme === "wedding"
         ? "border-amber-200/50 bg-[#fefae0]"
@@ -1837,9 +1945,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "border-blue-500/30 bg-[#0a0a0a] text-zinc-200 [&_h3]:text-sky-300"
                     : detailsTheme === "memorial"
                       ? "border-[#c9a961]/40 bg-[#f8f5f0] text-[#2c3e50] [&_h3]:text-[#c9a961]"
-                      : detailsTheme === "birthdayParty"
-                        ? "border-[#ffd93d]/50 bg-gradient-to-br from-[#faf5ff] to-[#fff7ed] text-purple-950 [&_h3]:text-purple-800"
-                        : "border-border"
+                      : "border-border"
     const galleryBorder =
       detailsTheme === "wedding"
         ? "border-amber-200/60"
@@ -1857,9 +1963,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "border-blue-500/35"
                     : detailsTheme === "memorial"
                       ? "border-[#c9a961]/55"
-                      : detailsTheme === "birthdayParty"
-                        ? "border-[#ffd93d]/70"
-                        : "border-border"
+                      : "border-border"
     const shareBtn =
       detailsTheme === "wedding"
         ? "border-amber-300/80 bg-white/50 text-amber-950 hover:bg-white/70"
@@ -1877,9 +1981,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "border-blue-500/35 bg-black/50 font-corporate-tech-display text-sky-200 hover:bg-blue-950/30"
                     : detailsTheme === "memorial"
                       ? "border-[#c9a961]/70 bg-white/80 font-memorial-display text-[#2c3e50] hover:bg-white"
-                      : detailsTheme === "birthdayParty"
-                        ? "border-[#ffd93d]/80 bg-white/90 font-semibold text-purple-900 hover:bg-amber-50"
-                        : "border-border bg-transparent"
+                      : "border-border bg-transparent"
     const photoNameClass =
       detailsTheme === "wedding"
         ? "font-medium text-stone-900"
@@ -1897,9 +1999,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "font-corporate-tech-display font-medium text-sky-200"
                     : detailsTheme === "memorial"
                       ? "font-memorial-serif font-medium text-[#34495e]"
-                      : detailsTheme === "birthdayParty"
-                        ? "font-medium text-purple-900"
-                        : "font-medium text-foreground"
+                      : "font-medium text-foreground"
     const photoLinksClass =
       detailsTheme === "wedding"
         ? "flex flex-wrap gap-x-3 gap-y-1 text-stone-700"
@@ -1917,9 +2017,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "flex flex-wrap gap-x-3 gap-y-1 font-sans text-sm text-zinc-400"
                     : detailsTheme === "memorial"
                       ? "flex flex-wrap gap-x-3 gap-y-1 font-memorial-serif text-sm text-[#5a6c7d]"
-                      : detailsTheme === "birthdayParty"
-                        ? "flex flex-wrap gap-x-3 gap-y-1 text-sm text-purple-800/90"
-                        : "flex flex-wrap gap-x-3 gap-y-0 text-muted-foreground"
+                      : "flex flex-wrap gap-x-3 gap-y-0 text-muted-foreground"
 
     return (
     <div className={`border-b p-4 lg:p-6 ${panelShell}`}>
@@ -2486,6 +2584,1051 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     )
   }
 
+  if (watchSkin === "christianWeddingRose") {
+    const scrollToChristianRoseStream = () =>
+      document.getElementById("christian-rose-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const roseHeroBackdrop =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-christian-wedding-rose") || ""
+
+    const roseStripActive =
+      event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled
+    const roseStripPast =
+      roseStripActive && new Date(event.scheduledAt as unknown as string).getTime() <= Date.now()
+    const roseShowCountdown = roseStripActive && !roseStripPast
+
+    return (
+      <div
+        className="relative flex min-h-screen flex-col overflow-x-hidden text-[#4a4a4a]"
+        style={{ backgroundColor: "#fffef7" }}
+      >
+        <style jsx global>{`
+          @keyframes watchChristianRoseHeartFloat {
+            0% {
+              top: 108%;
+              opacity: 0;
+              transform: translate(calc(-50% + var(--cr-d0, 0px)), 0) scale(0.96);
+            }
+            6% {
+              opacity: 0.95;
+              transform: translate(calc(-50% + var(--cr-d0, 0px)), 0) scale(0.99);
+            }
+            28% {
+              top: 52%;
+              transform: translate(calc(-50% + var(--cr-d1, 0px)), 0) scale(1.05);
+            }
+            50% {
+              top: 28%;
+              transform: translate(calc(-50% + var(--cr-d2, 0px)), 0) scale(1.08);
+            }
+            72% {
+              top: 6%;
+              opacity: 0.92;
+              transform: translate(calc(-50% + var(--cr-d3, 0px)), 0) scale(1.04);
+            }
+            100% {
+              top: -14%;
+              opacity: 0;
+              transform: translate(calc(-50% + var(--cr-d4, 0px)), 0) scale(1);
+            }
+          }
+        `}</style>
+
+        <section className="relative z-[2] flex min-h-[88vh] flex-col items-center justify-center overflow-hidden text-center bg-[#3d2528]">
+          {roseHeroBackdrop ? (
+            <div
+              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: `url(${roseHeroBackdrop})`,
+                filter: "none",
+                backdropFilter: "none",
+              }}
+              aria-hidden
+            />
+          ) : (
+            <div
+              className="absolute inset-0 z-0"
+              style={{ background: "linear-gradient(135deg, #f4c2c2 0%, #b76e79 100%)" }}
+              aria-hidden
+            />
+          )}
+          {/* Translucent rose tint only (no backdrop blur — keeps photo sharp) */}
+          <div
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(244, 194, 194, 0.14) 0%, rgba(183, 110, 121, 0.2) 50%, rgba(139, 79, 92, 0.16) 100%)",
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, transparent 45%, rgba(0,0,0,0.22) 100%)",
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
+            }}
+            aria-hidden
+          />
+
+          <div className="pointer-events-none absolute inset-0 z-[8] overflow-hidden motion-reduce:hidden" aria-hidden>
+            {roseHearts.map((h) => (
+              <span
+                key={h.id}
+                className="absolute text-[#f4c2c2] drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
+                style={{
+                  left: h.left,
+                  top: "108%",
+                  fontSize: h.size,
+                  ["--cr-d0" as string]: `${h.d0}px`,
+                  ["--cr-d1" as string]: `${h.d1}px`,
+                  ["--cr-d2" as string]: `${h.d2}px`,
+                  ["--cr-d3" as string]: `${h.d3}px`,
+                  ["--cr-d4" as string]: `${h.d4}px`,
+                  animationName: "watchChristianRoseHeartFloat",
+                  animationDuration: h.duration,
+                  animationTimingFunction: "cubic-bezier(0.4, 0.15, 0.25, 1)",
+                  animationIterationCount: "infinite",
+                  animationDelay: h.delay,
+                }}
+              >
+                💕
+              </span>
+            ))}
+          </div>
+
+          <div className="relative z-20 mx-auto max-w-4xl px-4 py-12">
+            <div
+              className="mb-4 text-4xl text-[#fffef7] md:text-5xl"
+              style={{
+                filter:
+                  "drop-shadow(0 1px 2px rgba(0,0,0,0.95)) drop-shadow(0 4px 14px rgba(0,0,0,0.8)) drop-shadow(0 0 28px rgba(0,0,0,0.55)) drop-shadow(0 0 52px rgba(0,0,0,0.35))",
+              }}
+              aria-hidden
+            >
+              ✝
+            </div>
+
+            {eventSubtitle ? (
+              <p className="text-xs font-medium uppercase tracking-[0.28em] text-[#fffef7]/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.92),0_3px_18px_rgba(0,0,0,0.72),0_6px_36px_rgba(0,0,0,0.48),0_0_1px_rgba(0,0,0,0.9)]">
+                {eventSubtitle}
+              </p>
+            ) : null}
+
+            <h1
+              className={cn(
+                "mt-3 font-christian-rose-script font-normal leading-tight text-[#fffef7]",
+                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+              )}
+              style={{
+                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...heroTitleFontSizeStyle(titleHeroRem),
+                textShadow:
+                  "0 0 2px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.88), 0 4px 24px rgba(0,0,0,0.72), 0 8px 44px rgba(0,0,0,0.5), 0 14px 64px rgba(0,0,0,0.32), 0 1px 0 rgba(0,0,0,0.55)",
+              }}
+            >
+              {coupleParts && coupleParts.length === 2 ? (
+                <>
+                  {coupleParts[0]}{" "}
+                  <span
+                    className="inline-block animate-pulse text-[#d4af37] [text-shadow:0_1px_3px_rgba(0,0,0,0.85),0_3px_14px_rgba(0,0,0,0.65),0_6px_28px_rgba(0,0,0,0.45)]"
+                    style={
+                      googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : undefined
+                    }
+                  >
+                    &
+                  </span>{" "}
+                  {coupleParts[1]}
+                </>
+              ) : (
+                coupleHero
+              )}
+            </h1>
+
+            {weddingHeroDescription ? (
+              <p className="mx-auto mt-8 max-w-2xl font-christian-rose-serif text-lg leading-relaxed text-[#fffef7]/95 md:text-xl [text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_4px_22px_rgba(0,0,0,0.68),0_8px_48px_rgba(0,0,0,0.42),0_0_1px_rgba(0,0,0,0.85)]">
+                {weddingHeroDescription}
+              </p>
+            ) : null}
+
+            <div className={cn("mx-auto max-w-2xl", weddingHeroDescription ? "mt-8" : "mt-6")}>
+              {roseShowCountdown ? (
+                <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+                  {[
+                    { label: "Days", value: countdown.days },
+                    { label: "Hours", value: countdown.hours },
+                    { label: "Minutes", value: countdown.minutes },
+                    { label: "Seconds", value: countdown.seconds },
+                  ].map((item) => (
+                    <div key={item.label} className="min-w-[72px] text-center">
+                      <p className="font-christian-rose-sans text-2xl font-bold tabular-nums text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.85),0_3px_16px_rgba(0,0,0,0.65),0_6px_32px_rgba(0,0,0,0.42)] md:text-3xl">
+                        {String(item.value).padStart(2, "0")}
+                      </p>
+                      <p className="mt-1 font-christian-rose-sans text-[10px] font-semibold uppercase tracking-wider text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.88),0_2px_12px_rgba(0,0,0,0.58),0_4px_24px_rgba(0,0,0,0.35)]">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : primaryDateFormatted ? (
+                <p className="text-center font-christian-rose-sans text-sm font-semibold uppercase tracking-widest text-[#fffef7] [text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_3px_18px_rgba(0,0,0,0.68),0_6px_36px_rgba(0,0,0,0.44),0_0_1px_rgba(0,0,0,0.85)]">
+                  {primaryDateFormatted}
+                </p>
+              ) : (
+                <p className="text-center font-christian-rose-serif text-lg text-[#fffef7]/95 [text-shadow:0_1px_3px_rgba(0,0,0,0.88),0_4px_20px_rgba(0,0,0,0.62),0_8px_40px_rgba(0,0,0,0.38)]">
+                  Date &amp; time TBA
+                </p>
+              )}
+            </div>
+
+            <Button
+              asChild
+              className="mt-10 h-auto rounded-full border-0 px-8 py-3 font-christian-rose-sans text-base font-semibold text-[#fffef7] shadow-[0_4px_20px_rgba(0,0,0,0.45)]"
+              style={{ backgroundColor: "#b76e79" }}
+            >
+              <a
+                href="#christian-rose-stream"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 no-underline [text-shadow:0_1px_3px_rgba(0,0,0,0.75),0_2px_14px_rgba(0,0,0,0.45)]"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToChristianRoseStream()
+                }}
+              >
+                <Play className="h-5 w-5" />
+                Watch Live Stream
+              </a>
+            </Button>
+          </div>
+
+          <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 text-[#fffef7] [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.85))_drop-shadow(0_3px_14px_rgba(0,0,0,0.55))_drop-shadow(0_0_24px_rgba(0,0,0,0.35))]">
+            <ChevronDown className="h-7 w-7 animate-bounce opacity-90" />
+          </div>
+        </section>
+
+        {showScheduledPageEnabled && event.status === "scheduled" && event.scheduledAt ? (
+          <section
+            id="christian-rose-countdown"
+            className="relative z-[2] scroll-mt-4 px-4 py-14 text-center text-white"
+            style={{ background: "linear-gradient(135deg, #8b4f5c, #b76e79)" }}
+          >
+            <h2 className="font-christian-rose-script text-3xl md:text-4xl">
+              {roseStripPast
+                ? "We're celebrating! 💒"
+                : roseShowCountdown
+                  ? "Ceremony Begins In..."
+                  : primaryDateFormatted
+                    ? "Save the Date"
+                    : "Join Us"}
+            </h2>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-6">
+              {(["Days", "Hours", "Minutes", "Seconds"] as const).map((label, i) => {
+                const vals = [countdown.days, countdown.hours, countdown.minutes, countdown.seconds]
+                const v = roseShowCountdown ? vals[i] : 0
+                return (
+                  <div
+                    key={label}
+                    className="min-w-[80px] rounded-2xl border-2 border-white/30 bg-white/15 px-4 py-5 backdrop-blur-md md:min-w-[110px] md:px-6 md:py-6"
+                  >
+                    <span className="font-christian-rose-sans text-2xl font-semibold tabular-nums md:text-3xl">
+                      {String(v).padStart(2, "0")}
+                    </span>
+                    <div className="mt-2 font-christian-rose-sans text-[10px] font-light uppercase tracking-widest md:text-xs">
+                      {label}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {!roseShowCountdown && primaryDateFormatted ? (
+              <p className="mt-6 font-christian-rose-sans text-sm text-white/90">{primaryDateFormatted}</p>
+            ) : null}
+          </section>
+        ) : null}
+
+        <section
+          id="christian-rose-stream"
+          className="scroll-mt-4 px-4 py-14 md:px-6"
+          style={{ backgroundColor: "#fffef7" }}
+        >
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 text-center">
+              {(event.scheduledAt || eventDates.length > 0) && (
+                <ul className="mx-auto mb-6 flex w-full max-w-2xl list-none flex-col items-center gap-3 px-2">
+                  {event.scheduledAt && primaryDateFormatted ? (
+                    <li className="text-center font-christian-rose-sans text-xs font-semibold uppercase tracking-widest text-[#b76e79] md:text-sm">
+                      Main event · {primaryDateFormatted}
+                    </li>
+                  ) : null}
+                  {eventDates.map((d) => (
+                    <li
+                      key={d.id}
+                      className="text-center font-christian-rose-sans text-xs font-semibold uppercase tracking-widest text-[#b76e79] md:text-sm"
+                    >
+                      {(d.label || "Session").trim()} · {formatExtraDate(d)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h2 className="font-christian-rose-script text-4xl text-[#b76e79] md:text-5xl">Watch Live Stream</h2>
+            </div>
+
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+                {renderStreamPlayer(CHRISTIAN_ROSE_STREAM_SHELL)}
+                {weddingHeroDescription ? (
+                  <div
+                    className="rounded-2xl border border-[#f4c2c2]/80 p-6 text-center shadow-md"
+                    style={{ backgroundColor: "rgba(255,255,255,0.95)" }}
+                  >
+                    <h3
+                      className={cn(
+                        "whitespace-pre-wrap text-[#8b4f5c]",
+                        titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+                      )}
+                      style={{
+                        ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...cardTitleFontSizeStyle(titleHeroRem),
+                      }}
+                    >
+                      {weddingHeroDescription}
+                    </h3>
+                  </div>
+                ) : null}
+              </div>
+
+              {event.allowChat ? (
+                <div
+                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-[#f4c2c2]/90 bg-white shadow-xl lg:min-h-[600px] ${
+                    showChat ? "flex" : "hidden lg:flex"
+                  }`}
+                >
+                  {renderLiveChatBody()}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6">{renderDetailsPanel("wedding")}</div>
+      </div>
+    )
+  }
+
+  if (watchSkin === "muslimWeddingNikah") {
+    const nikahEmerald = "#2d5f5d"
+    const nikahGold = "#d4af37"
+    const nikahDarkGold = "#b8941e"
+    const nikahCream = "#faf8f3"
+    const nikahIvory = "#fff9f0"
+    const nikahDeep = "#1a3c3a"
+
+    const scrollToNikahCountdown = () =>
+      document.getElementById("nikah-countdown")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const scrollToNikahStream = () =>
+      document.getElementById("nikah-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const nikahHeroBackdrop =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-muslim-wedding-nikah") || ""
+
+    const nikahStripActive =
+      event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled
+    const nikahStripPast =
+      nikahStripActive && new Date(event.scheduledAt as unknown as string).getTime() <= Date.now()
+    const nikahShowCountdown = nikahStripActive && !nikahStripPast
+
+    return (
+      <div
+        className="relative flex min-h-screen flex-col overflow-x-hidden font-nikah-sans"
+        style={{ backgroundColor: nikahCream, color: "#2c2c2c" }}
+      >
+        <style jsx global>{`
+          @keyframes watchNikahStarRise {
+            0% {
+              transform: translateY(105vh) rotate(0deg) scale(0.4);
+              opacity: 0;
+            }
+            12% {
+              opacity: 0.85;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(-110vh) rotate(360deg) scale(1);
+              opacity: 0;
+            }
+          }
+          @keyframes watchNikahPattern {
+            0% {
+              transform: rotate(0deg) scale(1);
+            }
+            50% {
+              transform: rotate(180deg) scale(1.08);
+            }
+            100% {
+              transform: rotate(360deg) scale(1);
+            }
+          }
+          @keyframes watchNikahBismillahGlow {
+            0%,
+            100% {
+              text-shadow: 0 0 12px rgba(212, 175, 55, 0.45), 0 0 24px rgba(212, 175, 55, 0.25);
+            }
+            50% {
+              text-shadow: 0 0 22px rgba(212, 175, 55, 0.75), 0 0 40px rgba(212, 175, 55, 0.4);
+            }
+          }
+          @keyframes watchNikahAmp {
+            0%,
+            100% {
+              transform: rotate(0deg);
+            }
+            50% {
+              transform: rotate(5deg);
+            }
+          }
+        `}</style>
+
+        <div
+          className="pointer-events-none fixed inset-0 z-[1]"
+          style={{
+            opacity: 0.035,
+            backgroundImage: `repeating-linear-gradient(45deg, ${nikahEmerald} 0px, ${nikahEmerald} 2px, transparent 2px, transparent 10px), repeating-linear-gradient(-45deg, ${nikahGold} 0px, ${nikahGold} 2px, transparent 2px, transparent 10px)`,
+          }}
+          aria-hidden
+        />
+
+        <section
+          className="relative z-[3] flex min-h-[88vh] flex-col overflow-hidden px-4 py-12 text-center md:py-16"
+          style={{ background: `linear-gradient(135deg, ${nikahEmerald} 0%, ${nikahDeep} 100%)` }}
+        >
+          <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden motion-reduce:hidden" aria-hidden>
+            {nikahStars.map((s) => (
+              <span
+                key={s.id}
+                className="absolute"
+                style={{
+                  left: s.left,
+                  bottom: "-8%",
+                  color: nikahGold,
+                  fontSize: s.size,
+                  animationName: "watchNikahStarRise",
+                  animationDuration: s.duration,
+                  animationTimingFunction: "linear",
+                  animationIterationCount: "infinite",
+                  animationDelay: s.delay,
+                }}
+              >
+                {s.symbol}
+              </span>
+            ))}
+          </div>
+
+          <div
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              opacity: 0.12,
+              backgroundImage: `radial-gradient(circle, ${nikahGold} 2px, transparent 2px)`,
+              backgroundSize: "50px 50px",
+              animation: "watchNikahPattern 32s linear infinite",
+            }}
+            aria-hidden
+          />
+
+          {nikahHeroBackdrop ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25"
+              style={{ backgroundImage: `url(${nikahHeroBackdrop})` }}
+              aria-hidden
+            />
+          ) : null}
+
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-[72px] border-b-[3px] md:h-[100px]"
+            style={{
+              borderColor: nikahGold,
+              background: "linear-gradient(to bottom, rgba(212, 175, 55, 0.28), transparent)",
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[72px] border-t-[3px] md:h-[100px]"
+            style={{
+              borderColor: nikahGold,
+              background: "linear-gradient(to top, rgba(212, 175, 55, 0.28), transparent)",
+            }}
+            aria-hidden
+          />
+
+          <div className="relative z-20 flex min-h-0 w-full flex-1 flex-col justify-center">
+            <div className="mx-auto w-full max-w-3xl">
+            <p
+              className="font-nikah-amiri text-2xl font-normal leading-relaxed md:text-3xl lg:text-4xl"
+              dir="rtl"
+              style={{ color: nikahGold, animation: "watchNikahBismillahGlow 3s ease-in-out infinite" }}
+            >
+              بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+            </p>
+
+            <div className="mt-3 text-4xl md:text-5xl" style={{ color: nikahGold }} aria-hidden>
+              ☪
+            </div>
+
+            {eventSubtitle ? (
+              <p className="mt-3 font-nikah-sans text-xs font-semibold uppercase tracking-[0.28em] text-[#fff9f0]/95 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]">
+                {eventSubtitle}
+              </p>
+            ) : null}
+
+            <h1
+              className={cn(
+                "mt-3 font-nikah-display font-semibold leading-tight text-[#fff9f0] [text-shadow:0_4px_18px_rgba(0,0,0,0.45)]",
+                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+              )}
+              style={{
+                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...heroTitleFontSizeStyle(titleHeroRem),
+              }}
+            >
+              {coupleParts && coupleParts.length === 2 ? (
+                <>
+                  {coupleParts[0]}{" "}
+                  <span
+                    className="inline-block"
+                    style={{
+                      color: nikahGold,
+                      animation: "watchNikahAmp 3s ease-in-out infinite",
+                      ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                    }}
+                  >
+                    &
+                  </span>{" "}
+                  {coupleParts[1]}
+                </>
+              ) : (
+                coupleHero
+              )}
+            </h1>
+
+            {weddingHeroDescription ? (
+              <p className="mx-auto mt-8 max-w-xl text-sm leading-relaxed text-[#fff9f0]/90 md:text-base">
+                {weddingHeroDescription}
+              </p>
+            ) : null}
+
+            {primaryDateFormatted ? (
+              <p className="mt-6 font-nikah-sans text-xs font-semibold uppercase tracking-widest text-[#fff9f0]/95 [text-shadow:0_2px_8px_rgba(0,0,0,0.45)] md:text-sm">
+                {primaryDateFormatted}
+              </p>
+            ) : null}
+
+            <Button
+              asChild
+              className="mt-8 h-auto rounded-full border-0 px-8 py-3 font-nikah-sans text-base font-semibold text-white shadow-lg"
+              style={{ backgroundColor: nikahEmerald }}
+            >
+              <a
+                href="#nikah-stream"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 no-underline"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToNikahStream()
+                }}
+              >
+                <Play className="h-5 w-5" />
+                Watch Live Stream
+              </a>
+            </Button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-2 motion-reduce:hidden"
+            style={{ color: nikahGold }}
+            onClick={scrollToNikahCountdown}
+            aria-label="Scroll to countdown"
+          >
+            <ChevronDown className="h-7 w-7 animate-bounce opacity-90" />
+          </button>
+        </section>
+
+        {showScheduledPageEnabled && event.status === "scheduled" && event.scheduledAt ? (
+          <section
+            id="nikah-countdown"
+            className="relative z-[3] scroll-mt-4 px-4 py-14 text-center"
+            style={{ background: `linear-gradient(135deg, ${nikahGold}, ${nikahDarkGold})` }}
+          >
+            <h2 className="font-nikah-display text-3xl font-semibold md:text-4xl" style={{ color: nikahDeep }}>
+              {nikahStripPast
+                ? "Alhamdulillah!"
+                : nikahShowCountdown
+                  ? "Ceremony begins in…"
+                  : primaryDateFormatted
+                    ? "Save the date"
+                    : "Join us"}
+            </h2>
+            <p className="mt-2 font-nikah-amiri text-base italic md:text-lg" style={{ color: nikahDeep }}>
+              {nikahStripPast ? "May Allah bless our union" : "Join us for this blessed occasion"}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-6">
+              {(["Days", "Hours", "Minutes", "Seconds"] as const).map((label, i) => {
+                const vals = [countdown.days, countdown.hours, countdown.minutes, countdown.seconds]
+                const v = nikahShowCountdown ? vals[i] : 0
+                return (
+                  <div
+                    key={label}
+                    className="min-w-[80px] rounded-2xl border-[3px] bg-white/95 px-4 py-5 shadow-md md:min-w-[110px] md:px-6 md:py-6"
+                    style={{ borderColor: nikahEmerald }}
+                  >
+                    <span className="font-nikah-display text-2xl font-bold tabular-nums md:text-3xl" style={{ color: nikahEmerald }}>
+                      {String(v).padStart(2, "0")}
+                    </span>
+                    <div className="mt-2 font-nikah-sans text-[10px] font-medium uppercase tracking-widest text-[#2c2c2c] md:text-xs">
+                      {label}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {!nikahShowCountdown && primaryDateFormatted ? (
+              <p className="mt-6 font-nikah-sans text-sm" style={{ color: nikahDeep }}>
+                {primaryDateFormatted}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
+        <section id="nikah-stream" className="scroll-mt-4 px-4 py-14 md:px-6" style={{ backgroundColor: nikahIvory }}>
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 text-center">
+              {(event.scheduledAt || eventDates.length > 0) && (
+                <ul className="mx-auto mb-6 flex w-full max-w-2xl list-none flex-col items-center gap-3 px-2">
+                  {event.scheduledAt && primaryDateFormatted ? (
+                    <li className="font-nikah-sans text-xs font-semibold uppercase tracking-widest md:text-sm" style={{ color: nikahEmerald }}>
+                      Main event · {primaryDateFormatted}
+                    </li>
+                  ) : null}
+                  {eventDates.map((d) => (
+                    <li
+                      key={d.id}
+                      className="font-nikah-sans text-xs font-semibold uppercase tracking-widest md:text-sm"
+                      style={{ color: nikahEmerald }}
+                    >
+                      {(d.label || "Session").trim()} · {formatExtraDate(d)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h2 className="font-nikah-display text-4xl md:text-5xl" style={{ color: nikahEmerald }}>
+                Watch Live Stream
+              </h2>
+            </div>
+
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+                {renderStreamPlayer(NIKAH_STREAM_SHELL)}
+                {weddingHeroDescription ? (
+                  <div
+                    className="rounded-2xl border-2 p-6 text-center shadow-md"
+                    style={{ borderColor: nikahGold, backgroundColor: "rgba(255,255,255,0.98)" }}
+                  >
+                    <h3
+                      className={cn("whitespace-pre-wrap", titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
+                      style={{
+                        color: nikahEmerald,
+                        ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...cardTitleFontSizeStyle(titleHeroRem),
+                      }}
+                    >
+                      {weddingHeroDescription}
+                    </h3>
+                  </div>
+                ) : null}
+              </div>
+
+              {event.allowChat ? (
+                <div
+                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-[20px] border-[3px] bg-white shadow-xl lg:min-h-[600px] ${
+                    showChat ? "flex" : "hidden lg:flex"
+                  }`}
+                  style={{ borderColor: nikahEmerald }}
+                >
+                  {renderLiveChatBody()}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6">{renderDetailsPanel("wedding")}</div>
+      </div>
+    )
+  }
+
+  if (watchSkin === "birthdayParty") {
+    const bpPink = "#ff6b9d"
+    const bpPurple = "#c44569"
+    const bpBlue = "#4facfe"
+    const bpYellow = "#ffd93d"
+    const bpLight = "#fff5f8"
+
+    const honoreeDisplay =
+      String(weddingFields.honoreeName ?? "").trim() ||
+      String(weddingFields.hostName ?? "").trim() ||
+      event.title.split(/[–—|]/)[0]?.trim() ||
+      event.title
+
+    const rawPartyHeadline = String(weddingFields.partyHeadline ?? "").trim()
+    const partyHeadlineBp =
+      rawPartyHeadline || eventSubtitle || "We're getting married!"
+    const partyTaglineBp = String(weddingFields.partyTagline ?? "").trim()
+    const showBirthdaySubtitleLine =
+      eventSubtitle.trim() !== "" &&
+      eventSubtitle.trim().toLowerCase() !== partyHeadlineBp.trim().toLowerCase()
+
+    const birthdayHeroBackdrop =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-birthday-party") || ""
+    const birthdayPhotoUrl = couplePhotoTrimmed || heroFromEvent
+
+    const bpStripActive =
+      event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled
+    const bpStripPast =
+      bpStripActive && new Date(event.scheduledAt as unknown as string).getTime() <= Date.now()
+    const bpShowCountdown = bpStripActive && !bpStripPast
+
+    const scrollBirthdayCountdown = () =>
+      document.getElementById("birthday-countdown")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const scrollBirthdayStream = () =>
+      document.getElementById("birthday-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+
+    return (
+      <div
+        className="relative flex min-h-screen flex-col overflow-x-hidden font-birthday-sans text-[#2d3436]"
+        style={{ backgroundColor: bpLight }}
+      >
+        <style jsx global>{`
+          @keyframes watchBirthdayFloat {
+            0% {
+              transform: translateY(105vh) translateX(0) rotate(0deg);
+              opacity: 0;
+            }
+            12% {
+              opacity: 0.85;
+            }
+            88% {
+              opacity: 0.85;
+            }
+            100% {
+              transform: translateY(-110vh) translateX(36px) rotate(360deg);
+              opacity: 0;
+            }
+          }
+          @keyframes bpPhotoFloat {
+            0%,
+            100% {
+              transform: translateY(0) rotate(-4deg);
+            }
+            50% {
+              transform: translateY(-10px) rotate(4deg);
+            }
+          }
+        `}</style>
+
+        <section
+          className="relative z-[3] flex min-h-[88vh] flex-col overflow-hidden px-4 py-12 text-center md:py-16"
+          style={{
+            background: `linear-gradient(135deg, ${bpPink} 0%, ${bpPurple} 45%, ${bpBlue} 100%)`,
+            color: "#2d3436",
+          }}
+        >
+          {birthdayHeroBackdrop ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25"
+              style={{ backgroundImage: `url(${birthdayHeroBackdrop})` }}
+              aria-hidden
+            />
+          ) : null}
+
+          <div
+            className="pointer-events-none absolute inset-0 z-[1] opacity-30"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.25) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.15) 0%, transparent 50%)
+              `,
+            }}
+            aria-hidden
+          />
+
+          {/* Emoji + square confetti above the soft gradient wash so they stay visible */}
+          <div className="pointer-events-none absolute inset-0 z-[2] overflow-hidden motion-reduce:hidden" aria-hidden>
+            {birthdayConfetti.map((c) => (
+              <span
+                key={`c-${c.id}`}
+                className="absolute block rounded-[1px]"
+                style={{
+                  left: c.left,
+                  bottom: "-8%",
+                  width: c.size,
+                  height: c.size * c.heightMul,
+                  backgroundColor: c.color,
+                  animationName: "watchBirthdayFloat",
+                  animationDuration: c.duration,
+                  animationTimingFunction: "ease-in-out",
+                  animationIterationCount: "infinite",
+                  animationDelay: c.delay,
+                }}
+              />
+            ))}
+            {birthdayFloaters.map((f) => (
+              <span
+                key={f.id}
+                className="absolute select-none"
+                style={{
+                  left: f.left,
+                  bottom: "-10%",
+                  fontSize: f.size,
+                  animationName: "watchBirthdayFloat",
+                  animationDuration: f.duration,
+                  animationTimingFunction: "ease-in-out",
+                  animationIterationCount: "infinite",
+                  animationDelay: f.delay,
+                }}
+              >
+                {f.symbol}
+              </span>
+            ))}
+          </div>
+
+          <div className="relative z-20 flex min-h-0 w-full flex-1 flex-col justify-center">
+            <div className="mx-auto w-full max-w-4xl px-2">
+              <div className="relative mx-auto mb-6 h-[180px] w-[180px] motion-safe:animate-[bpPhotoFloat_3s_ease-in-out_infinite] md:h-[220px] md:w-[220px]">
+                <div className="absolute -top-5 left-1/2 z-10 -translate-x-1/2 text-4xl" aria-hidden>
+                  🎉
+                </div>
+                <div
+                  className="h-full w-full rounded-full p-1.5 shadow-2xl md:p-2"
+                  style={{
+                    background: `linear-gradient(45deg, ${bpYellow}, #ff9a56, ${bpPink})`,
+                  }}
+                >
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-[5px] border-white bg-gradient-to-br from-violet-500 to-fuchsia-600">
+                    {birthdayPhotoUrl ? (
+                      <img src={birthdayPhotoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Cake className="h-20 w-20 text-white/90 md:h-24 md:w-24" aria-hidden />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <h1
+                className={cn(
+                  "font-birthday-display text-2xl uppercase tracking-wider text-white md:text-4xl",
+                  titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+                )}
+                style={{
+                  ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                  textShadow: `3px 3px 0 ${bpPurple}, 6px 6px 0 ${bpPink}, 8px 8px 18px rgba(0,0,0,0.25)`,
+                }}
+              >
+                {partyHeadlineBp}
+              </h1>
+
+              <p
+                className="font-coastal-script mt-4 text-4xl text-[#ffd93d] md:text-6xl"
+                style={{ textShadow: "3px 3px 10px rgba(0,0,0,0.35)" }}
+              >
+                {honoreeDisplay}
+              </p>
+
+              <div
+                className="mx-auto mt-5 inline-flex items-center justify-center rounded-full border-[3px] border-white/90 px-5 py-2 backdrop-blur-md md:px-7 md:py-2.5"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+              >
+                <span
+                  className="text-3xl leading-none motion-safe:animate-pulse md:text-4xl"
+                  aria-hidden
+                  style={{ animationDuration: "1.2s" }}
+                >
+                  🎂
+                </span>
+              </div>
+
+              {partyTaglineBp ? (
+                <p className="mt-5 text-base font-light text-white md:text-xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
+                  {partyTaglineBp}
+                </p>
+              ) : null}
+
+              {weddingHeroDescription ? (
+                <p
+                  className={cn(
+                    "mx-auto max-w-xl text-sm text-white/95 md:text-base",
+                    partyTaglineBp ? "mt-4" : "mt-5",
+                  )}
+                >
+                  {weddingHeroDescription}
+                </p>
+              ) : null}
+
+              {primaryDateFormatted ? (
+                <p className="mt-4 font-semibold uppercase tracking-widest text-white/95 [text-shadow:0_2px_8px_rgba(0,0,0,0.35)] text-xs md:text-sm">
+                  {primaryDateFormatted}
+                </p>
+              ) : null}
+
+              {showBirthdaySubtitleLine ? (
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/90 md:text-sm">
+                  {eventSubtitle}
+                </p>
+              ) : null}
+
+              <div className="mt-6 flex justify-center gap-3 text-2xl md:text-3xl" aria-hidden>
+                {["🎈", "🎉", "🎊", "🎁", "🥳"].map((e) => (
+                  <span key={e}>{e}</span>
+                ))}
+              </div>
+
+              <Button
+                asChild
+                className="mt-8 h-auto rounded-full border-0 px-8 py-3 font-semibold text-white shadow-lg"
+                style={{ backgroundColor: bpPurple }}
+              >
+                <a
+                  href="#birthday-stream"
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 no-underline"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    scrollBirthdayStream()
+                  }}
+                >
+                  <Play className="h-5 w-5" />
+                  Watch Live Stream
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-2 text-white motion-reduce:hidden"
+            onClick={() => {
+              if (showScheduledPageEnabled && event.scheduledAt) scrollBirthdayCountdown()
+              else scrollBirthdayStream()
+            }}
+            aria-label="Scroll down"
+          >
+            <ChevronDown className="h-7 w-7 animate-bounce opacity-90" />
+          </button>
+        </section>
+
+        {showScheduledPageEnabled && event.status === "scheduled" && event.scheduledAt ? (
+          <section
+            id="birthday-countdown"
+            className="relative z-[3] scroll-mt-4 px-4 py-14 text-center"
+            style={{ background: `linear-gradient(135deg, #ff9a56 0%, ${bpPink} 100%)` }}
+          >
+            <h2 className="font-birthday-display text-3xl font-semibold text-white md:text-4xl">
+              {bpStripPast ? "🎉 Party time! 🎉" : bpShowCountdown ? "Party starts in…" : "Save the date"}
+            </h2>
+            <p className="mt-2 font-birthday-sans text-base italic text-white/95">
+              {bpStripPast ? "Thanks for celebrating!" : "Join us for cake and fun"}
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-6">
+              {(["Days", "Hours", "Minutes", "Seconds"] as const).map((label, i) => {
+                const vals = [countdown.days, countdown.hours, countdown.minutes, countdown.seconds]
+                const v = bpShowCountdown ? vals[i] : 0
+                return (
+                  <div
+                    key={label}
+                    className="min-w-[80px] rounded-2xl border-[3px] bg-white/95 px-4 py-5 shadow-md md:min-w-[110px] md:px-6 md:py-6"
+                    style={{ borderColor: bpPink }}
+                  >
+                    <span className="font-birthday-display text-2xl font-bold tabular-nums text-[#2d3436] md:text-3xl">
+                      {String(v).padStart(2, "0")}
+                    </span>
+                    <div className="mt-2 text-[10px] font-medium uppercase tracking-widest text-[#2d3436]/80 md:text-xs">
+                      {label}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {!bpShowCountdown && primaryDateFormatted ? (
+              <p className="mt-6 text-sm text-[#2d3436]">{primaryDateFormatted}</p>
+            ) : null}
+          </section>
+        ) : null}
+
+        <section id="birthday-stream" className="scroll-mt-4 px-4 py-14 md:px-6" style={{ backgroundColor: bpLight, color: "#2d3436" }}>
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 text-center">
+              {(event.scheduledAt || eventDates.length > 0) && (
+                <ul className="mx-auto mb-6 flex w-full max-w-2xl list-none flex-col items-center gap-3 px-2">
+                  {event.scheduledAt && primaryDateFormatted ? (
+                    <li className="text-xs font-semibold uppercase tracking-widest md:text-sm" style={{ color: bpPurple }}>
+                      Main event · {primaryDateFormatted}
+                    </li>
+                  ) : null}
+                  {eventDates.map((d) => (
+                    <li
+                      key={d.id}
+                      className="text-xs font-semibold uppercase tracking-widest md:text-sm"
+                      style={{ color: bpPurple }}
+                    >
+                      {(d.label || "Session").trim()} · {formatExtraDate(d)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h2 className="font-birthday-display text-4xl md:text-5xl" style={{ color: bpPurple }}>
+                Watch Live Stream
+              </h2>
+            </div>
+
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+                {renderStreamPlayer(BIRTHDAY_STREAM_SHELL)}
+                {weddingHeroDescription ? (
+                  <div
+                    className="rounded-2xl border-2 border-pink-200 bg-white p-6 text-center shadow-md"
+                    style={{ borderColor: bpPink }}
+                  >
+                    <h3
+                      className={cn("whitespace-pre-wrap text-[#2d3436]", titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
+                      style={{
+                        ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...cardTitleFontSizeStyle(titleHeroRem),
+                      }}
+                    >
+                      {weddingHeroDescription}
+                    </h3>
+                  </div>
+                ) : null}
+              </div>
+
+              {event.allowChat ? (
+                <div
+                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border-[3px] bg-white shadow-xl lg:min-h-[600px] ${
+                    showChat ? "flex" : "hidden lg:flex"
+                  }`}
+                  style={{ borderColor: bpPink }}
+                >
+                  {renderLiveChatBody()}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6">{renderDetailsPanel("default")}</div>
+      </div>
+    )
+  }
+
   if (watchSkin === "weddingMidnight") {
     const scrollToMidnightStream = () =>
       document.getElementById("midnight-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -2911,6 +4054,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const corpHeroBackdrop =
       heroFromEvent ||
       corpLogoHero ||
+      getDefaultTemplateHeroBackdropUrl(watchTemplateId) ||
       getDefaultTemplateHeroBackdropUrl("tpl-corporate-tech-forward") ||
       ""
     const corpHeroBackdropIsCustom = !!(heroFromEvent || corpLogoHero)
@@ -3256,9 +4400,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         memorialHeadline={(weddingFields.memorialHeadline ?? "").trim()}
         memorialTagline={(weddingFields.memorialTagline ?? "").trim()}
         memorialQuote={(weddingFields.memorialQuote ?? "").trim()}
-        memorialVenueDetails={(weddingFields.memorialVenueDetails ?? "").trim()}
-        dressCode={(weddingFields.dressCode ?? "").trim()}
-        orderOfServiceText={(weddingFields.orderOfService ?? "").trim()}
         footerVerse={(weddingFields.footerVerse ?? "").trim()}
         tributeMessage={(weddingFields.tributeMessage ?? "").trim()}
         inLieuOf={(weddingFields.inLieuOf ?? "").trim()}
@@ -3285,189 +4426,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     )
   }
 
-  if (watchSkin === "birthdayParty") {
-    const scrollToBirthdayStream = () =>
-      document.getElementById("birthday-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
-    const celebrantDisplay = (weddingFields.celebrantName ?? "").trim() || event.title
-    const celebrationHeadline = (weddingFields.celebrationHeadline ?? "").trim() || "Happy Birthday!"
-    const partyTheme = (weddingFields.partyTheme ?? "").trim()
-    const ageRaw = weddingFields.celebrantAge
-    const ageLine =
-      ageRaw !== undefined && ageRaw !== null && String(ageRaw).trim() !== ""
-        ? `Turning ${String(ageRaw).trim()}`
-        : ""
-    const birthdayStory =
-      (weddingFields.birthdayMessage ?? "").trim() ||
-      (typeof event.description === "string" ? event.description.trim() : "")
-    const birthdayHeroBackdrop =
-      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-birthday") || ""
-
-    return (
-      <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-gradient-to-br from-[#667eea]/15 via-[#f093fb]/12 to-[#ffd93d]/20 text-purple-950">
-        <div className="pointer-events-none fixed inset-0 z-0 opacity-90 birthday-party-dot-pattern" aria-hidden />
-        <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
-          {birthdayConfetti.map((c) => (
-            <span
-              key={c.id}
-              className="birthday-party-confetti fixed top-[-12px] h-2 w-2 rounded-sm opacity-90"
-              style={{
-                left: c.left,
-                backgroundColor: c.color,
-                animationDuration: c.duration,
-                animationDelay: c.delay,
-              }}
-            />
-          ))}
-        </div>
-        {["12%", "28%", "55%", "72%", "88%"].map((left, i) => (
-          <span
-            key={left}
-            className="birthday-party-balloon pointer-events-none fixed top-[102%] z-[1] text-3xl opacity-85 md:text-4xl"
-            style={{ left, animationDuration: `${20 + i * 3}s`, animationDelay: `${i * 1.2}s` }}
-            aria-hidden
-          >
-            🎈
-          </span>
-        ))}
-
-        <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden px-4 py-12">
-          {birthdayHeroBackdrop ? (
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${birthdayHeroBackdrop})` }}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-fuchsia-600 to-amber-400" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/50" aria-hidden />
-          <div className="relative z-10 mx-auto max-w-4xl text-center">
-            {partyTheme ? (
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-200/95 md:text-sm">
-                {partyTheme}
-              </p>
-            ) : null}
-            <p className="mt-3 text-2xl font-bold text-amber-100 drop-shadow-md md:text-4xl">{celebrationHeadline}</p>
-            <h1
-              className={cn(
-                "mt-4 font-bold leading-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]",
-                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
-              )}
-              style={{
-                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
-                ...heroTitleFontSizeStyle(titleHeroRem),
-              }}
-            >
-              {celebrantDisplay}
-            </h1>
-            {ageLine ? <p className="mt-4 text-lg font-medium text-amber-50 md:text-xl">{ageLine}</p> : null}
-            {birthdayStory ? (
-              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/90">{birthdayStory}</p>
-            ) : null}
-            <div className={cn("mx-auto max-w-2xl", birthdayStory ? "mt-8" : "mt-6")}>
-              {event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
-                <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-                  {[
-                    { label: "Days", value: countdown.days },
-                    { label: "Hours", value: countdown.hours },
-                    { label: "Minutes", value: countdown.minutes },
-                    { label: "Seconds", value: countdown.seconds },
-                  ].map((item) => (
-                    <div key={item.label} className="min-w-[72px] text-center">
-                      <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md md:text-3xl">
-                        {String(item.value).padStart(2, "0")}
-                      </p>
-                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-amber-200/95">
-                        {item.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : primaryDateFormatted ? (
-                <p className="text-center text-sm font-semibold uppercase tracking-widest text-amber-100">
-                  {primaryDateFormatted}
-                </p>
-              ) : (
-                <p className="text-center text-lg text-amber-100/95">Date &amp; time TBA</p>
-              )}
-            </div>
-            <Button
-              asChild
-              className="mt-10 h-auto rounded-full bg-gradient-to-r from-purple-600 to-pink-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:opacity-95"
-            >
-              <a
-                href="#birthday-stream"
-                className="inline-flex cursor-pointer items-center justify-center gap-2 no-underline"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToBirthdayStream()
-                }}
-              >
-                <Play className="h-5 w-5" />
-                Watch Live Stream
-              </a>
-            </Button>
-          </div>
-          <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-amber-200">
-            <ChevronDown className="h-7 w-7 animate-bounce opacity-90" />
-          </div>
-        </section>
-
-        <section id="birthday-stream" className="scroll-mt-4 bg-gradient-to-b from-white to-amber-50/80 px-4 py-16 md:px-6">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-12 text-center">
-              {(event.scheduledAt || eventDates.length > 0) && (
-                <ul className="mx-auto mb-8 flex w-full max-w-2xl list-none flex-col items-center gap-4 px-2">
-                  {event.scheduledAt && primaryDateFormatted ? (
-                    <li className="text-center text-sm font-semibold uppercase tracking-widest text-purple-800">
-                      Main event · {primaryDateFormatted}
-                    </li>
-                  ) : null}
-                  {eventDates.map((d) => (
-                    <li
-                      key={d.id}
-                      className="text-center text-sm font-semibold uppercase tracking-widest text-purple-800"
-                    >
-                      {(d.label || "Session").trim()} · {formatExtraDate(d)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <h2 className="mt-2 text-4xl font-bold text-purple-900 md:text-5xl">Party live stream</h2>
-            </div>
-
-            <div
-              className={cn(
-                "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
-              )}
-            >
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
-                {renderStreamPlayer(BIRTHDAY_PARTY_STREAM_SHELL)}
-                {birthdayStory ? (
-                  <div className="rounded-xl border border-[#ffd93d]/60 bg-white p-6 text-center shadow-md">
-                    <p className="whitespace-pre-wrap text-purple-900">{birthdayStory}</p>
-                  </div>
-                ) : null}
-              </div>
-
-              {event.allowChat ? (
-                <div
-                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-3xl border-2 border-[#ffd93d]/90 bg-white/95 shadow-xl backdrop-blur-sm lg:min-h-[600px] ${
-                    showChat ? "flex" : "hidden lg:flex"
-                  }`}
-                >
-                  {renderLiveChatBody()}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6">{renderDetailsPanel("birthdayParty")}</div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background lg:flex-row">
       <div className="flex flex-1 flex-col">
@@ -3477,7 +4435,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           </div>
         )}
         {showTemplateBanner && (
-          <EventTemplateBanner event={event} templateId={templateId} templateData={templateData} />
+          <EventTemplateBanner
+            event={event}
+            templateId={templateId}
+            templateData={templateData}
+            headlineTypography={{
+              titleHeroRem,
+              googleTitleFont,
+              fallbackFontClass: titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+            }}
+          />
         )}
         {renderStreamPlayer(DEFAULT_STREAM_SHELL)}
         {renderDetailsPanel("default")}

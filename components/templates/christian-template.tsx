@@ -21,8 +21,8 @@ const mockChatMessages = [
 ]
 
 export function ChristianTemplate({
-  eventTitle = "Sunday Service",
-  eventDescription = "Join us in worship and prayer",
+  eventTitle = "Christian Wedding",
+  eventDescription = "Join us as we celebrate our marriage before God, family, and friends.",
 }: TemplateProps) {
   const [chatMessage, setChatMessage] = useState("")
   const [viewerCount] = useState(534)
@@ -45,7 +45,7 @@ export function ChristianTemplate({
         </div>
         <div className="hidden sm:flex items-center gap-2">
           <Cross className="h-5 w-5 text-amber-600" />
-          <span className="font-serif text-sky-800 text-sm md:text-base">Christian Ceremony</span>
+          <span className="font-serif text-sky-800 text-sm md:text-base">Christian Wedding</span>
         </div>
         <Button
           variant="ghost"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -170,6 +171,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   }
 
   const ve = validityExtensions ?? { defaultDays: 30, tiers: [] }
+  const enabledStreamTypes = streamTypeInfo.filter((st) => streamTypePricing[st.key].enabled)
 
   return (
     <div className="space-y-6">
@@ -211,26 +213,30 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {streamTypeInfo
-              .filter((st) => streamTypePricing[st.key].enabled)
-              .map(({ key, label, icon: Icon }) => (
-                <div key={key} className="rounded-lg bg-secondary/50 p-3 flex items-center gap-3">
-                  <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
+          {enabledStreamTypes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No stream credit types are available right now. Ask your platform admin to enable at least one stream type
+              under Admin → Pricing.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {enabledStreamTypes.map(({ key, label, icon: Icon }) => (
+                <div key={key} className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
+                  <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="text-lg font-bold">{credits[key]}</p>
                   </div>
                 </div>
               ))}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="space-y-4">
-        {streamTypeInfo.map(({ key, label, description, icon: Icon, recommended }) => {
+        {enabledStreamTypes.map(({ key, label, description, icon: Icon, recommended }) => {
           const config = streamTypePricing[key]
-          if (!config.enabled) return null
 
           const qty = quantities[key] ?? 1
           const { pricePerEvent, tierLabel, totalPrice, savings } = getBestPriceForQuantity(key, qty, streamTypePricing)
@@ -357,8 +363,16 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                 )}
 
                 {!walletEnough && (
-                  <p className="mt-3 text-xs text-destructive">
-                    Insufficient wallet balance. You need {formatPaisa(totalPrice - walletBalance)} more.
+                  <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                    <span className="text-destructive">
+                      Insufficient wallet balance. You need {formatPaisa(totalPrice - walletBalance)} more.
+                    </span>
+                    <Link
+                      href={variant === "studio" ? "/studio/wallet" : "/streamer/wallet"}
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Add funds to wallet
+                    </Link>
                   </p>
                 )}
               </CardContent>

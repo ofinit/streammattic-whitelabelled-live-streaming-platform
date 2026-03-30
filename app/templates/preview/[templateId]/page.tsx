@@ -19,12 +19,13 @@ import { CorporateTemplate } from "@/components/templates/corporate-template"
 import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
 import { ChristianTemplate } from "@/components/templates/christian-template"
+import { ChristianWeddingRoseTemplate } from "@/components/templates/christian-wedding-rose-template"
+import { MuslimWeddingNikahTemplate } from "@/components/templates/muslim-wedding-nikah-template"
 import { MuslimTemplate } from "@/components/templates/muslim-template"
 import { HinduTemplate } from "@/components/templates/hindu-template"
 import { SportsTemplate } from "@/components/templates/sports-template"
 import { PoliticalTemplate } from "@/components/templates/political-template"
 import { SchoolTemplate } from "@/components/templates/school-template"
-import { BirthdayTemplate } from "@/components/templates/birthday-template"
 import { FuneralTemplate } from "@/components/templates/funeral-template"
 import { IndianFestivalTemplate } from "@/components/templates/indian-festival-template"
 
@@ -40,6 +41,7 @@ import { AuctionTemplate } from "@/components/templates/auction-template"
 import { RealEstateTemplate } from "@/components/templates/real-estate-template"
 
 import { BabyShowerTemplate } from "@/components/templates/baby-shower-template"
+import { BirthdayPartyTemplate } from "@/components/templates/birthday-party-template"
 import { GraduationTemplate } from "@/components/templates/graduation-template"
 import { EngagementTemplate } from "@/components/templates/engagement-template"
 import { AnniversaryTemplate } from "@/components/templates/anniversary-template"
@@ -60,7 +62,6 @@ const templateContent: Record<
   {
     title: string
     description: string
-    celebrationHeadline?: string
     deceasedName?: string
     memorialHeadline?: string
     memorialTagline?: string
@@ -113,12 +114,20 @@ const templateContent: Record<
     description: "Live performances from top artists",
   },
   "tpl-christian": {
-    title: "Sunday Morning Service",
-    description: "Join us in worship and prayer",
+    title: "Christian Wedding",
+    description: "Join us as we celebrate our marriage before God, family, and friends.",
+  },
+  "tpl-christian-wedding-rose": {
+    title: "Romeo & Juliet",
+    description: "Join us as we celebrate our marriage before God, family, and friends.",
+  },
+  "tpl-muslim-wedding-nikah": {
+    title: "Ahmad & Fatima",
+    description: "Join us live for our nikah — peace, blessings, and celebration with family and friends worldwide.",
   },
   "tpl-muslim": {
-    title: "Jummah Prayer Service",
-    description: "Peace and blessings upon you",
+    title: "Muslim Wedding (Nikah)",
+    description: "Peace and blessings — join our nikah and walima celebration live.",
   },
   "tpl-hindu": {
     title: "Ganesh Chaturthi Puja",
@@ -135,10 +144,6 @@ const templateContent: Record<
   "tpl-school": {
     title: "Annual Day Celebration",
     description: "Celebrating our students",
-  },
-  "tpl-birthday": {
-    title: "Happy Birthday Celebration",
-    description: "Join us for a special celebration",
   },
   "tpl-funeral": {
     title: "Celebration of Life",
@@ -195,6 +200,10 @@ const templateContent: Record<
   "tpl-baby-shower": {
     title: "Baby Johnson Shower",
     description: "Welcoming our little bundle of joy",
+  },
+  "tpl-birthday-party": {
+    title: "Sarah's 25th Birthday Bash",
+    description: "Join us live for cake, music, and unforgettable moments with friends and family!",
   },
   "tpl-graduation": {
     title: "Class of 2024 Graduation",
@@ -303,6 +312,10 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <ConcertTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-christian":
       return <ChristianTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-christian-wedding-rose":
+      return <ChristianWeddingRoseTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-muslim-wedding-nikah":
+      return <MuslimWeddingNikahTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-muslim":
       return <MuslimTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-hindu":
@@ -313,8 +326,6 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <PoliticalTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-school":
       return <SchoolTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-birthday":
-      return <BirthdayTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-funeral":
       return (
         <FuneralTemplate
@@ -354,6 +365,15 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
     // Social & Community templates
     case "tpl-baby-shower":
       return <BabyShowerTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-birthday-party":
+      return (
+        <BirthdayPartyTemplate
+          eventTitle={content.title}
+          eventDescription={content.description}
+          honoreeName="Sarah"
+          partyHeadline="We're getting married!"
+        />
+      )
     case "tpl-graduation":
       return <GraduationTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-engagement":

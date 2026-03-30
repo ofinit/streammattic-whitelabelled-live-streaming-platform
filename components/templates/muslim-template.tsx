@@ -21,8 +21,8 @@ const mockChatMessages = [
 ]
 
 export function MuslimTemplate({
-  eventTitle = "Islamic Gathering",
-  eventDescription = "Peace and blessings upon you",
+  eventTitle = "Muslim Wedding (Nikah)",
+  eventDescription = "Peace and blessings — join our nikah celebration live.",
 }: TemplateProps) {
   const [chatMessage, setChatMessage] = useState("")
   const [viewerCount] = useState(892)
@@ -55,7 +55,7 @@ export function MuslimTemplate({
         </div>
         <div className="hidden sm:flex items-center gap-2">
           <Moon className="h-5 w-5 text-emerald-600" />
-          <span className="font-serif text-emerald-800 text-sm md:text-base">Islamic Ceremony</span>
+          <span className="font-serif text-emerald-800 text-sm md:text-base">Muslim Wedding</span>
         </div>
         <Button
           variant="ghost"

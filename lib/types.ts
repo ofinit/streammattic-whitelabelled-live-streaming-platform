@@ -439,7 +439,10 @@ export interface EventTemplate {
   id: string
   name: string
   thumbnail: string
+  /** Primary bucket for card gradient + default grouping */
   category: string
+  /** Also list this template when the picker filters by these categories (e.g. faith weddings under Wedding + Religious) */
+  extraCategories?: string[]
   isActive: boolean
   sortOrder: number
 }

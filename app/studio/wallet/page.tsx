@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
-import { TopUpDialog } from "@/components/wallet/top-up-dialog"
+import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
 import { mockTransactions, mockStudioWalletSummary } from "@/lib/mock-data"
 import { TrendingUp, ArrowUpRight, Clock } from "lucide-react"
 
@@ -14,11 +14,6 @@ export default function StudioWalletPage() {
 
   // Filter transactions for this studio
   const studioTransactions = mockTransactions.filter((t) => t.userId === "studio-1")
-
-  const handleTopUp = (amount: number, gateway: string) => {
-    // In real app, this would redirect to payment gateway
-    console.log(`Initiating payment of ${amount} via ${gateway}`)
-  }
 
   return (
     <div className="space-y-6">
@@ -103,13 +98,13 @@ export default function StudioWalletPage() {
             <p className="font-medium text-foreground">Understanding Platform Debits</p>
             <p className="text-sm text-muted-foreground mt-1">
               When events are created or streaming services are used, your wallet is automatically debited for the
-              platform cost. Top up your wallet regularly to ensure uninterrupted event creation.
+              platform cost. Recharge your wallet regularly to ensure uninterrupted event creation.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <TopUpDialog open={topUpOpen} onOpenChange={setTopUpOpen} onConfirm={handleTopUp} />
+      <WalletRechargeCheckout open={topUpOpen} onOpenChange={setTopUpOpen} />
     </div>
   )
 }

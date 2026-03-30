@@ -47,6 +47,7 @@ function PaymentCallbackContent() {
           const res = await fetch("/api/payments/verify/instamojo", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({ paymentRequestId, paymentId, orderId }),
           })
           if (res.ok) {

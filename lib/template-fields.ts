@@ -103,6 +103,30 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
     },
   ],
 
+  // Birthday party (animated bash)
+  "birthday-party": [
+    {
+      title: "Birthday celebration",
+      fields: [
+        { key: "honoreeName", label: "Birthday name", type: "text", placeholder: "Sarah" },
+        { key: "birthdayAge", label: "Age", type: "number", placeholder: "25" },
+        {
+          key: "partyHeadline",
+          label: "Hero slogan",
+          type: "text",
+          placeholder: "We're getting married!",
+        },
+        {
+          key: "partyTagline",
+          label: "Party tagline (optional)",
+          type: "textarea",
+          placeholder: "Optional line under the age badge",
+          maxLength: 200,
+        },
+      ],
+    },
+  ],
+
   // Baby Shower Template
   "baby-shower": [
     {
@@ -127,32 +151,6 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
       fields: [
         { key: "themeMessage", label: "Theme/Message", type: "textarea", maxLength: 200 },
         { key: "registryLink", label: "Registry Link", type: "text", placeholder: "https://..." },
-      ],
-    },
-  ],
-
-  // Birthday Template
-  birthday: [
-    {
-      title: "Celebrant Details",
-      fields: [
-        { key: "celebrantName", label: "Celebrant Name", type: "text", required: true },
-        { key: "celebrantAge", label: "Age (optional)", type: "number" },
-        { key: "celebrantPhoto", label: "Photo", type: "image" },
-      ],
-    },
-    {
-      title: "Party Details",
-      fields: [
-        { key: "partyTheme", label: "Party Theme", type: "text", placeholder: "Superhero, Princess, etc." },
-        {
-          key: "celebrationHeadline",
-          label: "Celebration headline",
-          type: "text",
-          placeholder: "Happy Birthday!",
-          helpText: "Shown on the watch hero (e.g. Happy Birthday!)",
-        },
-        { key: "birthdayMessage", label: "Birthday Message", type: "textarea", maxLength: 200 },
       ],
     },
   ],
@@ -202,7 +200,6 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
         { key: "memorialQuote", label: "Quote", type: "textarea", maxLength: 400 },
         { key: "memorialVenueDetails", label: "Venue / address", type: "textarea", maxLength: 400 },
         { key: "dressCode", label: "Dress code", type: "textarea", maxLength: 200 },
-        { key: "orderOfService", label: "Order of service", type: "textarea", placeholder: "One line per step, optional: Title | detail" },
         { key: "footerVerse", label: "Footer verse / note", type: "textarea", maxLength: 400 },
       ],
     },

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ChevronDown, Play, User } from "lucide-react"
-
 interface TemplateProps {
   eventTitle?: string
   eventDescription?: string
@@ -79,7 +78,7 @@ export function FuneralTemplate({
               </div>
             </div>
             <span
-              className="memorial-candle-flicker pointer-events-none absolute -bottom-1 left-1/2 z-[2] -translate-x-1/2 text-2xl"
+              className="memorial-candle-flicker pointer-events-none absolute -bottom-1 left-1/2 z-[2] -translate-x-1/2 text-3xl leading-none md:text-4xl"
               aria-hidden
             >
               🕯️
@@ -132,15 +131,13 @@ export function FuneralTemplate({
             </div>
           ) : null}
 
-          <Button
-            asChild
-            className="mt-10 h-auto rounded-full border-2 border-[#c9a961]/90 bg-white/95 px-8 py-3 font-memorial-sans text-sm font-semibold text-[#2c3e50] shadow-md hover:bg-white"
+          <a
+            href="#memorial-preview-stream"
+            className="mt-10 inline-flex h-auto items-center gap-2 rounded-full border-2 border-[#c9a961]/90 bg-white/95 px-8 py-3 font-memorial-sans text-sm font-semibold text-[#2c3e50] shadow-md no-underline transition-colors hover:bg-white"
           >
-            <a href="#memorial-preview-stream" className="inline-flex items-center gap-2 no-underline">
-              <Play className="h-4 w-4 text-[#c9a961]" />
-              Watch live stream
-            </a>
-          </Button>
+            <Play className="h-4 w-4 shrink-0 text-[#c9a961]" aria-hidden />
+            Watch Live Stream
+          </a>
         </div>
 
         <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-[#c9a961] motion-safe:animate-[memorialGentleBounce_2s_ease-in-out_infinite]">
@@ -152,7 +149,7 @@ export function FuneralTemplate({
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="font-memorial-display text-2xl text-[#2c3e50] md:text-3xl">Service details</h2>
           <p className="mt-3 font-memorial-serif text-sm text-[#7f8c8d] md:text-base">
-            Date, venue, and order of service appear on the live watch page from your event fields.
+            Date and venue appear on the live watch page from your event fields.
           </p>
           <div className="mt-10 aspect-video w-full overflow-hidden rounded-2xl border-[3px] border-[#c9a961]/80 bg-[#2c3e50] shadow-lg">
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-white/90">

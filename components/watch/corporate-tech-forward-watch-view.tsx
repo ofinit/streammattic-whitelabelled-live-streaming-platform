@@ -144,20 +144,18 @@ export function CorporateTechForwardWatchView({
 
         {heroBackdropUrl ? (
           <div
-            className={cn(
-              "absolute inset-0 z-0 bg-cover bg-center bg-no-repeat",
-              heroBackdropIsCustom ? "opacity-100" : "opacity-[0.18]",
-            )}
+            className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-100"
             style={{ backgroundImage: `url(${JSON.stringify(heroBackdropUrl)})` }}
             aria-hidden
           />
         ) : null}
         <div
           className={cn(
-            "absolute inset-0 z-[1] bg-gradient-to-b to-[#0a0a0a]",
+            "absolute inset-0 z-[1] bg-gradient-to-b",
+            /** Custom photo/logo: strong wash for any image. Default bundled SVG: light vignette so the art stays visible. */
             heroBackdropIsCustom
-              ? "from-[#0a0a0a]/55 via-[#0a0a0a]/72"
-              : "from-[#0a0a0a]/40 via-[#0a0a0a]/88",
+              ? "from-[#0a0a0a]/55 via-[#0a0a0a]/72 to-[#0a0a0a]"
+              : "from-[#0a0a0a]/20 via-[#0a0a0a]/35 to-[#0a0a0a]/75",
           )}
           aria-hidden
         />

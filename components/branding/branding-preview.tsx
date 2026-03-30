@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import type { Branding, BrandingService } from "@/lib/types"
 import { mockBranding } from "@/lib/mock-data"
-import Link from "next/link"
+import { BRANDING_PREVIEW_SESSION_KEY } from "@/lib/branding-preview-session"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
@@ -32,12 +32,22 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
             <CardTitle>Live Preview</CardTitle>
             <CardDescription>See how your landing page looks</CardDescription>
           </div>
-          <Link href="/site" target="_blank">
-            <Button variant="outline" size="sm">
-              <ExternalLink className="mr-2 h-3.5 w-3.5" />
-              Open Full Page
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              try {
+                sessionStorage.setItem(BRANDING_PREVIEW_SESSION_KEY, JSON.stringify(branding))
+              } catch {
+                // ignore quota / private mode
+              }
+              window.open("/site?preview=draft", "_blank", "noopener,noreferrer")
+            }}
+          >
+            <ExternalLink className="mr-2 h-3.5 w-3.5" />
+            Open Full Page
+          </Button>
         </div>
       </CardHeader>
       <CardContent>

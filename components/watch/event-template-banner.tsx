@@ -1,21 +1,29 @@
 "use client"
 
 import type { LiveEvent } from "@/lib/types"
+import { heroTitleFontSizeStyle } from "@/lib/event-title-typography"
 import {
   extractTemplateBannerContent,
   getBannerAccentBorder,
   getBannerThemeForCategory,
   getTemplateCategoryAndName,
 } from "@/lib/template-visuals"
+import { cn } from "@/lib/utils"
 
 interface EventTemplateBannerProps {
   event: LiveEvent
   templateId: string
   templateData: Record<string, unknown>
+  /** Watch page: use event title font + rem from template_data (matches hero typography settings) */
+  headlineTypography?: {
+    titleHeroRem: number
+    googleTitleFont: string | null
+    fallbackFontClass: string
+  }
 }
 
 /** Renders category-themed, per-template-accent banner above the video on the watch page. */
-export function EventTemplateBanner({ event, templateId, templateData }: EventTemplateBannerProps) {
+export function EventTemplateBanner({ event, templateId, templateData, headlineTypography }: EventTemplateBannerProps) {
   const data = templateData as Record<string, string | undefined>
   const title = event.title ?? ""
   const isWedding = templateId === "tpl-wedding"
@@ -23,6 +31,7 @@ export function EventTemplateBanner({ event, templateId, templateData }: EventTe
   const isMidnightWedding = templateId === "tpl-wedding-midnight"
   const isCoastalWedding = templateId === "tpl-wedding-coastal"
   const isCelestialWedding = templateId === "tpl-wedding-celestial"
+  const isTraditionalHinduWedding = templateId === "tpl-wedding-traditional-hindu"
 
   const { category, name: templateName } = getTemplateCategoryAndName(templateId)
   const theme = getBannerThemeForCategory(category)
@@ -112,6 +121,49 @@ export function EventTemplateBanner({ event, templateId, templateData }: EventTe
                 <span
                   key={i}
                   className="rounded-full border border-teal-200/80 bg-white/90 px-3 py-1 font-coastal-sans text-xs text-[#006d77]"
+                >
+                  {line}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (isTraditionalHinduWedding) {
+    const couple = [data.brideName, data.groomName].filter(Boolean).join(" & ")
+    return (
+      <div className="border-b border-amber-500/45 bg-gradient-to-br from-[#FFF8DC] via-orange-50/95 to-amber-100/90 px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-amber-500/50 bg-white/90 px-2.5 py-1 font-hindu-wedding-display text-[10px] font-semibold uppercase tracking-[0.14em] text-red-900">
+              Shubh Vivah
+            </span>
+            <span className="font-hindu-wedding-serif text-[10px] uppercase tracking-[0.12em] text-orange-700">
+              Traditional Hindu wedding
+            </span>
+          </div>
+          {event.subtitle?.trim() ? (
+            <p className="font-hindu-wedding-serif text-xs font-semibold uppercase tracking-[0.28em] text-orange-700">
+              {event.subtitle}
+            </p>
+          ) : null}
+          <h2 className="mt-2 font-hindu-wedding-display text-3xl font-semibold leading-tight text-red-900 md:text-5xl">
+            {couple || headline || title || "Wedding ceremony"}
+          </h2>
+          {event.description?.trim() ? (
+            <p className="mt-3 max-w-3xl font-hindu-wedding-serif text-sm leading-relaxed text-red-950/85 md:text-base">
+              {event.description}
+            </p>
+          ) : null}
+          {detailLines.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {detailLines.slice(0, 4).map((line, i) => (
+                <span
+                  key={i}
+                  className="rounded-full border border-amber-400/70 bg-white/90 px-3 py-1 font-hindu-wedding-serif text-xs text-red-900"
                 >
                   {line}
                 </span>
@@ -259,7 +311,23 @@ export function EventTemplateBanner({ event, templateId, templateData }: EventTe
           <span className={`text-[10px] uppercase tracking-wide ${theme.sub}`}>{category}</span>
         </div>
 
-        <h2 className={`text-xl font-semibold leading-tight md:text-2xl ${theme.headline}`}>
+        <h2
+          className={cn(
+            "font-semibold leading-tight",
+            headlineTypography ? headlineTypography.fallbackFontClass : "text-xl md:text-2xl",
+            theme.headline,
+          )}
+          style={
+            headlineTypography
+              ? {
+                  ...(headlineTypography.googleTitleFont
+                    ? { fontFamily: `"${headlineTypography.googleTitleFont}", system-ui, sans-serif` }
+                    : {}),
+                  ...heroTitleFontSizeStyle(headlineTypography.titleHeroRem),
+                }
+              : undefined
+          }
+        >
           {headline || title || "Live event"}
         </h2>
 

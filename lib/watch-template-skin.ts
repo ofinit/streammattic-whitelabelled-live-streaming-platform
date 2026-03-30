@@ -10,8 +10,10 @@ export type WatchPageSkin =
   | "weddingCoastal"
   | "weddingCelestial"
   | "weddingTraditionalHindu"
-  | "corporateTechForward"
+  | "christianWeddingRose"
+  | "muslimWeddingNikah"
   | "birthdayParty"
+  | "corporateTechForward"
   | "memorialService"
 
 /** Extend when adding a new Tier-C watch layout. */
@@ -22,8 +24,12 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-coastal": "weddingCoastal",
   "tpl-wedding-celestial": "weddingCelestial",
   "tpl-wedding-traditional-hindu": "weddingTraditionalHindu",
+  "tpl-christian-wedding-rose": "christianWeddingRose",
+  "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
+  "tpl-birthday-party": "birthdayParty",
   "tpl-corporate-tech-forward": "corporateTechForward",
-  "tpl-birthday": "birthdayParty",
+  /** Classic corporate — same Tier-C watch layout + default hero asset as Tech Forward */
+  "tpl-corporate": "corporateTechForward",
   "tpl-funeral": "memorialService",
 }
 

@@ -178,7 +178,7 @@ export default function AdminWalletsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleTopUp(wallet.id, wallet.name)}>
                             <Plus className="mr-2 h-4 w-4" />
-                            Top Up
+                            Recharge wallet
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAdjust(wallet.id, wallet.name, wallet.balance)}>
                             <TrendingUp className="mr-2 h-4 w-4" />

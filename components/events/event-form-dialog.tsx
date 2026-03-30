@@ -53,7 +53,12 @@ import {
   parseValidityExtensionsSetting,
   type ParsedValidityExtensions,
 } from "@/lib/validity-extensions"
-import { mockEventTemplates, mockYouTubeChannels, mockFacebookPages } from "@/lib/mock-data"
+import {
+  eventFormSelectableTemplates,
+  mockEventTemplates,
+  mockYouTubeChannels,
+  mockFacebookPages,
+} from "@/lib/mock-data"
 import { getCardGradientForCategory } from "@/lib/template-visuals"
 import {
   getTemplateDefaultTitleRem,
@@ -63,6 +68,7 @@ import {
 } from "@/lib/event-title-typography"
 import { EventTitleFontPicker } from "@/components/events/event-title-font-picker"
 import { AiImagePickerDialog } from "@/components/media/ai-image-picker-dialog"
+import { templateUsesCircularHeroCrop } from "@/lib/template-hero-crop"
 import { Slider } from "@/components/ui/slider"
 import { YouTubeChannelSelector } from "@/components/youtube/youtube-channel-selector"
 import { SimulcastDestinations } from "@/components/simulcast/simulcast-destinations"
@@ -710,20 +716,43 @@ export function EventFormDialog({
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
 
+  /** Picker list: selectable templates plus current event template if it is legacy/hidden */
+  const templatesForPicker = useMemo(() => {
+    const selectable = [...eventFormSelectableTemplates].sort((a, b) => a.sortOrder - b.sortOrder)
+    const id = formData.templateId?.trim()
+    if (!id) return selectable
+    if (selectable.some((t) => t.id === id)) return selectable
+    const legacy = mockEventTemplates.find((t) => t.id === id)
+    if (!legacy) return selectable
+    return [...selectable, legacy].sort((a, b) => a.sortOrder - b.sortOrder)
+  }, [formData.templateId])
+
+  const heroUsesCircularCrop = templateUsesCircularHeroCrop(formData.templateId)
+
   const templateCategories = useMemo(() => {
     const categoryCount: Record<string, number> = {}
-    mockEventTemplates.forEach((template) => {
-      categoryCount[template.category] = (categoryCount[template.category] || 0) + 1
+    templatesForPicker.forEach((template) => {
+      const buckets = [template.category, ...(template.extraCategories ?? [])]
+      const seen = new Set<string>()
+      for (const c of buckets) {
+        if (seen.has(c)) continue
+        seen.add(c)
+        categoryCount[c] = (categoryCount[c] || 0) + 1
+      }
     })
     return Object.entries(categoryCount)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([category, count]) => ({ category, count }))
-  }, [])
+  }, [templatesForPicker])
 
   const filteredTemplates = useMemo(() => {
-    if (templateCategory === "all") return mockEventTemplates
-    return mockEventTemplates.filter((template) => template.category === templateCategory)
-  }, [templateCategory])
+    if (templateCategory === "all") return templatesForPicker
+    return templatesForPicker.filter(
+      (template) =>
+        template.category === templateCategory ||
+        template.extraCategories?.includes(templateCategory),
+    )
+  }, [templateCategory, templatesForPicker])
 
   const filteredDescriptionCommands = useMemo(() => {
     const query = descriptionCommandQuery.trim().toLowerCase()
@@ -2901,6 +2930,12 @@ export function EventFormDialog({
                     </div>
                     <div className="space-y-2">
                       <Label>Hero image (OG share)</Label>
+                      {heroUsesCircularCrop ? (
+                        <p className="text-xs text-muted-foreground">
+                          Memorial and Birthday templates show this image in a circle on the watch page — file uploads open
+                          a crop step to fit and align your photo.
+                        </p>
+                      ) : null}
                       {heroImageUrl ? (
                         <div className="relative w-32 h-24 rounded border overflow-hidden">
                           <img src={heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
@@ -2910,6 +2945,7 @@ export function EventFormDialog({
                           <AiImagePickerDialog
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
+                            circularHeroCrop={heroUsesCircularCrop}
                             onImageUrl={(url) => setHeroImageUrl(url)}
                           >
                             <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
@@ -2922,6 +2958,7 @@ export function EventFormDialog({
                           <AiImagePickerDialog
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
+                            circularHeroCrop={heroUsesCircularCrop}
                             onImageUrl={(url) => setHeroImageUrl(url)}
                           >
                             <Button type="button" variant="outline" size="sm" className="gap-2">
@@ -3046,7 +3083,7 @@ export function EventFormDialog({
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories ({mockEventTemplates.length})</SelectItem>
+                    <SelectItem value="all">All Categories ({templatesForPicker.length})</SelectItem>
                     {templateCategories.map(({ category, count }) => (
                       <SelectItem key={category} value={category}>
                         {category} ({count})

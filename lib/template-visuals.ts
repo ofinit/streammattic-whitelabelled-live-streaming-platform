@@ -142,12 +142,13 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-corporate-tech-forward": "border-l-4 border-l-cyan-400",
   "tpl-concert": "border-l-4 border-l-violet-400",
   "tpl-christian": "border-l-4 border-l-amber-300",
+  "tpl-christian-wedding-rose": "border-l-4 border-l-[#b76e79]",
+  "tpl-muslim-wedding-nikah": "border-l-4 border-l-[#2d5f5d]",
   "tpl-muslim": "border-l-4 border-l-emerald-400",
   "tpl-hindu": "border-l-4 border-l-orange-400",
   "tpl-sports": "border-l-4 border-l-green-400",
   "tpl-political": "border-l-4 border-l-red-400",
   "tpl-school": "border-l-4 border-l-cyan-400",
-  "tpl-birthday": "border-l-4 border-l-yellow-400",
   "tpl-funeral": "border-l-4 border-l-stone-400",
   "tpl-indian-festival": "border-l-4 border-l-fuchsia-400",
   "tpl-gaming": "border-l-4 border-l-lime-400",
@@ -160,6 +161,7 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-auction": "border-l-4 border-l-amber-500",
   "tpl-real-estate": "border-l-4 border-l-teal-400",
   "tpl-baby-shower": "border-l-4 border-l-pink-300",
+  "tpl-birthday-party": "border-l-4 border-l-fuchsia-500",
   "tpl-graduation": "border-l-4 border-l-emerald-300",
   "tpl-engagement": "border-l-4 border-l-pink-500",
   "tpl-anniversary": "border-l-4 border-l-rose-300",
@@ -213,7 +215,9 @@ export function extractTemplateBannerContent(
     templateId === "tpl-wedding-midnight" ||
     templateId === "tpl-wedding-coastal" ||
     templateId === "tpl-wedding-celestial" ||
-    templateId === "tpl-wedding-traditional-hindu"
+    templateId === "tpl-wedding-traditional-hindu" ||
+    templateId === "tpl-christian-wedding-rose" ||
+    templateId === "tpl-muslim-wedding-nikah"
   ) {
     const couple = [d.brideName, d.groomName].filter(Boolean).join(" & ")
     const lines: string[] = []
@@ -293,18 +297,6 @@ export function extractTemplateBannerContent(
     }
   }
 
-  if (templateId === "tpl-birthday") {
-    const lines: string[] = []
-    pushUnique(lines, d.partyTheme)
-    pushUnique(lines, d.birthdayMessage || d.welcomeMessage)
-    pushUnique(lines, eventDescription)
-    return {
-      headline: d.celebrantName || eventTitle,
-      accent: d.celebrantName ? eventTitle : null,
-      lines,
-    }
-  }
-
   if (templateId === "tpl-funeral") {
     const lines: string[] = []
     pushUnique(lines, d.memorialTagline)
@@ -342,6 +334,18 @@ export function extractTemplateBannerContent(
     return {
       headline: eventTitle,
       accent: d.parentNames || null,
+      lines,
+    }
+  }
+
+  if (templateId === "tpl-birthday-party") {
+    const lines: string[] = []
+    pushUnique(lines, d.partyTagline)
+    pushUnique(lines, d.birthdayAge != null && String(d.birthdayAge).trim() !== "" ? `Turning ${String(d.birthdayAge).trim()}` : undefined)
+    pushUnique(lines, eventDescription)
+    return {
+      headline: d.honoreeName?.trim() || eventTitle,
+      accent: d.partyHeadline?.trim() || null,
       lines,
     }
   }

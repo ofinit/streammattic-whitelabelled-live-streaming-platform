@@ -1152,6 +1152,44 @@ export const mockStreamerInventory: StreamerInventory[] = [
   },
 ]
 
+/**
+ * Hidden from the Add/Edit Event template grid (streamer + studio).
+ * Preview routes and legacy events may still reference these ids.
+ */
+export const EVENT_FORM_HIDDEN_TEMPLATE_IDS: ReadonlySet<string> = new Set([
+  "tpl-corporate",
+  "tpl-concert",
+  "tpl-christian",
+  "tpl-muslim",
+  "tpl-hindu",
+  "tpl-sports",
+  "tpl-political",
+  "tpl-school",
+  "tpl-indian-festival",
+  "tpl-gaming",
+  "tpl-podcast",
+  "tpl-movie-premiere",
+  "tpl-award-ceremony",
+  "tpl-comedy-show",
+  "tpl-product-launch",
+  "tpl-webinar",
+  "tpl-auction",
+  "tpl-real-estate",
+  "tpl-baby-shower",
+  "tpl-graduation",
+  "tpl-engagement",
+  "tpl-anniversary",
+  "tpl-reunion",
+  "tpl-chinese-festival",
+  "tpl-christmas",
+  "tpl-eid",
+  "tpl-thanksgiving",
+  "tpl-halloween",
+  "tpl-fitness",
+  "tpl-yoga",
+  "tpl-charity",
+])
+
 // Mock Event Templates
 export const mockEventTemplates: EventTemplate[] = [
   {
@@ -1203,12 +1241,21 @@ export const mockEventTemplates: EventTemplate[] = [
     sortOrder: 2.57,
   },
   {
+    id: "tpl-wedding-traditional-hindu",
+    name: "Shubh Vivah",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-traditional-hindu"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.58,
+  },
+  {
     id: "tpl-corporate-tech-forward",
     name: "Tech Forward Summit",
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",
     category: "Corporate",
     isActive: true,
-    sortOrder: 2.95,
+    /** Immediately before Birthday Party Bash in the event form picker */
+    sortOrder: 22.7,
   },
   {
     id: "tpl-corporate",
@@ -1216,7 +1263,7 @@ export const mockEventTemplates: EventTemplate[] = [
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate"] ?? "",
     category: "Corporate",
     isActive: true,
-    sortOrder: 3,
+    sortOrder: 22.72,
   },
   {
     id: "tpl-concert",
@@ -1228,19 +1275,39 @@ export const mockEventTemplates: EventTemplate[] = [
   },
   {
     id: "tpl-christian",
-    name: "Christian Ceremony",
-    thumbnail: "/templates/christian-template.jpg",
-    category: "Religious",
+    name: "Christian Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian"] ?? "/templates/christian-template.jpg",
+    category: "Wedding",
+    extraCategories: ["Religious"],
     isActive: true,
-    sortOrder: 5,
+    sortOrder: 2.59,
+  },
+  {
+    id: "tpl-christian-wedding-rose",
+    name: "Christian Wedding (Rose & Faith)",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian-wedding-rose"] ?? "",
+    category: "Wedding",
+    extraCategories: ["Religious"],
+    isActive: true,
+    sortOrder: 2.591,
+  },
+  {
+    id: "tpl-muslim-wedding-nikah",
+    name: "Muslim Wedding (Nikah Live)",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim-wedding-nikah"] ?? "",
+    category: "Wedding",
+    extraCategories: ["Religious"],
+    isActive: true,
+    sortOrder: 2.595,
   },
   {
     id: "tpl-muslim",
-    name: "Islamic Ceremony",
-    thumbnail: "/templates/muslim-template.jpg",
-    category: "Religious",
+    name: "Muslim Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim"] ?? "/templates/muslim-template.jpg",
+    category: "Wedding",
+    extraCategories: ["Religious"],
     isActive: true,
-    sortOrder: 6,
+    sortOrder: 2.6,
   },
   {
     id: "tpl-hindu",
@@ -1275,20 +1342,13 @@ export const mockEventTemplates: EventTemplate[] = [
     sortOrder: 10,
   },
   {
-    id: "tpl-birthday",
-    name: "Birthday",
-    thumbnail: "/templates/birthday-template.jpg",
-    category: "Celebration",
-    isActive: true,
-    sortOrder: 11,
-  },
-  {
     id: "tpl-funeral",
     name: "Memorial Service",
-    thumbnail: "/templates/funeral-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-funeral"] ?? "/templates/funeral-template.jpg",
     category: "Memorial",
     isActive: true,
-    sortOrder: 12,
+    /** Last in the event form template list */
+    sortOrder: 99,
   },
   {
     id: "tpl-indian-festival",
@@ -1380,6 +1440,14 @@ export const mockEventTemplates: EventTemplate[] = [
     category: "Celebration",
     isActive: true,
     sortOrder: 23,
+  },
+  {
+    id: "tpl-birthday-party",
+    name: "Birthday Party Bash",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-birthday-party"] ?? "",
+    category: "Celebration",
+    isActive: true,
+    sortOrder: 22.75,
   },
   {
     id: "tpl-graduation",
@@ -1480,6 +1548,11 @@ export const mockEventTemplates: EventTemplate[] = [
     sortOrder: 35,
   },
 ]
+
+/** Subset shown in the event form template picker */
+export const eventFormSelectableTemplates: EventTemplate[] = mockEventTemplates.filter(
+  (t) => !EVENT_FORM_HIDDEN_TEMPLATE_IDS.has(t.id),
+)
 
 // Mock Domains
 export const mockDomains: Domain[] = [

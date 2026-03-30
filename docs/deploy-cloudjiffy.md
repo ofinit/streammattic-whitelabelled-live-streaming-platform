@@ -34,6 +34,15 @@ Or: `node --env-file=.env.production scripts/run-migration.js`
 
 ## 5. Run with Docker
 
+**All-in-one (on the VPS, from repo root):** after `.env.production` exists and Postgres is initialized,
+
+```bash
+chmod +x scripts/cloudjiffy-bootstrap.sh
+./scripts/cloudjiffy-bootstrap.sh
+```
+
+Or manually:
+
 Build and run (uploads persisted on the host):
 
 ```bash

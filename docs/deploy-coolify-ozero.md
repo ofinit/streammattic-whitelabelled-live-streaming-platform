@@ -44,6 +44,7 @@ On **ozero.cloud**, the PostgreSQL resource page usually shows **two** connectio
 - New resource → **Dockerfile** from Git (this repo root).
 - Set **port** to **3000** (Coolify / Traefik will publish HTTPS).
 - Add a **persistent volume** mounted at **`/app/uploads`** so uploads survive redeploys (matches the Dockerfile layout).
+- Set **`UPLOAD_DIR=/app/uploads`** in the application environment so [`app/api/upload`](../app/api/upload/route.ts) and [`app/api/generate-image`](../app/api/generate-image/route.ts) write WebP files to the same path the volume uses (the [`Dockerfile`](../Dockerfile) sets this by default).
 
 **Option B — Docker Compose**  
 

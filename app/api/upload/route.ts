@@ -3,6 +3,8 @@ import path from "path"
 import fs from "fs/promises"
 import { randomUUID } from "crypto"
 import { getCurrentUser } from "@/lib/auth"
+import { encodeBufferToWebp } from "@/lib/server/webp"
+import { getPublicBaseUrl } from "@/lib/public-base-url"
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 const LANDING_SUBDIR = "landing-images"
@@ -23,15 +25,6 @@ const ALLOWED_TYPES = new Set([
   "image/heif",
   "image/avif",
 ])
-
-function getBaseUrl(request: NextRequest): string {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL
-  if (envUrl) return envUrl.replace(/\/$/, "")
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host")
-  const proto = request.headers.get("x-forwarded-proto") || (request.headers.get("host")?.includes("localhost") ? "http" : "https")
-  if (host) return `${proto}://${host}`
-  return "http://localhost:3000"
-}
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) || "file"
@@ -67,7 +60,7 @@ function filesFromFormData(formData: FormData): File[] {
   return out
 }
 
-async function saveOneFile(file: File, subdir: string, baseUrl: string): Promise<string> {
+async function saveOneFileWebp(file: File, subdir: string, baseUrl: string): Promise<string> {
   if (!isAllowedImageType(file)) {
     throw new Error(`Invalid file type: ${file.name} (${file.type || "unknown"})`)
   }
@@ -78,11 +71,22 @@ async function saveOneFile(file: File, subdir: string, baseUrl: string): Promise
   const dir = path.join(UPLOAD_DIR, subdir)
   await fs.mkdir(dir, { recursive: true })
 
-  const safeName = sanitizeFilename(file.name)
-  const filename = `${Date.now()}-${randomUUID().replace(/-/g, "").slice(0, 12)}-${safeName}`
+  const raw = Buffer.from(await file.arrayBuffer())
+  let webp: Buffer
+  try {
+    webp = await encodeBufferToWebp(raw)
+  } catch (e) {
+    const hint = e instanceof Error ? e.message : String(e)
+    console.error("[upload] WebP encode failed:", hint)
+    throw new Error(
+      "Could not process this image. Use JPEG, PNG, WebP, or GIF. HEIC may be unsupported on this server.",
+    )
+  }
+
+  const stem = sanitizeFilename(file.name.replace(/\.[^.]+$/, ""))
+  const filename = `${Date.now()}-${randomUUID().replace(/-/g, "").slice(0, 12)}-${stem}.webp`
   const filepath = path.join(dir, filename)
-  const buffer = Buffer.from(await file.arrayBuffer())
-  await fs.writeFile(filepath, buffer)
+  await fs.writeFile(filepath, webp)
 
   return `${baseUrl}/api/uploads/${subdir}/${filename}`
 }
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     const batchFiles = filesFromFormData(formData)
 
-    const baseUrl = getBaseUrl(request)
+    const baseUrl = getPublicBaseUrl(request)
 
     if (batchFiles.length > 0) {
       if (batchFiles.length > MAX_BATCH_FILES) {
@@ -108,7 +112,7 @@ export async function POST(request: NextRequest) {
       const errors: string[] = []
       for (const f of batchFiles) {
         try {
-          urls.push(await saveOneFile(f, subdir, baseUrl))
+          urls.push(await saveOneFileWebp(f, subdir, baseUrl))
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Save failed"
           errors.push(`${f.name}: ${msg}`)
@@ -133,13 +137,13 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const url = await saveOneFile(file, subdir, baseUrl)
+      const url = await saveOneFileWebp(file, subdir, baseUrl)
       return NextResponse.json({
         url,
         urls: [url],
         filename: file.name,
         size: file.size,
-        type: file.type,
+        type: "image/webp",
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed"

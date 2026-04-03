@@ -1,34 +1,43 @@
-import { NextRequest, NextResponse } from "next/server"
 import {
-  getStudioDashboardStats,
-  getOrders,
   getEvents,
+  getStudioDashboardStats,
+  getUserCreditsRowByUserId,
+  getWalletTransactionsByUserId,
 } from "@/lib/db-queries"
+import { getPublicStreamCreditPricing } from "@/lib/credit-pricing-snapshot"
+import { normalizeUserCreditsRow } from "@/lib/normalize-user-credits"
+import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 
-export async function GET(req: NextRequest) {
-  const studioId = req.nextUrl.searchParams.get("studioId")
-
-  if (!studioId) {
-    return NextResponse.json({ error: "studioId is required" }, { status: 400 })
+export const GET = withAuth(async (user) => {
+  const role = user.role as string
+  if (role !== "studio" && role !== "admin") {
+    return jsonError("Forbidden", 403)
   }
+
+  const studioId = user.id as string
 
   try {
-    const [stats, orders, events] = await Promise.all([
+    const [statsRaw, creditsRow, events, transactions, creditPricing] = await Promise.all([
       getStudioDashboardStats(studioId),
-      getOrders({ studioId, limit: 5 }),
+      getUserCreditsRowByUserId(studioId),
       getEvents({ studioId, limit: 10 }),
+      getWalletTransactionsByUserId(studioId, 5),
+      getPublicStreamCreditPricing(),
     ])
 
-    return NextResponse.json({
-      stats,
-      orders,
-      events,
-    })
+    const credits = normalizeUserCreditsRow(creditsRow ?? undefined)
+    const totalCreditsRemaining =
+      credits.rtmp + credits.youtube_api + credits.youtube_embed + credits.third_party
+
+    const stats = {
+      ...statsRaw,
+      credits,
+      totalCreditsRemaining,
+    }
+
+    return jsonOk({ stats, events, transactions, creditPricing })
   } catch (error) {
     console.error("[studio/dashboard] Error:", error)
-    return NextResponse.json(
-      { error: "Failed to load studio dashboard data" },
-      { status: 500 }
-    )
+    return jsonError("Failed to load studio dashboard data", 500)
   }
-}
+})

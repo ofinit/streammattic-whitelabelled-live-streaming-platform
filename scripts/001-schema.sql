@@ -1,4 +1,4 @@
--- StreamMattic Production Database Schema
+-- StreamLivee Production Database Schema
 -- Neon PostgreSQL
 
 -- Enable UUID generation
@@ -175,6 +175,7 @@ CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
+  subtitle TEXT,
   description TEXT,
   thumbnail TEXT,
   stream_type stream_type_key NOT NULL,
@@ -198,6 +199,12 @@ CREATE TABLE events (
   template_id UUID,
   template_data JSONB DEFAULT '{}',
   validity_expires_at TIMESTAMPTZ,
+  hero_image_url TEXT,
+  player_image_url TEXT,
+  photo_gallery_urls JSONB DEFAULT '[]',
+  photographer_logo_url TEXT,
+  photographer_contact JSONB DEFAULT '{}',
+  crew_pin_hash TEXT,
   credits_consumed INT DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

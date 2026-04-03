@@ -1,29 +1,27 @@
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
-const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
+if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
 
-async function exec(query) {
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
-  return r.json();
+async function exec(client, query) {
+  const r = await client.query(query);
+  return { rows: r.rows };
 }
 
 async function main() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   // Check orders columns
-  const o = await exec("SELECT column_name FROM information_schema.columns WHERE table_name='orders' ORDER BY ordinal_position");
+  const o = await exec(client, "SELECT column_name FROM information_schema.columns WHERE table_name='orders' ORDER BY ordinal_position");
   const orderCols = o.rows.map(r => r.column_name);
   console.log("Orders columns:", JSON.stringify(orderCols));
 
   // Check notifications columns
-  const n = await exec("SELECT column_name FROM information_schema.columns WHERE table_name='notifications' ORDER BY ordinal_position");
+  const n = await exec(client, "SELECT column_name FROM information_schema.columns WHERE table_name='notifications' ORDER BY ordinal_position");
   const notifCols = n.rows.map(r => r.column_name);
   console.log("Notifications columns:", JSON.stringify(notifCols));
 
   // Check existing indexes
-  const idx = await exec("SELECT indexname FROM pg_indexes WHERE schemaname='public' ORDER BY indexname");
+  const idx = await exec(client, "SELECT indexname FROM pg_indexes WHERE schemaname='public' ORDER BY indexname");
   const indexes = idx.rows.map(r => r.indexname);
   console.log("Index count:", indexes.length);
   
@@ -53,7 +51,7 @@ async function main() {
   let ok = 0, fail = 0;
   for (const sql of fixes) {
     try {
-      await exec(sql);
+      await exec(client, sql);
       ok++;
     } catch (e) {
       console.log("SKIP:", sql.substring(0, 80), "->", e.message.substring(0, 100));
@@ -61,5 +59,6 @@ async function main() {
     }
   }
   console.log("Fix results: " + ok + " ok, " + fail + " failed");
+  await client.end();
 }
 main().catch(e => { console.error(e.message); process.exit(1); });

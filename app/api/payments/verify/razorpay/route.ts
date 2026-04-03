@@ -23,7 +23,7 @@ export const POST = withAuth(async (user, request) => {
   const orderRows = await sql`SELECT amount FROM orders WHERE id = ${orderId}`
   const amount = orderRows.length > 0 ? (orderRows[0] as Record<string, unknown>).amount as number : 0
 
-  await processSuccessfulPayment({
+  const { invoiceId } = await processSuccessfulPayment({
     orderId,
     userId: user.id as string,
     gateway: "razorpay",
@@ -32,5 +32,5 @@ export const POST = withAuth(async (user, request) => {
     amount,
   })
 
-  return jsonOk({ success: true, message: "Payment verified successfully" })
+  return jsonOk({ success: true, message: "Payment verified successfully", invoiceId })
 })

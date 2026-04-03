@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react";
 import { mockEventTemplates } from "@/lib/mock-data"
 import type { EventTemplate } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -10,15 +10,22 @@ import Link from "next/link"
 // Existing templates
 import { DefaultTemplate } from "@/components/templates/default-template"
 import { WeddingTemplate } from "@/components/templates/wedding-template"
+import { WeddingGardenTemplate } from "@/components/templates/wedding-garden-template"
+import { WeddingMidnightTemplate } from "@/components/templates/wedding-midnight-template"
+import { WeddingCoastalTemplate } from "@/components/templates/wedding-coastal-template"
+import { WeddingCelestialTemplate } from "@/components/templates/wedding-celestial-template"
+import { WeddingTraditionalHinduTemplate } from "@/components/templates/wedding-traditional-hindu-template"
 import { CorporateTemplate } from "@/components/templates/corporate-template"
+import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
 import { ChristianTemplate } from "@/components/templates/christian-template"
+import { ChristianWeddingRoseTemplate } from "@/components/templates/christian-wedding-rose-template"
+import { MuslimWeddingNikahTemplate } from "@/components/templates/muslim-wedding-nikah-template"
 import { MuslimTemplate } from "@/components/templates/muslim-template"
 import { HinduTemplate } from "@/components/templates/hindu-template"
 import { SportsTemplate } from "@/components/templates/sports-template"
 import { PoliticalTemplate } from "@/components/templates/political-template"
 import { SchoolTemplate } from "@/components/templates/school-template"
-import { BirthdayTemplate } from "@/components/templates/birthday-template"
 import { FuneralTemplate } from "@/components/templates/funeral-template"
 import { IndianFestivalTemplate } from "@/components/templates/indian-festival-template"
 
@@ -34,6 +41,7 @@ import { AuctionTemplate } from "@/components/templates/auction-template"
 import { RealEstateTemplate } from "@/components/templates/real-estate-template"
 
 import { BabyShowerTemplate } from "@/components/templates/baby-shower-template"
+import { BirthdayPartyTemplate } from "@/components/templates/birthday-party-template"
 import { GraduationTemplate } from "@/components/templates/graduation-template"
 import { EngagementTemplate } from "@/components/templates/engagement-template"
 import { AnniversaryTemplate } from "@/components/templates/anniversary-template"
@@ -49,7 +57,20 @@ import { FitnessTemplate } from "@/components/templates/fitness-template"
 import { YogaTemplate } from "@/components/templates/yoga-template"
 import { CharityTemplate } from "@/components/templates/charity-template"
 
-const templateContent: Record<string, { title: string; description: string }> = {
+const templateContent: Record<
+  string,
+  {
+    title: string
+    description: string
+    deceasedName?: string
+    memorialHeadline?: string
+    memorialTagline?: string
+    memorialQuote?: string
+    eventSubtitle?: string
+    memorialLifeDates?: string
+    primaryServiceDateLabel?: string
+  }
+> = {
   // Existing templates
   "tpl-default": {
     title: "Live Stream Event",
@@ -58,6 +79,31 @@ const templateContent: Record<string, { title: string; description: string }> = 
   "tpl-wedding": {
     title: "Sarah & Michael's Wedding",
     description: "Join us to celebrate the union of two hearts",
+  },
+  "tpl-wedding-garden": {
+    title: "Emma & James",
+    description: "Join us among the gardens for our ceremony — live with family and friends near and far.",
+  },
+  "tpl-wedding-midnight": {
+    title: "Alexander & Victoria",
+    description: "Join us for a midnight celebration — live from the city skyline.",
+  },
+  "tpl-wedding-coastal": {
+    title: "Luna & Marco",
+    description: "Tying the knot by the sea — live with family and friends near and far.",
+  },
+  "tpl-wedding-celestial": {
+    title: "Orion & Stella",
+    description: "Written in the stars — join our live union beneath the night sky.",
+  },
+  "tpl-wedding-traditional-hindu": {
+    title: "Vikram & Ananya",
+    description: "Shubh Vivah — join our sacred union with blessings from both families.",
+  },
+  "tpl-corporate-tech-forward": {
+    title: "TechForward 2026 | Annual Innovation Summit",
+    description:
+      "Join 50,000+ innovators, developers, and visionaries for the premier tech event — live keynotes and Q&A.",
   },
   "tpl-corporate": {
     title: "Annual Tech Summit 2024",
@@ -68,12 +114,20 @@ const templateContent: Record<string, { title: string; description: string }> = 
     description: "Live performances from top artists",
   },
   "tpl-christian": {
-    title: "Sunday Morning Service",
-    description: "Join us in worship and prayer",
+    title: "Christian Wedding",
+    description: "Join us as we celebrate our marriage before God, family, and friends.",
+  },
+  "tpl-christian-wedding-rose": {
+    title: "Romeo & Juliet",
+    description: "Join us as we celebrate our marriage before God, family, and friends.",
+  },
+  "tpl-muslim-wedding-nikah": {
+    title: "Ahmad & Fatima",
+    description: "Join us live for our nikah — peace, blessings, and celebration with family and friends worldwide.",
   },
   "tpl-muslim": {
-    title: "Jummah Prayer Service",
-    description: "Peace and blessings upon you",
+    title: "Muslim Wedding (Nikah)",
+    description: "Peace and blessings — join our nikah and walima celebration live.",
   },
   "tpl-hindu": {
     title: "Ganesh Chaturthi Puja",
@@ -91,13 +145,17 @@ const templateContent: Record<string, { title: string; description: string }> = 
     title: "Annual Day Celebration",
     description: "Celebrating our students",
   },
-  "tpl-birthday": {
-    title: "Happy Birthday Celebration",
-    description: "Join us for a special celebration",
-  },
   "tpl-funeral": {
-    title: "Memorial Service",
-    description: "Celebrating a life well lived",
+    title: "Celebration of Life",
+    description:
+      "Join us virtually to honor a beloved life — with music, memories, and shared comfort for family and friends.",
+    deceasedName: "Robert James Anderson",
+    memorialTagline: "A life beautifully lived deserves to be beautifully remembered",
+    memorialQuote:
+      "Those we love don't go away — they walk beside us every day. Unseen, unheard, but always near.",
+    eventSubtitle: "Virtual memorial · Family & friends welcome",
+    memorialLifeDates: "January 15, 1950 — December 20, 2024",
+    primaryServiceDateLabel: "Saturday, December 28, 2024 · 2:00 PM (EST)",
   },
   "tpl-indian-festival": {
     title: "Diwali Celebration",
@@ -142,6 +200,10 @@ const templateContent: Record<string, { title: string; description: string }> = 
   "tpl-baby-shower": {
     title: "Baby Johnson Shower",
     description: "Welcoming our little bundle of joy",
+  },
+  "tpl-birthday-party": {
+    title: "Sarah's 25th Birthday Bash",
+    description: "Join us live for cake, music, and unforgettable moments with friends and family!",
   },
   "tpl-graduation": {
     title: "Class of 2024 Graduation",
@@ -193,7 +255,8 @@ const templateContent: Record<string, { title: string; description: string }> = 
   },
 }
 
-export default function TemplatePreviewPage({ params }: { params: { templateId: string } }) {
+export default function TemplatePreviewPage(props: { params: Promise<{ templateId: string }> }) {
+  const params = use(props.params);
   const [template, setTemplate] = useState<EventTemplate | null>(null)
 
   useEffect(() => {
@@ -231,12 +294,28 @@ export default function TemplatePreviewPage({ params }: { params: { templateId: 
       return <DefaultTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-wedding":
       return <WeddingTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-garden":
+      return <WeddingGardenTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-midnight":
+      return <WeddingMidnightTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-coastal":
+      return <WeddingCoastalTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-celestial":
+      return <WeddingCelestialTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-traditional-hindu":
+      return <WeddingTraditionalHinduTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-corporate-tech-forward":
+      return <CorporateTechForwardTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate":
       return <CorporateTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-concert":
       return <ConcertTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-christian":
       return <ChristianTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-christian-wedding-rose":
+      return <ChristianWeddingRoseTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-muslim-wedding-nikah":
+      return <MuslimWeddingNikahTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-muslim":
       return <MuslimTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-hindu":
@@ -247,10 +326,20 @@ export default function TemplatePreviewPage({ params }: { params: { templateId: 
       return <PoliticalTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-school":
       return <SchoolTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-birthday":
-      return <BirthdayTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-funeral":
-      return <FuneralTemplate eventTitle={content.title} eventDescription={content.description} />
+      return (
+        <FuneralTemplate
+          eventTitle={content.title}
+          eventDescription={content.description}
+          deceasedName={content.deceasedName}
+          memorialHeadline={content.memorialHeadline}
+          memorialTagline={content.memorialTagline}
+          memorialQuote={content.memorialQuote}
+          eventSubtitle={content.eventSubtitle}
+          memorialLifeDates={content.memorialLifeDates}
+          primaryServiceDateLabel={content.primaryServiceDateLabel}
+        />
+      )
     case "tpl-indian-festival":
       return <IndianFestivalTemplate eventTitle={content.title} eventDescription={content.description} />
     // Entertainment & Media templates
@@ -276,6 +365,15 @@ export default function TemplatePreviewPage({ params }: { params: { templateId: 
     // Social & Community templates
     case "tpl-baby-shower":
       return <BabyShowerTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-birthday-party":
+      return (
+        <BirthdayPartyTemplate
+          eventTitle={content.title}
+          eventDescription={content.description}
+          honoreeName="Sarah"
+          partyHeadline="We're getting married!"
+        />
+      )
     case "tpl-graduation":
       return <GraduationTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-engagement":

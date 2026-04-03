@@ -1,15 +1,10 @@
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
-const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
 
-async function exec(query) {
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
-  return r.json();
+async function exec(client, query) {
+  const r = await client.query(query);
+  return { rows: r.rows };
 }
 
 const statements = [
@@ -270,10 +265,12 @@ const statements = [
 ];
 
 async function run() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   let ok = 0, skip = 0, fail = 0;
   for (let i = 0; i < statements.length; i++) {
     try {
-      await exec(statements[i]);
+      await exec(client, statements[i]);
       ok++;
     } catch (err) {
       if (err.message.includes("already exists")) {
@@ -285,6 +282,7 @@ async function run() {
     }
   }
   console.log(`Batch 2 done: ${ok} executed, ${skip} skipped (already exist), ${fail} failed`);
+  await client.end();
 }
 
 run().catch(e => { console.error("Fatal:", e.message); process.exit(1); });

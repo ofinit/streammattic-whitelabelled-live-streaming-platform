@@ -68,10 +68,10 @@ export class NimbleProvider implements StreamingProvider {
 
   getConfig() {
     return {
-      apiUrl: process.env.NIMBLE_API_URL || "https://nimble-api.streammattic.com",
+      apiUrl: process.env.NIMBLE_API_URL || "https://nimble-api.streamlivee.com",
       apiKey: process.env.NIMBLE_API_KEY || "",
-      rtmpUrl: process.env.NIMBLE_RTMP_URL || "rtmp://stream.streammattic.com/live",
-      playbackUrl: process.env.NIMBLE_PLAYBACK_URL || "https://cdn.streammattic.com",
+      rtmpUrl: process.env.NIMBLE_RTMP_URL || "rtmp://stream.streamlivee.com/live",
+      playbackUrl: process.env.NIMBLE_PLAYBACK_URL || "https://cdn.streamlivee.com",
     }
   }
 

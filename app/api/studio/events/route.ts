@@ -1,5 +1,59 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getEvents, getEventCount } from "@/lib/db-queries"
+import { getCurrentUser } from "@/lib/auth"
+import { getDb, toCamel } from "@/lib/db"
+import { hashCrewPin } from "@/lib/crew-pin"
+
+// Stream type mapping: form values → DB enum values
+const STREAM_TYPE_MAP: Record<string, string> = {
+  rtmp: "rtmp",
+  youtube_api: "youtube_api",
+  youtube: "youtube_embed",
+  youtube_embed: "youtube_embed",
+  embedded: "third_party",
+  third_party: "third_party",
+}
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+function generateStreamKey() {
+  return `sk_live_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 10)}`
+}
+
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+}
+
+function sanitizeEventForClient(ev: Record<string, unknown>): Record<string, unknown> {
+  if (!ev || typeof ev !== "object") return ev
+  const out = { ...ev }
+  const hasCrewPin = !!(out.crewPinHash as string)
+  delete out.crewPinHash
+  out.hasCrewPin = hasCrewPin
+  return out
+}
+
+async function ensureUniqueSlug(sql: ReturnType<typeof import("@/lib/db").getDb>, base: string, excludeId?: string): Promise<string> {
+  let slug = toSlug(base)
+  if (!slug) slug = `event-${Date.now()}`
+  let candidate = slug
+  let attempt = 0
+  while (true) {
+    const rows = excludeId
+      ? await sql`SELECT id FROM events WHERE slug = ${candidate} AND id != ${excludeId}`
+      : await sql`SELECT id FROM events WHERE slug = ${candidate}`
+    if (rows.length === 0) return candidate
+    attempt++
+    candidate = `${slug}-${attempt}`
+  }
+}
 
 export async function GET(req: NextRequest) {
   const studioId = req.nextUrl.searchParams.get("studioId")
@@ -18,21 +72,372 @@ export async function GET(req: NextRequest) {
       getEventCount({ studioId }),
       getEventCount({ studioId, status: "live" }),
       getEventCount({ studioId, status: "scheduled" }),
-      getEventCount({ studioId, status: "completed" }),
+      getEventCount({ studioId, status: "ended" }),
     ])
 
-    return NextResponse.json({
-      events,
-      totalCount,
-      liveCount,
-      scheduledCount,
-      completedCount,
-    })
+    const eventsList = Array.isArray(events) ? events : []
+    const eventsSanitized = eventsList.map((e) => toCamel(sanitizeEventForClient((e || {}) as Record<string, unknown>)))
+    return NextResponse.json({ events: eventsSanitized, totalCount, liveCount, scheduledCount, completedCount })
   } catch (error) {
-    console.error("[studio/events] Error:", error)
-    return NextResponse.json(
-      { error: "Failed to load events" },
-      { status: 500 }
-    )
+    console.error("[studio/events GET] Error:", error)
+    return NextResponse.json({ error: "Failed to load events" }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const body = await req.json()
+    const {
+      title, subtitle, description, streamType, scheduledAt, slug: rawSlug,
+      isPasswordProtected, password, allowChat, allowReactions,
+      youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
+      additionalDates, templateId, templateData: rawTemplateData,
+      heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      validityExpiresAt, validityDays, crewPin,
+    } = body
+
+    if (!title || !title.trim()) return NextResponse.json({ error: "Event title is required" }, { status: 400 })
+    // Stream type is optional during creation. Default to RTMP if not provided;
+    // the user can explicitly set/change the stream type later in the UI.
+    const normalizedStreamType = streamType || "rtmp"
+    const dbStreamType = STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType
+    const sql = getDb()
+
+    // Resolve slug: use provided (validate) or auto-generate unique one
+    let finalSlug: string
+    if (rawSlug && rawSlug.trim()) {
+      const s = rawSlug.trim().toLowerCase()
+      if (!SLUG_REGEX.test(s)) {
+        return NextResponse.json({ error: "Invalid slug format. Use lowercase letters, numbers and hyphens only." }, { status: 400 })
+      }
+      if (s.length < 3) return NextResponse.json({ error: "Slug must be at least 3 characters" }, { status: 400 })
+      if (s.length > 80) return NextResponse.json({ error: "Slug must be 80 characters or less" }, { status: 400 })
+      const taken = await sql`SELECT id FROM events WHERE slug = ${s}`
+      if (taken.length > 0) return NextResponse.json({ error: "This event URL is already taken. Please choose another." }, { status: 409 })
+      finalSlug = s
+    } else {
+      finalSlug = await ensureUniqueSlug(sql, title)
+    }
+
+    // Determine which extra dates require a credit deduction (different calendar date from primary)
+    const primaryDatePart = scheduledAt ? scheduledAt.slice(0, 10) : null
+    const extraDates: { label: string; scheduledAt: string; timezone: string }[] = Array.isArray(additionalDates)
+      ? additionalDates.filter((d: { scheduledAt?: string }) => d.scheduledAt)
+      : []
+    const billableDates = extraDates.filter((d) => d.scheduledAt.slice(0, 10) !== primaryDatePart)
+    const creditCol = dbStreamType === "rtmp" ? "rtmp"
+      : dbStreamType === "youtube_api" ? "youtube_api"
+      : dbStreamType === "youtube_embed" ? "youtube_embed"
+      : "third_party"
+
+    // Deduct credits for each billable extra date atomically
+    // NOTE: Admin-created events should not consume credits or be blocked by credit balances.
+    if (user.role !== "admin" && billableDates.length > 0) {
+      const deducted = await sql`
+        UPDATE user_credits
+        SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${billableDates.length},
+            updated_at = NOW()
+        WHERE user_id = ${user.id as string}
+          AND ${sql.unsafe(creditCol)} >= ${billableDates.length}
+        RETURNING *
+      `
+      if (deducted.length === 0) {
+        return NextResponse.json({
+          error: `Insufficient ${streamType} credits for ${billableDates.length} additional date(s). Please purchase more credits.`,
+        }, { status: 400 })
+      }
+    }
+
+    const streamKey = generateStreamKey()
+    const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
+
+    // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
+    const resolvedTemplateId =
+      templateId ??
+      (rawTemplateData && typeof rawTemplateData === "object" && "templateId" in rawTemplateData
+        ? (rawTemplateData.templateId as string)
+        : null)
+    const templateDataJson =
+      resolvedTemplateId || (rawTemplateData && typeof rawTemplateData === "object" && Object.keys(rawTemplateData).length > 0)
+        ? JSON.stringify({
+            ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
+            templateId: resolvedTemplateId,
+          })
+        : "{}"
+
+    // Validity: explicit date or X days from scheduled_at
+    let validityExpiresAtValue: string | null = null
+    if (validityExpiresAt && typeof validityExpiresAt === "string") validityExpiresAtValue = validityExpiresAt
+    else if (typeof validityDays === "number" && validityDays > 0 && scheduledAt) {
+      const d = new Date(scheduledAt)
+      d.setDate(d.getDate() + validityDays)
+      validityExpiresAtValue = d.toISOString()
+    }
+
+    const crewPinHash =
+      crewPin != null && String(crewPin).trim() !== "" ? hashCrewPin(String(crewPin).trim()) : null
+    const photoGalleryJson = Array.isArray(photoGalleryUrls) ? JSON.stringify(photoGalleryUrls) : "[]"
+    const photographerContactJson =
+      photographerContact && typeof photographerContact === "object" ? JSON.stringify(photographerContact) : "{}"
+
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
+
+    const subtitleValue =
+      subtitle !== undefined && subtitle !== null ? (String(subtitle).trim() || null) : null
+
+    const rows = await sql`
+      INSERT INTO events (
+        user_id, title, subtitle, description, stream_type, stream_key, rtmp_url,
+        youtube_url, embed_code, status, scheduled_at,
+        is_password_protected, event_password, allow_chat, allow_reactions,
+        simulcast_config, slug, timezone, show_scheduled_page, template_data,
+        validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
+        photographer_logo_url, photographer_contact, crew_pin_hash
+      ) VALUES (
+        ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
+        ${dbStreamType}, ${streamKey},
+        ${["rtmp", "youtube_api"].includes(dbStreamType) ? rtmpUrl : null},
+        ${youtubeUrl || null}, ${embedCode || null},
+        'scheduled', ${scheduledAt || null},
+        ${isPasswordProtected ?? false},
+        ${isPasswordProtected ? (password || null) : null},
+        ${allowChat ?? true}, ${allowReactions ?? true},
+        ${JSON.stringify(simulcastConfig || {})},
+        ${finalSlug},
+        ${timezone || "UTC"},
+        ${showScheduledPage ?? false},
+        ${templateDataJson}::jsonb,
+        ${validityExpiresAtValue},
+        ${heroImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
+        ${photographerLogoUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash}
+      )
+      RETURNING *
+    `
+
+    const event = rows[0] as Record<string, unknown>
+    const eventId = event.id as string
+    const needsOwnKey = ["rtmp", "youtube_api"].includes(dbStreamType)
+
+    // Insert additional date rows
+    for (let i = 0; i < extraDates.length; i++) {
+      const d = extraDates[i]
+      const extraKey = needsOwnKey ? generateStreamKey() : null
+      const extraRtmp = needsOwnKey ? rtmpUrl : null
+      await sql`
+        INSERT INTO event_dates (event_id, label, scheduled_at, timezone, stream_key, rtmp_url, sort_order)
+        VALUES (${eventId}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
+      `
+    }
+
+    return NextResponse.json({ event: toCamel(event) }, { status: 201 })
+  } catch (error) {
+    console.error("[studio/events POST] Error:", error)
+    return NextResponse.json({ error: "Failed to create event" }, { status: 500 })
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const body = await req.json()
+    const {
+      id, title, subtitle, description, scheduledAt, status, slug: rawSlug,
+      isPasswordProtected, password, allowChat, allowReactions, timezone, showScheduledPage, showRecording,
+      additionalDates, templateId, templateData: rawTemplateData,
+      heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      validityExpiresAt, validityDays, crewPin,
+    } = body
+
+    if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
+
+    const sql = getDb()
+    const existing = await sql`SELECT * FROM events WHERE id = ${id}`
+    if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    if ((existing[0] as Record<string, unknown>).user_id !== user.id && user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    let finalSlug: string | null = null
+    if (rawSlug !== undefined && rawSlug !== null) {
+      const s = rawSlug.trim().toLowerCase()
+      if (s) {
+        if (!SLUG_REGEX.test(s)) return NextResponse.json({ error: "Invalid slug format." }, { status: 400 })
+        if (s.length < 3) return NextResponse.json({ error: "Slug must be at least 3 characters" }, { status: 400 })
+        if (s.length > 80) return NextResponse.json({ error: "Slug must be 80 characters or less" }, { status: 400 })
+        const taken = await sql`SELECT id FROM events WHERE slug = ${s} AND id != ${id}`
+        if (taken.length > 0) return NextResponse.json({ error: "This event URL is already taken." }, { status: 409 })
+        finalSlug = s
+      }
+    }
+
+    // Ensure columns exist (may be missing in older schemas)
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
+
+    const existingRow = existing[0] as Record<string, unknown>
+    const existingTemplateData = existingRow.template_data as Record<string, unknown> | null | undefined
+    const hasTemplateUpdate = templateId !== undefined || (rawTemplateData !== undefined && rawTemplateData !== null)
+    const resolvedTemplateIdPut =
+      templateId !== undefined
+        ? templateId
+        : (rawTemplateData && typeof rawTemplateData === "object" && "templateId" in rawTemplateData
+            ? (rawTemplateData.templateId as string)
+            : existingTemplateData && typeof existingTemplateData === "object" && "templateId" in existingTemplateData
+              ? existingTemplateData.templateId
+              : null)
+    const newTemplateData = hasTemplateUpdate
+      ? {
+          ...(existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {}),
+          ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
+          templateId: resolvedTemplateIdPut,
+        }
+      : (existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {})
+
+    let validityExpiresAtValue: string | null | undefined = validityExpiresAt
+    if (validityExpiresAtValue === undefined && typeof validityDays === "number" && validityDays > 0) {
+      const s = (existingRow.scheduled_at as string) || scheduledAt
+      if (s) {
+        const d = new Date(s)
+        d.setDate(d.getDate() + validityDays)
+        validityExpiresAtValue = d.toISOString()
+      }
+    }
+    if (validityExpiresAtValue === undefined) validityExpiresAtValue = null
+
+    const crewPinHash =
+      crewPin !== undefined && crewPin !== null && String(crewPin).trim() !== ""
+        ? hashCrewPin(String(crewPin).trim())
+        : (crewPin === "" || crewPin === null ? null : undefined)
+    const photoGalleryJson =
+      photoGalleryUrls !== undefined ? (Array.isArray(photoGalleryUrls) ? JSON.stringify(photoGalleryUrls) : "[]") : undefined
+    const photographerContactJson =
+      photographerContact !== undefined
+        ? (photographerContact && typeof photographerContact === "object" ? JSON.stringify(photographerContact) : "{}")
+        : undefined
+
+    const prev = existingRow as Record<string, unknown>
+    const prevGallery = prev.photo_gallery_urls ?? []
+    const prevPhotographer = prev.photographer_contact ?? {}
+
+    /** When `incoming` is undefined, keep DB value. When null or "", clear column. */
+    const resolveImageUrlColumn = (incoming: unknown, previous: unknown): string | null => {
+      if (incoming === undefined) {
+        return typeof previous === "string" ? previous : null
+      }
+      if (incoming === null) return null
+      if (typeof incoming === "string" && incoming.trim() === "") return null
+      if (typeof incoming === "string") return incoming.trim()
+      return null
+    }
+
+    const finalHeroImageUrl = resolveImageUrlColumn(heroImageUrl, prev.hero_image_url)
+    const finalPlayerImageUrl = resolveImageUrlColumn(playerImageUrl, prev.player_image_url)
+    const finalPhotographerLogoUrl = resolveImageUrlColumn(photographerLogoUrl, prev.photographer_logo_url)
+
+    const finalPhotoGallery =
+      photoGalleryUrls !== undefined
+        ? (Array.isArray(photoGalleryUrls) ? JSON.stringify(photoGalleryUrls) : "[]")
+        : JSON.stringify(Array.isArray(prevGallery) ? prevGallery : [])
+    const finalPhotographerContact =
+      photographerContact !== undefined
+        ? (typeof photographerContact === "object" && photographerContact ? JSON.stringify(photographerContact) : "{}")
+        : JSON.stringify(typeof prevPhotographer === "object" && prevPhotographer ? prevPhotographer : {})
+    const finalCrewPinHash = crewPinHash !== undefined ? crewPinHash : (prev.crew_pin_hash as string | null) ?? null
+
+    const rows = await sql`
+      UPDATE events SET
+        title = COALESCE(${title ?? null}, title),
+        subtitle = COALESCE(${subtitle ?? null}, subtitle),
+        description = COALESCE(${description ?? null}, description),
+        status = COALESCE(${status ?? null}, status),
+        scheduled_at = COALESCE(${scheduledAt ?? null}, scheduled_at),
+        is_password_protected = COALESCE(${isPasswordProtected ?? null}, is_password_protected),
+        event_password = COALESCE(${password ?? null}, event_password),
+        allow_chat = COALESCE(${allowChat ?? null}, allow_chat),
+        allow_reactions = COALESCE(${allowReactions ?? null}, allow_reactions),
+        slug = COALESCE(${finalSlug}, slug),
+        timezone = COALESCE(${timezone ?? null}, timezone),
+        show_scheduled_page = COALESCE(${showScheduledPage ?? null}, show_scheduled_page),
+        show_recording = COALESCE(${showRecording ?? null}, show_recording),
+        template_data = ${JSON.stringify(newTemplateData)}::jsonb,
+        validity_expires_at = COALESCE(${validityExpiresAtValue ?? null}, validity_expires_at),
+        hero_image_url = ${finalHeroImageUrl},
+        player_image_url = ${finalPlayerImageUrl},
+        photo_gallery_urls = ${finalPhotoGallery}::jsonb,
+        photographer_logo_url = ${finalPhotographerLogoUrl},
+        photographer_contact = ${finalPhotographerContact}::jsonb,
+        crew_pin_hash = ${finalCrewPinHash},
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING *
+    `
+
+    const updatedEvent = rows[0] as Record<string, unknown>
+
+    // Sync additional dates if provided
+    if (Array.isArray(additionalDates)) {
+      await sql`DELETE FROM event_dates WHERE event_id = ${id}`
+      const existing = await sql`SELECT stream_type FROM events WHERE id = ${id}`
+      const evStreamType = (existing[0] as Record<string, unknown>)?.stream_type as string || "rtmp"
+      const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
+      const needsOwnKey = ["rtmp", "youtube_api"].includes(evStreamType)
+      for (let i = 0; i < additionalDates.length; i++) {
+        const d = additionalDates[i] as { label?: string; scheduledAt?: string; timezone?: string }
+        if (!d.scheduledAt) continue
+        const extraKey = needsOwnKey ? generateStreamKey() : null
+        const extraRtmp = needsOwnKey ? rtmpUrl : null
+        await sql`
+          INSERT INTO event_dates (event_id, label, scheduled_at, timezone, stream_key, rtmp_url, sort_order)
+          VALUES (${id}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
+        `
+      }
+    }
+
+    return NextResponse.json({ event: toCamel(sanitizeEventForClient(updatedEvent as Record<string, unknown>)) })
+  } catch (error) {
+    console.error("[studio/events PUT] Error:", error)
+    return NextResponse.json({ error: "Failed to update event" }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const id = req.nextUrl.searchParams.get("id")
+    if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
+
+    const sql = getDb()
+    const existing = await sql`SELECT * FROM events WHERE id = ${id}`
+    if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    if ((existing[0] as Record<string, unknown>).user_id !== user.id && user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    await sql`DELETE FROM events WHERE id = ${id}`
+    return NextResponse.json({ deleted: true })
+  } catch (error) {
+    console.error("[studio/events DELETE] Error:", error)
+    return NextResponse.json({ error: "Failed to delete event" }, { status: 500 })
   }
 }

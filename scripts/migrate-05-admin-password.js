@@ -1,14 +1,6 @@
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
-const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
-async function exec(query) {
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
-  return r.json();
-}
+if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
 
 // PBKDF2 password hash using Web Crypto
 async function hashPassword(password) {
@@ -28,20 +20,26 @@ async function hashPassword(password) {
 }
 
 async function main() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   // Hash admin password
   const adminPassword = "admin123"; // Default admin password - change in production!
   const hash = await hashPassword(adminPassword);
   console.log("Generated hash for admin:", hash.substring(0, 30) + "...");
 
-  // Update admin user
-  await exec(`UPDATE users SET password_hash = '${hash}' WHERE email = 'admin@streammattic.com'`);
+  // Update admin user (parameterized to avoid injection)
+  await client.query(
+    "UPDATE users SET password_hash = $1 WHERE email IN ('admin@streamlivee.com', 'admin@streammattic.com')",
+    [hash]
+  );
   console.log("Admin password updated successfully");
 
   // Verify
-  const result = await exec("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streammattic.com'");
+  const result = await client.query("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streamlivee.com'");
   const admin = result.rows[0];
   console.log("Admin user:", admin.email, admin.role, admin.status);
   console.log("Password hash starts with:", admin.password_hash.substring(0, 20));
+  await client.end();
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

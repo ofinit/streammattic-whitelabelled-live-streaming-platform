@@ -21,7 +21,7 @@ export default function PublicEventsPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Radio className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-foreground">StreamMattic</span>
+            <span className="text-lg font-semibold text-foreground">StreamLivee</span>
           </Link>
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
@@ -48,7 +48,7 @@ export default function PublicEventsPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {liveEvents.map((event) => (
-                <Link key={event.id} href={`/watch/${event.id}`}>
+                <Link key={event.id} href={`/${event.slug || event.id}`}>
                   <Card className="group overflow-hidden border-border bg-card transition-all hover:border-primary/50">
                     <div className="relative aspect-video bg-secondary">
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function PublicEventsPage() {
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {upcomingEvents.map((event) => (
-                <Link key={event.id} href={`/watch/${event.id}`}>
+                <Link key={event.id} href={`/${event.slug || event.id}`}>
                   <Card className="group overflow-hidden border-border bg-card transition-all hover:border-primary/50">
                     <div className="relative aspect-video bg-secondary">
                       <div className="absolute inset-0 flex items-center justify-center">

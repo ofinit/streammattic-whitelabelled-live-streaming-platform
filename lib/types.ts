@@ -200,6 +200,8 @@ export interface LiveEvent {
   userId: string
   studioId?: string
   title: string
+  /** Short optional line (e.g. hero tagline), shown above long description on watch pages */
+  subtitle?: string
   description?: string
   thumbnail?: string
   streamType: StreamType
@@ -225,6 +227,8 @@ export interface LiveEvent {
   createdAt: Date
   updatedAt: Date
   simulcastConfig?: SimulcastConfig
+  /** Resolved for watch UI: platform → owning studio → default (set by /api/watch) */
+  faviconHref?: string
 }
 
 // Event Analytics
@@ -268,7 +272,7 @@ export interface PlatformSettings {
   maintenanceMode: boolean
   imageGenerationPrice: number // in paisa, e.g. 500 = 5 INR
   platformDomain: string // admin's primary platform domain, e.g. "myplatform.io"
-  studioCnameTarget: string // CNAME target for studio www records, e.g. "cname.vercel-dns.com"
+  studioCnameTarget: string // CNAME target for studio www records (set via NEXT_PUBLIC_PLATFORM_CNAME_TARGET or admin settings)
   studioAnnualSubscription: {
     price: number // Annual price in paisa for white-label + hosting
     enabled: boolean
@@ -435,7 +439,10 @@ export interface EventTemplate {
   id: string
   name: string
   thumbnail: string
+  /** Primary bucket for card gradient + default grouping */
   category: string
+  /** Also list this template when the picker filters by these categories (e.g. faith weddings under Wedding + Religious) */
+  extraCategories?: string[]
   isActive: boolean
   sortOrder: number
 }

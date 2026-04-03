@@ -108,7 +108,10 @@ export default function StreamerAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{"₹"}{mockStreamerStats.walletBalance.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">{Object.values(mockStreamerStats.streamTypeCredits).reduce((s, c) => s + c, 0)} credits remaining</p>
+            <p className="text-xs text-muted-foreground">
+              {Object.values(mockStreamerStats.credits ?? {}).reduce((s, c) => s + (typeof c === "number" ? c : 0), 0)}{" "}
+              credits remaining
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -106,12 +106,12 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.open(`/watch/${event.id}`, "_blank")}>
+              <DropdownMenuItem onClick={() => window.open(`/${(event.slug as string) || event.id}`, "_blank")}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 View Event Page
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/watch/${event.id}`)}
+                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${(event.slug as string) || event.id}`)}
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy Link

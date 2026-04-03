@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import useSWR from "swr"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield, Users } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -25,6 +26,7 @@ export default function IntegrationsSettingsPage() {
     google_client_id: "",
     google_client_secret: "",
     encryption_key: "",
+    youtube_config_enabled: false,
   })
   const [hasEdited, setHasEdited] = useState(false)
 
@@ -32,6 +34,12 @@ export default function IntegrationsSettingsPage() {
   const displayClientId = hasEdited ? formData.google_client_id : (data?.google_client_id ?? "")
   const displayClientSecret = hasEdited ? formData.google_client_secret : (data?.google_client_secret ?? "")
   const displayEncryptionKey = hasEdited ? formData.encryption_key : (data?.encryption_key ?? "")
+  const effectiveYoutubeConfigEnabled = hasEdited ? formData.youtube_config_enabled : (data?.youtube_config_enabled ?? false)
+
+  useEffect(() => {
+    if (data && !hasEdited)
+      setFormData((prev) => ({ ...prev, youtube_config_enabled: Boolean(data?.youtube_config_enabled) }))
+  }, [data?.youtube_config_enabled, hasEdited])
 
   const handleFieldChange = (field: string, value: string) => {
     if (!hasEdited) {
@@ -58,6 +66,8 @@ export default function IntegrationsSettingsPage() {
       if (formData.encryption_key && !formData.encryption_key.startsWith("****")) {
         payload.encryption_key = formData.encryption_key
       }
+
+      payload.youtube_config_enabled = effectiveYoutubeConfigEnabled
 
       if (Object.keys(payload).length === 0) {
         toast({ title: "No changes to save" })
@@ -90,6 +100,37 @@ export default function IntegrationsSettingsPage() {
       <Header title="Integrations" subtitle="Configure third-party service credentials" />
 
       <div className="space-y-6 max-w-2xl">
+        {/* Toggle: Show YouTube API Configuration in streamer/studio dashboards */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Show YouTube API Configuration in their dashboard</CardTitle>
+                  <CardDescription>
+                    By default you configure YouTube API for everyone. Enable this to show the YouTube API Configuration screen in streamer and studio dashboards so they can view and configure it themselves if required.
+                  </CardDescription>
+                </div>
+              </div>
+              <Switch
+                checked={effectiveYoutubeConfigEnabled}
+                onCheckedChange={(checked) => {
+                  setHasEdited(true)
+                  setFormData((prev) => ({ ...prev, youtube_config_enabled: checked }))
+                }}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Default: OFF. When OFF, only admins see and manage YouTube API Configuration; streamers and studios use the platform credentials. When ON, they can open the configuration page in their dashboard and configure by themselves.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* YouTube / Google OAuth */}
         <Card className="border-border bg-card">
           <CardHeader>
@@ -125,7 +166,18 @@ export default function IntegrationsSettingsPage() {
                 <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink className="h-3 w-3" /></a></li>
                 <li>Create or select a project and enable the <strong>YouTube Data API v3</strong></li>
                 <li>Go to Credentials and create an <strong>OAuth 2.0 Client ID</strong> (Web application)</li>
-                <li>Add <code className="rounded bg-secondary px-1.5 py-0.5 text-xs font-mono text-foreground">{typeof window !== "undefined" ? `${window.location.origin}/api/auth/youtube/callback` : "/api/auth/youtube/callback"}</code> as an Authorized redirect URI</li>
+                <li>Add this exact URL as an <strong>Authorized redirect URI</strong> in Google Console:
+                  <p className="mt-1.5 font-mono text-xs bg-secondary rounded px-2 py-1.5 text-foreground break-all">
+                    {typeof window !== "undefined"
+                      ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/auth/youtube/callback`
+                      : "/api/auth/youtube/callback"}
+                  </p>
+                  {typeof window !== "undefined" && !process.env.NEXT_PUBLIC_APP_URL && (
+                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                      For production, set <code className="rounded bg-secondary px-1">NEXT_PUBLIC_APP_URL</code> to your live site (e.g. <code className="rounded bg-secondary px-1">https://www.streamlivee.com</code>) in your hosting environment so this URI matches.
+                    </p>
+                  )}
+                </li>
                 <li>Copy the Client ID and Client Secret below</li>
               </ol>
             </div>
@@ -171,7 +223,7 @@ export default function IntegrationsSettingsPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                The OAuth 2.0 Client Secret. Stored encrypted in the database.
+                The OAuth 2.0 Client Secret. Stored securely in the database.
                 {data?.has_google_client_secret && !hasEdited && " Currently set (masked)."}
               </p>
             </div>
@@ -215,7 +267,7 @@ export default function IntegrationsSettingsPage() {
                 Save Credentials
               </Button>
               {hasEdited && (
-                <Button variant="outline" onClick={() => { setHasEdited(false); setFormData({ google_client_id: "", google_client_secret: "", encryption_key: "" }) }}>
+                <Button variant="outline" onClick={() => { setHasEdited(false); setFormData({ google_client_id: "", google_client_secret: "", encryption_key: "", youtube_config_enabled: data?.youtube_config_enabled ?? false }) }}>
                   Cancel
                 </Button>
               )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, type ReactNode } from "react"
 import Link from "next/link"
 import { useBranding } from "@/lib/branding-context"
 import { mockBranding } from "@/lib/mock-data"
@@ -30,6 +30,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react"
 import type { Branding, BrandingService } from "@/lib/types"
+import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
@@ -47,21 +48,29 @@ function getServiceIcon(iconName: string) {
   return iconMap[iconName] || Camera
 }
 
-// Use the mock branding data merged with context branding
-function useLandingBranding(): Branding {
-  const { branding } = useBranding()
-  // Merge context branding with mock data for landing page fields
+/** Merge saved/mock defaults with overrides (context or editor draft) for the studio landing page */
+export function mergeStudioLandingBranding(overrides: Partial<Branding>): Branding {
   return {
     ...mockBranding,
-    ...branding,
-    heroImage: branding.heroImage || mockBranding.heroImage,
-    aboutImage: branding.aboutImage || mockBranding.aboutImage,
-    services: branding.services || mockBranding.services,
-    eventTypes: branding.eventTypes || mockBranding.eventTypes,
-    stats: branding.stats || mockBranding.stats,
-    testimonials: branding.testimonials || mockBranding.testimonials,
-    galleryImages: branding.galleryImages || mockBranding.galleryImages,
+    ...overrides,
+    heroImage: overrides.heroImage || mockBranding.heroImage,
+    aboutImage: overrides.aboutImage || mockBranding.aboutImage,
+    services: overrides.services || mockBranding.services,
+    eventTypes: overrides.eventTypes || mockBranding.eventTypes,
+    stats: overrides.stats || mockBranding.stats,
+    testimonials: overrides.testimonials || mockBranding.testimonials,
+    galleryImages: overrides.galleryImages || mockBranding.galleryImages,
   }
+}
+
+function useLandingBranding(): Branding {
+  const { branding } = useBranding()
+  /** On localhost / platform domain, context is platform StreamLivee — do not let it override demo studio `mockBranding` */
+  const isPlatformDefault = branding.id === "platform" || branding.userId === "platform"
+  if (isPlatformDefault) {
+    return mergeStudioLandingBranding({})
+  }
+  return mergeStudioLandingBranding(branding)
 }
 
 // --- Section Components ---
@@ -665,11 +674,10 @@ function SiteFooter({ branding }: { branding: Branding }) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/40 pt-8 sm:flex-row">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-12 border-t border-border/40 pt-8">
+          <p className="text-center text-sm text-muted-foreground sm:text-left">
             &copy; {new Date().getFullYear()} {branding.brandName}. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground/50">Powered by StreamMattic</p>
         </div>
       </div>
     </footer>
@@ -678,11 +686,35 @@ function SiteFooter({ branding }: { branding: Branding }) {
 
 // --- Main Page ---
 
-export function StudioLandingPage() {
-  const branding = useLandingBranding()
+export function StudioLandingPage({
+  draftBranding,
+  previewBanner,
+}: {
+  /** When set (e.g. from sessionStorage on /site?preview=draft), replaces context branding for this render */
+  draftBranding?: Branding | null
+  previewBanner?: ReactNode
+}) {
+  const contextBranding = useLandingBranding()
+  const branding = draftBranding != null ? mergeStudioLandingBranding(draftBranding) : contextBranding
+
+  useEffect(() => {
+    const title = (branding.metaTitle || branding.brandName || "").trim()
+    if (title) document.title = title
+    const desc = branding.metaDescription?.trim() ?? ""
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null
+    if (!meta) {
+      meta = document.createElement("meta")
+      meta.setAttribute("name", "description")
+      document.head.appendChild(meta)
+    }
+    meta.setAttribute("content", desc)
+    const fav = branding.favicon?.trim()
+    if (fav) applyFaviconHrefToDocument(fav)
+  }, [branding])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {previewBanner}
       <SiteHeader branding={branding} />
       <main>
         <HeroSection branding={branding} />

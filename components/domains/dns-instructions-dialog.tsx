@@ -62,9 +62,9 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
   const isSubdomain = domainParts.length > 2
   const subdomain = isSubdomain ? domainParts.slice(0, -2).join(".") : ""
 
-  // Vercel's actual DNS configuration values
-  const vercelCname = "cname.vercel-dns.com"
-  const vercelIp = "76.76.21.21"
+  // Platform CNAME/A target (env for VPS/Docker; default Vercel)
+  const vercelCname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
+  const vercelIp = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
 
   // Build records based on domain type
   const records: DNSRecord[] = isSubdomain

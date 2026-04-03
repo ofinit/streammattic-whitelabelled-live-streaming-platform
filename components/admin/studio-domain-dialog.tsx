@@ -29,11 +29,10 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
   const [isVerifying, setIsVerifying] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
-  const verificationToken = existingDomain?.verificationToken || `streammattic-verify-${studio.id}`
+  const verificationToken = existingDomain?.verificationToken || `streamlivee-verify-${studio.id}`
 
-  // TODO: In production, fetch these from PlatformSettings via API
-  const VERCEL_A_RECORD_IP = "76.76.21.21"
-  const cnameTarget = "cname.vercel-dns.com" // Will come from admin Platform Domain settings
+  const VERCEL_A_RECORD_IP = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
+  const cnameTarget = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
 
   // Root/apex domains can't use CNAME, so we need an A record + CNAME for www
   const displayDomain = domain || "yourbrand.com"

@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,13 +16,13 @@ export function PlatformLandingPage() {
     const features = [
         {
             title: "100% White-Label",
-            description: "Host your own scalable live streaming platform. Your logo, your brand colors, and your custom domain (e.g., live.yourstudio.com). Completely hide the StreamMattic engine.",
+            description: "Host your own scalable live streaming platform. Your logo, your brand colors, and your custom domain (e.g., live.yourstudio.com). Completely hide the StreamLivee engine.",
             icon: Palette,
             theme: "text-blue-400 bg-blue-500/10 border-blue-500/20"
         },
         {
             title: "Pay-Per-Event Scaling",
-            description: "No massive monthly subscriptions. You only pay for the streaming credits you actually utilize per event. Let your platform grow strictly alongside your revenue.",
+            description: "No massive monthly subscriptions. You only pay for the streaming credits you actually use per event. Scale with usage.",
             icon: Zap,
             theme: "text-amber-400 bg-amber-500/10 border-amber-500/20"
         },
@@ -32,19 +34,19 @@ export function PlatformLandingPage() {
         },
         {
             title: "Zero-Code Deployments",
-            description: "You provide the video content, we handle the video CDNs, HLS transcoding, secure ticketing, and password protections dynamically on the edge.",
+            description: "You provide the video content, we handle the video CDNs, HLS transcoding, access control, and password protections dynamically on the edge.",
             icon: Activity,
             theme: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
         },
         {
-            title: "Monetization & Gateways",
-            description: "Pre-integrated Payment Gateways like Razorpay and Instamojo. Sell digital tickets, virtual seats, and charge users directly securely with local tax support.",
+            title: "Payments & Credits",
+            description: "Platform-level payment gateways (Razorpay, Instamojo) for wallet top-ups. Streamers and studios use credits for streaming.",
             icon: Banknote,
             theme: "text-violet-400 bg-violet-500/10 border-violet-500/20"
         },
         {
             title: "Streamer Management",
-            description: "Allow your clients to run independent streams through your portal. Automatically manage their cascading credits, schedules, and permissions securely.",
+            description: "Studios and streamers use the platform to run and manage live streams. Studio accounts get a branded portal on their custom domain; credits, schedules, and permissions are managed on the platform.",
             icon: Users,
             theme: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
         }
@@ -54,7 +56,7 @@ export function PlatformLandingPage() {
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
                     <Link href="/" className="flex items-center gap-3">
                         <BrandedLogo size="lg" />
                     </Link>
@@ -62,7 +64,6 @@ export function PlatformLandingPage() {
                     <nav className="hidden md:flex items-center gap-8">
                         <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Platform</a>
                         <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-                        <a href="#solutions" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Solutions</a>
                         <Link href="/login">
                             <Button variant="outline" size="sm">Sign In</Button>
                         </Link>
@@ -85,7 +86,7 @@ export function PlatformLandingPage() {
                     <div className="mx-auto max-w-5xl relative z-10">
                         <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary mb-8 animate-in fade-in slide-in-from-bottom-5 duration-1000">
                             <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-                            StreamMattic 2.0 is Live
+                            StreamLivee 2.0 is Live
                         </div>
 
                         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 text-balance animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
@@ -93,8 +94,7 @@ export function PlatformLandingPage() {
                         </h1>
 
                         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-7 duration-1000 delay-300">
-                            Launch your own high-performance live streaming business instantly.
-                            Monetize events, host independent streamers, and stream directly under your custom domain with zero coding required.
+                            Run live streaming at scale or launch your own white-label platform on a custom domain—with zero coding required.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
@@ -104,11 +104,11 @@ export function PlatformLandingPage() {
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                             </Link>
-                            <Link href="/demo/white-label">
+                            <a href="#how-it-works">
                                 <Button variant="outline" size="lg" className="w-full sm:w-auto text-md h-12 px-8">
-                                    View Demo Previews
+                                    How It Works
                                 </Button>
-                            </Link>
+                            </a>
                         </div>
                     </div>
 
@@ -128,7 +128,7 @@ export function PlatformLandingPage() {
                                 <div className="h-7 w-64 bg-background border border-border rounded-md hidden sm:flex items-center px-3 justify-center">
                                     <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
                                         <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                                        live.streammattic.com
+                                        www.your-domain.com
                                     </div>
                                 </div>
                                 <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
@@ -232,12 +232,12 @@ export function PlatformLandingPage() {
                     </div>
                 </section>
 
-                {/* Features Split */}
+                {/* Features */}
                 <section id="features" className="px-6 py-24 bg-card/20 border-y border-border/40">
                     <div className="mx-auto max-w-7xl">
                         <div className="text-center mb-20 max-w-3xl mx-auto">
                             <h2 className="text-3xl md:text-5xl font-bold mb-6">Everything you need to <span className="text-primary">broadcast at scale.</span></h2>
-                            <p className="text-lg text-muted-foreground">StreamMattic turns your single web-server into a fully fledged streaming agency. We provide the architecture, you provide the vision.</p>
+                            <p className="text-lg text-muted-foreground">StreamLivee turns your single web-server into a fully fledged streaming agency. We provide the architecture, you provide the vision.</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -257,7 +257,7 @@ export function PlatformLandingPage() {
                 </section>
 
                 {/* How it Works / Trust */}
-                <section className="px-6 py-24">
+                <section id="how-it-works" className="px-6 py-24 scroll-mt-24">
                     <div className="mx-auto max-w-7xl">
                         <div className="grid md:grid-cols-2 gap-16 items-center">
                             <div>
@@ -280,8 +280,8 @@ export function PlatformLandingPage() {
                                     <li className="flex gap-4">
                                         <div className="flex-shrink-0 mt-1"><CheckCircle2 className="h-6 w-6 text-primary" /></div>
                                         <div>
-                                            <h4 className="font-semibold text-lg text-foreground">3. Sell Credits</h4>
-                                            <p className="text-muted-foreground">Allow sub-streamers to sign up and buy your stream credits via Razorpay with instant atomic settlement.</p>
+                                            <h4 className="font-semibold text-lg text-foreground">3. Use Credits</h4>
+                                            <p className="text-muted-foreground">Studios and streamers sign up on the platform and use stream credits to run their streams.</p>
                                         </div>
                                     </li>
                                 </ul>
@@ -345,7 +345,13 @@ export function PlatformLandingPage() {
             <footer className="border-t border-border/40 py-12 text-center text-sm text-muted-foreground">
                 <div className="container mx-auto px-6">
                     <BrandedLogo size="sm" className="mx-auto mb-4 opacity-50 grayscale" />
-                    <p>© {new Date().getFullYear()} StreamMattic Software. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} StreamLivee Software. All rights reserved.</p>
+                    <p className="mt-2">
+                        Powered by{" "}
+                        <a href="https://www.ofinit.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            OfinIT
+                        </a>
+                    </p>
                 </div>
             </footer>
         </div>

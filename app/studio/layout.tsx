@@ -7,22 +7,24 @@ import { useAuth } from "@/lib/auth-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
+import { cn } from "@/lib/utils"
 import type { Studio } from "@/lib/types"
 
 function StudioLayoutInner({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const { isCollapsed } = useSidebar()
   const [hasCompletedSetup, setHasCompletedSetup] = useState(true)
 
   useEffect(() => {
+    if (isLoading) return
     if (!isAuthenticated) {
       router.push("/")
     } else if (user?.role !== "studio") {
       router.push("/")
     }
-  }, [isAuthenticated, user, router])
+  }, [isLoading, isAuthenticated, user, router])
 
   useEffect(() => {
     if (user?.role === "studio") {
@@ -31,6 +33,8 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
       setHasCompletedSetup(true)
     }
   }, [user, pathname, router])
+
+  if (isLoading) return null
 
   if (!isAuthenticated || user?.role !== "studio") {
     return null
@@ -44,8 +48,14 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <ImpersonationBanner />
       <Sidebar />
-      <main className={`transition-all duration-300 ${isCollapsed ? "pl-16" : "pl-64"}`}>
-        <div className="p-6">{children}</div>
+      <main
+        className={cn(
+          "min-w-0 transition-all duration-300 pl-0 md:pt-0",
+          isImpersonating ? "pt-[6.75rem] md:pt-0" : "pt-14 md:pt-0",
+          isCollapsed ? "md:pl-16" : "md:pl-64",
+        )}
+      >
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
     </div>
   )

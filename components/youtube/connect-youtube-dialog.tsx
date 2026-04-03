@@ -13,6 +13,7 @@ interface ConnectYouTubeDialogProps {
   ownerType: "admin" | "studio" | "streamer"
   returnUrl?: string
   onSuccess?: () => void
+  contextStreamType?: string
 }
 
 export function ConnectYouTubeDialog({
@@ -22,6 +23,7 @@ export function ConnectYouTubeDialog({
   ownerType,
   returnUrl,
   onSuccess,
+  contextStreamType,
 }: ConnectYouTubeDialogProps) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState("")
@@ -80,6 +82,26 @@ export function ConnectYouTubeDialog({
 
       const { url } = await res.json()
 
+      // Save pending state so the page can re-open the modal after the redirect
+      let oauthContext: { mode?: "edit" | "create"; eventId?: string } | null = null
+      try {
+        const raw = sessionStorage.getItem("yt_oauth_context")
+        if (raw) oauthContext = JSON.parse(raw)
+      } catch {
+        oauthContext = null
+      } finally {
+        sessionStorage.removeItem("yt_oauth_context")
+      }
+
+      sessionStorage.setItem("yt_oauth_pending", JSON.stringify({
+        page: window.location.pathname,
+        openModal: true,
+        tab: "stream",
+        streamType: contextStreamType || null,
+        mode: oauthContext?.mode ?? undefined,
+        eventId: oauthContext?.eventId ?? undefined,
+      }))
+
       // Redirect to Google OAuth consent screen (same tab)
       // After consent, Google redirects to /api/auth/youtube/callback
       // which processes tokens and redirects back to returnUrl with yt_connected param
@@ -99,7 +121,7 @@ export function ConnectYouTubeDialog({
             Connect YouTube Channel
           </DialogTitle>
           <DialogDescription>
-            Link your YouTube channel to create live broadcasts directly from StreamMattic
+            Link your YouTube channel to create live broadcasts directly from StreamLivee
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +146,7 @@ export function ConnectYouTubeDialog({
 
           <Alert className="bg-muted/50 border-border">
             <AlertDescription className="text-xs">
-              StreamMattic will request permission to manage your YouTube live streams. We will never post videos or
+              StreamLivee will request permission to manage your YouTube live streams. We will never post videos or
               access your private content without your action.
             </AlertDescription>
           </Alert>

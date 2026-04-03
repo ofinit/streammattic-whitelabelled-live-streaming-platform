@@ -19,6 +19,10 @@ import {
   X,
 } from "lucide-react"
 import Link from "next/link"
+import { getTemplateDefaultTitleRem, heroTitleFontSizeStyle, titleFallbackFontClass } from "@/lib/event-title-typography"
+import { cn } from "@/lib/utils"
+
+const DEFAULT_TEMPLATE_ID = "tpl-default"
 
 interface TemplateProps {
   eventTitle?: string
@@ -40,6 +44,10 @@ export function DefaultTemplate({
   const [chatMessage, setChatMessage] = useState("")
   const [viewerCount] = useState(342)
   const [showMobileChat, setShowMobileChat] = useState(false)
+
+  const titleBaseRem = getTemplateDefaultTitleRem(DEFAULT_TEMPLATE_ID)
+  const titleFontClass = titleFallbackFontClass(DEFAULT_TEMPLATE_ID, false)
+  const titleSizeStyle = heroTitleFontSizeStyle(titleBaseRem)
 
   return (
     <div className="min-h-screen bg-zinc-900 text-white">
@@ -91,7 +99,12 @@ export function DefaultTemplate({
                   <Radio className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
                 </div>
               </div>
-              <h2 className="text-base md:text-xl font-semibold text-white text-center px-4">{eventTitle}</h2>
+              <h2
+                className={cn("text-center font-semibold text-white px-4", titleFontClass)}
+                style={titleSizeStyle}
+              >
+                {eventTitle}
+              </h2>
               <p className="text-zinc-500 text-xs md:text-sm mt-1">Default Template</p>
             </div>
 
@@ -115,7 +128,9 @@ export function DefaultTemplate({
           <div className="p-3 md:p-4 bg-zinc-800 flex-shrink-0">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="min-w-0">
-                <h1 className="text-lg md:text-xl font-bold text-white truncate">{eventTitle}</h1>
+                <h1 className={cn("truncate font-bold text-white", titleFontClass)} style={titleSizeStyle}>
+                  {eventTitle}
+                </h1>
                 <p className="text-zinc-400 mt-1 text-sm md:text-base line-clamp-2">{eventDescription}</p>
               </div>
               <Button

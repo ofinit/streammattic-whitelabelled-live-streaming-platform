@@ -1,3 +1,7 @@
+/* Celestial Dreams: Cinzel + Space Grotesk (not loaded via next/font — avoids runtime ReferenceError in some Next/Turbopack setups) */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Space+Grotesk:wght@300;400;500;700&display=swap");
+/* Memorial service hero — Cinzel + Crimson Text + Montserrat */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -75,8 +79,42 @@
 }
 
 @theme inline {
-  /* Updated font-sans to use the CSS variable from Next.js font */
+  /* Loaded via next/font in app/layout.tsx (--font-inter, --font-playfair, --font-lato) */
   --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-serif: var(--font-playfair), "Playfair Display", ui-serif, Georgia, "Times New Roman", serif;
+  /* Wedding reference template body copy */
+  --font-wedding: var(--font-lato), "Lato", system-ui, sans-serif;
+  /* Ethereal Garden wedding (Cormorant + Montserrat via next/font in layout) */
+  --font-garden-serif: var(--font-cormorant-garden), "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-garden-sans: var(--font-montserrat-garden), "Montserrat", system-ui, sans-serif;
+  /* Midnight Elegance wedding (next/font in layout) */
+  --font-midnight-display: var(--font-italiana-midnight), "Italiana", ui-serif, Georgia, serif;
+  --font-midnight-sans: var(--font-rajdhani-midnight), "Rajdhani", system-ui, sans-serif;
+  /* Coastal Breeze wedding (next/font in layout) */
+  --font-coastal-script: var(--font-pacifico-coastal), "Pacifico", cursive;
+  --font-coastal-sans: var(--font-quicksand-coastal), "Quicksand", system-ui, sans-serif;
+  /* Celestial Dreams wedding (@import Google Fonts at top of this file) */
+  --font-celestial-display: "Cinzel", ui-serif, Georgia, serif;
+  --font-celestial-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-memorial-display: "Cinzel", ui-serif, Georgia, serif;
+  --font-memorial-serif: "Crimson Text", ui-serif, Georgia, serif;
+  --font-memorial-sans: var(--font-garden-sans), "Montserrat", system-ui, sans-serif;
+  /* Corporate Tech Forward (Space Grotesk via next/font — layout) */
+  --font-corporate-tech-display-stack: var(--font-corporate-tech-display), "Space Grotesk", system-ui, sans-serif;
+  /* Christian wedding rose (Great Vibes + Cormorant + Montserrat via layout) */
+  --font-christian-rose-script: var(--font-great-vibes-christian-rose), "Great Vibes", cursive;
+  --font-christian-rose-serif: var(--font-garden-serif);
+  --font-christian-rose-sans: var(--font-garden-sans);
+  /* Traditional Hindu wedding — Playfair + Cormorant (next/font in layout) */
+  --font-hindu-wedding-display: var(--font-serif);
+  --font-hindu-wedding-serif: var(--font-garden-serif);
+  /* Muslim Nikah wedding (Amiri + Raleway + Playfair display via --font-serif) */
+  --font-nikah-amiri: var(--font-amiri-nikah), "Amiri", Georgia, serif;
+  --font-nikah-sans: var(--font-raleway-nikah), "Raleway", system-ui, sans-serif;
+  --font-nikah-display: var(--font-serif);
+  /* Birthday party (Fredoka + Poppins via next/font in layout) */
+  --font-birthday-display: var(--font-fredoka-birthday), "Fredoka", system-ui, sans-serif;
+  --font-birthday-sans: var(--font-poppins-birthday), "Poppins", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -129,6 +167,25 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 40% / 0.5) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 40% / 0.45);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 50% / 0.55);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
   body {
     @apply bg-background text-foreground;
@@ -204,6 +261,983 @@
     }
     to {
       transform: translateX(100%);
+    }
+  }
+
+  @keyframes floatUp {
+    0%   { transform: translateY(0)   scale(1);   opacity: 1; }
+    60%  { transform: translateY(-120px) scale(1.3); opacity: 0.9; }
+    100% { transform: translateY(-200px) scale(0.8); opacity: 0; }
+  }
+
+  /* Midnight Elegance (tpl-wedding-midnight) — global keyframes so animations work outside styled-jsx */
+  @keyframes midnightGoldShimmer {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes midnightParticleFloat {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.45;
+    }
+    90% {
+      opacity: 0.45;
+    }
+    100% {
+      transform: translateY(110vh) translateX(36px);
+      opacity: 0;
+    }
+  }
+
+  /** Subtle chromatic drift on gradient display type (drop-shadow works on clipped text in WebKit) */
+  @keyframes midnightGlitchRGB {
+    0%,
+    88%,
+    100% {
+      filter: drop-shadow(-1.5px 0 0 rgba(255, 0, 255, 0.2)) drop-shadow(1.5px 0 0 rgba(0, 255, 255, 0.2));
+    }
+    90% {
+      filter: drop-shadow(2px 0 0 rgba(255, 0, 255, 0.38)) drop-shadow(-2px 0 0 rgba(0, 255, 255, 0.38));
+    }
+    93% {
+      filter: drop-shadow(-2px 1px 0 rgba(255, 0, 255, 0.32)) drop-shadow(2px -1px 0 rgba(0, 255, 255, 0.32));
+    }
+    96% {
+      filter: drop-shadow(1px 0 0 rgba(255, 0, 255, 0.22)) drop-shadow(-1px 0 0 rgba(0, 255, 255, 0.22));
+    }
+  }
+
+  @keyframes midnightCaretBlink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* Coastal Breeze (tpl-wedding-coastal) */
+  @keyframes coastalBubbleRise {
+    0% {
+      bottom: -100px;
+      transform: translateX(0) scale(1);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      bottom: 100vh;
+      transform: translateX(80px) scale(0.45);
+      opacity: 0;
+    }
+  }
+
+  @keyframes coastalWaveShift {
+    0% {
+      background-position-x: 0;
+    }
+    100% {
+      background-position-x: 1440px;
+    }
+  }
+
+  @keyframes coastalWaveShiftReverse {
+    0% {
+      background-position-x: 1440px;
+    }
+    100% {
+      background-position-x: 0;
+    }
+  }
+
+  /* Celestial Dreams (tpl-wedding-celestial) */
+  @keyframes celestialStarTwinkle {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(1);
+      filter: none;
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.45);
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.95));
+    }
+  }
+
+  @keyframes celestialNebulaPulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.28;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.45;
+    }
+  }
+
+  @keyframes celestialAuroraWave {
+    0%,
+    100% {
+      transform: translateX(-6%) skewX(-4deg);
+      opacity: 0.45;
+    }
+    50% {
+      transform: translateX(6%) skewX(4deg);
+      opacity: 0.72;
+    }
+  }
+
+  @keyframes celestialMoonPulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 28px rgba(255, 255, 255, 0.45),
+        inset -8px -8px 18px rgba(0, 0, 0, 0.22);
+    }
+    50% {
+      box-shadow:
+        0 0 52px rgba(255, 255, 255, 0.75),
+        0 0 90px rgba(255, 215, 0, 0.22),
+        inset -8px -8px 18px rgba(0, 0, 0, 0.22);
+    }
+  }
+
+  @keyframes celestialDrawLine {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /*
+   * Shooting stars: do NOT use var() inside transform in @keyframes — browsers often
+   * fail to interpolate and drop the transform, leaving a frozen horizontal streak.
+   */
+  @keyframes celestialShootingStarTrack1 {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(-36deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.95;
+    }
+    100% {
+      transform: translate3d(72vw, 58vh, 0) rotate(-36deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes celestialShootingStarTrack2 {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(-42deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.95;
+    }
+    100% {
+      transform: translate3d(85vw, 42vh, 0) rotate(-42deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes celestialShootingStarTrack3 {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(-32deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.95;
+    }
+    100% {
+      transform: translate3d(62vw, 70vh, 0) rotate(-32deg);
+      opacity: 0;
+    }
+  }
+
+  /* Traditional Hindu wedding (tpl-wedding-traditional-hindu) */
+  @keyframes hinduRotateMandala {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes hinduFloatDiya {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-5deg);
+      opacity: 0.85;
+    }
+    50% {
+      transform: translateY(-24px) rotate(5deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes hinduPetalFall {
+    0% {
+      transform: translateY(-80px) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.85;
+    }
+    90% {
+      opacity: 0.85;
+    }
+    100% {
+      transform: translateY(110vh) translateX(48px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes hinduElephantWalk {
+    0% {
+      transform: translateX(-35vw);
+    }
+    100% {
+      transform: translateX(135vw);
+    }
+  }
+
+  @keyframes hinduStringSway {
+    0%,
+    100% {
+      transform: rotate(-2deg);
+    }
+    50% {
+      transform: rotate(2deg);
+    }
+  }
+
+  @keyframes hinduPeacock {
+    0%,
+    100% {
+      transform: rotate(-6deg) scale(1);
+    }
+    50% {
+      transform: rotate(6deg) scale(1.05);
+    }
+  }
+
+  @keyframes hinduBell {
+    0%,
+    85%,
+    100% {
+      transform: rotate(0deg);
+    }
+    90% {
+      transform: rotate(16deg);
+    }
+    95% {
+      transform: rotate(-16deg);
+    }
+  }
+
+  @keyframes hinduLotus {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.08) rotate(4deg);
+    }
+  }
+
+  /* Corporate Tech Forward (tpl-corporate-tech-forward) */
+  @keyframes corpTechGridMove {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 60px 60px;
+    }
+  }
+
+  @keyframes corpTechOrbFloat {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -30px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+  }
+
+  @keyframes corpTechDataFall {
+    0% {
+      transform: translateY(-100vh);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+
+  @keyframes corpTechScan {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
+  }
+
+  @keyframes corpTechPulseRing {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes corpTechGlitch1 {
+    0%,
+    100% {
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      transform: translate(-2px, -2px);
+    }
+    20% {
+      clip-path: polygon(0 20%, 100% 20%, 100% 65%, 0 65%);
+      transform: translate(2px, 2px);
+    }
+    40% {
+      clip-path: polygon(0 40%, 100% 40%, 100% 85%, 0 85%);
+      transform: translate(-2px, 2px);
+    }
+    60% {
+      clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+      transform: translate(2px, -2px);
+    }
+    80% {
+      clip-path: polygon(0 80%, 100% 80%, 100% 35%, 0 35%);
+      transform: translate(-2px, 2px);
+    }
+  }
+
+  @keyframes corpTechGlitch2 {
+    0%,
+    100% {
+      clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+      transform: translate(2px, 2px);
+    }
+    20% {
+      clip-path: polygon(0 40%, 100% 40%, 100% 85%, 0 85%);
+      transform: translate(-2px, -2px);
+    }
+    40% {
+      clip-path: polygon(0 20%, 100% 20%, 100% 65%, 0 65%);
+      transform: translate(2px, -2px);
+    }
+    60% {
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      transform: translate(-2px, 2px);
+    }
+    80% {
+      clip-path: polygon(0 80%, 100% 80%, 100% 35%, 0 35%);
+      transform: translate(2px, -2px);
+    }
+  }
+
+  @keyframes corpTechProgressShine {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes corpTechLivePulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.5;
+    }
+  }
+}
+
+@layer utilities {
+  .font-garden-sans {
+    font-family: var(--font-garden-sans);
+  }
+  .font-garden-serif {
+    font-family: var(--font-garden-serif);
+  }
+
+  .font-midnight-display {
+    font-family: var(--font-midnight-display), "Italiana", ui-serif, Georgia, serif;
+  }
+
+  .font-midnight-sans {
+    font-family: var(--font-midnight-sans), "Rajdhani", system-ui, sans-serif;
+  }
+
+  /** Gold gradient fill + shimmer (replaces brittle arbitrary animation + bg-clip combos) */
+  .midnight-gold-shimmer-text {
+    background-image: linear-gradient(
+      90deg,
+      #b8860b 0%,
+      #d4af37 18%,
+      #fff8e7 40%,
+      #d4af37 55%,
+      #b45309 72%,
+      #d4af37 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: midnightGoldShimmer 4s linear infinite;
+  }
+
+  .midnight-name-glitch {
+    animation: midnightGlitchRGB 3.2s ease-in-out infinite;
+  }
+
+  .midnight-typing-caret::after {
+    content: "";
+    display: inline-block;
+    width: 2px;
+    height: 0.95em;
+    margin-left: 3px;
+    background: rgba(212, 175, 55, 0.9);
+    animation: midnightCaretBlink 0.85s step-end infinite;
+    vertical-align: -0.08em;
+  }
+
+  .font-coastal-script {
+    font-family: var(--font-coastal-script), "Pacifico", cursive;
+  }
+
+  .font-coastal-sans {
+    font-family: var(--font-coastal-sans), "Quicksand", system-ui, sans-serif;
+  }
+
+  .font-birthday-display {
+    font-family: var(--font-birthday-display);
+  }
+
+  .font-birthday-sans {
+    font-family: var(--font-birthday-sans);
+  }
+
+  .coastal-sand-texture-bg {
+    background-color: #edf6f9;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  }
+
+  .coastal-wave-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23006d77' fill-opacity='0.3' d='M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-size: 1440px 100px;
+    animation: coastalWaveShift 10s linear infinite;
+    pointer-events: none;
+  }
+
+  .coastal-wave-layer-2 {
+    bottom: 10px;
+    opacity: 0.5;
+    animation: coastalWaveShiftReverse 8s linear infinite;
+  }
+
+  .coastal-wave-layer-3 {
+    bottom: 20px;
+    opacity: 0.28;
+    animation: coastalWaveShift 6s linear infinite;
+  }
+
+  .font-celestial-display {
+    font-family: var(--font-celestial-display);
+  }
+
+  .font-celestial-sans {
+    font-family: var(--font-celestial-sans);
+  }
+
+  .font-hindu-wedding-display {
+    font-family: var(--font-hindu-wedding-display);
+  }
+
+  .font-hindu-wedding-serif {
+    font-family: var(--font-hindu-wedding-serif);
+  }
+
+  .hindu-wedding-scallop {
+    background-image: radial-gradient(circle at 50% 100%, #ff1493 0%, #ff69b4 40%, transparent 45%);
+    background-size: 80px 60px;
+    background-repeat: repeat-x;
+  }
+
+  .hindu-wedding-marigold-chain {
+    background: radial-gradient(circle at 20px 20px, #ffb84d 0%, #ff8c00 30%, #ff6b00 50%, transparent 55%),
+      radial-gradient(circle at 60px 20px, #ffb84d 0%, #ff8c00 30%, #ff6b00 50%, transparent 55%);
+    background-size: 80px 40px;
+    background-repeat: repeat-x;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  }
+
+  .hindu-wedding-string {
+    --hindu-garland-tile: 30px;
+    --hindu-garland-tassel-reserve: 22px;
+    position: relative;
+    z-index: 0;
+    overflow: visible;
+    animation: hinduStringSway 3s ease-in-out infinite;
+    transform-origin: top center;
+    /* Wide enough for leaf pseudo-element (keeps greens inside layout box) */
+    min-width: 1.5rem;
+  }
+
+  /*
+   * One seamless vertical tile: marigold + mango leaf, then repeat-y.
+   * Explicit circle/ellipse radii — `circle` without a length uses farthest-corner and blows up the tile.
+   * Tile height must match snapHinduStrandHeight() in wedding-traditional-hindu-watch-view.tsx (default 30px).
+   */
+  .hindu-wedding-string::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--hindu-garland-tassel-reserve, 22px);
+    z-index: 0;
+    background:
+      radial-gradient(circle 10px at 50% 11px, #ffb84d 0%, #f97316 36%, #9a3412 54%, transparent 58%),
+      radial-gradient(ellipse 12px 5px at 50% 24px, #2e8b57 0%, #166534 70%, transparent 76%);
+    background-size: 100% var(--hindu-garland-tile, 30px);
+    background-repeat: repeat-y;
+    background-position: top center;
+  }
+
+  .hindu-wedding-tassel {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 12px solid #ffd700;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  }
+
+  .hindu-wedding-bangle {
+    height: 10px;
+    background: repeating-linear-gradient(
+      90deg,
+      #ffd700 0px,
+      #ffd700 18px,
+      #dc143c 18px,
+      #dc143c 36px,
+      #228b22 36px,
+      #228b22 54px,
+      #ff8c00 54px,
+      #ff8c00 72px,
+      #ffd700 72px,
+      #ffd700 90px
+    );
+  }
+
+  .hindu-wedding-diya {
+    animation: hinduFloatDiya 15s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.45));
+  }
+
+  .hindu-wedding-petal {
+    top: -48px;
+    animation: hinduPetalFall 12s linear infinite;
+  }
+
+  .hindu-wedding-reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition:
+      opacity 0.85s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+      transform 0.85s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .hindu-wedding-reveal--visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Used inside hero `relative` section so stars sit above nebula but below copy */
+  .celestial-star-dot {
+    position: absolute;
+    border-radius: 9999px;
+    background: #fff;
+    pointer-events: none;
+    animation: celestialStarTwinkle ease-in-out infinite;
+  }
+
+  /* Optional full-viewport strip (e.g. marketing pages) */
+  .celestial-aurora-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    pointer-events: none;
+    z-index: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(74, 14, 78, 0.32) 0%,
+      rgba(26, 31, 61, 0.12) 55%,
+      transparent 100%
+    );
+    animation: celestialAuroraWave 18s ease-in-out infinite;
+  }
+
+  .celestial-aurora-hero {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(74, 14, 78, 0.32) 0%,
+      rgba(26, 31, 61, 0.12) 55%,
+      transparent 100%
+    );
+    animation: celestialAuroraWave 18s ease-in-out infinite;
+  }
+
+  .celestial-nebula-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: celestialNebulaPulse 22s ease-in-out infinite;
+  }
+
+  .celestial-shooting-star {
+    position: absolute;
+    width: 9rem;
+    height: 2px;
+    border-radius: 9999px;
+    pointer-events: none;
+    transform-origin: 0% 50%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.12) 18%,
+      rgba(255, 255, 255, 1) 48%,
+      rgba(255, 255, 255, 0.15) 78%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 10px 1px rgba(255, 255, 255, 0.45),
+      0 0 24px 4px rgba(186, 200, 255, 0.2);
+  }
+
+  .celestial-shooting-star--track1 {
+    animation: celestialShootingStarTrack1 8s cubic-bezier(0.12, 0.72, 0.22, 1) infinite backwards;
+    animation-delay: 0s;
+  }
+
+  .celestial-shooting-star--track2 {
+    animation: celestialShootingStarTrack2 12s cubic-bezier(0.12, 0.72, 0.22, 1) infinite backwards;
+    animation-delay: 5s;
+  }
+
+  .celestial-shooting-star--track3 {
+    animation: celestialShootingStarTrack3 10.5s cubic-bezier(0.12, 0.72, 0.22, 1) infinite backwards;
+    animation-delay: 11s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .celestial-shooting-star,
+    .celestial-shooting-star--track1,
+    .celestial-shooting-star--track2,
+    .celestial-shooting-star--track3 {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+  }
+
+  .celestial-moon-disc {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 50%, #c0c0c0 100%);
+    animation: celestialMoonPulse 9s ease-in-out infinite;
+  }
+
+  /* --- Corporate Tech Forward --- */
+  .font-corporate-tech-display {
+    font-family: var(--font-corporate-tech-display-stack);
+  }
+
+  .corp-tech-grid-bg {
+    background-image:
+      linear-gradient(rgba(0, 102, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 102, 255, 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: corpTechGridMove 24s linear infinite;
+  }
+
+  .corp-tech-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: corpTechOrbFloat 22s ease-in-out infinite;
+  }
+
+  .corp-tech-data-stream {
+    position: absolute;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    color: rgba(0, 102, 255, 0.28);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: corpTechDataFall linear infinite;
+  }
+
+  .corp-tech-scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 102, 255, 0.85), transparent);
+    animation: corpTechScan 5s linear infinite;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .corp-tech-pulse-ring {
+    position: relative;
+  }
+
+  .corp-tech-pulse-ring::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 2px solid #0066ff;
+    animation: corpTechPulseRing 2.4s ease-out infinite;
+    pointer-events: none;
+  }
+
+  .corp-tech-glitch {
+    position: relative;
+    display: inline-block;
+  }
+
+  .corp-tech-glitch::before,
+  .corp-tech-glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .corp-tech-glitch::before {
+    animation: corpTechGlitch1 2.8s infinite linear alternate-reverse;
+    color: #22d3ee;
+    z-index: -1;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    transform: translate(-2px, -2px);
+  }
+
+  .corp-tech-glitch::after {
+    animation: corpTechGlitch2 3.2s infinite linear alternate-reverse;
+    color: #e879f9;
+    z-index: -2;
+    clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+    transform: translate(2px, 2px);
+  }
+
+  .corp-tech-glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .corp-tech-neon-shell {
+    border: 1px solid rgba(0, 102, 255, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(0, 212, 170, 0.12),
+      0 12px 40px rgba(0, 102, 255, 0.12);
+  }
+
+  .corp-tech-progress-bar {
+    background: linear-gradient(90deg, #0066ff, #00d4aa);
+    background-size: 200% 100%;
+    animation: corpTechProgressShine 2.8s linear infinite;
+  }
+
+  .corp-tech-live-dot {
+    animation: corpTechLivePulse 2s ease-in-out infinite;
+  }
+
+  .font-memorial-display {
+    font-family: var(--font-memorial-display);
+  }
+
+  .font-memorial-serif {
+    font-family: var(--font-memorial-serif);
+  }
+
+  .font-memorial-sans {
+    font-family: var(--font-memorial-sans);
+  }
+
+  @keyframes memorialDescendLight {
+    0% {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.28;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+
+  @keyframes memorialDoveFly {
+    0% {
+      transform: translateX(100px) translateY(0) scale(0.85);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.55;
+    }
+    88% {
+      opacity: 0.55;
+    }
+    100% {
+      transform: translateX(calc(-100vw - 160px)) translateY(-48px) scale(1.05);
+      opacity: 0;
+    }
+  }
+
+  @keyframes memorialPhotoGlow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 16px rgba(201, 169, 97, 0.35));
+    }
+    50% {
+      filter: drop-shadow(0 0 26px rgba(201, 169, 97, 0.55));
+    }
+  }
+
+  @keyframes memorialCandleFlicker {
+    0%,
+    100% {
+      opacity: 1;
+      filter: brightness(1);
+    }
+    50% {
+      opacity: 0.88;
+      filter: brightness(1.12);
+    }
+  }
+
+  @keyframes memorialFadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes memorialGentleBounce {
+    0%,
+    100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(-50%) translateY(-8px);
+    }
+  }
+
+  .memorial-light-ray {
+    background: linear-gradient(to bottom, transparent, #c9a961, transparent);
+    animation-name: memorialDescendLight;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .memorial-dove {
+    right: -80px;
+    left: auto;
+    animation-name: memorialDoveFly;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .memorial-photo-glow {
+    animation: memorialPhotoGlow 3.2s ease-in-out infinite;
+  }
+
+  .memorial-candle-flicker {
+    animation: memorialCandleFlicker 2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .corp-tech-grid-bg,
+    .corp-tech-orb,
+    .corp-tech-data-stream,
+    .corp-tech-scan-line,
+    .corp-tech-pulse-ring::before,
+    .corp-tech-glitch::before,
+    .corp-tech-glitch::after,
+    .corp-tech-progress-bar,
+    .corp-tech-live-dot {
+      animation: none !important;
+    }
+    .corp-tech-data-stream {
+      opacity: 0;
+    }
+    .memorial-light-ray,
+    .memorial-dove,
+    .memorial-photo-glow,
+    .memorial-candle-flicker {
+      animation: none !important;
     }
   }
 }

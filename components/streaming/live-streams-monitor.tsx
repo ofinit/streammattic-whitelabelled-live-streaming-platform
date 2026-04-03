@@ -169,7 +169,7 @@ export function LiveStreamsMonitor({ refreshInterval = 5000 }: LiveStreamsMonito
                   key={event.id}
                   event={event}
                   status={status}
-                  onView={() => window.open(`/watch/${event.id}`, "_blank")}
+                  onView={() => window.open(`/${(event.slug as string) || event.id}`, "_blank")}
                   onStop={() => console.log("Stop stream:", event.id)}
                 />
               ))}

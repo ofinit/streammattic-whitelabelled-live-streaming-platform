@@ -122,6 +122,18 @@ export async function getWalletTransactions(walletId: string, limit = 20, offset
   return toCamelRows(rows as Record<string, unknown>[])
 }
 
+/** Wallet ledger rows for a user (credits, debits, all categories). */
+export async function getWalletTransactionsByUserId(userId: string, limit = 20) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT * FROM wallet_transactions
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return toCamelRows(rows as Record<string, unknown>[])
+}
+
 // ============================================================
 // CREDITS
 // ============================================================
@@ -227,7 +239,7 @@ export async function getRevenueTotal(filters?: { studioId?: string; days?: numb
   }
 
   const where = `WHERE ${conditions.join(" AND ")}`
-  const rows = await sql(`SELECT COALESCE(SUM(total), 0)::numeric AS total FROM orders ${where}`, params)
+  const rows = await sql(`SELECT COALESCE(SUM(total_price), 0)::numeric AS total FROM orders ${where}`, params)
   return Number((rows[0] as { total: string }).total)
 }
 
@@ -253,7 +265,8 @@ export async function getEvents(filters?: {
     params.push(filters.userId)
   }
   if (filters?.studioId) {
-    conditions.push(`e.studio_id = $${paramIdx++}`)
+    // Events are owned by user_id; for studio users their user_id IS their studioId
+    conditions.push(`e.user_id = $${paramIdx++}`)
     params.push(filters.studioId)
   }
   if (filters?.status) {
@@ -275,7 +288,7 @@ export async function getEvents(filters?: {
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
     ${where}
-    ORDER BY e.scheduled_start DESC NULLS LAST, e.created_at DESC
+    ORDER BY e.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `, params)
 
@@ -305,7 +318,7 @@ export async function getEventCount(filters?: { userId?: string; studioId?: stri
     params.push(filters.userId)
   }
   if (filters?.studioId) {
-    conditions.push(`studio_id = $${paramIdx++}`)
+    conditions.push(`user_id = $${paramIdx++}`)
     params.push(filters.studioId)
   }
   if (filters?.status) {
@@ -353,17 +366,17 @@ export async function getAdminDashboardStats() {
     SELECT
       (SELECT COUNT(*)::int FROM users WHERE role = 'studio') AS total_studios,
       (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') AS active_studios,
-      (SELECT COUNT(*)::int FROM users WHERE role = 'user') AS total_users,
-      (SELECT COUNT(*)::int FROM users WHERE role = 'user' AND status = 'active') AS active_users,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'streamer') AS total_users,
+      (SELECT COUNT(*)::int FROM users WHERE role = 'streamer' AND status = 'active') AS active_users,
       (SELECT COUNT(*)::int FROM events) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE status = 'completed') AS completed_events,
+      (SELECT COUNT(*)::int FROM events WHERE status = 'ended') AS completed_events,
       (SELECT COUNT(*)::int FROM orders) AS total_orders,
       (SELECT COUNT(*)::int FROM orders WHERE status = 'completed') AS completed_orders,
       (SELECT COUNT(*)::int FROM orders WHERE status = 'pending') AS pending_orders,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed') AS total_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
       (SELECT COALESCE(SUM(balance), 0)::numeric FROM wallets) AS total_wallet_balance,
       (SELECT COUNT(*)::int FROM packages WHERE is_active = true) AS active_packages
   `
@@ -378,16 +391,41 @@ export async function getStudioDashboardStats(studioId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId}) AS total_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'live') AS live_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = ${studioId} AND status = 'completed') AS completed_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId}) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'ended') AS completed_events,
+      (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${studioId}) AS total_views,
       (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
+      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
       (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
   `
   return toCamel(rows[0] as Record<string, unknown>)
+}
+
+// ============================================================
+// DASHBOARD STATS (streamer)
+// ============================================================
+
+export async function getStreamerDashboardStats(userId: string) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId}) AS total_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'live') AS live_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'scheduled') AS scheduled_events,
+      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'ended') AS completed_events,
+      (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${userId}) AS total_views,
+      (SELECT COALESCE(balance, 0)::bigint FROM wallets WHERE user_id = ${userId}) AS wallet_balance
+  `
+  return toCamel(rows[0] as Record<string, unknown>)
+}
+
+export async function getUserCreditsRowByUserId(userId: string) {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM user_credits WHERE user_id = ${userId}`
+  return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
 // ============================================================
@@ -406,12 +444,12 @@ export async function getPlatformSetting(key: string) {
   )
 }
 
-export async function setPlatformSetting(key: string, value: unknown, userId?: string) {
+export async function setPlatformSetting(key: string, value: unknown, _userId?: string) {
   const sql = getDb()
   await sql`
-    INSERT INTO platform_settings (key, value, updated_by)
-    VALUES (${key}, ${JSON.stringify(value)}::jsonb, ${userId ?? null})
-    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}::jsonb, updated_by = ${userId ?? null}, updated_at = NOW()
+    INSERT INTO platform_settings (key, value)
+    VALUES (${key}, ${JSON.stringify(value)}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET value = ${JSON.stringify(value)}::jsonb, updated_at = NOW()
   `
 
   // Invalidate cache immediately on write

@@ -1,18 +1,15 @@
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) { console.error("No DATABASE_URL"); process.exit(1); }
-const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
 
-async function exec(query) {
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
-  return r.json();
+async function exec(client, query) {
+  const r = await client.query(query);
+  return { rows: r.rows };
 }
 
 async function run() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   const stmts = [
     // Extension
     `CREATE EXTENSION IF NOT EXISTS "pgcrypto"`,
@@ -158,7 +155,7 @@ async function run() {
   let ok = 0, skip = 0;
   for (let i = 0; i < stmts.length; i++) {
     try {
-      await exec(stmts[i]);
+      await exec(client, stmts[i]);
       ok++;
     } catch (e) {
       if (e.message.includes("already exists")) { skip++; }
@@ -166,6 +163,7 @@ async function run() {
     }
   }
   console.log(`Batch 1 done: ${ok} executed, ${skip} skipped (already exist)`);
+  await client.end();
 }
 
 run().catch(e => { console.error("Fatal:", e.message); process.exit(1); });

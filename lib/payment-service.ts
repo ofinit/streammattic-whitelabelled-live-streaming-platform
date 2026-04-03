@@ -1,4 +1,6 @@
-import { getDb, toCamel } from "./db"
+import { getDb } from "./db"
+import { splitGST } from "@/lib/gst-service"
+import { getPlatformGSTSettings } from "@/lib/platform-gst"
 
 // ============================================================
 // RAZORPAY - Server-side order creation & verification
@@ -135,17 +137,40 @@ export async function verifyInstamojoPayment(paymentRequestId: string) {
 // COMMON: Process successful payment in DB
 // ============================================================
 
+type WalletOrderMetadata = {
+  walletCreditPaise?: number
+  gstAmountPaise?: number
+  gstPercentage?: number
+  gstEnabled?: boolean
+}
+
+function parseWalletOrderMetadata(raw: unknown): WalletOrderMetadata {
+  if (!raw || typeof raw !== "object") return {}
+  const o = raw as Record<string, unknown>
+  const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined)
+  return {
+    walletCreditPaise: n(o.walletCreditPaise),
+    gstAmountPaise: n(o.gstAmountPaise),
+    gstPercentage: n(o.gstPercentage),
+    gstEnabled: typeof o.gstEnabled === "boolean" ? o.gstEnabled : undefined,
+  }
+}
+
+function invoiceNumberFromOrderId(orderId: string): string {
+  return `INV-${orderId.replace(/-/g, "").slice(0, 20).toUpperCase()}`
+}
+
 export async function processSuccessfulPayment(params: {
   orderId: string
   userId: string
   gateway: "razorpay" | "instamojo"
   gatewayPaymentId: string
   gatewayOrderId?: string
-  amount: number // in paise
-}) {
+  /** Total charged in paise; should match orders.amount */
+  amount: number
+}): Promise<{ invoiceId: string | null }> {
   const sql = getDb()
 
-  // Ensure we don't process the same order twice by relying on atomic status update
   const updatedOrders = await sql`
     UPDATE orders 
     SET status = 'completed', updated_at = NOW() 
@@ -154,27 +179,39 @@ export async function processSuccessfulPayment(params: {
   `
 
   if (updatedOrders.length === 0) {
-    console.log(`Order ${params.orderId} already processed or not found.`);
-    return;
+    console.log(`Order ${params.orderId} already processed or not found.`)
+    return { invoiceId: null }
   }
 
   const order = updatedOrders[0] as Record<string, unknown>
   const orderType = order.order_type as string
+  const totalPaise = Number(order.amount ?? params.amount)
+  const meta = parseWalletOrderMetadata(order.metadata)
 
-  // Create payment record
-  await sql`
+  const paymentRows = await sql`
     INSERT INTO payments (order_id, user_id, gateway, gateway_payment_id, gateway_order_id, amount, status)
-    VALUES (${params.orderId}, ${params.userId}, ${params.gateway}, ${params.gatewayPaymentId}, ${params.gatewayOrderId || null}, ${params.amount}, 'completed')
+    VALUES (${params.orderId}, ${params.userId}, ${params.gateway}, ${params.gatewayPaymentId}, ${params.gatewayOrderId || null}, ${totalPaise}, 'completed')
+    RETURNING id
   `
+  const paymentId = (paymentRows[0] as Record<string, unknown>).id as string
 
-  // Credit wallet for wallet recharges atomically
+  let walletCreditPaise = totalPaise
+  let gstAmountPaise = 0
+  let gstPercentage = 0
   if (orderType === "wallet_recharge") {
-    // Atomic update, returning the old and new balance
+    walletCreditPaise = meta.walletCreditPaise ?? totalPaise
+    gstAmountPaise = meta.gstAmountPaise ?? Math.max(0, totalPaise - walletCreditPaise)
+    gstPercentage = meta.gstPercentage ?? 0
+  }
+
+  let invoiceId: string | null = null
+
+  if (orderType === "wallet_recharge") {
     const updatedWallets = await sql`
       UPDATE wallets 
-      SET balance = balance + ${params.amount}, updated_at = NOW() 
+      SET balance = balance + ${walletCreditPaise}, updated_at = NOW() 
       WHERE user_id = ${params.userId}
-      RETURNING id, balance as new_balance, balance - ${params.amount} as old_balance
+      RETURNING id, balance as new_balance, balance - ${walletCreditPaise} as old_balance
     `
 
     if (updatedWallets.length > 0) {
@@ -183,24 +220,111 @@ export async function processSuccessfulPayment(params: {
       const oldBalance = wallet.old_balance as number
 
       await sql`
-        INSERT INTO wallet_transactions (wallet_id, user_id, type, category, amount, balance_before, balance_after, description, reference_id, reference_type)
-        VALUES (${wallet.id}, ${params.userId}, 'credit', 'top_up', ${params.amount}, ${oldBalance}, ${newBalance}, 'Wallet recharge via ${params.gateway}', ${params.orderId}, 'order')
+        INSERT INTO wallet_transactions (
+          wallet_id, user_id, type, category, amount, balance_before, balance_after,
+          description, reference_id, reference_type,
+          base_amount, gst_amount, gst_percentage, total_amount
+        )
+        VALUES (
+          ${wallet.id},
+          ${params.userId},
+          'credit',
+          'top_up',
+          ${walletCreditPaise},
+          ${oldBalance},
+          ${newBalance},
+          ${`Wallet recharge via ${params.gateway} (credited excl. GST)`},
+          ${params.orderId},
+          'order',
+          ${walletCreditPaise},
+          ${gstAmountPaise},
+          ${gstPercentage},
+          ${totalPaise}
+        )
       `
+    }
+
+    if (gstAmountPaise > 0) {
+      const platform = await getPlatformGSTSettings()
+      const userRows = await sql`SELECT name, email, role FROM users WHERE id = ${params.userId} LIMIT 1`
+      const u =
+        userRows.length > 0
+          ? (userRows[0] as { name: string; email: string; role: string })
+          : { name: "User", email: "", role: "streamer" }
+      const { cgstAmount, sgstAmount, igstAmount } = splitGST(gstAmountPaise, false)
+      const issuerAddr = [platform.businessAddress, platform.city, platform.state, platform.pincode]
+        .filter(Boolean)
+        .join(", ")
+      const invNum = invoiceNumberFromOrderId(params.orderId)
+
+      const invRows = await sql`
+        INSERT INTO invoices (
+          invoice_number,
+          invoice_type,
+          issuer_type,
+          issuer_business_name,
+          issuer_gst_number,
+          issuer_address,
+          recipient_id,
+          recipient_type,
+          recipient_name,
+          recipient_email,
+          base_amount,
+          gst_percentage,
+          cgst_amount,
+          sgst_amount,
+          igst_amount,
+          total_gst_amount,
+          total_amount,
+          payment_id,
+          payment_method,
+          payment_date,
+          status
+        )
+        VALUES (
+          ${invNum},
+          'tax_invoice',
+          'platform',
+          ${platform.businessName},
+          ${platform.gstNumber || null},
+          ${issuerAddr || null},
+          ${params.userId},
+          ${u.role},
+          ${u.name},
+          ${u.email},
+          ${walletCreditPaise},
+          ${gstPercentage},
+          ${cgstAmount},
+          ${sgstAmount},
+          ${igstAmount},
+          ${gstAmountPaise},
+          ${totalPaise},
+          ${paymentId},
+          ${params.gateway},
+          NOW(),
+          'paid'
+        )
+        RETURNING id
+      `
+      invoiceId = (invRows[0] as Record<string, unknown>).id as string
     }
   }
 
-  // Handle studio upgrade
   if (orderType === "studio_upgrade") {
     await sql`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = ${params.userId}`
   }
 
-  // Note: credit_purchases do not flow through processSuccessfulPayment 
-  // because they are paid for using wallet balance directly (see /api/credits/purchase).
-  // Other internal charges like validity_extension follow a similar wallet-based pattern.
+  const notifMessage =
+    orderType === "studio_upgrade"
+      ? "Welcome to Studio! Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding."
+      : orderType === "wallet_recharge"
+        ? `₹${(walletCreditPaise / 100).toFixed(2)} has been added to your wallet.`
+        : `Your payment of Rs ${(totalPaise / 100).toFixed(2)} has been processed successfully.`
 
-  // Create notification
   await sql`
     INSERT INTO notifications (user_id, type, title, message)
-    VALUES (${params.userId}, 'payment', 'Payment Successful', ${'Your payment of Rs ' + (params.amount / 100).toFixed(2) + ' has been processed successfully.'})
+    VALUES (${params.userId}, 'payment', 'Payment Successful', ${notifMessage})
   `
+
+  return { invoiceId }
 }

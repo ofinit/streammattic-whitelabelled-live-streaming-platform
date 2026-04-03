@@ -1,18 +1,15 @@
+const { Client } = require("pg");
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) { console.error("DATABASE_URL not set"); process.exit(1); }
-const API_URL = `https://${new URL(DATABASE_URL.replace("postgres://","https://").replace("postgresql://","https://")).hostname}/sql`;
 
-async function exec(query) {
-  const r = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Neon-Connection-String": DATABASE_URL },
-    body: JSON.stringify({ query, params: [] }),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t.substring(0,300)}`); }
-  return r.json();
+async function exec(client, query) {
+  const r = await client.query(query);
+  return { rows: r.rows };
 }
 
 async function main() {
+  const client = new Client({ connectionString: DATABASE_URL });
+  await client.connect();
   console.log("=== Creating remaining indexes ===");
 
   const indexes = [
@@ -29,7 +26,7 @@ async function main() {
   ];
 
   for (const idx of indexes) {
-    try { await exec(idx); console.log("OK:", idx.substring(0, 60)); }
+    try { await exec(client, idx); console.log("OK:", idx.substring(0, 60)); }
     catch (e) { console.log("FAIL:", idx.substring(0, 60), e.message.substring(0, 100)); }
   }
 
@@ -38,8 +35,8 @@ async function main() {
   // Admin user with bcrypt hash of "admin123" - $2b$10$...
   // Using gen_random_uuid() and crypt() from pgcrypto
   try {
-    await exec(`INSERT INTO users (email, name, phone, password_hash, role, status, email_verified)
-      VALUES ('admin@streammattic.com', 'Platform Admin', '+919999999999',
+    await exec(client, `INSERT INTO users (email, name, phone, password_hash, role, status, email_verified)
+      VALUES ('admin@streamlivee.com', 'Platform Admin', '+919999999999',
       '$2b$10$rQZ8kHwM5.TA3j5V3j5V3eK8X8X8X8X8X8X8X8X8X8X8X8X8X8',
       'admin', 'active', true)
       ON CONFLICT (email) DO NOTHING`);
@@ -48,23 +45,23 @@ async function main() {
 
   // Create wallet for admin
   try {
-    await exec(`INSERT INTO wallets (user_id, balance, currency)
-      SELECT id, 0, 'INR' FROM users WHERE email = 'admin@streammattic.com'
+    await exec(client, `INSERT INTO wallets (user_id, balance, currency)
+      SELECT id, 0, 'INR' FROM users WHERE email = 'admin@streamlivee.com'
       ON CONFLICT (user_id) DO NOTHING`);
     console.log("OK: Admin wallet created");
   } catch (e) { console.log("Admin wallet:", e.message.substring(0, 100)); }
 
   // Create user_credits for admin
   try {
-    await exec(`INSERT INTO user_credits (user_id)
-      SELECT id FROM users WHERE email = 'admin@streammattic.com'
+    await exec(client, `INSERT INTO user_credits (user_id)
+      SELECT id FROM users WHERE email = 'admin@streamlivee.com'
       ON CONFLICT (user_id) DO NOTHING`);
     console.log("OK: Admin credits created");
   } catch (e) { console.log("Admin credits:", e.message.substring(0, 100)); }
 
   // Platform settings
   const settings = [
-    { key: 'platform_name', value: { name: 'StreamMattic', tagline: 'Professional Live Streaming Platform' } },
+    { key: 'platform_name', value: { name: 'StreamLivee', tagline: 'Professional Live Streaming Platform' } },
     { key: 'stream_type_pricing', value: {
       rtmp: { basePrice: 1500, enabled: true, label: 'RTMP Server', description: 'Use OBS/Wirecast' },
       youtube_api: { basePrice: 1000, enabled: true, label: 'YouTube API', description: 'Direct broadcast', recommended: true },
@@ -112,7 +109,7 @@ async function main() {
       custom_rtmp: { pricePerEvent: 100, enabled: true }
     }},
     { key: 'studio_annual_subscription', value: { price: 1800000, enabled: true } },
-    { key: 'gst_config', value: { enabled: true, percentage: 18, gstNumber: '', businessName: 'StreamMattic' } },
+    { key: 'gst_config', value: { enabled: true, percentage: 18, gstNumber: '', businessName: 'StreamLivee' } },
     { key: 'payment_gateways', value: {
       razorpay: { enabled: false, keyId: '', keySecret: '' },
       instamojo: { enabled: false, apiKey: '', authToken: '', sandbox: true }
@@ -122,7 +119,7 @@ async function main() {
   for (const s of settings) {
     try {
       const val = JSON.stringify(s.value).replace(/'/g, "''");
-      await exec(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
+      await exec(client, `INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
       console.log("OK: Setting", s.key);
     } catch (e) { console.log("FAIL setting", s.key, ":", e.message.substring(0, 150)); }
   }
@@ -137,7 +134,7 @@ async function main() {
   for (const t of templates) {
     try {
       const config = JSON.stringify({}).replace(/'/g, "''");
-      await exec(`INSERT INTO event_templates (name, stream_type, description, is_default, default_config)
+      await exec(client, `INSERT INTO event_templates (name, stream_type, description, is_default, default_config)
         VALUES ('${t.name}', '${t.stream_type}', '${t.description}', ${t.is_default}, '${config}'::jsonb)
         ON CONFLICT DO NOTHING`);
       console.log("OK: Template", t.name);
@@ -145,6 +142,7 @@ async function main() {
   }
 
   console.log("\n=== Migration complete ===");
+  await client.end();
 }
 
 main().catch(e => { console.error("Fatal:", e.message); process.exit(1); });

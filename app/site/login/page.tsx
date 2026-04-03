@@ -133,7 +133,7 @@ export default function SiteLoginPage() {
 
           {/* Footer */}
           <p className="text-center text-xs text-muted-foreground/50">
-            Powered by StreamMattic
+            Powered by StreamLivee
           </p>
         </div>
       </div>

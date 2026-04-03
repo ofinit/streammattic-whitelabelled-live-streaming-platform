@@ -42,6 +42,16 @@ interface YouTubeChannelSelectorProps {
     enableAutoStart: boolean
     enableAutoStop: boolean
   }) => void
+  getDraftState?: () => {
+    title?: string
+    slug?: string
+    scheduledAt?: string
+    timezone?: string
+  }
+  oauthContext?: {
+    mode?: "edit" | "create"
+    eventId?: string
+  }
 }
 
 export function YouTubeChannelSelector({
@@ -51,11 +61,32 @@ export function YouTubeChannelSelector({
   onSelectChannel,
   broadcastSettings,
   onSettingsChange,
+  getDraftState,
+  oauthContext,
 }: YouTubeChannelSelectorProps) {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
 
+  const openConnectDialog = () => {
+    if (oauthContext) {
+      try {
+        sessionStorage.setItem("yt_oauth_context", JSON.stringify(oauthContext))
+      } catch {
+        // ignore storage errors
+      }
+    }
+    if (getDraftState) {
+      try {
+        const draft = getDraftState()
+        sessionStorage.setItem("yt_oauth_draft_event", JSON.stringify(draft))
+      } catch {
+        // ignore storage errors
+      }
+    }
+    setShowConnectDialog(true)
+  }
+
   const { data, mutate } = useSWR(
-    `/api/youtube/channels?ownerId=${ownerId}&ownerType=${ownerType}`,
+    ownerId ? `/api/youtube/channels?ownerId=${ownerId}&ownerType=${ownerType}` : null,
     fetcher
   )
 
@@ -64,6 +95,7 @@ export function YouTubeChannelSelector({
   )
 
   const selectedChannel = channels.find((c) => c.id === selectedChannelId)
+  const selectedChannelExpired = !!selectedChannel && selectedChannel.tokenStatus === "expired"
 
   if (channels.length === 0) {
     return (
@@ -71,16 +103,11 @@ export function YouTubeChannelSelector({
         <Alert className="bg-muted/50 border-border">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No YouTube channels connected. Connect a channel to create broadcasts directly from StreamMattic.
+            No YouTube channels connected. Connect a channel to create broadcasts directly from StreamLivee.
           </AlertDescription>
         </Alert>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full border-dashed bg-transparent"
-          onClick={() => setShowConnectDialog(true)}
-        >
+        <Button type="button" variant="outline" className="w-full border-dashed bg-transparent" onClick={openConnectDialog}>
           <Plus className="h-4 w-4 mr-2" />
           Connect YouTube Channel
         </Button>
@@ -90,6 +117,7 @@ export function YouTubeChannelSelector({
           onOpenChange={setShowConnectDialog}
           ownerId={ownerId}
           ownerType={ownerType}
+          contextStreamType="youtube_api"
           onSuccess={() => mutate()}
         />
       </div>
@@ -100,30 +128,53 @@ export function YouTubeChannelSelector({
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Select YouTube Channel</Label>
+        {selectedChannelExpired && (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/40 mb-1">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              The selected channel&apos;s YouTube access has expired. Please reconnect the channel to continue using
+              YouTube API broadcasts.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid gap-2">
           {channels.map((channel) => (
             <Card
               key={channel.id}
-              className={`cursor-pointer transition-colors ${
-                selectedChannelId === channel.id ? "border-primary bg-primary/5" : "hover:border-primary/50"
+              className={`cursor-pointer transition-colors border-border/60 bg-card/40 ${
+                selectedChannelId === channel.id ? "border-primary bg-primary/10" : "hover:border-primary/60"
               }`}
-              onClick={() => onSelectChannel(channel.id)}
+              onClick={() => {
+                if (channel.tokenStatus === "expired") {
+                  // For expired channels, guide user to reconnect instead of just selecting
+                  onSelectChannel(null)
+                  openConnectDialog()
+                } else {
+                  onSelectChannel(channel.id)
+                }
+              }}
             >
-              <CardContent className="p-3 flex items-center gap-3">
-                <Avatar className="h-10 w-10">
+              <CardContent className="px-3 py-2 flex items-center gap-2">
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={channel.channelThumbnail || "/placeholder.svg"} />
                   <AvatarFallback className="bg-red-600 text-white">{channel.channelTitle.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{channel.channelTitle}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {channel.subscriberCount?.toLocaleString() || 0} subscribers
-                  </p>
+                  <p className="font-medium text-sm truncate">{channel.channelTitle}</p>
+                  {channel.tokenStatus === "expired" && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Access expired - click to{" "}
+                      <span className="font-semibold text-primary underline underline-offset-2">reconnect</span>{" "}
+                      this channel.
+                    </p>
+                  )}
                 </div>
                 {channel.tokenStatus === "expired" && (
-                  <Badge variant="destructive" className="text-xs">Token Expired</Badge>
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Token Expired</Badge>
                 )}
-                {selectedChannelId === channel.id && <Badge className="bg-primary">Selected</Badge>}
+                {selectedChannelId === channel.id && (
+                  <Badge className="bg-primary/90 text-[10px] px-1.5 py-0">Selected</Badge>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -131,8 +182,8 @@ export function YouTubeChannelSelector({
           <Button
             type="button"
             variant="outline"
-            className="border-dashed bg-transparent"
-            onClick={() => setShowConnectDialog(true)}
+            className="border-dashed bg-transparent text-xs h-8"
+            onClick={openConnectDialog}
           >
             <Plus className="h-4 w-4 mr-2" />
             Connect Another Channel
@@ -208,6 +259,7 @@ export function YouTubeChannelSelector({
         onOpenChange={setShowConnectDialog}
         ownerId={ownerId}
         ownerType={ownerType}
+        contextStreamType="youtube_api"
         onSuccess={() => mutate()}
       />
     </div>

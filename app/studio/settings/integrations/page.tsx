@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Info, Trash2 } from "lucide-react"
+import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Info, Trash2, Lock } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -21,8 +21,20 @@ export default function StudioIntegrationsPage() {
   const { user } = useAuth()
   const studioId = user?.id || "studio-1"
 
+  const { data: settingsData } = useSWR<{ settings?: { key: string; value: unknown }[] }>("/api/settings", fetcher)
+  const platformYoutubeEnabled =
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
+    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
+  const override = settingsData?.settings?.find((s) => s.key === "youtube_config_override")?.value
+  const youtubeConfigEnabled =
+    override === true || override === "true"
+      ? true
+      : override === false || override === "false"
+        ? false
+        : Boolean(platformYoutubeEnabled)
+
   const { data, mutate, isLoading } = useSWR(
-    `/api/studio/integrations?studioId=${studioId}`,
+    youtubeConfigEnabled ? `/api/studio/integrations?studioId=${studioId}` : null,
     fetcher,
   )
 
@@ -85,6 +97,9 @@ export default function StudioIntegrationsPage() {
     }
   }
 
+  const settingsLoaded = settingsData !== undefined
+  const disabled = settingsLoaded && !youtubeConfigEnabled
+
   return (
     <div className="flex flex-1 flex-col">
       <Header
@@ -93,6 +108,16 @@ export default function StudioIntegrationsPage() {
       />
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl space-y-6">
+          {disabled && (
+            <Alert className="border-amber-500/30 bg-amber-500/10">
+              <Lock className="h-4 w-4 text-amber-500" />
+            <AlertDescription>
+              The platform is configured by the administrator for everyone. The option to view and configure YouTube API in your dashboard is not enabled. If you need to configure it yourself, ask your administrator to enable it for you.
+            </AlertDescription>
+            </Alert>
+          )}
+          {!disabled && (
+          <>
           {/* Status Overview */}
           <Card className="border-border bg-card">
             <CardHeader>
@@ -246,6 +271,8 @@ export default function StudioIntegrationsPage() {
               </Alert>
             </CardContent>
           </Card>
+          </>
+          )}
         </div>
       </div>
     </div>

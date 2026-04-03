@@ -1,3 +1,4 @@
+import { TEMPLATE_DEFAULT_HERO_BACKDROP } from "@/lib/template-default-media"
 import type {
   User,
   Studio,
@@ -36,7 +37,7 @@ import type {
 // Mock Admin
 export const mockAdmin: User = {
   id: "admin-1",
-  email: "admin@streammattic.com",
+  email: "admin@streamlivee.com",
   name: "Platform Admin",
   role: "admin",
   status: "active",
@@ -256,29 +257,7 @@ export const masterValiditySettings: EventValiditySettings = {
   ],
 }
 
-// Helper: Get the best price for a quantity
-export function getBestPriceForQuantity(
-  streamType: StreamTypeKey,
-  quantity: number,
-  pricing: StreamTypePricing = masterStreamTypePricing,
-): { pricePerEvent: number; tierLabel?: string; totalPrice: number; savings: number } {
-  const config = pricing[streamType]
-  let pricePerEvent = config.basePrice
-  let tierLabel: string | undefined
-
-  // Find the best matching tier (highest minQty that's <= quantity)
-  for (const tier of config.volumeDiscountTiers) {
-    if (quantity >= tier.minQty) {
-      pricePerEvent = tier.pricePerEvent
-      tierLabel = tier.label
-    }
-  }
-
-  const totalPrice = pricePerEvent * quantity
-  const savings = (config.basePrice * quantity) - totalPrice
-
-  return { pricePerEvent, tierLabel, totalPrice, savings }
-}
+export { getBestPriceForQuantity } from "./stream-type-pricing"
 
 // Mock Orders (credit purchases, wallet recharges, service charges)
 export const mockOrders: Order[] = [
@@ -414,7 +393,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Annual technology conference featuring industry leaders",
     streamType: "rtmp",
     streamKey: "live_abc123xyz",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "live",
     scheduledAt: new Date(),
     startedAt: new Date(),
@@ -454,7 +433,7 @@ export const mockEvents: LiveEvent[] = [
     title: "Music Festival Stream",
     description: "Live streaming from the music festival",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-3/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-3/playlist.m3u8",
     status: "completed",
     scheduledAt: new Date(Date.now() - 86400000 * 5),
     startedAt: new Date(Date.now() - 86400000 * 5),
@@ -476,7 +455,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Start the year with a live event",
     streamType: "rtmp",
     streamKey: "live_jan2025",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "completed",
     scheduledAt: new Date("2025-01-15T14:00:00"),
     startedAt: new Date("2025-01-15T14:00:00"),
@@ -516,7 +495,7 @@ export const mockEvents: LiveEvent[] = [
     title: "March Music Concert",
     description: "Live music performance",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-6/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-6/playlist.m3u8",
     status: "live",
     scheduledAt: new Date("2025-03-10T19:00:00"),
     startedAt: new Date("2025-03-10T19:00:00"),
@@ -537,7 +516,7 @@ export const mockEvents: LiveEvent[] = [
     description: "New product demonstration",
     streamType: "rtmp",
     streamKey: "live_apr2025",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "cancelled",
     scheduledAt: new Date("2025-04-05T13:00:00"),
     maxViewers: 200,
@@ -575,7 +554,7 @@ export const mockEvents: LiveEvent[] = [
     title: "June Summer Festival",
     description: "Summer celebration event",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-9/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-9/playlist.m3u8",
     status: "completed",
     scheduledAt: new Date("2025-06-15T15:00:00"),
     startedAt: new Date("2025-06-15T15:00:00"),
@@ -597,7 +576,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Monthly tech discussion",
     streamType: "rtmp",
     streamKey: "live_jul2025",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "live",
     scheduledAt: new Date("2025-07-08T11:00:00"),
     startedAt: new Date("2025-07-08T11:00:00"),
@@ -637,7 +616,7 @@ export const mockEvents: LiveEvent[] = [
     title: "September Conference",
     description: "Fall conference and networking",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-12/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-12/playlist.m3u8",
     status: "completed",
     scheduledAt: new Date("2025-09-22T09:00:00"),
     startedAt: new Date("2025-09-22T09:00:00"),
@@ -659,7 +638,7 @@ export const mockEvents: LiveEvent[] = [
     description: "New year product launch",
     streamType: "rtmp",
     streamKey: "live_jan2026",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "scheduled",
     scheduledAt: new Date("2026-01-20T16:00:00"),
     maxViewers: 600,
@@ -697,7 +676,7 @@ export const mockEvents: LiveEvent[] = [
     title: "June 2026 Summit",
     description: "Mid-year business summit",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-15/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-15/playlist.m3u8",
     status: "scheduled",
     scheduledAt: new Date("2026-06-10T13:00:00"),
     maxViewers: 800,
@@ -718,7 +697,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Fall arts festival",
     streamType: "rtmp",
     streamKey: "live_sep2026",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "scheduled",
     scheduledAt: new Date("2026-09-18T17:00:00"),
     maxViewers: 1500,
@@ -757,7 +736,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Holiday season kickoff",
     streamType: "rtmp",
     streamKey: "live_dec2025",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "live",
     scheduledAt: new Date("2025-12-07T15:00:00"),
     startedAt: new Date("2025-12-07T15:00:00"),
@@ -796,7 +775,7 @@ export const mockEvents: LiveEvent[] = [
     title: "December Training Completed",
     description: "Staff training session finished",
     streamType: "hls",
-    hlsUrl: "https://cdn.streammattic.com/hls/event-20/playlist.m3u8",
+    hlsUrl: "https://cdn.streamlivee.com/hls/event-20/playlist.m3u8",
     status: "completed",
     scheduledAt: new Date("2025-12-09T09:00:00"),
     startedAt: new Date("2025-12-09T09:00:00"),
@@ -818,7 +797,7 @@ export const mockEvents: LiveEvent[] = [
     description: "Interactive workshop session",
     streamType: "rtmp",
     streamKey: "live_workshop_dec",
-    rtmpUrl: "rtmp://stream.streammattic.com/live",
+    rtmpUrl: "rtmp://stream.streamlivee.com/live",
     status: "live",
     scheduledAt: new Date("2025-12-09T14:00:00"),
     startedAt: new Date("2025-12-09T14:00:00"),
@@ -1173,6 +1152,44 @@ export const mockStreamerInventory: StreamerInventory[] = [
   },
 ]
 
+/**
+ * Hidden from the Add/Edit Event template grid (streamer + studio).
+ * Preview routes and legacy events may still reference these ids.
+ */
+export const EVENT_FORM_HIDDEN_TEMPLATE_IDS: ReadonlySet<string> = new Set([
+  "tpl-corporate",
+  "tpl-concert",
+  "tpl-christian",
+  "tpl-muslim",
+  "tpl-hindu",
+  "tpl-sports",
+  "tpl-political",
+  "tpl-school",
+  "tpl-indian-festival",
+  "tpl-gaming",
+  "tpl-podcast",
+  "tpl-movie-premiere",
+  "tpl-award-ceremony",
+  "tpl-comedy-show",
+  "tpl-product-launch",
+  "tpl-webinar",
+  "tpl-auction",
+  "tpl-real-estate",
+  "tpl-baby-shower",
+  "tpl-graduation",
+  "tpl-engagement",
+  "tpl-anniversary",
+  "tpl-reunion",
+  "tpl-chinese-festival",
+  "tpl-christmas",
+  "tpl-eid",
+  "tpl-thanksgiving",
+  "tpl-halloween",
+  "tpl-fitness",
+  "tpl-yoga",
+  "tpl-charity",
+])
+
 // Mock Event Templates
 export const mockEventTemplates: EventTemplate[] = [
   {
@@ -1186,18 +1203,67 @@ export const mockEventTemplates: EventTemplate[] = [
   {
     id: "tpl-wedding",
     name: "Wedding",
-    thumbnail: "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding"] ?? "/templates/wedding-template.jpg",
     category: "Wedding",
     isActive: true,
     sortOrder: 2,
   },
   {
-    id: "tpl-corporate",
-    name: "Corporate Event",
-    thumbnail: "/templates/corporate-template.jpg",
+    id: "tpl-wedding-garden",
+    name: "Ethereal Garden Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-garden"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.5,
+  },
+  {
+    id: "tpl-wedding-midnight",
+    name: "Midnight Elegance Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-midnight"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.55,
+  },
+  {
+    id: "tpl-wedding-coastal",
+    name: "Coastal Breeze Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-coastal"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.56,
+  },
+  {
+    id: "tpl-wedding-celestial",
+    name: "Celestial Dreams Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-celestial"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.57,
+  },
+  {
+    id: "tpl-wedding-traditional-hindu",
+    name: "Shubh Vivah",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-traditional-hindu"] ?? "/templates/wedding-template.jpg",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.58,
+  },
+  {
+    id: "tpl-corporate-tech-forward",
+    name: "Tech Forward Summit",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",
     category: "Corporate",
     isActive: true,
-    sortOrder: 3,
+    /** Immediately before Birthday Party Bash in the event form picker */
+    sortOrder: 22.7,
+  },
+  {
+    id: "tpl-corporate",
+    name: "Corporate Event",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate"] ?? "",
+    category: "Corporate",
+    isActive: true,
+    sortOrder: 22.72,
   },
   {
     id: "tpl-concert",
@@ -1209,19 +1275,39 @@ export const mockEventTemplates: EventTemplate[] = [
   },
   {
     id: "tpl-christian",
-    name: "Christian Ceremony",
-    thumbnail: "/templates/christian-template.jpg",
-    category: "Religious",
+    name: "Christian Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian"] ?? "/templates/christian-template.jpg",
+    category: "Wedding",
+    extraCategories: ["Religious"],
     isActive: true,
-    sortOrder: 5,
+    sortOrder: 2.59,
+  },
+  {
+    id: "tpl-christian-wedding-rose",
+    name: "Christian Wedding (Rose & Faith)",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian-wedding-rose"] ?? "",
+    category: "Wedding",
+    extraCategories: ["Religious"],
+    isActive: true,
+    sortOrder: 2.591,
+  },
+  {
+    id: "tpl-muslim-wedding-nikah",
+    name: "Muslim Wedding (Nikah Live)",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim-wedding-nikah"] ?? "",
+    category: "Wedding",
+    extraCategories: ["Religious"],
+    isActive: true,
+    sortOrder: 2.595,
   },
   {
     id: "tpl-muslim",
-    name: "Islamic Ceremony",
-    thumbnail: "/templates/muslim-template.jpg",
-    category: "Religious",
+    name: "Muslim Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim"] ?? "/templates/muslim-template.jpg",
+    category: "Wedding",
+    extraCategories: ["Religious"],
     isActive: true,
-    sortOrder: 6,
+    sortOrder: 2.6,
   },
   {
     id: "tpl-hindu",
@@ -1256,20 +1342,13 @@ export const mockEventTemplates: EventTemplate[] = [
     sortOrder: 10,
   },
   {
-    id: "tpl-birthday",
-    name: "Birthday",
-    thumbnail: "/templates/birthday-template.jpg",
-    category: "Celebration",
-    isActive: true,
-    sortOrder: 11,
-  },
-  {
     id: "tpl-funeral",
     name: "Memorial Service",
-    thumbnail: "/templates/funeral-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-funeral"] ?? "/templates/funeral-template.jpg",
     category: "Memorial",
     isActive: true,
-    sortOrder: 12,
+    /** Last in the event form template list */
+    sortOrder: 99,
   },
   {
     id: "tpl-indian-festival",
@@ -1361,6 +1440,14 @@ export const mockEventTemplates: EventTemplate[] = [
     category: "Celebration",
     isActive: true,
     sortOrder: 23,
+  },
+  {
+    id: "tpl-birthday-party",
+    name: "Birthday Party Bash",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-birthday-party"] ?? "",
+    category: "Celebration",
+    isActive: true,
+    sortOrder: 22.75,
   },
   {
     id: "tpl-graduation",
@@ -1462,13 +1549,18 @@ export const mockEventTemplates: EventTemplate[] = [
   },
 ]
 
+/** Subset shown in the event form template picker */
+export const eventFormSelectableTemplates: EventTemplate[] = mockEventTemplates.filter(
+  (t) => !EVENT_FORM_HIDDEN_TEMPLATE_IDS.has(t.id),
+)
+
 // Mock Domains
 export const mockDomains: Domain[] = [
   {
     id: "dom-1",
     userId: "studio-1",
     domain: "live.livestreampro.com",
-    verificationToken: "streammattic-verify-abc123xyz456",
+    verificationToken: "streamlivee-verify-abc123xyz456",
     verificationStatus: "verified",
     sslStatus: "active",
     isPrimary: true,
@@ -1479,7 +1571,7 @@ export const mockDomains: Domain[] = [
     id: "dom-2",
     userId: "studio-1",
     domain: "events.livestreampro.com",
-    verificationToken: "streammattic-verify-def789ghi012",
+    verificationToken: "streamlivee-verify-def789ghi012",
     verificationStatus: "pending",
     sslStatus: "pending",
     isPrimary: false,
@@ -1489,7 +1581,7 @@ export const mockDomains: Domain[] = [
     id: "dom-3",
     userId: "studio-2",
     domain: "stream.streamhub.io",
-    verificationToken: "streammattic-verify-jkl345mno678",
+    verificationToken: "streamlivee-verify-jkl345mno678",
     verificationStatus: "verified",
     sslStatus: "active",
     isPrimary: true,
@@ -1833,7 +1925,7 @@ export const mockFacebookPages: FacebookPage[] = [
     ownerId: "streamer-1",
     ownerType: "streamer",
     pageId: "123456789",
-    pageName: "StreamMattic Events",
+    pageName: "StreamLivee Events",
     pageThumbnail: "/facebook-page-logo.jpg",
     accessToken: "mock-fb-access-token-1",
     tokenExpiresAt: new Date(Date.now() + 86400000 * 60),
@@ -2136,7 +2228,7 @@ export const mockGSTConfigurations: GSTConfiguration[] = [
     gstPercentage: 18,
     gstNumber: "27AABCU9603R1ZX",
     panNumber: "AABCU9603R",
-    businessName: "StreamMattic Platform Pvt Ltd",
+    businessName: "StreamLivee Platform Pvt Ltd",
     businessAddress: "123 Business Park, Andheri East",
     city: "Mumbai",
     state: "Maharashtra",

@@ -4,15 +4,15 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import type { Branding, Studio, Domain } from "./types"
 import { mockStudios, mockDomains } from "./mock-data"
 
-// Default platform branding (StreamMattic)
+// Default platform branding (StreamLivee)
 const defaultBranding: Branding = {
   id: "platform",
   userId: "platform",
-  brandName: "StreamMattic",
+  brandName: "StreamLivee",
   themeColor: "#10b981",
   accentColor: "#059669",
-  email: "support@streammattic.com",
-  metaTitle: "StreamMattic - White-Label Live Streaming Platform",
+  email: "support@streamlivee.com",
+  metaTitle: "StreamLivee - White-Label Live Streaming Platform",
   metaDescription: "Multi-tenant live streaming platform for studios and content creators",
   hasGatewayConfig: false,
   createdAt: new Date(),
@@ -42,8 +42,8 @@ function lookupDomainStudio(hostname: string): { studio: Studio; domain: Domain 
     }
   }
 
-  // Check for subdomain pattern: {studio-slug}.streammattic.com
-  const subdomainMatch = hostname.match(/^([^.]+)\.streammattic\.com$/)
+  // Check for subdomain pattern: {studio-slug}.streamlivee.com
+  const subdomainMatch = hostname.match(/^([^.]+)\.streamlivee\.com$/)
   if (subdomainMatch) {
     const slug = subdomainMatch[1]
     const foundStudio = mockStudios.find((r) => r.branding.platformName.toLowerCase().replace(/\s+/g, "-") === slug)

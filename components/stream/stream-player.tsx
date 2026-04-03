@@ -99,10 +99,15 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
       )
     }
 
+    const baseId = videoId || ""
+    const liveParams = "autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&modestbranding=1"
+    const replayParams = "autoplay=1&mute=1&rel=0&iv_load_policy=3&modestbranding=1"
+    const src = `https://www.youtube.com/embed/${baseId}?${isLive ? liveParams : replayParams}`
+
     return (
       <div ref={containerRef} className="relative aspect-video rounded-lg overflow-hidden bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${videoId || ""}?autoplay=1&mute=1`}
+          src={src}
           title={eventTitle}
           className="absolute inset-0 h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -110,7 +115,7 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
         />
         {isLive && (
           <div className="absolute top-3 left-3">
-            <Badge className="bg-red-600 text-white font-semibold">LIVE</Badge>
+            <Badge className="border border-zinc-500/50 bg-zinc-600 text-white font-semibold shadow-none">LIVE</Badge>
           </div>
         )}
       </div>
@@ -136,7 +141,7 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
         )}
         {isLive && (
           <div className="absolute top-3 left-3">
-            <Badge className="bg-red-600 text-white font-semibold">LIVE</Badge>
+            <Badge className="border border-zinc-500/50 bg-zinc-600 text-white font-semibold shadow-none">LIVE</Badge>
           </div>
         )}
       </div>
@@ -184,7 +189,7 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge className="bg-red-600 text-white font-semibold">LIVE</Badge>
+              <Badge className="border border-zinc-500/50 bg-zinc-600 text-white font-semibold shadow-none">LIVE</Badge>
               <span className="text-white text-sm">{eventTitle}</span>
             </div>
             <div className="flex items-center gap-2">

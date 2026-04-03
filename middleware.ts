@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/login/callback",
+  "/signup",
+  "/admin/login",
+  "/handler",
+  "/auth",
   "/site",
   "/site/login",
   "/site/register",
@@ -21,9 +26,15 @@ const ROLE_PREFIXES: Record<string, string[]> = {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public paths, static assets, and API routes that handle their own auth
+  // Allow public paths, NextAuth routes, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
+    pathname.startsWith("/api/favicon/") ||
+    /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
+    pathname.startsWith("/api/watch/") ||
+    pathname.startsWith("/api/auth") || // NextAuth (signin, callback, error, etc.)
+    /** Admin APIs enforce role in route handlers; cookie names vary (Auth.js / sm_session / legacy) */
+    pathname.startsWith("/api/admin") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/placeholder") ||
@@ -36,12 +47,21 @@ export function middleware(request: NextRequest) {
   const sessionToken =
     request.cookies.get("authjs.session-token")?.value ||
     request.cookies.get("__Secure-authjs.session-token")?.value ||
+    request.cookies.get("__Host-authjs.session-token")?.value ||
+    request.cookies.get("next-auth.session-token")?.value ||
+    request.cookies.get("__Secure-next-auth.session-token")?.value ||
     request.cookies.get("sm_session")?.value; // fallback for current active sessions
 
   if (!sessionToken) {
     // Redirect to login for protected pages, return 401 for API
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    // Admin routes: redirect to admin login
+    if (pathname.startsWith("/admin")) {
+      const loginUrl = new URL("/admin/login", request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
     }
     const loginUrl = new URL("/site/login", request.url)
     loginUrl.searchParams.set("redirect", pathname)

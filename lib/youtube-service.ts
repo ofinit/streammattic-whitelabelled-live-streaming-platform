@@ -69,16 +69,16 @@ function getGoogleClientSecret(): string {
 }
 
 function getRedirectUri(): string {
-  return process.env.YOUTUBE_OAUTH_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/auth/youtube/callback`
+  return process.env.YOUTUBE_OAUTH_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || "https://www.streamlivee.com"}/api/auth/youtube/callback`
 }
 
 // ──────────────────────────────────────
 // OAuth
 // ──────────────────────────────────────
 
-/** Build the Google OAuth consent screen URL */
-export async function getYouTubeOAuthUrl(redirectUri: string, state: string): Promise<string> {
-  const { clientId } = await getGoogleCredentials()
+/** Build the Google OAuth consent screen URL. Pass studioId when owner is a studio so studio overrides are used. */
+export async function getYouTubeOAuthUrl(redirectUri: string, state: string, studioId?: string): Promise<string> {
+  const { clientId } = await getGoogleCredentials(studioId)
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -91,13 +91,13 @@ export async function getYouTubeOAuthUrl(redirectUri: string, state: string): Pr
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 }
 
-/** Exchange authorization code for access + refresh tokens */
-export async function exchangeCodeForTokens(code: string): Promise<{
+/** Exchange authorization code for access + refresh tokens. Pass studioId when owner is a studio. */
+export async function exchangeCodeForTokens(code: string, studioId?: string): Promise<{
   accessToken: string
   refreshToken: string
   expiresIn: number
 }> {
-  const { clientId, clientSecret } = await getGoogleCredentials()
+  const { clientId, clientSecret } = await getGoogleCredentials(studioId)
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -123,13 +123,13 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   }
 }
 
-/** Refresh an expired access token using the refresh token */
-export async function refreshAccessToken(encryptedRefreshToken: string): Promise<{
+/** Refresh an expired access token. Pass studioId when the channel belongs to a studio. */
+export async function refreshAccessToken(encryptedRefreshToken: string, studioId?: string): Promise<{
   accessToken: string
   expiresIn: number
 }> {
   const refreshToken = decrypt(encryptedRefreshToken)
-  const { clientId, clientSecret } = await getGoogleCredentials()
+  const { clientId, clientSecret } = await getGoogleCredentials(studioId)
 
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
@@ -171,29 +171,30 @@ export async function revokeAccess(encryptedAccessToken: string): Promise<boolea
 export async function getValidAccessToken(channelDbId: string): Promise<string> {
   const sql = getDb()
   const rows = await sql`
-    SELECT encrypted_access_token, encrypted_refresh_token, token_expires_at
+    SELECT access_token_encrypted, refresh_token_encrypted, token_expires_at, owner_id, owner_type
     FROM youtube_channels WHERE id = ${channelDbId} AND is_active = true
   `
   if (rows.length === 0) throw new Error("Channel not found or inactive")
 
-  const channel = rows[0]
+  const channel = rows[0] as { access_token_encrypted: string; refresh_token_encrypted: string; token_expires_at: string; owner_id: string; owner_type: string }
   const expiresAt = new Date(channel.token_expires_at)
+  const studioId = channel.owner_type === "studio" ? channel.owner_id : undefined
 
-  // If token expires in less than 5 minutes, refresh it
+  // If token expires in less than 5 minutes, refresh it (use same credentials as when token was created)
   if (expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
-    const { accessToken, expiresIn } = await refreshAccessToken(channel.encrypted_refresh_token)
+    const { accessToken, expiresIn } = await refreshAccessToken(channel.refresh_token_encrypted, studioId)
     const newEncrypted = encrypt(accessToken)
     const newExpiresAt = new Date(Date.now() + expiresIn * 1000)
 
     await sql`
       UPDATE youtube_channels
-      SET encrypted_access_token = ${newEncrypted}, token_expires_at = ${newExpiresAt.toISOString()}, updated_at = NOW()
+      SET access_token_encrypted = ${newEncrypted}, token_expires_at = ${newExpiresAt.toISOString()}, updated_at = NOW()
       WHERE id = ${channelDbId}
     `
     return accessToken
   }
 
-  return decrypt(channel.encrypted_access_token)
+  return decrypt(channel.access_token_encrypted)
 }
 
 // ──────────────────────────────────────
@@ -497,7 +498,7 @@ export async function saveChannel(params: {
     INSERT INTO youtube_channels (
       owner_id, owner_type, channel_id, channel_title, channel_thumbnail,
       subscriber_count, video_count,
-      encrypted_access_token, encrypted_refresh_token, token_expires_at, scopes
+      access_token_encrypted, refresh_token_encrypted, token_expires_at, scopes
     ) VALUES (
       ${params.ownerId}, ${params.ownerType}, ${params.channelId}, ${params.channelTitle}, ${params.channelThumbnail},
       ${params.subscriberCount}, ${params.videoCount},
@@ -509,8 +510,8 @@ export async function saveChannel(params: {
       channel_thumbnail = EXCLUDED.channel_thumbnail,
       subscriber_count = EXCLUDED.subscriber_count,
       video_count = EXCLUDED.video_count,
-      encrypted_access_token = EXCLUDED.encrypted_access_token,
-      encrypted_refresh_token = EXCLUDED.encrypted_refresh_token,
+      access_token_encrypted = EXCLUDED.access_token_encrypted,
+      refresh_token_encrypted = EXCLUDED.refresh_token_encrypted,
       token_expires_at = EXCLUDED.token_expires_at,
       scopes = EXCLUDED.scopes,
       is_active = true,
@@ -538,7 +539,7 @@ export async function getChannelsForOwner(ownerId: string, ownerType: "admin" | 
 export async function disconnectChannel(channelDbId: string, ownerId: string, ownerType: string): Promise<boolean> {
   const sql = getDb()
   const rows = await sql`
-    SELECT encrypted_access_token FROM youtube_channels
+    SELECT access_token_encrypted FROM youtube_channels
     WHERE id = ${channelDbId} AND owner_id = ${ownerId} AND owner_type = ${ownerType}
   `
 
@@ -546,7 +547,7 @@ export async function disconnectChannel(channelDbId: string, ownerId: string, ow
 
   // Revoke the token at Google
   try {
-    await revokeAccess(rows[0].encrypted_access_token)
+    await revokeAccess(rows[0].access_token_encrypted)
   } catch {
     // Continue even if revocation fails -- still mark inactive locally
   }

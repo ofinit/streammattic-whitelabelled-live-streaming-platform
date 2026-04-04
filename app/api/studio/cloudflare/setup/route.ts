@@ -15,7 +15,7 @@ export const POST = withRole(["studio"], async (user, request) => {
     const sql = getDb()
     
     // 1. Get the domain record
-    const domains = await sql`SELECT * FROM custom_domains WHERE id = ${domainId} AND studio_id = ${user.id}`
+    const domains = await sql`SELECT * FROM domains WHERE id = ${domainId} AND user_id = ${user.id}`
     if (domains.length === 0) return jsonError("Domain record not found", 404)
     const domainRecord = domains[0]
 

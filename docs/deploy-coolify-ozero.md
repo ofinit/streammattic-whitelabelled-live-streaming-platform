@@ -68,7 +68,7 @@ Set the **`NEXT_PUBLIC_PLATFORM_*`** values in the **same** build/runtime env as
 
 Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` ([`lib/redis.ts`](../lib/redis.ts)); payment, OAuth, Cloudflare, Fal, etc. per [`.env.example`](../.env.example).
 
-**Healthcheck:** Use **`GET`** or **`HEAD`** to **`/api/health`** on port **3000** (internal). That route is **public** (no auth cookie), returns **200**, and **`GET`** responds with plain text **`OK`** (for Coolify “Response Text” matching). See [`app/api/health/route.ts`](../app/api/health/route.ts). Do not rely on **`/`** for probes (`curl -I /` sends **HEAD**, which can differ from **GET** for page routes).
+**Healthcheck:** The [`Dockerfile`](../Dockerfile) defines a **`HEALTHCHECK`** against **`http://127.0.0.1:3000/api/health`**. Per [Coolify](https://coolify.io/docs/knowledge-base/health-checks), if the UI health check is also enabled, the **Dockerfile** check takes precedence—avoid conflicting UI settings or disable the duplicate UI check. The route [`app/api/health/route.ts`](../app/api/health/route.ts) is public and returns **200** with body **`OK`**. Do not rely on **`/`** for probes.
 
 ## 4. Run database migrations (once per environment)
 

@@ -39,4 +39,10 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# Docker-level probe (Coolify: if UI + Dockerfile both define checks, Dockerfile takes precedence)
+# https://coolify.io/docs/knowledge-base/health-checks
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+  CMD curl -fsS http://127.0.0.1:3000/api/health > /dev/null || exit 1
+
 CMD ["npm", "start"]

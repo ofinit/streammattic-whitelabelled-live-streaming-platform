@@ -24,3 +24,40 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  try {
+    await requireRole(["admin"])
+    const { id } = await props.params
+    const body = await req.json()
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+    }
+
+    // Accept only known pricing keys to prevent arbitrary JSONB injection
+    const allowed = ["streamTypePricing", "simulcastPricing", "validityTiers", "validityDefaultDays", "studioSubscription", "aiImagePricing", "bonusCredits"]
+    const pricing: Record<string, unknown> = {}
+    for (const key of allowed) {
+      if (key in body) pricing[key] = body[key]
+    }
+
+    // NULL means "reset to master" — pass null explicitly to clear overrides
+    const pricingValue = body.reset === true ? null : JSON.stringify(pricing)
+
+    const sql = getDb()
+    if (body.reset === true) {
+      await sql`UPDATE users SET custom_pricing = NULL, updated_at = NOW() WHERE id = ${id}`
+    } else {
+      await sql`UPDATE users SET custom_pricing = ${pricingValue}::jsonb, updated_at = NOW() WHERE id = ${id}`
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error("Admin Custom Pricing PUT error:", error)
+    if (error.message === "Forbidden" || error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

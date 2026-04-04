@@ -23,7 +23,7 @@ import { useAuth } from "@/lib/auth-context"
 
 import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
-import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
+import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
 
@@ -275,14 +275,18 @@ export default function AdminStreamersPage() {
       )}
 
       {pricingStreamer && (
-        <CustomPricingDialog
+        <FullscreenCustomPricingDialog
           open={!!pricingStreamer}
           onOpenChange={(open) => !open && setPricingStreamer(null)}
+          userId={(pricingStreamer as any).id}
           targetName={pricingStreamer.name}
           targetType="streamer"
-          existingCustomPricing={(pricingStreamer as any).customPricing as Record<string, { basePrice: number }> | undefined}
-          onSave={(pricing, _note) => {
-            (pricingStreamer as any).customPricing = pricing
+          existingCustomPricing={(pricingStreamer as any).customPricing ?? null}
+          onSaved={() => {
+            fetch("/api/admin/users?role=streamer")
+              .then(r => r.json())
+              .then(data => { if (data.users) setStreamers(data.users) })
+              .catch(console.error)
             setPricingStreamer(null)
           }}
         />

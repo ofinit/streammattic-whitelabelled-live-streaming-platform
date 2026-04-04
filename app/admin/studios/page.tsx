@@ -23,7 +23,7 @@ import type { Studio } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
 import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
-import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
+import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 
 export default function AdminStudiosPage() {
   const { impersonate } = useAuth()
@@ -252,14 +252,19 @@ export default function AdminStudiosPage() {
       )}
 
       {pricingStudio && (
-        <CustomPricingDialog
+        <FullscreenCustomPricingDialog
           open={!!pricingStudio}
           onOpenChange={(open) => !open && setPricingStudio(null)}
-          targetName={pricingStudio.branding.platformName}
+          userId={(pricingStudio as any).id}
+          targetName={(pricingStudio as any).branding?.platformName || pricingStudio.name}
           targetType="studio"
-          existingCustomPricing={(pricingStudio as any).customPricing as Record<string, { basePrice: number }> | undefined}
-          onSave={(pricing, _note) => {
-            (pricingStudio as any).customPricing = pricing
+          existingCustomPricing={(pricingStudio as any).customPricing ?? null}
+          onSaved={() => {
+            // Refresh list in background
+            fetch("/api/admin/users?role=studio")
+              .then(r => r.json())
+              .then(data => { if (data.users) setStudios(data.users) })
+              .catch(console.error)
             setPricingStudio(null)
           }}
         />

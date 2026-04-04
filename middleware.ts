@@ -30,6 +30,8 @@ export function middleware(request: NextRequest) {
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
     pathname.startsWith("/api/favicon/") ||
+    /** Liveness for Coolify/Docker — must bypass auth (no session cookie on probes) */
+    pathname.startsWith("/api/health") ||
     /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
     pathname.startsWith("/api/watch/") ||
     pathname.startsWith("/api/auth") || // NextAuth (signin, callback, error, etc.)

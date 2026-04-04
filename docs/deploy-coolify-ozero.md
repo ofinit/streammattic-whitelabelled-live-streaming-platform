@@ -68,6 +68,8 @@ Set the **`NEXT_PUBLIC_PLATFORM_*`** values in the **same** build/runtime env as
 
 Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` ([`lib/redis.ts`](../lib/redis.ts)); payment, OAuth, Cloudflare, Fal, etc. per [`.env.example`](../.env.example).
 
+**Healthcheck:** Use **`GET`** or **`HEAD`** to **`/api/health`** on port **3000** (internal). That route is **public** (no auth cookie) and returns **200** — see [`app/api/health/route.ts`](../app/api/health/route.ts). Do not rely on **`/`** for probes (`curl -I /` sends **HEAD**, which can differ from **GET** for page routes).
+
 ## 4. Run database migrations (once per environment)
 
 After Postgres is reachable from your laptop or from a one-off container:

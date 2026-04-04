@@ -16,6 +16,8 @@ export const GET = withAuth(async (user, request) => {
 
   // Admin gets all settings, non-admin gets only public settings
   const publicKeys = [
+    "platform_name",
+    "platform_a_record_ip",
     "credit_pricing",
     "discount_tiers",
     "validity_defaults",

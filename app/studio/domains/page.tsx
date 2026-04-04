@@ -1,184 +1,245 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Globe, CheckCircle, Clock, AlertCircle, ExternalLink } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Globe, CheckCircle, Clock, AlertCircle, ExternalLink, Info, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { mockDomains } from "@/lib/mock-data"
+import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
+import { getVerificationTxtHostDisplay } from "@/lib/platform-dns"
 
 export default function StudioDomainsPage() {
-  const existingDomain = mockDomains.find((d) => d.userId === "b0000000-0000-0000-0000-000000000001" && d.isPrimary)
-  const [domain, setDomain] = useState(existingDomain?.domain || "")
-  const [savedDomain, setSavedDomain] = useState(existingDomain || null)
-  const [isEditing, setIsEditing] = useState(!existingDomain)
+  const [domain, setDomain] = useState("")
+  const [savedDomain, setSavedDomain] = useState<any>(null)
+  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  const [platformSettings, setPlatformSettings] = useState({
+    platformName: "StreamLivee",
+    platformIp: "— (set in admin settings)",
+  })
 
-  const handleSave = () => {
+  useEffect(() => {
+    // 1. Fetch domain if exists
+    // 2. Fetch platform settings
+    const fetchData = async () => {
+      try {
+        const [domainRes, settingsRes] = await Promise.all([
+          fetch("/api/studio/domains"),
+          fetch("/api/settings")
+        ])
+        
+        if (domainRes.ok) {
+          const domainData = await domainRes.json()
+          if (domainData.domains?.length > 0) {
+            const primary = domainData.domains.find((d: any) => d.isPrimary) || domainData.domains[0]
+            setSavedDomain(primary)
+            setDomain(primary.domain)
+          } else {
+            setIsEditing(true)
+          }
+        }
+
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json()
+          const name = settingsData.settings?.find((s: any) => s.key === "platform_name")?.value
+          const ip = settingsData.settings?.find((s: any) => s.key === "platform_a_record_ip")?.value
+          setPlatformSettings({
+            platformName: name || "StreamLivee",
+            platformIp: ip || "— (set in admin settings)",
+          })
+        }
+      } catch (err) {
+        console.error("Failed to fetch data", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const handleSave = async () => {
     if (!domain.trim()) return
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setSavedDomain({
-        id: existingDomain?.id || `dom-${Date.now()}`,
-        userId: "b0000000-0000-0000-0000-000000000001",
-        domain: domain.trim(),
-        verificationToken: `streamlivee-verify-${Math.random().toString(36).substring(2, 34)}`,
-        verificationStatus: "pending",
-        sslStatus: "pending",
-        isPrimary: true,
-        createdAt: existingDomain?.createdAt || new Date(),
+    try {
+      const res = await fetch("/api/studio/domains", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domain.trim() }),
       })
-      setIsEditing(false)
+      if (res.ok) {
+        const data = await res.json()
+        setSavedDomain(data.domain)
+        setIsEditing(false)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
       setIsSaving(false)
-    }, 1000)
-  }
-
-  const handleRemove = () => {
-    if (confirm("Are you sure you want to remove your custom domain?")) {
-      setSavedDomain(null)
-      setDomain("")
-      setIsEditing(true)
     }
   }
 
   const getStatusBadge = () => {
     if (!savedDomain) return null
-    if (savedDomain.verificationStatus === "verified" && savedDomain.sslStatus === "active") {
+    if (savedDomain.dnsStatus === "verified" && savedDomain.sslEnabled) {
       return (
-        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
+        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
           <CheckCircle className="h-3 w-3 mr-1" />
           Active
         </Badge>
       )
     }
-    if (savedDomain.verificationStatus === "pending") {
-      return (
-        <Badge variant="outline" className="border-yellow-500/30 text-yellow-600">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending Verification
-        </Badge>
-      )
-    }
     return (
-      <Badge variant="destructive">
-        <AlertCircle className="h-3 w-3 mr-1" />
-        Verification Failed
+      <Badge variant="outline" className="border-yellow-500/30 text-yellow-600 italic">
+        <Clock className="h-3 w-3 mr-1" />
+        Checking Propagation
       </Badge>
     )
   }
 
+  if (isLoading) {
+    return <div className="flex h-96 items-center justify-center"><Clock className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Custom Domain</h1>
-        <p className="text-muted-foreground">Link a custom domain for your white-label platform</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">White-Label Domain</h1>
+          <p className="text-muted-foreground">Host {platformSettings.platformName} on your own brand domain</p>
+        </div>
+        {savedDomain && (
+          <CloudflareSetupDialog 
+            domainId={savedDomain.id} 
+            domainName={savedDomain.domain} 
+            onSuccess={() => {/* Refresh logic */}} 
+          />
+        )}
       </div>
 
-      <Card>
+      <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
-            Your Custom Domain
+            Custom Domain Configuration
           </CardTitle>
           <CardDescription>
-            Enter your custom domain below. Once submitted, our admin team will configure DNS, SSL, and
-            verification for you.
+            Enter your domain and point it to our server using the records below.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {savedDomain && !isEditing ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-primary" />
+            <div className="space-y-6">
+              <div className="flex items-center justify-between rounded-xl border-dashed border-2 bg-secondary/20 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Globe className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">{savedDomain.domain}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Added {savedDomain.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
+                    <p className="text-lg font-bold text-foreground">{savedDomain.domain}</p>
+                    <div className="flex gap-2 mt-1">
+                      {getStatusBadge()}
+                      {savedDomain.sslEnabled && <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-0">SSL: Valid</Badge>}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {getStatusBadge()}
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setIsEditing(true)}>Change</Button>
                 </div>
               </div>
 
-              {savedDomain.verificationStatus === "pending" && (
-                <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Verification in Progress</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Our admin team is setting up DNS records and SSL for your domain.
-                        This usually takes 24-48 hours. You will be notified once your domain is active.
-                      </p>
+              {/* DNS Instructions */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-primary" />
+                  <h3 className="font-bold">Required DNS Records</h3>
+                </div>
+                <div className="grid gap-4">
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Type</p>
+                        <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                        <p className="font-mono">@ (or leave empty)</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                        <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Type</p>
+                        <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                        <p className="font-mono">www</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                        <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Type</p>
+                        <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">TXT</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                        <p className="font-mono">{getVerificationTxtHostDisplay(savedDomain.domain)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                        <p className="font-mono text-emerald-500 break-all">{savedDomain.verificationToken}</p>
+                      </div>
                     </div>
                   </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    * Ensure proxy (Cloudflare orange cloud) is **disabled** while points are being verified.
+                  </p>
                 </div>
-              )}
-
-              {savedDomain.verificationStatus === "verified" && (
-                <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Domain Active</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Your custom domain is fully configured and active. All your event pages and branding are
-                        accessible at your domain.
-                      </p>
-                      <a
-                        href={`https://${savedDomain.domain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm text-primary mt-2 hover:underline"
-                      >
-                        Visit your domain
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  Change Domain
-                </Button>
-                <Button variant="outline" className="text-destructive hover:text-destructive" onClick={handleRemove}>
-                  Remove Domain
-                </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="domain">Domain Name</Label>
+                <Label htmlFor="domain">Your Platform Domain</Label>
                 <div className="flex gap-3">
                   <Input
                     id="domain"
                     placeholder="e.g. live.yourbrand.com"
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
-                    className="max-w-md"
+                    className="max-w-md bg-secondary/50 border-0"
                   />
                   <Button onClick={handleSave} disabled={!domain.trim() || isSaving}>
-                    {isSaving ? "Saving..." : savedDomain ? "Update Domain" : "Link Domain"}
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : savedDomain ? "Update" : "Link Domain"}
                   </Button>
                   {savedDomain && (
-                    <Button variant="outline" onClick={() => { setIsEditing(false); setDomain(savedDomain.domain) }}>
+                    <Button variant="ghost" onClick={() => { setIsEditing(false); setDomain(savedDomain.domain) }}>
                       Cancel
                     </Button>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Enter the domain or subdomain you want to use for your platform. Our team will handle the technical setup.
+                  Do not include http:// or https://. Example: <span className="text-foreground">live.mybrand.com</span>
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-primary/5 p-4 border border-primary/10">
+                <p className="text-sm">
+                  <strong>Note:</strong> Once linked, you will need to update your DNS records at your domain registrar (GoDaddy, Namecheap, etc.) to point to our infrastructure.
                 </p>
               </div>
             </div>
@@ -186,44 +247,18 @@ export default function StudioDomainsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle>How It Works</CardTitle>
+          <CardTitle className="text-lg">Propagation Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">
-                1
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Submit Your Domain</p>
-                <p className="text-sm text-muted-foreground">
-                  Enter the custom domain you want to use for your branded streaming platform.
-                </p>
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-sm text-muted-foreground font-mono">Status: Monitoring DNS for {savedDomain?.domain || "unconfigured"}</p>
             </div>
-            <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">
-                2
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Admin Configures DNS</p>
-                <p className="text-sm text-muted-foreground">
-                  Our admin team sets up DNS records, SSL certificates, and verifies your domain.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-bold text-primary">
-                3
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Domain Goes Live</p>
-                <p className="text-sm text-muted-foreground">
-                  Once verified, your platform and all event pages will be accessible at your custom domain.
-                </p>
-              </div>
+            <div className="text-xs text-muted-foreground bg-muted/30 p-4 rounded-lg">
+              <p>DNS changes can take up to 24 hours to propagate globally, but usually happen within 15 minutes. Our system checks every hour and will automatically enable SSL once the records match.</p>
             </div>
           </div>
         </CardContent>

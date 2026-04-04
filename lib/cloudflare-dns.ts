@@ -151,7 +151,9 @@ export async function autoConfigureDomain(
   apiToken: string,
   zoneId: string,
   domain: string,
-  verificationToken: string
+  verificationToken: string,
+  platformIp: string,
+  cnameTarget?: string
 ): Promise<{
   success: boolean
   records: CloudflareDnsRecord[]
@@ -162,20 +164,17 @@ export async function autoConfigureDomain(
 
   const { isSubdomain, subdomain } = parseDomainLayout(domain)
 
-  const cnameTarget = getPlatformCnameTarget()
-  const aRecordIp = getPlatformARecordIp()
-
   if (isSubdomain && !cnameTarget) {
-    errors.push(`Missing NEXT_PUBLIC_PLATFORM_CNAME_TARGET. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}`)
+    errors.push(`Missing CNAME target for subdomains.`)
     return { success: false, records: [], errors }
   }
-  if (!isSubdomain && !aRecordIp) {
-    errors.push(`Missing NEXT_PUBLIC_PLATFORM_A_RECORD_IP. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}`)
+  if (!isSubdomain && !platformIp) {
+    errors.push(`Missing Platform A-Record IP for apex domains.`)
     return { success: false, records: [], errors }
   }
 
   try {
-    // 1. Create routing record (CNAME for subdomain, A for root)
+    // 1. Create routing record (CNAME for subdomain, A for root + www for apex)
     if (isSubdomain) {
       // Check for existing CNAME on this subdomain
       const existing = await listDnsRecords(apiToken, zoneId, {
@@ -197,24 +196,32 @@ export async function autoConfigureDomain(
       })
       createdRecords.push(cname)
     } else {
-      // Check for existing A record on root
-      const existing = await listDnsRecords(apiToken, zoneId, {
-        name: domain,
-        type: "A",
-      })
-      if (existing.length > 0) {
-        for (const rec of existing) {
-          await deleteDnsRecord(apiToken, zoneId, rec.id)
+      // APEX DOMAIN: Create A records for both @ and www
+      const targets = ["@", "www"]
+      
+      for (const target of targets) {
+        const recordName = target === "@" ? domain : `${target}.${domain}`
+        
+        // 1a. Check/Delete existing A records
+        const existing = await listDnsRecords(apiToken, zoneId, {
+          name: recordName,
+          type: "A",
+        })
+        if (existing.length > 0) {
+          for (const rec of existing) {
+            await deleteDnsRecord(apiToken, zoneId, rec.id)
+          }
         }
-      }
 
-      const aRecord = await createDnsRecord(apiToken, zoneId, {
-        type: "A",
-        name: "@",
-        content: aRecordIp!,
-        proxied: false,
-      })
-      createdRecords.push(aRecord)
+        // 1b. Create new A record
+        const aRecord = await createDnsRecord(apiToken, zoneId, {
+          type: "A",
+          name: target,
+          content: platformIp,
+          proxied: false,
+        })
+        createdRecords.push(aRecord)
+      }
     }
 
     // 2. Create TXT verification record
@@ -243,7 +250,7 @@ export async function autoConfigureDomain(
   }
 
   return {
-    success: errors.length === 0 && createdRecords.length >= 2,
+    success: errors.length === 0 && createdRecords.length >= (isSubdomain ? 2 : 3),
     records: createdRecords,
     errors,
   }

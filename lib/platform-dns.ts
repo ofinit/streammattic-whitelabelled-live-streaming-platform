@@ -14,23 +14,25 @@ export function getVerificationTxtPrefix(): string {
   return raw.replace(/^\.+|\.+$/g, "") || DEFAULT_VERIFICATION_TXT_PREFIX
 }
 
-export function getPlatformCnameTarget(): string | undefined {
+export function getPlatformCnameTarget(override?: string): string | undefined {
+  if (override) return override.trim()
   const v = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET?.trim()
   return v || undefined
 }
 
-export function getPlatformARecordIp(): string | undefined {
+export function getPlatformARecordIp(override?: string): string | undefined {
+  if (override) return override.trim()
   const v = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP?.trim()
   return v || undefined
 }
 
 /** UI / monospace display when env is unset (no fake vendor defaults). */
-export function getPlatformCnameDisplay(): string {
-  return getPlatformCnameTarget() ?? "— (set NEXT_PUBLIC_PLATFORM_CNAME_TARGET)"
+export function getPlatformCnameDisplay(override?: string): string {
+  return getPlatformCnameTarget(override) ?? "— (set NEXT_PUBLIC_PLATFORM_CNAME_TARGET)"
 }
 
-export function getPlatformARecordDisplay(): string {
-  return getPlatformARecordIp() ?? "— (set NEXT_PUBLIC_PLATFORM_A_RECORD_IP)"
+export function getPlatformARecordDisplay(override?: string): string {
+  return getPlatformARecordIp(override) ?? "— (set NEXT_PUBLIC_PLATFORM_A_RECORD_IP)"
 }
 
 export function parseDomainLayout(domain: string): { isSubdomain: boolean; subdomain: string } {

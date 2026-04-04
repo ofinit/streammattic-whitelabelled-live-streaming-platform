@@ -53,9 +53,14 @@ export default function AdminSettingsPage() {
   const [domainSaved, setDomainSaved] = useState(false)
 
   const [platformFaviconUrl, setPlatformFaviconUrl] = useState("")
+  const [platformName, setPlatformName] = useState("")
+  const [platformIp, setPlatformIp] = useState("")
   const [platformFaviconLoading, setPlatformFaviconLoading] = useState(false)
   const [platformFaviconSaving, setPlatformFaviconSaving] = useState(false)
   const [platformFaviconMessage, setPlatformFaviconMessage] = useState<"ok" | "err" | null>(null)
+
+  const [platformBrandingSaving, setPlatformBrandingSaving] = useState(false)
+  const [platformBrandingMessage, setPlatformBrandingMessage] = useState<"ok" | "err" | null>(null)
 
   const parseSettingsValue = useCallback((raw: unknown): string => {
     if (raw == null) return ""
@@ -74,8 +79,13 @@ export default function AdminSettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { settings?: { key: string; value: unknown }[] } | null) => {
         if (cancelled || !data?.settings) return
-        const row = data.settings.find((s) => s.key === "platform_favicon_url")
-        setPlatformFaviconUrl(parseSettingsValue(row?.value))
+        const favRow = data.settings.find((s) => s.key === "platform_favicon_url")
+        const nameRow = data.settings.find((s) => s.key === "platform_name")
+        const ipRow = data.settings.find((s) => s.key === "platform_a_record_ip")
+        
+        setPlatformFaviconUrl(parseSettingsValue(favRow?.value))
+        setPlatformName(parseSettingsValue(nameRow?.value))
+        setPlatformIp(parseSettingsValue(ipRow?.value))
       })
       .catch(() => {})
       .finally(() => {
@@ -85,6 +95,42 @@ export default function AdminSettingsPage() {
       cancelled = true
     }
   }, [user?.role, isLoading, parseSettingsValue])
+
+  const handlePlatformBrandingSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPlatformBrandingMessage(null)
+    setPlatformBrandingSaving(true)
+    try {
+      // Save Platform Name
+      await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "platform_name",
+          value: platformName.trim() || null,
+        }),
+      })
+
+      // Save Platform IP
+      await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "platform_a_record_ip",
+          value: platformIp.trim() || null,
+        }),
+      })
+
+      setPlatformBrandingMessage("ok")
+    } catch {
+      setPlatformBrandingMessage("err")
+    } finally {
+      setPlatformBrandingSaving(false)
+      setTimeout(() => setPlatformBrandingMessage(null), 4000)
+    }
+  }
 
   const handlePlatformFaviconSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -364,6 +410,51 @@ export default function AdminSettingsPage() {
               />
             </div>
             <Separator />
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
+                  <Shield className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Platform Branding</p>
+                  <p className="text-sm text-muted-foreground">
+                    Set your brand name and infrastructure details used for white-labeling.
+                  </p>
+                </div>
+              </div>
+              <form onSubmit={handlePlatformBrandingSave} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="platformName">Brand Name</Label>
+                    <Input
+                      id="platformName"
+                      placeholder="e.g. LiveStream Pro"
+                      value={platformName}
+                      onChange={(e) => setPlatformName(e.target.value)}
+                      className="bg-secondary border-0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="platformIp">Server IP Address</Label>
+                    <Input
+                      id="platformIp"
+                      placeholder="e.g. 204.168.228.71"
+                      value={platformIp}
+                      onChange={(e) => setPlatformIp(e.target.value)}
+                      className="bg-secondary border-0"
+                    />
+                  </div>
+                </div>
+                {platformBrandingMessage === "ok" && (
+                  <p className="text-sm text-emerald-500">Platform branding settings saved.</p>
+                )}
+                <Button type="submit" disabled={platformBrandingSaving || platformFaviconLoading}>
+                  {platformBrandingSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Branding Settings
+                </Button>
+              </form>
+            </div>
+            <Separator />
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
@@ -435,7 +526,7 @@ export default function AdminSettingsPage() {
                 <Label htmlFor="cnameTarget">Studio CNAME Target</Label>
                 <Input
                   id="cnameTarget"
-                  placeholder={getPlatformCnameDisplay()}
+                  placeholder={getPlatformCnameDisplay(domainSettings.studioCnameTarget)}
                   value={domainSettings.studioCnameTarget}
                   onChange={(e) => setDomainSettings({ ...domainSettings, studioCnameTarget: e.target.value })}
                   className="bg-secondary border-0"
@@ -453,11 +544,11 @@ export default function AdminSettingsPage() {
                 </p>
                 <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
                   <p>
-                    A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {getPlatformARecordDisplay()}
+                    A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {getPlatformARecordDisplay(platformIp)}
                   </p>
                   <p>
                     CNAME &nbsp; www.clientbrand.com &rarr;{" "}
-                    {domainSettings.studioCnameTarget.trim() || getPlatformCnameDisplay()}
+                    {domainSettings.studioCnameTarget.trim() || getPlatformCnameDisplay(domainSettings.studioCnameTarget)}
                   </p>
                   <p>
                     TXT &nbsp;&nbsp;&nbsp; {getVerificationTxtHostDisplay("clientbrand.com")} &rarr; (auto-generated)

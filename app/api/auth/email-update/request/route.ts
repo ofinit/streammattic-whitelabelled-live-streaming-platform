@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { redis } from "@/lib/redis"
+import { sendVerificationOTP } from "@/lib/email"
 
 export async function POST(req: Request) {
   try {
@@ -42,11 +43,12 @@ export async function POST(req: Request) {
     
     await redis.set(key, payload, { ex: 600 }) // 10 minutes
 
-    // Simulate sending email (in a real app, integrate Resend here)
-    console.log(`\n======================================================`)
-    console.log(`[EMAIL OTP] To: ${normalizedEmail}`)
-    console.log(`[EMAIL OTP] Verification Code for Email Change: ${otp}`)
-    console.log(`======================================================\n`)
+    // Dispatch email securely using Nodemailer (or mock locally if missing SMTP_HOST)
+    const emailSent = await sendVerificationOTP(normalizedEmail, otp)
+
+    if (!emailSent) {
+      return NextResponse.json({ error: "Failed to dispatch verification email. Please check server settings." }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, message: "Verification code sent to new email." })
   } catch (error) {

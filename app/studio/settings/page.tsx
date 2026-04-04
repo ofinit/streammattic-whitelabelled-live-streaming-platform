@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, Shield } from "lucide-react"
+import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
 
 export default function StudioSettingsPage() {
@@ -138,7 +139,18 @@ export default function StudioSettingsPage() {
                 <p className="text-xs text-muted-foreground">Used for your public profile URL</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  Email
+                  {user?.emailVerified ? (
+                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border-0">
+                      <CheckCircle className="h-3 w-3" /> Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-0 hover:bg-destructive/20 transition-colors">
+                      <AlertCircle className="h-3 w-3" /> Unverified
+                    </Badge>
+                  )}
+                </Label>
                 <div className="flex items-center gap-4">
                   <Input
                     id="email"
@@ -149,7 +161,10 @@ export default function StudioSettingsPage() {
                   />
                   <ChangeEmailDialog 
                     currentEmail={profileData.email} 
-                    onEmailChanged={(newEmail) => setProfileData({ ...profileData, email: newEmail })} 
+                    onEmailChanged={(newEmail) => {
+                      setProfileData({ ...profileData, email: newEmail })
+                      if (user) user.emailVerified = true
+                    }}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Used for login and notifications.</p>

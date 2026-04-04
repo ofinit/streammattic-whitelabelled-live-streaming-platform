@@ -6,7 +6,7 @@
 const DEFAULT_VERIFICATION_TXT_PREFIX = "_verify"
 
 export const PLATFORM_DNS_CONFIGURE_ENV_HINT =
-  "Set NEXT_PUBLIC_PLATFORM_A_RECORD_IP (apex) and NEXT_PUBLIC_PLATFORM_CNAME_TARGET (subdomains / www) in your deployment environment (e.g. Coolify)."
+  "Set NEXT_PUBLIC_PLATFORM_A_RECORD_IP (used for apex @ and www) and NEXT_PUBLIC_PLATFORM_CNAME_TARGET (for additional subdomains) in your deployment environment (e.g. Coolify)."
 
 export function getVerificationTxtPrefix(): string {
   const raw = process.env.NEXT_PUBLIC_DOMAIN_VERIFICATION_TXT_PREFIX?.trim()
@@ -37,8 +37,18 @@ export function getPlatformARecordDisplay(override?: string): string {
 
 export function parseDomainLayout(domain: string): { isSubdomain: boolean; subdomain: string } {
   const domainParts = domain.split(".").filter(Boolean)
-  const isSubdomain = domainParts.length > 2
-  const subdomain = isSubdomain ? domainParts.slice(0, -2).join(".") : ""
+  
+  // If user entered www.example.com, treat it as example.com apex
+  let effectiveParts = domainParts
+  if (domainParts.length > 2 && domainParts[0].toLowerCase() === "www") {
+    effectiveParts = domainParts.slice(1)
+  }
+
+  const isSubdomain = effectiveParts.length > 2
+  const subdomain = isSubdomain ? effectiveParts.slice(0, -2).join(".") : ""
+  
+  // If it's the apex case (even if they typed 'www'), 
+  // 'subdomain' for the purpose of path routing (like Traefik) should be empty
   return { isSubdomain, subdomain }
 }
 

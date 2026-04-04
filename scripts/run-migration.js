@@ -101,6 +101,8 @@ const seedSettings = [
   { key: "studio_subscription", value: {enabled:true,annualPrice:1800000,label:"Studio Annual Subscription",description:"White-label platform access and hosting"} },
   { key: "gst_config", value: {enabled:true,percentage:18,gstin:"",companyName:"StreamLivee",companyAddress:""} },
   { key: "payment_gateways", value: {razorpay:{enabled:true,label:"Razorpay"},instamojo:{enabled:true,label:"Instamojo"}} },
+  { key: "platform_domain", value: "" },
+  { key: "platform_cname_target", value: "" },
 ];
 
 async function run() {

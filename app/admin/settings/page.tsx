@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
   })
   const [domainSettings, setDomainSettings] = useState({
     platformDomain: "",
-    studioCnameTarget: process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "",
+    studioCnameTarget: "",
   })
   const [domainSaved, setDomainSaved] = useState(false)
 
@@ -82,10 +82,16 @@ export default function AdminSettingsPage() {
         const favRow = data.settings.find((s) => s.key === "platform_favicon_url")
         const nameRow = data.settings.find((s) => s.key === "platform_name")
         const ipRow = data.settings.find((s) => s.key === "platform_a_record_ip")
+        const domainRow = data.settings.find((s) => s.key === "platform_domain")
+        const targetRow = data.settings.find((s) => s.key === "platform_cname_target")
         
         setPlatformFaviconUrl(parseSettingsValue(favRow?.value))
         setPlatformName(parseSettingsValue(nameRow?.value))
         setPlatformIp(parseSettingsValue(ipRow?.value))
+        setDomainSettings({
+          platformDomain: parseSettingsValue(domainRow?.value),
+          studioCnameTarget: parseSettingsValue(targetRow?.value),
+        })
       })
       .catch(() => {})
       .finally(() => {
@@ -159,8 +165,33 @@ export default function AdminSettingsPage() {
 
   const handleDomainSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setDomainSaved(true)
-    setTimeout(() => setDomainSaved(false), 3000)
+    setDomainSaved(false)
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "platform_domain",
+          value: domainSettings.platformDomain.trim() || null,
+        }),
+      })
+
+      await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "platform_cname_target",
+          value: domainSettings.studioCnameTarget.trim() || null,
+        }),
+      })
+
+      setDomainSaved(true)
+      setTimeout(() => setDomainSaved(false), 3000)
+    } catch {
+      // Show error? 
+    }
   }
 
   const [profileSaving, setProfileSaving] = useState(false)
@@ -523,7 +554,7 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cnameTarget">Studio CNAME Target</Label>
+                <Label htmlFor="cnameTarget">Studio CNAME Target (Subdomains)</Label>
                 <Input
                   id="cnameTarget"
                   placeholder={getPlatformCnameDisplay(domainSettings.studioCnameTarget)}
@@ -532,27 +563,26 @@ export default function AdminSettingsPage() {
                   className="bg-secondary border-0"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Studios&apos; www CNAME records will point here. Set <code className="text-xs">NEXT_PUBLIC_PLATFORM_CNAME_TARGET</code> in
-                  Coolify (or build env) so customer-facing instructions show the correct host.
+                  The target (usually your app&apos;s main domain) that studios&apos; **subdomain** CNAME records will point to. 
+                  Apex domains (@/www) now use **A records** pointing to the Server IP above.
                 </p>
               </div>
               <Separator />
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                <p className="text-xs font-medium text-foreground">Studio DNS Records Preview</p>
-                <p className="text-xs text-muted-foreground">
-                  When you configure a studio domain (e.g. clientbrand.com), they will need:
-                </p>
-                <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
-                  <p>
-                    A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {getPlatformARecordDisplay(platformIp)}
-                  </p>
-                  <p>
-                    CNAME &nbsp; www.clientbrand.com &rarr;{" "}
-                    {domainSettings.studioCnameTarget.trim() || getPlatformCnameDisplay(domainSettings.studioCnameTarget)}
-                  </p>
-                  <p>
-                    TXT &nbsp;&nbsp;&nbsp; {getVerificationTxtHostDisplay("clientbrand.com")} &rarr; (auto-generated)
-                  </p>
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <p className="text-xs font-semibold text-foreground">Manual DNS Configuration (Non-Cloudflare)</p>
+                <div className="space-y-4 font-mono text-xs text-muted-foreground">
+                  <div className="space-y-1">
+                    <p className="font-bold text-foreground opacity-60 text-[10px] uppercase">Routing Records</p>
+                    <div className="grid grid-cols-1 gap-1">
+                      <p>Type: <span className="text-primary font-bold">A</span> &nbsp;&nbsp;&nbsp; Host: <span className="text-foreground">@</span> &nbsp;&nbsp;&nbsp; Value: {getPlatformARecordDisplay(platformIp)}</p>
+                      <p>Type: <span className="text-primary font-bold">A</span> &nbsp;&nbsp;&nbsp; Host: <span className="text-foreground">www</span> &nbsp; Value: {getPlatformARecordDisplay(platformIp)}</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">* Use A records for both @ and www. For subdomains (e.g. live), create an A record for the 'live' host pointing to the same IP.</p>
+                  </div>
+                  <div className="pt-2 border-t border-border/50">
+                    <p className="font-bold text-foreground opacity-60 text-[10px] uppercase">Verification Record</p>
+                    <p>Type: <span className="font-bold">TXT</span> &nbsp; Host: <span className="text-foreground">{getVerificationTxtHostDisplay("clientbrand.com")}</span> &rarr; (unique token)</p>
+                  </div>
                 </div>
               </div>
               {domainSaved && <p className="text-sm text-emerald-500">Platform domain settings saved!</p>}

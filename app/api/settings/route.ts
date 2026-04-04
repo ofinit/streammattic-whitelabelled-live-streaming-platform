@@ -23,7 +23,8 @@ export const GET = withAuth(async (user, request) => {
     "validity_defaults",
     /** Admin-configured extension tiers + default window (see Admin → Pricing) */
     "validity_extensions",
-    "payment_gateways",
+    "platform_domain",
+    "platform_cname_target",
     "youtube_config_enabled",
     "ai_image_pricing",
   ]

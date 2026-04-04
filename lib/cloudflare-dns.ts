@@ -174,27 +174,27 @@ export async function autoConfigureDomain(
   }
 
   try {
-    // 1. Create routing record (CNAME for subdomain, A for root + www for apex)
+    // 1. Create routing record (A record for subdomain, or A for root + www for apex)
     if (isSubdomain) {
-      // Check for existing CNAME on this subdomain
+      // Check/Delete existing A or CNAME records on this subdomain
       const existing = await listDnsRecords(apiToken, zoneId, {
         name: domain,
-        type: "CNAME",
       })
       if (existing.length > 0) {
-        // Delete old CNAME first to avoid conflicts
         for (const rec of existing) {
-          await deleteDnsRecord(apiToken, zoneId, rec.id)
+          if (rec.type === "A" || rec.type === "CNAME") {
+            await deleteDnsRecord(apiToken, zoneId, rec.id)
+          }
         }
       }
 
-      const cname = await createDnsRecord(apiToken, zoneId, {
-        type: "CNAME",
+      const aRecord = await createDnsRecord(apiToken, zoneId, {
+        type: "A",
         name: subdomain,
-        content: cnameTarget!,
+        content: platformIp,
         proxied: false,
       })
-      createdRecords.push(cname)
+      createdRecords.push(aRecord)
     } else {
       // APEX DOMAIN: Create A records for both @ and www
       const targets = ["@", "www"]

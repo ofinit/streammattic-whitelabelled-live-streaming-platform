@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Globe, CheckCircle, Clock, AlertCircle, ExternalLink, Info, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
-import { getVerificationTxtHostDisplay } from "@/lib/platform-dns"
+import { getVerificationTxtHostDisplay, parseDomainLayout, getPlatformCnameTarget } from "@/lib/platform-dns"
 
 export default function StudioDomainsPage() {
   const [domain, setDomain] = useState("")
@@ -21,6 +21,7 @@ export default function StudioDomainsPage() {
   const [platformSettings, setPlatformSettings] = useState({
     platformName: "StreamLivee",
     platformIp: "— (set in admin settings)",
+    platformCnameTarget: "",
   })
 
   useEffect(() => {
@@ -48,9 +49,11 @@ export default function StudioDomainsPage() {
           const settingsData = await settingsRes.json()
           const name = settingsData.settings?.find((s: any) => s.key === "platform_name")?.value
           const ip = settingsData.settings?.find((s: any) => s.key === "platform_a_record_ip")?.value
+          const target = settingsData.settings?.find((s: any) => s.key === "platform_cname_target")?.value
           setPlatformSettings({
             platformName: name || "StreamLivee",
             platformIp: ip || "— (set in admin settings)",
+            platformCnameTarget: target || "",
           })
         }
       } catch (err) {
@@ -160,35 +163,62 @@ export default function StudioDomainsPage() {
                 </div>
                 <div className="grid gap-4">
                   <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Type</p>
-                        <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
-                        <p className="font-mono">@ (or leave empty)</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
-                        <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Type</p>
-                        <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
-                        <p className="font-mono">www</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
-                        <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const { isSubdomain, subdomain } = parseDomainLayout(savedDomain.domain)
+                      
+                      if (isSubdomain) {
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Type</p>
+                              <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                              <p className="font-mono">{subdomain}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                              <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Type</p>
+                              <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                              <p className="font-mono">@ (or leave empty)</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                              <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                            </div>
+                          </div>
+                          <Separator />
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Type</p>
+                              <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                              <p className="font-mono">www</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                              <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                     <Separator />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                       <div>

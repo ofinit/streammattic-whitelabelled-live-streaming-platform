@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,27 +21,35 @@ export default function AdminWalletsPage() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; balance: number } | null>(null)
 
-    // Combine studios and users for wallet management
-  const allWallets = [
-    ...mockStudios.map((r) => ({
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      type: "studio" as const,
-      balance: r.walletBalance,
-      status: r.status,
-    })),
-    ...mockStreamers.map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      type: "streamer" as const,
-      balance: u.walletBalance,
-      status: u.status,
-    })),
-  ]
+  const [wallets, setWallets] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const filteredWallets = allWallets.filter(
+  const fetchWallets = () => {
+    fetch("/api/admin/wallets")
+      .then(res => res.json())
+      .then(data => {
+        if (data.wallets) {
+          const formatted = data.wallets.map((w: any) => ({
+            id: w.userId,
+            walletId: w.id,
+            name: w.userName,
+            email: w.userEmail,
+            type: w.userRole,
+            balance: w.balance,
+            status: w.userStatus,
+          }))
+          setWallets(formatted)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchWallets()
+  }, [])
+
+  const filteredWallets = wallets.filter(
     (w) =>
       w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       w.email.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -57,19 +65,45 @@ export default function AdminWalletsPage() {
     setAdjustOpen(true)
   }
 
-  const confirmTopUp = (amount: number) => {
-    // In real app, this would call the API
-    console.log(`Top up ${selectedUser?.name} with ${amount}`)
+  const confirmTopUp = async (amount: number) => {
+    if (!selectedUser) return
+    try {
+      const res = await fetch("/api/admin/wallets/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          type: "credit",
+          amount: amount * 100,
+          category: "top_up",
+          reason: "Manual Admin Recharge",
+        }),
+      })
+      if (res.ok) fetchWallets()
+    } catch (err) { console.error(err) }
   }
 
-  const confirmAdjust = (amount: number, type: "credit" | "debit", reason: string) => {
-    // In real app, this would call the API
-    console.log(`Adjust ${selectedUser?.name}: ${type} ${amount} - ${reason}`)
+  const confirmAdjust = async (amount: number, type: "credit" | "debit", reason: string) => {
+    if (!selectedUser) return
+    try {
+      const res = await fetch("/api/admin/wallets/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          type,
+          amount: amount * 100,
+          category: "adjustment",
+          reason,
+        }),
+      })
+      if (res.ok) fetchWallets()
+    } catch (err) { console.error(err) }
   }
 
-  // Calculate totals
-  const totalStudioBalance = mockStudios.reduce((sum, r) => sum + r.walletBalance, 0)
-  const totalStreamerBalance = mockStreamers.reduce((sum, u) => sum + u.walletBalance, 0)
+  // Calculate totals dynamically
+  const totalStudioBalance = wallets.filter(w => w.type === 'studio').reduce((sum, w) => sum + (w.balance || 0), 0)
+  const totalStreamerBalance = wallets.filter(w => w.type === 'streamer').reduce((sum, w) => sum + (w.balance || 0), 0)
 
   return (
     <div className="space-y-6">
@@ -88,7 +122,7 @@ export default function AdminWalletsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">₹{(totalStudioBalance / 100).toLocaleString("en-IN")}</p>
-            <p className="text-sm text-muted-foreground">{mockStudios.length} studios</p>
+            <p className="text-sm text-muted-foreground">{wallets.filter(w => w.type === 'studio').length} studios</p>
           </CardContent>
         </Card>
         <Card>
@@ -98,7 +132,7 @@ export default function AdminWalletsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">₹{(totalStreamerBalance / 100).toLocaleString("en-IN")}</p>
-            <p className="text-sm text-muted-foreground">{mockStreamers.length} streamers</p>
+            <p className="text-sm text-muted-foreground">{wallets.filter(w => w.type === 'streamer').length} streamers</p>
           </CardContent>
         </Card>
         <Card>

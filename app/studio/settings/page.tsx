@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
 import { Loader2, User, Lock, Bell, Shield } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
 
 export default function StudioSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
@@ -19,7 +20,7 @@ export default function StudioSettingsPage() {
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
     username: user?.email?.split("@")[0] || "",
     email: user?.email || "",
-    phone: "",
+    phone: user?.phone || "",
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -34,9 +35,31 @@ export default function StudioSettingsPage() {
     eventReminders: true,
   })
 
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Updating profile:", profileData)
+    setProfileSaving(true)
+    setProfileMessage(null)
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          phone: profileData.phone,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to update profile")
+      setProfileMessage({ type: "success", text: "Profile updated successfully!" })
+      setTimeout(() => setProfileMessage(null), 3000)
+    } catch {
+      setProfileMessage({ type: "error", text: "Failed to update profile" })
+    } finally {
+      setProfileSaving(false)
+    }
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -116,14 +139,20 @@ export default function StudioSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profileData.email}
-                  disabled
-                  className="bg-secondary border-0 opacity-50"
-                />
-                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    disabled
+                    className="bg-secondary border-0 opacity-80 flex-1 max-w-sm"
+                  />
+                  <ChangeEmailDialog 
+                    currentEmail={profileData.email} 
+                    onEmailChanged={(newEmail) => setProfileData({ ...profileData, email: newEmail })} 
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Used for login and notifications.</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
@@ -136,7 +165,15 @@ export default function StudioSettingsPage() {
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
-              <Button type="submit">Save Changes</Button>
+              {profileMessage && (
+                <p className={`text-sm ${profileMessage.type === "success" ? "text-emerald-500" : "text-destructive"}`}>
+                  {profileMessage.text}
+                </p>
+              )}
+              <Button type="submit" disabled={profileSaving}>
+                {profileSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </form>
           </CardContent>
         </Card>

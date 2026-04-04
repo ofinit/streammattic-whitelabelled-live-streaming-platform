@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react"
-import { mockPaymentGatewayTransactions, mockUnmatchedPayments } from "@/lib/mock-data"
+
 import { formatCurrency, formatDate } from "@/lib/utils"
 
 export default function AdminPaymentsPage() {
@@ -26,35 +26,50 @@ export default function AdminPaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedTab, setSelectedTab] = useState("all")
 
+  const [payments, setPayments] = useState<any[]>([])
+  const [unmatchedPayments, setUnmatchedPayments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/admin/transactions")
+      .then(res => res.json())
+      .then(data => {
+        if (data.transactions) setPayments(data.transactions)
+        if (data.unmatched) setUnmatchedPayments(data.unmatched)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
   // Filter payment transactions
   const filteredPayments = useMemo(() => {
-    return mockPaymentGatewayTransactions.filter((payment) => {
+    return payments.filter((payment) => {
       const matchesSearch =
-        payment.paymentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.userName.toLowerCase().includes(searchTerm.toLowerCase())
+        payment.paymentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.userName?.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesGateway = gatewayFilter === "all" || payment.gateway === gatewayFilter
       const matchesStatus = statusFilter === "all" || payment.status === statusFilter
 
       return matchesSearch && matchesGateway && matchesStatus
     })
-  }, [searchTerm, gatewayFilter, statusFilter])
+  }, [payments, searchTerm, gatewayFilter, statusFilter])
 
   // Statistics
   const stats = useMemo(() => {
-    const total = mockPaymentGatewayTransactions.length
-    const success = mockPaymentGatewayTransactions.filter((p) => p.status === "success").length
-    const failed = mockPaymentGatewayTransactions.filter((p) => p.status === "failed").length
-    const pending = mockPaymentGatewayTransactions.filter((p) => p.status === "pending").length
-    const unmatched = mockUnmatchedPayments.length
+    const total = payments.length
+    const success = payments.filter((p) => p.status === "success").length
+    const failed = payments.filter((p) => p.status === "failed").length
+    const pending = payments.filter((p) => p.status === "pending").length
+    const unmatched = unmatchedPayments.length
 
-    const totalAmount = mockPaymentGatewayTransactions
+    const totalAmount = payments
       .filter((p) => p.status === "success")
-      .reduce((sum, p) => sum + p.amount, 0)
+      .reduce((sum, p) => sum + (p.amount || 0), 0)
 
     return { total, success, failed, pending, unmatched, totalAmount }
-  }, [])
+  }, [payments, unmatchedPayments])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -285,7 +300,7 @@ export default function AdminPaymentsPage() {
           </Card>
 
           <div className="space-y-3">
-            {mockUnmatchedPayments.map((payment) => (
+            {unmatchedPayments.map((payment) => (
               <Card key={payment.id} className="border-orange-500">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -340,7 +355,7 @@ export default function AdminPaymentsPage() {
               </Card>
             ))}
 
-            {mockUnmatchedPayments.length === 0 && (
+            {unmatchedPayments.length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
                   <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />

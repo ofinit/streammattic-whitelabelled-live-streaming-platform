@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { EventCalendar } from "@/components/calendar/event-calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { mockEvents } from "@/lib/mock-data"
+
 import {
   CalendarIcon,
   List,
@@ -51,8 +51,18 @@ export default function AdminCalendarPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const eventsPerPage = 10
 
-  // Get all events (admin sees everything)
-  const allEvents = mockEvents
+  const [allEvents, setAllEvents] = useState<any[]>([])
+
+  useEffect(() => {
+    fetch("/api/admin/events")
+      .then(res => res.json())
+      .then(data => {
+        if (data.events) {
+          setAllEvents(data.events)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   // Filter events by date range
   const filteredEvents = useMemo(() => {
@@ -147,7 +157,7 @@ export default function AdminCalendarPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
-        (event) => event.title.toLowerCase().includes(query) || event.description?.toLowerCase().includes(query),
+        (event) => event.title?.toLowerCase().includes(query) || event.description?.toLowerCase().includes(query),
       )
     }
 

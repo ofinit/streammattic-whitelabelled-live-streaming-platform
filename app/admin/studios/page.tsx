@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/dashboard/data-table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
-import { mockStudios } from "@/lib/mock-data"
+
 import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee } from "lucide-react"
 import type { Studio } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +35,20 @@ export default function AdminStudiosPage() {
   const [youtubeStudio, setYoutubeStudio] = useState<Studio | null>(null)
   const [pricingStudio, setPricingStudio] = useState<Studio | null>(null)
 
-  const filteredStudios = mockStudios.filter((studio) => {
+  const [studios, setStudios] = useState<Studio[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/admin/users?role=studio")
+      .then(res => res.json())
+      .then(data => {
+        if (data.users) setStudios(data.users)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filteredStudios = studios.filter((studio) => {
     const matchesSearch =
       studio.name.toLowerCase().includes(search.toLowerCase()) ||
       studio.email.toLowerCase().includes(search.toLowerCase())
@@ -44,14 +57,29 @@ export default function AdminStudiosPage() {
   })
 
   const handleCreate = async (data: StudioFormData) => {
-    console.log("[v0] Creating studio:", data)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // In production, would POST to /api/admin/users
+    console.log("[create API] Creating studio:", data)
   }
 
   const handleEdit = async (data: StudioFormData) => {
-    console.log("[v0] Updating studio:", editingStudio?.id, data)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // In production, would PUT /api/admin/users
+    console.log("[edit API] Updating studio:", editingStudio?.id, data)
     setEditingStudio(null)
+  }
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        setStudios(s => s.map(x => x.id === id ? { ...x, status: newStatus as any } : x))
+      }
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const columns = [
@@ -125,18 +153,18 @@ export default function AdminStudiosPage() {
 <DropdownMenuItem onClick={() => setPricingStudio(item)}>
   <IndianRupee className="mr-2 h-4 w-4" />
   Custom Pricing
-  {(item.customPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
+  {((item as any).customPricing || (item as unknown as Record<string, unknown>).customAnnualSubscription) && (
     <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
   )}
 </DropdownMenuItem>
 <DropdownMenuSeparator />
 {item.status === "active" ? (
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={() => handleStatusChange(item.id, 'suspended')}>
                 <Ban className="mr-2 h-4 w-4" />
                 Suspend
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'active')}>
                 <UserCheck className="mr-2 h-4 w-4" />
                 Activate
               </DropdownMenuItem>
@@ -229,9 +257,9 @@ export default function AdminStudiosPage() {
           onOpenChange={(open) => !open && setPricingStudio(null)}
           targetName={pricingStudio.branding.platformName}
           targetType="studio"
-          existingCustomPricing={pricingStudio.customPricing as Record<string, { basePrice: number }> | undefined}
+          existingCustomPricing={(pricingStudio as any).customPricing as Record<string, { basePrice: number }> | undefined}
           onSave={(pricing, _note) => {
-            pricingStudio.customPricing = pricing
+            (pricingStudio as any).customPricing = pricing
             setPricingStudio(null)
           }}
         />

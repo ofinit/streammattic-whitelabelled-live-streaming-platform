@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AdminLayout } from "@/components/layouts/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,12 +18,28 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Filter, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react"
-import { mockRefundRequests, mockEvents, mockStreamers } from "@/lib/mock-data"
+
 import { formatCurrency } from "@/lib/refund-service"
 import type { RefundRequest } from "@/lib/types"
 
 export default function AdminRefundsPage() {
-  const [refunds] = useState<RefundRequest[]>(mockRefundRequests)
+  const [refunds, setRefunds] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchRefunds = () => {
+    fetch("/api/admin/refunds")
+      .then(res => res.json())
+      .then(data => {
+        if (data.refunds) setRefunds(data.refunds)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchRefunds()
+  }, [])
+
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedRefund, setSelectedRefund] = useState<RefundRequest | null>(null)
@@ -33,12 +49,9 @@ export default function AdminRefundsPage() {
 
   // Filter refunds
   const filteredRefunds = refunds.filter((refund) => {
-    const event = mockEvents.find((e) => e.id === refund.eventId)
-    const user = mockStreamers.find((u) => u.id === refund.requestedBy)
-
     const matchesSearch =
-      event?.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (refund.eventName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (refund.requestedByName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       refund.id.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || refund.status === statusFilter
@@ -75,20 +88,30 @@ export default function AdminRefundsPage() {
     setShowRejectDialog(true)
   }
 
-  const confirmApprove = () => {
-    if (selectedRefund) {
-      // In real app: call API to approve refund
-      console.log("[v0] Approving refund:", selectedRefund.id)
-    }
+  const confirmApprove = async () => {
+    if (!selectedRefund) return
+    try {
+      const res = await fetch(`/api/admin/refunds/${selectedRefund.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      })
+      if (res.ok) fetchRefunds()
+    } catch(err) { console.error(err) }
     setShowApproveDialog(false)
     setSelectedRefund(null)
   }
 
-  const confirmReject = () => {
-    if (selectedRefund && rejectionReason.trim()) {
-      // In real app: call API to reject refund
-      console.log("[v0] Rejecting refund:", selectedRefund.id, "Reason:", rejectionReason)
-    }
+  const confirmReject = async () => {
+    if (!selectedRefund || !rejectionReason.trim()) return
+    try {
+      const res = await fetch(`/api/admin/refunds/${selectedRefund.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "rejected", reason: rejectionReason }),
+      })
+      if (res.ok) fetchRefunds()
+    } catch(err) { console.error(err) }
     setShowRejectDialog(false)
     setSelectedRefund(null)
     setRejectionReason("")
@@ -184,20 +207,17 @@ export default function AdminRefundsPage() {
             </Card>
           ) : (
             filteredRefunds.map((refund) => {
-              const event = mockEvents.find((e) => e.id === refund.eventId)
-              const user = mockStreamers.find((u) => u.id === refund.requestedBy)
-
               return (
                 <Card key={refund.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <CardTitle className="text-xl">{event?.title || "Unknown Event"}</CardTitle>
+                          <CardTitle className="text-xl">{refund.eventName || "Unknown Event"}</CardTitle>
                           {getStatusBadge(refund.status)}
                         </div>
                         <CardDescription>
-                          Requested by {user?.name} on {new Date(refund.requestedAt).toLocaleDateString()}
+                          Requested by {refund.requestedByName} on {new Date(refund.requestedAt).toLocaleDateString()}
                         </CardDescription>
                       </div>
                       <div className="text-right">
@@ -273,11 +293,11 @@ export default function AdminRefundsPage() {
               </div>
               <div>
                 <Label>Event</Label>
-                <p>{mockEvents.find((e) => e.id === selectedRefund.eventId)?.title}</p>
+                <p>{(selectedRefund as any).eventName}</p>
               </div>
               <div>
                 <Label>Requested By</Label>
-                <p>{mockStreamers.find((u) => u.id === selectedRefund.requestedBy)?.name}</p>
+                <p>{(selectedRefund as any).requestedByName}</p>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/dashboard/data-table"
@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
-import { mockStreamers } from "@/lib/mock-data"
+
 import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
 import { CustomPricingDialog } from "@/components/admin/custom-pricing-dialog"
@@ -42,10 +42,21 @@ export default function AdminStreamersPage() {
     targetStatus: "active" | "suspended"
   } | null>(null)
 
-  const allStreamers = mockStreamers
+  const [streamers, setStreamers] = useState<Streamer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/admin/users?role=streamer")
+      .then(res => res.json())
+      .then(data => {
+        if (data.users) setStreamers(data.users)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
   // Filter streamers
-  const filteredStreamers = allStreamers.filter((streamer) => {
+  const filteredStreamers = streamers.filter((streamer) => {
     const matchesSearch =
       streamer.name.toLowerCase().includes(search.toLowerCase()) || streamer.email.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || streamer.status === statusFilter
@@ -53,24 +64,33 @@ export default function AdminStreamersPage() {
   })
 
   const handleCreate = async (data: any) => {
-    console.log("[v0] Creating streamer:", data)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    console.log("[create API] Creating streamer:", data)
   }
 
   const handleEdit = async (data: any) => {
-    console.log("[v0] Updating streamer:", editingStreamer?.id, data)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    console.log("[update API] Updating streamer:", editingStreamer?.id, data)
     setEditingStreamer(null)
   }
 
   const handleStatusChange = async () => {
     if (!statusChangeTarget) return
-    console.log("[v0] Changing streamer status:", statusChangeTarget.user.id, statusChangeTarget.targetStatus)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const res = await fetch(`/api/admin/users/${statusChangeTarget.user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusChangeTarget.targetStatus }),
+      })
+      if (res.ok) {
+        setStreamers(s => s.map(x => x.id === statusChangeTarget.user.id ? { ...x, status: statusChangeTarget.targetStatus as any } : x))
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    setStatusChangeTarget(null)
   }
 
-  const handleImpersonate = (item: any) => {
-    const targetRoute = impersonate(item.id)
+  const handleImpersonate = async (item: any) => {
+    const targetRoute = await impersonate(item.id)
     if (targetRoute) {
       router.push(targetRoute)
     }
@@ -138,7 +158,7 @@ export default function AdminStreamersPage() {
             <DropdownMenuItem onClick={() => setPricingStreamer(item)}>
               <IndianRupee className="mr-2 h-4 w-4" />
               Custom Pricing
-              {item.customPricing && (
+              {(item as any).customPricing && (
                 <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-amber-500 border-amber-500/30">Custom</Badge>
               )}
             </DropdownMenuItem>
@@ -260,9 +280,9 @@ export default function AdminStreamersPage() {
           onOpenChange={(open) => !open && setPricingStreamer(null)}
           targetName={pricingStreamer.name}
           targetType="streamer"
-          existingCustomPricing={pricingStreamer.customPricing as Record<string, { basePrice: number }> | undefined}
+          existingCustomPricing={(pricingStreamer as any).customPricing as Record<string, { basePrice: number }> | undefined}
           onSave={(pricing, _note) => {
-            pricingStreamer.customPricing = pricing
+            (pricingStreamer as any).customPricing = pricing
             setPricingStreamer(null)
           }}
         />

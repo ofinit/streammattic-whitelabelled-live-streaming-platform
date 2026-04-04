@@ -139,16 +139,21 @@ export default function AdminEventsPage() {
   }
 
   const { data, isLoading, mutate } = useSWR(
-    ownerId ? `/api/studio/events?studioId=${ownerId}${searchQuery ? `&search=${searchQuery}` : ""}&limit=${eventsLimit}&offset=0` : null,
+    `/api/admin/events${searchQuery ? `?search=${searchQuery}` : ""}`,
     fetcher,
     { refreshInterval: 15000 }
   )
 
   const events = data?.events ?? []
-  const totalCount = data?.totalCount ?? 0
-  const liveCount = data?.liveCount ?? 0
-  const scheduledCount = data?.scheduledCount ?? 0
-  const completedCount = data?.completedCount ?? 0
+  const totalCount = events.length
+  
+  const liveEvents = events.filter((e: Record<string, unknown>) => e.status === "live" || e.status === "on_break")
+  const scheduledEvents = events.filter((e: Record<string, unknown>) => e.status === "scheduled")
+  const completedEvents = events.filter((e: Record<string, unknown>) => e.status === "completed" || e.status === "ended")
+
+  const liveCount = liveEvents.length
+  const scheduledCount = scheduledEvents.length
+  const completedCount = completedEvents.length
   const hasMoreEvents = events.length < totalCount
 
   useEffect(() => {
@@ -174,11 +179,7 @@ export default function AdminEventsPage() {
     return () => observer.disconnect()
   }, [hasMoreEvents, isLoading, events.length])
 
-  const liveEvents = events.filter((e: Record<string, unknown>) => e.status === "live" || e.status === "on_break")
-  const scheduledEvents = events.filter((e: Record<string, unknown>) => e.status === "scheduled")
-  const completedEvents = events.filter((e: Record<string, unknown>) => e.status === "completed" || e.status === "ended")
-
-  const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.currentViewers) || 0), 0)
+  const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.viewers) || 0), 0)
 
   const handleCreateEvent = () => {
     setEditingEvent(undefined)
@@ -245,7 +246,7 @@ export default function AdminEventsPage() {
         }
         mutate()
         setShowEventDialog(false)
-        if (showCredentials && eventData.streamType === "youtube_api") {
+        if (showCredentials && (eventData as any).streamType === "youtube_api") {
           const channelId = (eventData as Record<string, unknown>).youtubeChannelId as string | undefined
           const bSettings = (eventData as Record<string, unknown>).youtubeBroadcastSettings as Record<string, unknown> | undefined
           if (channelId && resData.event?.id) {
@@ -507,9 +508,9 @@ export default function AdminEventsPage() {
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
           <span className="flex items-center gap-1">
             <Eye className="h-3 w-3 shrink-0" />
-            {Number(event.currentViewers) || 0}
+            {Number((event as any).viewers) || 0}
           </span>
-          {(event.scheduledAt || event.scheduledStart) && (
+          {Boolean(event.scheduledAt || event.scheduledStart) && (
             <span className="flex min-w-0 max-w-full items-center gap-1">
               <Clock className="h-3 w-3 shrink-0" />
               <span className="truncate">
@@ -526,9 +527,9 @@ export default function AdminEventsPage() {
       <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
         <span className="flex items-center gap-1">
           <Eye className="h-3 w-3" />
-          {Number(event.currentViewers) || 0}
+          {Number((event as any).viewers) || 0}
         </span>
-        {(event.scheduledAt || event.scheduledStart) && (
+        {Boolean(event.scheduledAt || event.scheduledStart) && (
           <span
             className="flex max-w-[min(100%,15rem)] items-center gap-1 truncate"
             title={formatEventScheduledDisplay(

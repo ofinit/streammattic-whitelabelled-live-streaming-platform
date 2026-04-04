@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-04T12:04:46+05:30` |
-| Git revision | `6fc78fd` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-04T20:05:40+05:30` |
+| Git revision | `28e05c9` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -71,22 +71,35 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 
 | File | Approx. URL prefix |
 | --- | --- |
+| `app/api/admin/analytics/overview/route.ts` | `/api/admin/analytics/overview` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
+| `app/api/admin/events/route.ts` | `/api/admin/events` |
 | `app/api/admin/gst/route.ts` | `/api/admin/gst` |
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
 | `app/api/admin/invoices/zip/route.ts` | `/api/admin/invoices/zip` |
+| `app/api/admin/orders/route.ts` | `/api/admin/orders` |
 | `app/api/admin/pricing/route.ts` | `/api/admin/pricing` |
+| `app/api/admin/refunds/[id]/route.ts` | `/api/admin/refunds/[id]` |
+| `app/api/admin/refunds/route.ts` | `/api/admin/refunds` |
 | `app/api/admin/run-migration/route.ts` | `/api/admin/run-migration` |
+| `app/api/admin/transactions/route.ts` | `/api/admin/transactions` |
+| `app/api/admin/users/[id]/route.ts` | `/api/admin/users/[id]` |
+| `app/api/admin/users/route.ts` | `/api/admin/users` |
+| `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
+| `app/api/admin/wallets/route.ts` | `/api/admin/wallets` |
 | `app/api/admin/youtube-override/route.ts` | `/api/admin/youtube-override` |
 | `app/api/auth/[...nextauth]/route.ts` | `/api/auth/[...nextauth]` |
 | `app/api/auth/change-password/route.ts` | `/api/auth/change-password` |
 | `app/api/auth/demo-login/route.ts` | `/api/auth/demo-login` |
+| `app/api/auth/email-update/request/route.ts` | `/api/auth/email-update/request` |
+| `app/api/auth/email-update/verify/route.ts` | `/api/auth/email-update/verify` |
 | `app/api/auth/impersonate/route.ts` | `/api/auth/impersonate` |
 | `app/api/auth/login/route.ts` | `/api/auth/login` |
 | `app/api/auth/logout/route.ts` | `/api/auth/logout` |
 | `app/api/auth/magic-link/request/route.ts` | `/api/auth/magic-link/request` |
 | `app/api/auth/magic-link/session/route.ts` | `/api/auth/magic-link/session` |
 | `app/api/auth/me/route.ts` | `/api/auth/me` |
+| `app/api/auth/profile/route.ts` | `/api/auth/profile` |
 | `app/api/auth/providers/route.ts` | `/api/auth/providers` |
 | `app/api/auth/register/route.ts` | `/api/auth/register` |
 | `app/api/auth/stack-exchange/route.ts` | `/api/auth/stack-exchange` |
@@ -146,6 +159,12 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 ### Database (from `DATABASE_URL` at generation time)
 
 
-*Schema snapshot failed: connect ECONNREFUSED 204.168.228.71:5432*
+*Schema snapshot skipped: `DATABASE_URL` is not set.*
+
+To include a snapshot from your database, run with an env file, for example:
+
+```bash
+node --env-file=.env.local scripts/generate-dev-handbook.js
+```
 
 <!-- AUTO-GENERATED:END -->

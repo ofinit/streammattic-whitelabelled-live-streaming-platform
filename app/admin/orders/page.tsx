@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { mockOrders } from "@/lib/mock-data"
 import type { Order } from "@/lib/types"
 import { OrderCard } from "@/components/orders/order-card"
@@ -10,7 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter } from "lucide-react"
 
 export default function AdminOrdersPage() {
-  const [orders] = useState(mockOrders)
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/admin/orders")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.orders) {
+          setOrders(data.orders)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
 
@@ -21,9 +35,10 @@ export default function AdminOrdersPage() {
   const filterOrders = (orderList: Order[]) => {
     return orderList.filter((o) => {
       const matchesSearch =
-        o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-        o.user?.name?.toLowerCase().includes(search.toLowerCase())
-      const matchesType = typeFilter === "all" || o.orderType === typeFilter
+        o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+        (o as any).buyer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        o.user?.name?.toLowerCase().includes(search.toLowerCase()) // fallback for older components
+      const matchesType = typeFilter === "all" || o.orderType === typeFilter || !o.orderType
       return matchesSearch && matchesType
     })
   }

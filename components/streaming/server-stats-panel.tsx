@@ -107,7 +107,7 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
               <Users className="h-3 w-3" />
               Connected Clients
             </div>
-            <p className="text-lg font-bold text-foreground">{stats.totalClients.toLocaleString()}</p>
+            <p className="text-lg font-bold text-foreground">{(stats.totalClients ?? 0).toLocaleString()}</p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -117,11 +117,11 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
             <div className="flex items-center gap-2 text-sm">
               <span className="flex items-center text-green-500">
                 <ArrowDown className="h-3 w-3" />
-                {stats.bandwidthIn.toFixed(0)} Mbps
+                {(stats.bandwidthIn ?? 0).toFixed(0)} Mbps
               </span>
               <span className="flex items-center text-blue-500">
                 <ArrowUp className="h-3 w-3" />
-                {stats.bandwidthOut.toFixed(0)} Mbps
+                {(stats.bandwidthOut ?? 0).toFixed(0)} Mbps
               </span>
             </div>
           </div>
@@ -137,9 +137,9 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
                   <Cpu className="h-3 w-3" />
                   CPU
                 </span>
-                <span className="font-medium text-foreground">{stats.cpuUsage.toFixed(1)}%</span>
+                <span className="font-medium text-foreground">{(stats.cpuUsage ?? 0).toFixed(1)}%</span>
               </div>
-              <Progress value={stats.cpuUsage} className="h-2" />
+              <Progress value={stats.cpuUsage ?? 0} className="h-2" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between text-sm">
@@ -147,9 +147,9 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
                   <Activity className="h-3 w-3" />
                   Memory
                 </span>
-                <span className="font-medium text-foreground">{stats.memoryUsage.toFixed(1)}%</span>
+                <span className="font-medium text-foreground">{(stats.memoryUsage ?? 0).toFixed(1)}%</span>
               </div>
-              <Progress value={stats.memoryUsage} className="h-2" />
+              <Progress value={stats.memoryUsage ?? 0} className="h-2" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between text-sm">
@@ -157,9 +157,9 @@ export function ServerStatsPanel({ refreshInterval = 10000 }: ServerStatsPanelPr
                   <HardDrive className="h-3 w-3" />
                   Disk
                 </span>
-                <span className="font-medium text-foreground">{stats.diskUsage.toFixed(1)}%</span>
+                <span className="font-medium text-foreground">{(stats.diskUsage ?? 0).toFixed(1)}%</span>
               </div>
-              <Progress value={stats.diskUsage} className="h-2" />
+              <Progress value={stats.diskUsage ?? 0} className="h-2" />
             </div>
           </div>
         </div>

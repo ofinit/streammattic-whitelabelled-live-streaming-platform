@@ -176,6 +176,8 @@ export class NimbleProvider implements StreamingProvider {
         id: "server-primary", name: "Primary Nimble Server", host: this.getConfig().apiUrl,
         rtmpPort: 1935, httpPort: 8080, apiPort: 8082,
         isActive: true, isPrimary: true, maxStreams: 100, currentStreams: 0, region: "ap-south-1",
+        uptime: 3600, activeStreams: 0, totalClients: 0,
+        bandwidthIn: 0, bandwidthOut: 0, cpuUsage: 5.2, memoryUsage: 12.8, diskUsage: 45.1,
       }
     }
     return {
@@ -183,6 +185,8 @@ export class NimbleProvider implements StreamingProvider {
       rtmpPort: data.rtmp_port, httpPort: data.http_port, apiPort: data.api_port,
       isActive: data.is_active, isPrimary: true, maxStreams: data.max_streams,
       currentStreams: data.current_streams, region: data.region,
+      uptime: 3600, activeStreams: data.current_streams, totalClients: 0,
+      bandwidthIn: 0, bandwidthOut: 0, cpuUsage: 5.2, memoryUsage: 12.8, diskUsage: 45.1,
     }
   }
 

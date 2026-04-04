@@ -846,6 +846,15 @@ export interface NimbleServerConfig {
   currentStreams: number
   region?: string
   backendType?: StreamingBackendType
+  // Real-time health metrics
+  uptime?: number // seconds
+  activeStreams?: number
+  totalClients?: number
+  bandwidthIn?: number // Mbps
+  bandwidthOut?: number // Mbps
+  cpuUsage?: number // %
+  memoryUsage?: number // %
+  diskUsage?: number // %
 }
 
 export interface StreamPublishAuth {

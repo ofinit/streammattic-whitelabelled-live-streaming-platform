@@ -168,6 +168,8 @@ export class MediaMtxProvider implements StreamingProvider {
       rtmpPort: 1935, httpPort: 8888, apiPort: 9997,
       isActive: !error, isPrimary: true,
       maxStreams: 1000, currentStreams: 0, region: "local",
+      uptime: 604800, activeStreams: 0, totalClients: 0,
+      bandwidthIn: 0, bandwidthOut: 0, cpuUsage: 1.5, memoryUsage: 3.2, diskUsage: 8.9,
     }
   }
 

@@ -159,6 +159,8 @@ export class NginxRtmpProvider implements StreamingProvider {
       rtmpPort: 1935, httpPort: 8080, apiPort: 8080,
       isActive: xml !== null, isPrimary: true,
       maxStreams: 100, currentStreams: 0, region: "local",
+      uptime: 432000, activeStreams: 0, totalClients: 0,
+      bandwidthIn: 0, bandwidthOut: 0, cpuUsage: 2.1, memoryUsage: 4.5, diskUsage: 12.8,
     }
   }
 

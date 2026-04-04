@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { useBranding } from "@/lib/branding-context"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,7 @@ function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, isLoading } = useAuth()
+  const { branding } = useBranding()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -53,7 +55,7 @@ function AdminLoginContent() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Link href="/" className="text-lg font-semibold text-primary">
-            StreamLivee
+            {branding.brandName}
           </Link>
           <p className="mt-1 text-sm text-muted-foreground">Platform Admin</p>
         </div>
@@ -70,7 +72,7 @@ function AdminLoginContent() {
                 <Input
                   id="admin-email"
                   type="email"
-                  placeholder="admin@streamlivee.com"
+                  placeholder={`admin@${branding.brandName.toLowerCase().replace(/\s+/g, "")}.com`}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-secondary border-border"

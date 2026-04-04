@@ -83,22 +83,43 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   // Check domain on mount
   useEffect(() => {
-    const hostname = typeof window !== "undefined" ? window.location.hostname : ""
-    setCurrentDomain(hostname)
+    const loadBranding = async () => {
+      const hostname = typeof window !== "undefined" ? window.location.hostname : ""
+      setCurrentDomain(hostname)
 
-    // Skip for localhost / optional preview hints — use default branding
-    if (hostname === "localhost" || hostname.includes("v0.dev") || hostnameMatchesDevHints(hostname)) {
-      setIsLoading(false)
-      return
+      // Skip for localhost / optional preview hints — but we still want to load platform settings if not a studio subdomain
+      const isLocal = hostname === "localhost" || hostname.includes("v0.dev") || hostnameMatchesDevHints(hostname)
+      
+      const result = !isLocal ? lookupDomainStudio(hostname) : null
+      if (result) {
+        setStudio(result.studio)
+        setBranding(studioToBranding(result.studio))
+        setIsLoading(false)
+        return
+      }
+
+      // If not a studio-specific domain, fetch the general platform settings for the brand name
+      try {
+        const response = await fetch("/api/settings")
+        if (response.ok) {
+          const data = await response.json()
+          const platformName = data.settings?.find((s: any) => s.key === "platform_name")?.value
+          
+          if (platformName && typeof platformName === "string") {
+            setBranding(prev => ({
+              ...prev,
+              brandName: platformName
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch platform branding settings:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    const result = lookupDomainStudio(hostname)
-    if (result) {
-      setStudio(result.studio)
-      setBranding(studioToBranding(result.studio))
-    }
-
-    setIsLoading(false)
+    loadBranding()
   }, [])
 
   // Apply theme colors as CSS variables

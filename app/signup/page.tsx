@@ -16,7 +16,7 @@ const DEFAULT_CALLBACK = "/streamer"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { isWhiteLabel, studio } = useBranding()
+  const { isWhiteLabel, studio, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [firstName, setFirstName] = useState("")
@@ -184,7 +184,7 @@ export default function SignupPage() {
 
             {isWhiteLabel && studio && (
               <div className="text-center text-sm text-muted-foreground">
-                <p>Powered by StreamLivee</p>
+                <p>Powered by {branding.brandName}</p>
               </div>
             )}
           </div>
@@ -193,7 +193,7 @@ export default function SignupPage() {
         <footer className="border-t border-border/40 py-12 text-center text-sm text-muted-foreground mt-auto">
           <div className="container mx-auto px-6">
             <BrandedLogo size="sm" className="mx-auto mb-4 opacity-50 grayscale" />
-            <p>© {new Date().getFullYear()} StreamLivee Software. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {branding.brandName} Software. All rights reserved.</p>
             <p className="mt-2">
               Powered by{" "}
               <a href="https://www.ofinit.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">

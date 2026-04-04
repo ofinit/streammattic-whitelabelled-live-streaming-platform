@@ -24,14 +24,20 @@ import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
 import { StackProvider } from "@/components/stack-provider"
 import { Toaster } from "@/components/ui/toaster"
 
-export const metadata: Metadata = {
-  title: "StreamLivee - White-Label Live Streaming Platform",
-  description: "Multi-tenant live streaming platform for studios and content creators",
-  generator: "v0.app",
-  icons: {
-    icon: [{ url: "/favicon-live-red.svg", type: "image/svg+xml" }],
-    apple: "/apple-icon.png",
-  },
+import { getPlatformSetting } from "@/lib/db-queries"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const platformName = (await getPlatformSetting("platform_name")) || "StreamLivee"
+  
+  return {
+    title: `${platformName} - White-Label Live Streaming Platform`,
+    description: `Multi-tenant live streaming platform for studios and content creators powered by ${platformName}`,
+    generator: "v0.app",
+    icons: {
+      icon: [{ url: "/favicon-live-red.svg", type: "image/svg+xml" }],
+      apple: "/apple-icon.png",
+    },
+  }
 }
 
 export const viewport: Viewport = {

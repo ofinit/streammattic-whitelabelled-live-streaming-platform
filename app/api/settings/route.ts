@@ -23,6 +23,7 @@ export const GET = withAuth(async (user, request) => {
     "validity_extensions",
     "payment_gateways",
     "youtube_config_enabled",
+    "ai_image_pricing",
   ]
   let rows: { key: string; value: unknown }[] =
     user.role === "admin"

@@ -81,11 +81,15 @@ npm run db:migrate:production
 node --env-file=.env.production scripts/run-migration.js
 ```
 
-Or use **Coolify → application → terminal / execute command** (if available) with the same env vars loaded, running:
+**If external access is disabled (or you are in a strict production container):**
+The production image (`runner` target in Dockerfile) omits dev-dependencies and sometimes fails to run Node.js-based migration scripts securely.
+**The reliable alternative:**
+1. Connect via **Coolify → Database → Terminal**
+2. Or use `psql` directly inside the database container.
+3. Copy-paste the raw SQL from `scripts/schema-complete.sql` to initialize all ENUMs, tables, and constraints.
+4. Run standard inserts for initial platform settings and the first admin user.
 
-`node scripts/run-migration.js`
-
-The script is **idempotent**; safe to re-run if objects already exist.
+The pure SQL schema or `run-migration.js` script are both **idempotent**; safe to re-run if objects already exist.
 
 ### Copy local database contents to production (optional)
 
@@ -100,10 +104,23 @@ Use this when you have data in **local** Postgres and want it on **ozero.cloud**
 
 In Coolify, attach your domain to the application resource and enable HTTPS. Ensure **`NEXTAUTH_URL`** and **`NEXT_PUBLIC_APP_URL`** use that exact **`https://`** URL.
 
-## 6. Smoke test
+> [!NOTE]
+> **Important:** If no domain is defined under the Application's Configuration tab, Coolify's UI list for Traefik routing might show the container as **"Unhealthy"**, even if the Dockerfile health check is actually passing internally. Adding a domain immediately resolves Traefik routing and the badge will turn green.
+
+## 6. Smoke test & Initial Admin Login
 
 - Open the site over HTTPS, sign in, confirm sessions.
 - Upload an asset and confirm it still loads after **redeploy** (volume on `/app/uploads`).
+
+### Admin Account Lockouts on First Run
+Due to subtleties between Node's native WebCrypto APIs and Next.js Edge runtime, manually copying/pasting password hashes (via SQL) for initial users can sometimes result in invalid credentials during direct login.
+
+**The safest way to login as admin for the first time:**
+1. Go to the login page and use **"OR EMAIL A MAGIC LINK"**.
+2. Enter your seeded admin email.
+3. If you have not yet configured SMTP (`RESEND_API_KEY`), the magic link verification URL will be securely printed to `stdout`.
+4. Go to **Coolify → Application → Logs**, copy the printed `https://.../auth/verify-magic...` link, and paste it into your browser.
+5. Once authenticated, use the Dashboard UI to update your user profile's password natively.
 
 ## Related docs
 

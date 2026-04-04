@@ -143,6 +143,19 @@ function assertStudioSubscription(raw: unknown): { price: number; enabled: boole
   return { price: Math.round(price), enabled }
 }
 
+function assertAiImagePricing(raw: unknown): { price: number; enabled: boolean } {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("aiImagePricing is required")
+  }
+  const s = raw as Record<string, unknown>
+  const price = assertFiniteNonNeg(s.price, "aiImagePricing.price")
+  if (price > 1e12) {
+    throw new Error("aiImagePricing.price is too large")
+  }
+  const enabled = parseEnabledFlag(s.enabled, true)
+  return { price: Math.round(price), enabled }
+}
+
 /**
  * Validate the admin pricing bundle from `PUT /api/admin/pricing`.
  */
@@ -152,6 +165,7 @@ export function parseAdminPricingRequest(body: unknown): {
   validityDefaultDays: number
   validityTiers: ValidityTier[]
   studioSubscription: { price: number; enabled: boolean }
+  aiImagePricing: { price: number; enabled: boolean }
 } {
   if (!body || typeof body !== "object") {
     throw new Error("Request body must be a JSON object")
@@ -163,6 +177,7 @@ export function parseAdminPricingRequest(body: unknown): {
   const validityDefaultDays = assertPositiveInt(o.validityDefaultDays, "validityDefaultDays", 3650)
   const validityTiers = assertValidityTiers(o.validityTiers)
   const studioSubscription = assertStudioSubscription(o.studioSubscription)
+  const aiImagePricing = o.aiImagePricing ? assertAiImagePricing(o.aiImagePricing) : { price: 500, enabled: true }
 
   return {
     streamTypePricing,
@@ -170,5 +185,6 @@ export function parseAdminPricingRequest(body: unknown): {
     validityDefaultDays,
     validityTiers,
     studioSubscription,
+    aiImagePricing,
   }
 }

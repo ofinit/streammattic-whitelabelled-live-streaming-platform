@@ -21,12 +21,14 @@ import {
   Clock,
   Users,
   Loader2,
+  Sparkles,
 } from "lucide-react"
 import type { StreamTypeKey, StreamTypePricing, StreamTypeCredits } from "@/lib/types"
 import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { getBestPriceForQuantity } from "@/lib/stream-type-pricing"
 import { normalizeUserCreditsRow } from "@/lib/normalize-user-credits"
 import type { ParsedValidityExtensions } from "@/lib/validity-extensions"
+import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
 import { toast } from "sonner"
 
 const streamTypeInfo = [
@@ -41,6 +43,7 @@ type Variant = "studio" | "streamer"
 export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const [streamTypePricing, setStreamTypePricing] = useState<StreamTypePricing | null>(null)
   const [validityExtensions, setValidityExtensions] = useState<ParsedValidityExtensions | null>(null)
+  const [aiImagePricing, setAiImagePricing] = useState<AiImagePricingConfig | null>(null)
   const [walletBalance, setWalletBalance] = useState(0)
   const [credits, setCredits] = useState<StreamTypeCredits>({
     rtmp: 0,
@@ -55,10 +58,11 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const loadAll = useCallback(async () => {
     setLoadState("loading")
     try {
-      const [pRes, wRes, cRes] = await Promise.all([
+      const [pRes, wRes, cRes, sRes] = await Promise.all([
         fetch("/api/credits/pricing"),
         fetch("/api/wallets"),
         fetch("/api/credits"),
+        fetch("/api/settings"),
       ])
 
       if (!pRes.ok) {
@@ -90,6 +94,14 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
         setCredits(normalizeUserCreditsRow(cData.credits))
       } else {
         setCredits({ rtmp: 0, youtube_api: 0, youtube_embed: 0, third_party: 0 })
+      }
+
+      if (sRes.ok) {
+        const sData = (await sRes.json()) as { settings?: { key: string; value: unknown }[] }
+        const aiSetting = sData.settings?.find((s) => s.key === "ai_image_pricing")?.value
+        setAiImagePricing(parseAiImagePricing(aiSetting))
+      } else {
+        setAiImagePricing(parseAiImagePricing(null))
       }
 
       setLoadState("ready")
@@ -410,6 +422,34 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Image Generation / On-Demand Features */}
+      {aiImagePricing && aiImagePricing.enabled && (
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">On-Demand Features</CardTitle>
+            </div>
+            <CardDescription>
+              Features billed instantly from your wallet balance as you use them.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
+              <div>
+                <p className="font-semibold">AI Image Generation (Flux Schnell)</p>
+                <p className="text-sm text-muted-foreground">Generate high-fidelity event thumbnails via prompt.</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-lg font-bold">{formatPaisa(aiImagePricing.price)}</p>
+                <p className="text-xs text-muted-foreground">per image</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
+

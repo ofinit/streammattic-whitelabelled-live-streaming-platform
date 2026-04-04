@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import { randomUUID } from "crypto"
 import * as fal from "@fal-ai/serverless-client"
 import { getDb, toCamel } from "@/lib/db"
-import { AI_IMAGE_GENERATION_PRICE_PAISE, AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
+import { parseAiImagePricing, AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { encodeBufferToWebp } from "@/lib/server/webp"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
@@ -49,7 +49,10 @@ async function refundAiGenerationWallet(
 }
 
 export async function GET() {
-  return jsonOk({ price: AI_IMAGE_GENERATION_PRICE_PAISE })
+  const sql = getDb()
+  const rows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
+  const config = parseAiImagePricing(rows.length > 0 ? rows[0].value : null)
+  return jsonOk({ price: config.price, enabled: config.enabled })
 }
 
 export const POST = withAuth(async (user, request: Request) => {
@@ -81,7 +84,15 @@ export const POST = withAuth(async (user, request: Request) => {
 
   const userId = user.id as string
   const sql = getDb()
-  const price = AI_IMAGE_GENERATION_PRICE_PAISE
+
+  const pricingRows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
+  const aiConfig = parseAiImagePricing(pricingRows.length > 0 ? pricingRows[0].value : null)
+
+  if (!aiConfig.enabled) {
+    return jsonError("AI Image Generation is currently disabled by administrators.", 403)
+  }
+
+  const price = aiConfig.price
 
   const updatedWallets = await sql`
     UPDATE wallets

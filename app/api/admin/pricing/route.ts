@@ -16,6 +16,7 @@ const CACHE_KEYS = [
   "validity_extensions",
   "studio_annual_subscription",
   "credit_pricing",
+  "ai_image_pricing",
 ] as const
 
 async function upsertPlatformSetting(client: PoolClient, key: string, value: unknown) {
@@ -54,6 +55,7 @@ export const PUT = withRole(["admin"], async (_user, request: Request) => {
       await upsertPlatformSetting(client, "validity_extensions", validityValue)
       await upsertPlatformSetting(client, "studio_annual_subscription", parsed.studioSubscription)
       await upsertPlatformSetting(client, "credit_pricing", flatCredit)
+      await upsertPlatformSetting(client, "ai_image_pricing", parsed.aiImagePricing)
     })
   } catch (e) {
     console.error("[admin/pricing] Transaction failed:", e)

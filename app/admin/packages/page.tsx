@@ -62,6 +62,11 @@ export default function AdminPricingPage() {
     enabled: true,
   })
 
+  const [aiImagePricing, setAiImagePricing] = useState({
+    price: 500, // 5 INR in paisa
+    enabled: true,
+  })
+
   const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({ rtmp: true })
   const [settingsLoadState, setSettingsLoadState] = useState<"loading" | "ready" | "error">("loading")
   const [saving, setSaving] = useState(false)
@@ -91,6 +96,15 @@ export default function AdminPricingPage() {
         setStudioSubscription({
           price: typeof s.price === "number" ? s.price : 1_800_000,
           enabled: s.enabled !== false,
+        })
+      }
+
+      const aiSettings = map.ai_image_pricing
+      if (aiSettings && typeof aiSettings === "object" && aiSettings !== null) {
+        const a = aiSettings as Record<string, unknown>
+        setAiImagePricing({
+          price: typeof a.price === "number" ? a.price : 500,
+          enabled: a.enabled !== false,
         })
       }
 
@@ -189,6 +203,7 @@ export default function AdminPricingPage() {
           validityDefaultDays,
           validityTiers: validityTiers.map((t) => ({ ...t })),
           studioSubscription: { ...studioSubscription },
+          aiImagePricing: { ...aiImagePricing },
         }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string }
@@ -680,6 +695,62 @@ export default function AdminPricingPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Charged annually to each studio for white-label platform access and hosting. Deducted directly from wallet.
+              </p>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* AI Image Generation Pricing */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5 text-primary shrink-0"
+              >
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+              <CardTitle>AI Image Generation Pricing</CardTitle>
+            </div>
+            <Switch
+              checked={aiImagePricing.enabled}
+              onCheckedChange={(enabled) => setAiImagePricing((prev) => ({ ...prev, enabled }))}
+            />
+          </div>
+        </CardHeader>
+        {aiImagePricing.enabled && (
+          <CardContent>
+            <div className="max-w-sm space-y-2">
+              <Label htmlFor="aiPrice">Price Per Image</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                <Input
+                  id="aiPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={aiImagePricing.price / 100}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    const n = parseFloat(v)
+                    if (v === "" || Number.isNaN(n)) return
+                    setAiImagePricing((prev) => ({ ...prev, price: Math.round(n * 100) }))
+                  }}
+                  className="border-0 bg-secondary pl-7"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Charged per generation from the user's wallet.
               </p>
             </div>
           </CardContent>

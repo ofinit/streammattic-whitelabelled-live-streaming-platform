@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-03-30T17:42:22+05:30` |
-| Git revision | `28c2d0c` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-04T12:04:46+05:30` |
+| Git revision | `6fc78fd` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -76,6 +76,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
 | `app/api/admin/invoices/zip/route.ts` | `/api/admin/invoices/zip` |
 | `app/api/admin/pricing/route.ts` | `/api/admin/pricing` |
+| `app/api/admin/run-migration/route.ts` | `/api/admin/run-migration` |
 | `app/api/admin/youtube-override/route.ts` | `/api/admin/youtube-override` |
 | `app/api/auth/[...nextauth]/route.ts` | `/api/auth/[...nextauth]` |
 | `app/api/auth/change-password/route.ts` | `/api/auth/change-password` |
@@ -103,6 +104,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/favicon/resolve/route.ts` | `/api/favicon/resolve` |
 | `app/api/generate-image/route.ts` | `/api/generate-image` |
 | `app/api/gst/config/route.ts` | `/api/gst/config` |
+| `app/api/health/route.ts` | `/api/health` |
 | `app/api/invoices/[invoiceId]/pdf/route.ts` | `/api/invoices/[invoiceId]/pdf` |
 | `app/api/invoices/route.ts` | `/api/invoices` |
 | `app/api/invoices/zip/route.ts` | `/api/invoices/zip` |
@@ -144,12 +146,6 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 ### Database (from `DATABASE_URL` at generation time)
 
 
-*Schema snapshot skipped: `DATABASE_URL` is not set.*
-
-To include a snapshot from your database, run with an env file, for example:
-
-```bash
-node --env-file=.env.local scripts/generate-dev-handbook.js
-```
+*Schema snapshot failed: connect ECONNREFUSED 204.168.228.71:5432*
 
 <!-- AUTO-GENERATED:END -->

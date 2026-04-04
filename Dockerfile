@@ -22,6 +22,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV UPLOAD_DIR=/app/uploads
 
+# Coolify/Traefik UI health checks need curl or wget in the image (https://coolify.io/docs/knowledge-base/health-checks)
+RUN apk add --no-cache curl
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 

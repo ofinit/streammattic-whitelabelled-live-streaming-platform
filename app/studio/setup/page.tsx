@@ -21,6 +21,11 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import type { Studio } from "@/lib/types"
+import {
+  getRoutingTargetDisplayForDomain,
+  getVerificationTxtHostDisplay,
+  parseDomainLayout,
+} from "@/lib/platform-dns"
 
 const SETUP_STEPS = [
   { id: "company", label: "Company Profile", icon: Building2 },
@@ -28,6 +33,34 @@ const SETUP_STEPS = [
   { id: "domain", label: "Custom Domain", icon: Globe },
   { id: "payment", label: "Payment Gateway", icon: CreditCard },
 ]
+
+function DnsSetupHint({ domain }: { domain: string }) {
+  const { isSubdomain, subdomain } = parseDomainLayout(domain)
+  const routing = getRoutingTargetDisplayForDomain(domain)
+  const txtHost = getVerificationTxtHostDisplay(domain)
+  return (
+    <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
+      <p className="font-medium text-sm">DNS Configuration Required</p>
+      <p className="text-sm text-muted-foreground">
+        After completing setup, you&apos;ll add DNS records like these (exact values appear under Studio → Domains):
+      </p>
+      <div className="space-y-2 text-xs font-mono bg-background rounded p-3">
+        {isSubdomain ? (
+          <p>
+            <span className="text-muted-foreground">CNAME:</span> {subdomain} → {routing}
+          </p>
+        ) : (
+          <p>
+            <span className="text-muted-foreground">A record (@):</span> {domain} → {routing}
+          </p>
+        )}
+        <p>
+          <span className="text-muted-foreground">TXT:</span> {txtHost} → (verification token from dashboard)
+        </p>
+      </div>
+    </div>
+  )
+}
 
 export default function StudioSetupPage() {
   const router = useRouter()
@@ -396,21 +429,7 @@ export default function StudioSetupPage() {
               </div>
 
               {domainData.customDomain && !domainData.skipDomain && (
-                <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
-                  <p className="font-medium text-sm">DNS Configuration Required</p>
-                  <p className="text-sm text-muted-foreground">
-                    After completing setup, you'll need to add these DNS records:
-                  </p>
-                  <div className="space-y-2 text-xs font-mono bg-background rounded p-3">
-                    <p>
-                      <span className="text-muted-foreground">A Record:</span> {domainData.customDomain} → 76.76.21.21
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">TXT Record:</span> _verify.
-                      {domainData.customDomain} → streamlivee-verify=xxxxx
-                    </p>
-                  </div>
-                </div>
+                <DnsSetupHint domain={domainData.customDomain.trim()} />
               )}
 
               <div className="flex items-center gap-2 pt-4">

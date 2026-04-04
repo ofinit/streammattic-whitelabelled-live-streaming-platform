@@ -3,12 +3,18 @@ import { Pool, type PoolClient } from "pg"
 const DATABASE_URL = process.env.DATABASE_URL
 let pool: Pool | null = null
 
+/** Pool settings suitable for serverless and long-running Node (Coolify/Docker). SSL via DATABASE_URL (e.g. ?sslmode=require). */
 function getPool(): Pool {
   if (!DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is not set")
   }
   if (!pool) {
-    pool = new Pool({ connectionString: DATABASE_URL })
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      max: Number.parseInt(process.env.PG_POOL_MAX || "20", 10) || 20,
+      idleTimeoutMillis: Number.parseInt(process.env.PG_IDLE_TIMEOUT_MS || "30000", 10) || 30000,
+      connectionTimeoutMillis: Number.parseInt(process.env.PG_CONNECTION_TIMEOUT_MS || "10000", 10) || 10000,
+    })
   }
   return pool
 }

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { Branding, Studio, Domain } from "./types"
 import { mockStudios, mockDomains } from "./mock-data"
+import { hostnameMatchesDevHints } from "./platform-dns"
 
 // Default platform branding (StreamLivee)
 const defaultBranding: Branding = {
@@ -85,8 +86,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     const hostname = typeof window !== "undefined" ? window.location.hostname : ""
     setCurrentDomain(hostname)
 
-    // Skip for localhost/preview - use default branding
-    if (hostname === "localhost" || hostname.includes("vercel.app") || hostname.includes("v0.dev")) {
+    // Skip for localhost / optional preview hints — use default branding
+    if (hostname === "localhost" || hostname.includes("v0.dev") || hostnameMatchesDevHints(hostname)) {
       setIsLoading(false)
       return
     }

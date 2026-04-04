@@ -15,6 +15,11 @@ import {
 import { Globe, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ShieldCheck } from "lucide-react"
 import { mockDomains } from "@/lib/mock-data"
 import type { Studio } from "@/lib/types"
+import {
+  getPlatformARecordDisplay,
+  getPlatformCnameDisplay,
+  getVerificationTxtHostDisplay,
+} from "@/lib/platform-dns"
 
 interface StudioDomainDialogProps {
   open: boolean
@@ -31,15 +36,16 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
 
   const verificationToken = existingDomain?.verificationToken || `streamlivee-verify-${studio.id}`
 
-  const VERCEL_A_RECORD_IP = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
-  const cnameTarget = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
+  const platformA = getPlatformARecordDisplay()
+  const platformCname = getPlatformCnameDisplay()
 
   // Root/apex domains can't use CNAME, so we need an A record + CNAME for www
   const displayDomain = domain || "yourbrand.com"
+  const txtHost = getVerificationTxtHostDisplay(displayDomain)
   const dnsRecords = [
-    { type: "A", name: displayDomain, value: VERCEL_A_RECORD_IP, purpose: "Points root domain to platform" },
-    { type: "CNAME", name: `www.${displayDomain}`, value: cnameTarget, purpose: "Points www to platform" },
-    { type: "TXT", name: `_verify.${displayDomain}`, value: verificationToken, purpose: "Verifies domain ownership" },
+    { type: "A", name: displayDomain, value: platformA, purpose: "Points root domain to platform" },
+    { type: "CNAME", name: `www.${displayDomain}`, value: platformCname, purpose: "Points www to platform" },
+    { type: "TXT", name: txtHost, value: verificationToken, purpose: "Verifies domain ownership" },
   ]
 
   const handleSave = async () => {

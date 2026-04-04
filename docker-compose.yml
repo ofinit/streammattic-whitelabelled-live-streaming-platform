@@ -5,7 +5,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://streamlivee:streamlivee@postgres:5432/streamlivee
+      DATABASE_URL: postgresql://${POSTGRES_USER:-streamlivee}:${POSTGRES_PASSWORD:-streamlivee}@postgres:5432/${POSTGRES_DB:-streamlivee}
       AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
@@ -20,9 +20,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: streamlivee
-      POSTGRES_PASSWORD: streamlivee
-      POSTGRES_DB: streamlivee
+      POSTGRES_USER: ${POSTGRES_USER:-streamlivee}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-streamlivee}
+      POSTGRES_DB: ${POSTGRES_DB:-streamlivee}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

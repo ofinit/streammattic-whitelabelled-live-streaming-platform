@@ -85,8 +85,12 @@ async function dumpViaPg() {
   out.write("-- Generated: " + new Date().toISOString() + "\n\n");
   out.write("BEGIN;\n\n");
 
-  function escape(val) {
-    if (val === null) return "NULL";
+  function escapeCol(val, isJsonb = false) {
+    if (val === null || val === undefined) return "NULL";
+    if (isJsonb) {
+      // For jsonb columns, serialize anything (bool, number, object, string) as JSON
+      return "'" + JSON.stringify(val).replace(/'/g, "''") + "'::jsonb";
+    }
     if (typeof val === "boolean") return val ? "true" : "false";
     if (typeof val === "number" && !Number.isNaN(val)) return String(val);
     if (typeof val === "object" && val !== null) return "'" + String(JSON.stringify(val)).replace(/'/g, "''") + "'";
@@ -95,12 +99,16 @@ async function dumpViaPg() {
 
   for (const table of tables) {
     const colsRes = await client.query(`
-      SELECT column_name FROM information_schema.columns
+      SELECT column_name, data_type, udt_name FROM information_schema.columns
       WHERE table_schema = 'public' AND table_name = $1
       ORDER BY ordinal_position
     `, [table]);
-    const columns = (colsRes.rows || []).map((r) => r.column_name);
+    const colDefs = colsRes.rows || [];
+    const columns = colDefs.map((r) => r.column_name);
     if (columns.length === 0) continue;
+
+    // Build a set of column names whose type is jsonb so we can cast correctly
+    const jsonbCols = new Set(colDefs.filter((r) => r.udt_name === "jsonb").map((r) => r.column_name));
 
     const colList = columns.map((c) => `"${c}"`).join(", ");
     const rowsRes = await client.query(`SELECT * FROM "${table}"`);
@@ -110,7 +118,7 @@ async function dumpViaPg() {
 
     out.write(`-- Table: ${table} (${rows.length} rows)\n`);
     for (const row of rows) {
-      const values = columns.map((col) => escape(row[col]));
+      const values = columns.map((col) => escapeCol(row[col], jsonbCols.has(col)));
       out.write(`INSERT INTO "${table}" (${colList}) VALUES (${values.join(", ")});\n`);
     }
     out.write("\n");

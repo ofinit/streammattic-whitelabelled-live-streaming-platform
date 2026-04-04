@@ -7,6 +7,11 @@ import { Separator } from "@/components/ui/separator"
 import { Copy, Check, Cloud, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { useState } from "react"
 import type { Domain, DNSRecord } from "@/lib/types"
+import {
+  getRoutingTargetDisplayForDomain,
+  getVerificationTxtHostDisplay,
+  PLATFORM_DNS_CONFIGURE_ENV_HINT,
+} from "@/lib/platform-dns"
 
 interface DNSInstructionsDialogProps {
   open: boolean
@@ -62,21 +67,18 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
   const isSubdomain = domainParts.length > 2
   const subdomain = isSubdomain ? domainParts.slice(0, -2).join(".") : ""
 
-  // Platform CNAME/A target (env for VPS/Docker; default Vercel)
-  const vercelCname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
-  const vercelIp = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
+  const routingDisplay = getRoutingTargetDisplayForDomain(domain.domain)
+  const txtHost = getVerificationTxtHostDisplay(domain.domain)
 
   // Build records based on domain type
   const records: DNSRecord[] = isSubdomain
     ? [
-        // Subdomain setup (e.g., live.example.com)
-        { type: "CNAME", host: subdomain, value: vercelCname, ttl: 3600 },
-        { type: "TXT", host: `_vercel.${subdomain}`, value: domain.verificationToken, ttl: 3600 },
+        { type: "CNAME", host: subdomain, value: routingDisplay, ttl: 3600 },
+        { type: "TXT", host: txtHost, value: domain.verificationToken, ttl: 3600 },
       ]
     : [
-        // Root domain setup (e.g., example.com)
-        { type: "A", host: "@", value: vercelIp, ttl: 3600 },
-        { type: "TXT", host: "_vercel", value: domain.verificationToken, ttl: 3600 },
+        { type: "A", host: "@", value: routingDisplay, ttl: 3600 },
+        { type: "TXT", host: txtHost, value: domain.verificationToken, ttl: 3600 },
       ]
 
   const copyValue = (value: string, id: string) => {
@@ -153,8 +155,9 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
           )}
 
           <p className="text-sm text-muted-foreground">
-            Add the following DNS records at your domain registrar ({isSubdomain ? "subdomain" : "root domain"} setup). 
-            These records connect your domain to Vercel and verify ownership.
+            Add the following DNS records at your domain registrar ({isSubdomain ? "subdomain" : "root domain"} setup).
+            They point traffic at your platform host (e.g. Coolify / Traefik) and verify ownership.{" "}
+            <span className="text-muted-foreground/90">{PLATFORM_DNS_CONFIGURE_ENV_HINT}</span>
           </p>
 
           <div className="border rounded-lg overflow-hidden">
@@ -207,8 +210,8 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
                 <>
                   <li>Log in to your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.)</li>
                   <li>Navigate to DNS management for <span className="font-mono text-foreground">{domainParts.slice(-2).join(".")}</span></li>
-                  <li>Add a <span className="font-semibold text-foreground">CNAME</span> record with host <span className="font-mono text-foreground">{subdomain}</span> pointing to <span className="font-mono text-foreground">{vercelCname}</span></li>
-                  <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">_vercel.{subdomain}</span> and the verification value above</li>
+                  <li>Add a <span className="font-semibold text-foreground">CNAME</span> record with host <span className="font-mono text-foreground">{subdomain}</span> pointing to <span className="font-mono text-foreground">{routingDisplay}</span></li>
+                  <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">{txtHost}</span> and the verification value above</li>
                   <li>Wait for DNS propagation (usually 5-30 minutes, up to 48 hours)</li>
                   <li>Come back here and click <span className="font-semibold text-foreground">Verify Now</span></li>
                 </>
@@ -216,8 +219,8 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
                 <>
                   <li>Log in to your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.)</li>
                   <li>Navigate to DNS management for <span className="font-mono text-foreground">{domain.domain}</span></li>
-                  <li>Add an <span className="font-semibold text-foreground">A</span> record with host <span className="font-mono text-foreground">@</span> pointing to <span className="font-mono text-foreground">{vercelIp}</span></li>
-                  <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">_vercel</span> and the verification value above</li>
+                  <li>Add an <span className="font-semibold text-foreground">A</span> record with host <span className="font-mono text-foreground">@</span> pointing to <span className="font-mono text-foreground">{routingDisplay}</span></li>
+                  <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">{txtHost}</span> and the verification value above</li>
                   <li>Wait for DNS propagation (usually 5-30 minutes, up to 48 hours)</li>
                   <li>Come back here and click <span className="font-semibold text-foreground">Verify Now</span></li>
                 </>
@@ -230,7 +233,7 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
               <li>DNS propagation typically takes 5-30 minutes but can take up to 48 hours</li>
               <li>The TXT record is required for domain ownership verification</li>
-              <li>SSL certificate will be automatically provisioned by Vercel after verification</li>
+              <li>HTTPS is typically provisioned by your reverse proxy (e.g. Traefik on Coolify) after DNS points to your server</li>
               <li>If using Cloudflare, set the CNAME proxy status to <span className="font-semibold text-foreground">DNS only</span> (grey cloud) during setup</li>
               <li>Do not remove these records after verification -- they are needed for ongoing routing</li>
             </ul>

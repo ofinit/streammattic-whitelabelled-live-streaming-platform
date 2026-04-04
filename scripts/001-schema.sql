@@ -1,5 +1,5 @@
 -- StreamLivee Production Database Schema
--- Neon PostgreSQL
+-- PostgreSQL
 
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

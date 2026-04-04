@@ -13,14 +13,9 @@ import { useAuth } from "@/lib/auth-context"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { STUDIO_UPGRADE_DOMAIN_HINT } from "@/lib/studio-upgrade-copy"
 import { ArrowLeft, Server } from "lucide-react"
+import { getPlatformARecordDisplay, getPlatformCnameDisplay } from "@/lib/platform-dns"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
-
-function platformDnsTargets() {
-  const cname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
-  const a = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
-  return { cname, a }
-}
 
 export default function StreamerUpgradePage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -31,7 +26,8 @@ export default function StreamerUpgradePage() {
   const subRaw = settings.find((s) => s.key === "studio_annual_subscription")?.value
   const subscription = parseStudioAnnualSubscription(subRaw)
   const salesEmail = process.env.NEXT_PUBLIC_STUDIO_SALES_EMAIL
-  const { cname, a } = platformDnsTargets()
+  const cname = getPlatformCnameDisplay()
+  const a = getPlatformARecordDisplay()
   const studioUpgradeAvailable = Boolean(subscription?.enabled && subscription.pricePaisa > 0)
 
   if (authLoading) {

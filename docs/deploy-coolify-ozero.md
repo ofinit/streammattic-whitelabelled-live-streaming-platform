@@ -60,6 +60,11 @@ Set these in Coolify’s **environment** for the app (never commit real values):
 | `AUTH_SECRET` | Long random string (≥32 chars) |
 | `NEXTAUTH_URL` | Public `https://` origin users open in the browser |
 | `NEXT_PUBLIC_APP_URL` | Same origin as `NEXTAUTH_URL` for callbacks and links |
+| `NEXT_PUBLIC_PLATFORM_A_RECORD_IP` | Public IPv4 for apex **A** records shown to customers (your Coolify / proxy host) |
+| `NEXT_PUBLIC_PLATFORM_CNAME_TARGET` | Hostname for **CNAME** records (subdomains / `www`) in customer DNS instructions |
+| `NEXT_PUBLIC_DOMAIN_VERIFICATION_TXT_PREFIX` | Optional; default `_verify` for ownership TXT records ([`lib/platform-dns.ts`](../lib/platform-dns.ts)) |
+
+Set the **`NEXT_PUBLIC_PLATFORM_*`** values in the **same** build/runtime env as the app so Studio DNS dialogs show your infrastructure—not empty placeholders. Copy shapes from [`.env.production.example`](../.env.production.example).
 
 Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` ([`lib/redis.ts`](../lib/redis.ts)); payment, OAuth, Cloudflare, Fal, etc. per [`.env.example`](../.env.example).
 
@@ -79,6 +84,15 @@ Or use **Coolify → application → terminal / execute command** (if available)
 `node scripts/run-migration.js`
 
 The script is **idempotent**; safe to re-run if objects already exist.
+
+### Copy local database contents to production (optional)
+
+Use this when you have data in **local** Postgres and want it on **ozero.cloud** (after the schema exists). **Never commit** connection strings.
+
+1. **Schema first:** Run [migrations](#4-run-database-migrations-once-per-environment) against the production DB.
+2. **Backup from local:** See [`scripts/README-BACKUP-RESTORE.md`](../scripts/README-BACKUP-RESTORE.md). Ensure `DATABASE_URL` in `.env.local` points at your **local** database, then run `npm run db:backup` or `node --env-file=.env.local scripts/backup-db.js` (use `--api` if you do not have `pg_dump`).
+3. **Restore into production:** Set `DATABASE_URL` in `.env.production` to the Coolify **external** URL (add `?sslmode=require` if the host requires TLS), then run `node --env-file=.env.production scripts/restore-local.js backups/postgres-backup-....sql`.
+4. **Turn off** public database access in Coolify when you no longer need restores from your laptop.
 
 ## 5. Domains and SSL
 

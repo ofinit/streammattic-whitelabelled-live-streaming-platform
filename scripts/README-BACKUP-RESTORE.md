@@ -46,6 +46,7 @@
 
 ```env
 # Source Postgres (for backup). Optional if you only restore.
+# Use your Coolify/VPS connection string; never commit real URLs. Rotate DB passwords if a URL was ever leaked.
 PRODUCTION_DATABASE_URL="postgresql://user:password@host:5432/dbname"
 
 # Local Postgres (for restore target and dev). Create a blank DB first.

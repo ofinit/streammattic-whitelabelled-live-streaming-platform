@@ -11,6 +11,11 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
 import { Loader2, User, Lock, Bell, Shield, Globe, ImageIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
+import {
+  getPlatformARecordDisplay,
+  getPlatformCnameDisplay,
+  getVerificationTxtHostDisplay,
+} from "@/lib/platform-dns"
 
 export default function AdminSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
@@ -41,7 +46,7 @@ export default function AdminSettingsPage() {
   })
   const [domainSettings, setDomainSettings] = useState({
     platformDomain: "",
-    studioCnameTarget: process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com",
+    studioCnameTarget: process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "",
   })
   const [domainSaved, setDomainSaved] = useState(false)
 
@@ -392,13 +397,14 @@ export default function AdminSettingsPage() {
                 <Label htmlFor="cnameTarget">Studio CNAME Target</Label>
                 <Input
                   id="cnameTarget"
-                  placeholder={process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"}
+                  placeholder={getPlatformCnameDisplay()}
                   value={domainSettings.studioCnameTarget}
                   onChange={(e) => setDomainSettings({ ...domainSettings, studioCnameTarget: e.target.value })}
                   className="bg-secondary border-0"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Studios&apos; www CNAME records will point here. Set via NEXT_PUBLIC_PLATFORM_CNAME_TARGET for VPS/Docker, or leave default.
+                  Studios&apos; www CNAME records will point here. Set <code className="text-xs">NEXT_PUBLIC_PLATFORM_CNAME_TARGET</code> in
+                  Coolify (or build env) so customer-facing instructions show the correct host.
                 </p>
               </div>
               <Separator />
@@ -408,9 +414,16 @@ export default function AdminSettingsPage() {
                   When you configure a studio domain (e.g. clientbrand.com), they will need:
                 </p>
                 <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
-                  <p>A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"}</p>
-                  <p>CNAME &nbsp; www.clientbrand.com &rarr; {domainSettings.studioCnameTarget || process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"}</p>
-                  <p>TXT &nbsp;&nbsp;&nbsp; _verify.clientbrand.com &rarr; (auto-generated)</p>
+                  <p>
+                    A &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientbrand.com &rarr; {getPlatformARecordDisplay()}
+                  </p>
+                  <p>
+                    CNAME &nbsp; www.clientbrand.com &rarr;{" "}
+                    {domainSettings.studioCnameTarget.trim() || getPlatformCnameDisplay()}
+                  </p>
+                  <p>
+                    TXT &nbsp;&nbsp;&nbsp; {getVerificationTxtHostDisplay("clientbrand.com")} &rarr; (auto-generated)
+                  </p>
                 </div>
               </div>
               {domainSaved && <p className="text-sm text-emerald-500">Platform domain settings saved!</p>}

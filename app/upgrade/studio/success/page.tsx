@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { CheckCircle2, Globe, LayoutDashboard, Loader2 } from "lucide-react"
+import { getPlatformARecordDisplay, getPlatformCnameDisplay } from "@/lib/platform-dns"
 
 const STUDIO_MENU_OVERVIEW = [
   { title: "Dashboard", desc: "Overview of your studio, wallet, and activity" },
@@ -21,17 +22,12 @@ const STUDIO_MENU_OVERVIEW = [
   { title: "Settings", desc: "Account and studio preferences" },
 ]
 
-function platformDnsTargets() {
-  const cname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
-  const a = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
-  return { cname, a }
-}
-
 export default function StudioUpgradeSuccessPage() {
   const { user, isLoading: authLoading, refreshUser, isAuthenticated } = useAuth()
   const router = useRouter()
   const [refreshing, setRefreshing] = useState(true)
-  const { cname, a } = platformDnsTargets()
+  const cname = getPlatformCnameDisplay()
+  const a = getPlatformARecordDisplay()
 
   useEffect(() => {
     let cancelled = false

@@ -1,3 +1,11 @@
+import {
+  getPlatformARecordIp,
+  getPlatformCnameTarget,
+  getVerificationTxtNameForCloudflare,
+  parseDomainLayout,
+  PLATFORM_DNS_CONFIGURE_ENV_HINT,
+} from "@/lib/platform-dns"
+
 const CF_API_BASE = "https://api.cloudflare.com/client/v4"
 
 interface CloudflareResponse<T> {
@@ -116,7 +124,7 @@ export async function createDnsRecord(
         name: params.name,
         content: params.content,
         ttl: params.ttl || 1, // 1 = auto
-        proxied: params.proxied ?? false, // DNS-only for Vercel compatibility
+        proxied: params.proxied ?? false, // DNS-only (grey cloud) so traffic reaches your origin / Traefik
       }),
     }
   )
@@ -138,7 +146,7 @@ export async function deleteDnsRecord(
 }
 
 // ─── Auto-Configure Domain ────────────────────────────────────
-// Creates the correct DNS records for a domain pointing to Vercel
+// Creates routing + verification TXT for your platform (Coolify / self-hosted).
 export async function autoConfigureDomain(
   apiToken: string,
   zoneId: string,
@@ -152,13 +160,19 @@ export async function autoConfigureDomain(
   const createdRecords: CloudflareDnsRecord[] = []
   const errors: string[] = []
 
-  // Detect subdomain vs root
-  const domainParts = domain.split(".")
-  const isSubdomain = domainParts.length > 2
-  const subdomain = isSubdomain ? domainParts.slice(0, -2).join(".") : ""
+  const { isSubdomain, subdomain } = parseDomainLayout(domain)
 
-  const vercelCname = process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET || "cname.vercel-dns.com"
-  const vercelIp = process.env.NEXT_PUBLIC_PLATFORM_A_RECORD_IP || "76.76.21.21"
+  const cnameTarget = getPlatformCnameTarget()
+  const aRecordIp = getPlatformARecordIp()
+
+  if (isSubdomain && !cnameTarget) {
+    errors.push(`Missing NEXT_PUBLIC_PLATFORM_CNAME_TARGET. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}`)
+    return { success: false, records: [], errors }
+  }
+  if (!isSubdomain && !aRecordIp) {
+    errors.push(`Missing NEXT_PUBLIC_PLATFORM_A_RECORD_IP. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}`)
+    return { success: false, records: [], errors }
+  }
 
   try {
     // 1. Create routing record (CNAME for subdomain, A for root)
@@ -178,8 +192,8 @@ export async function autoConfigureDomain(
       const cname = await createDnsRecord(apiToken, zoneId, {
         type: "CNAME",
         name: subdomain,
-        content: vercelCname,
-        proxied: false, // DNS-only (grey cloud) required for Vercel
+        content: cnameTarget!,
+        proxied: false,
       })
       createdRecords.push(cname)
     } else {
@@ -197,20 +211,18 @@ export async function autoConfigureDomain(
       const aRecord = await createDnsRecord(apiToken, zoneId, {
         type: "A",
         name: "@",
-        content: vercelIp,
+        content: aRecordIp!,
         proxied: false,
       })
       createdRecords.push(aRecord)
     }
 
     // 2. Create TXT verification record
-    const txtHost = isSubdomain ? `_vercel.${subdomain}` : "_vercel"
+    const txtHost = getVerificationTxtNameForCloudflare(domain)
 
-    // Remove existing TXT if present
+    // Remove existing TXT if present (same relative name as create)
     const existingTxt = await listDnsRecords(apiToken, zoneId, {
-      name: isSubdomain
-        ? `_vercel.${domain}`
-        : `_vercel.${domain}`,
+      name: txtHost,
       type: "TXT",
     })
     if (existingTxt.length > 0) {

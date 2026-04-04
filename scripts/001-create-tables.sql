@@ -1,5 +1,5 @@
 -- StreamLivee Phase 1: Core Tables
--- 12 tables for Neon PostgreSQL
+-- 12 tables for PostgreSQL
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

@@ -14,8 +14,8 @@ export const POST = withAuth(async (user, request) => {
     return jsonError("orderType and gateway are required")
   }
 
-  if (!["razorpay", "instamojo"].includes(gateway)) {
-    return jsonError("Gateway must be 'razorpay' or 'instamojo'")
+  if (!["razorpay", "instamojo", "wallet"].includes(gateway)) {
+    return jsonError("Gateway must be 'razorpay', 'instamojo', or 'wallet'")
   }
 
   const role = user.role as string
@@ -80,6 +80,79 @@ export const POST = withAuth(async (user, request) => {
   const amountRupeesForInstamojo = amountInPaise / 100
 
   try {
+    if (gateway === "wallet") {
+      // 1. Verify balance
+      const walletRows = await sql`SELECT balance FROM wallets WHERE user_id = ${userId}`
+      if (walletRows.length === 0) return jsonError("Wallet not found", 404)
+      const currentBalance = (walletRows[0] as Record<string, unknown>).balance as number
+      
+      if (currentBalance < amountInPaise) {
+        return jsonError(`Insufficient wallet balance. Total due: ₹${(amountInPaise/100).toFixed(2)}, Balance: ₹${(currentBalance/100).toFixed(2)}`, 400)
+      }
+
+      // 2. Atomic update: Deduct, Create Order (completed), Create Payment, Create Transaction, Upgrade User
+      const { withTransaction } = await import("@/lib/db")
+      await withTransaction(async (tx) => {
+        // A. Insert order (completed)
+        const orderRows = await tx.query(`
+          INSERT INTO orders (user_id, order_type, amount, description, gateway, status, metadata, completed_at)
+          VALUES ($1, $2, $3, $4, 'wallet', 'completed', $5::jsonb, NOW())
+          RETURNING id
+        `, [userId, orderType, amountInPaise, description || `${orderType} payment`, metaJson])
+        const orderId = (orderRows.rows[0] as Record<string, unknown>).id as string
+
+        // B. Insert payment (completed)
+        await tx.query(`
+          INSERT INTO payments (order_id, user_id, gateway, amount, status, paid_at)
+          VALUES ($1, $2, 'wallet', $3, 'completed', NOW())
+        `, [orderId, userId, amountInPaise])
+
+        // C. Deduct balance
+        const updatedWallets = await tx.query(`
+          UPDATE wallets 
+          SET balance = balance - $1, updated_at = NOW() 
+          WHERE user_id = $2
+          RETURNING id, balance as new_balance
+        `, [amountInPaise, userId])
+        const wallet = updatedWallets.rows[0] as Record<string, unknown>
+        
+        // D. Insert wallet transaction
+        await tx.query(`
+          INSERT INTO wallet_transactions (
+            wallet_id, user_id, type, category, amount, balance_before, balance_after,
+            description, reference_id, reference_type, total_amount
+          )
+          VALUES (
+            $1, $2, 'debit', 'whitelabel_hosting', $3, $4, $5,
+            $6, $7, 'order', $8
+          )
+        `, [
+          wallet.id,
+          userId,
+          'debit',
+          amountInPaise,
+          currentBalance,
+          wallet.new_balance,
+          description || "Studio annual subscription upgrade",
+          orderId,
+          amountInPaise
+        ])
+
+        // E. Upgrade role
+        if (orderType === "studio_upgrade") {
+          await tx.query(`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = $1`, [userId])
+          
+          // Notification
+          await tx.query(`
+            INSERT INTO notifications (user_id, type, title, message)
+            VALUES ($1, 'payment', 'Welcome to Studio!', 'Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding.')
+          `, [userId])
+        }
+      })
+
+      return jsonOk({ success: true, message: "Upgrade successful! Welcome to Studio." })
+    }
+
     if (gateway === "razorpay") {
       const rzpOrder = await createRazorpayOrder({
         amount: amountInPaise,

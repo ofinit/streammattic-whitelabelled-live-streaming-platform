@@ -25,9 +25,11 @@ export default function StreamerUpgradePage() {
   const settings = (data?.settings ?? []) as { key: string; value: unknown }[]
   const subRaw = settings.find((s) => s.key === "studio_annual_subscription")?.value
   const subscription = parseStudioAnnualSubscription(subRaw)
+  const { data: dashboardData } = useSWR(user?.role === "streamer" ? "/api/streamer/dashboard" : null, fetcher)
+  const stats = dashboardData?.stats as { walletBalance?: number } | undefined
+  const walletBalancePaise = Number(stats?.walletBalance ?? 0)
   const salesEmail = process.env.NEXT_PUBLIC_STUDIO_SALES_EMAIL
-  const cname = getPlatformCnameDisplay()
-  const a = getPlatformARecordDisplay()
+
   const studioUpgradeAvailable = Boolean(subscription?.enabled && subscription.pricePaisa > 0)
 
   if (authLoading) {
@@ -84,6 +86,7 @@ export default function StreamerUpgradePage() {
           open={studioUpgradeOpen}
           onOpenChange={setStudioUpgradeOpen}
           pricePaisa={subscription.pricePaisa}
+          walletBalancePaise={walletBalancePaise}
           onPaidSuccess={() => router.push("/upgrade/studio/success?upgraded=1")}
         />
       ) : null}
@@ -98,18 +101,9 @@ export default function StreamerUpgradePage() {
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <p>{STUDIO_UPGRADE_DOMAIN_HINT}</p>
-          <div className="rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs text-foreground">
-            <p className="mb-2 font-sans text-sm font-medium text-foreground">Typical platform targets</p>
-            <p>
-              <span className="text-muted-foreground">CNAME target:</span> {cname}
-            </p>
-            <p>
-              <span className="text-muted-foreground">A record (root):</span> {a}
-            </p>
-          </div>
           <p>
-            Exact records and verification tokens are shown in Studio after upgrade. Our team can assist with DNS
-            and SSL if your administrator uses custom infrastructure.
+            Exact A records and verification tokens are generated specifically for your account and shown in the Studio dashboard after upgrade. 
+            Our automated DNS system can handle the configuration for you if you use Cloudflare.
           </p>
         </CardContent>
       </Card>

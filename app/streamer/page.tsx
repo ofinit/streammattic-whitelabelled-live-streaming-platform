@@ -262,6 +262,7 @@ export default function StreamerDashboard() {
                 open={studioUpgradeOpen}
                 onOpenChange={setStudioUpgradeOpen}
                 pricePaisa={studioSubscription.pricePaisa}
+                walletBalancePaise={walletBalancePaise}
                 onPaidSuccess={() => router.push("/upgrade/studio/success?upgraded=1")}
               />
             ) : null}

@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { CreditCard, Loader2, Wallet } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 type CreatePaymentResponse = {
   order?: { id: string }
@@ -60,7 +61,9 @@ export type StudioUpgradeCheckoutDialogProps = {
   onOpenChange: (open: boolean) => void
   /** Subscription price in paise (must match server setting) */
   pricePaisa: number
-  /** After Razorpay verify succeeds */
+  /** User's current wallet balance in paise */
+  walletBalancePaise: number
+  /** After successful upgrade */
   onPaidSuccess?: () => void
 }
 
@@ -68,12 +71,15 @@ export function StudioUpgradeCheckoutDialog({
   open,
   onOpenChange,
   pricePaisa,
+  walletBalancePaise,
   onPaidSuccess,
 }: StudioUpgradeCheckoutDialogProps) {
-  const [gateway, setGateway] = useState<"razorpay" | "instamojo">("razorpay")
   const [busy, setBusy] = useState(false)
+  const isInsufficient = walletBalancePaise < pricePaisa
 
   const startCheckout = useCallback(async () => {
+    if (isInsufficient) return
+
     setBusy(true)
     try {
       const res = await fetch("/api/payments/create", {
@@ -81,84 +87,25 @@ export function StudioUpgradeCheckoutDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderType: "studio_upgrade",
-          amount: pricePaisa / 100,
-          gateway,
+          gateway: "wallet",
           description: "Studio annual subscription — upgrade to white-label",
         }),
       })
-      const data = (await res.json()) as CreatePaymentResponse & { error?: string }
+      const data = (await res.json()) as { success?: boolean; error?: string }
       if (!res.ok) {
-        toast.error(data.error || "Could not start payment")
+        toast.error(data.error || "Could not process wallet payment")
         return
       }
 
-      if (gateway === "instamojo" && data.paymentUrl) {
-        window.location.href = data.paymentUrl
-        return
-      }
-
-      if (gateway === "razorpay" && data.razorpayOrderId && data.razorpayKeyId && data.order?.id) {
-        await loadRazorpayScript()
-        const Razorpay = (window as unknown as { Razorpay: RazorpayConstructor }).Razorpay
-        if (!Razorpay) {
-          toast.error("Razorpay failed to load")
-          return
-        }
-
-        const options: Record<string, unknown> = {
-          key: data.razorpayKeyId,
-          amount: data.amount,
-          currency: data.currency || "INR",
-          name: "Studio upgrade",
-          description: "Annual studio subscription",
-          order_id: data.razorpayOrderId,
-          prefill: data.prefill,
-          handler: async (response: {
-            razorpay_payment_id: string
-            razorpay_order_id: string
-            razorpay_signature: string
-          }) => {
-            try {
-              const verifyRes = await fetch("/api/payments/verify/razorpay", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpayOrderId: response.razorpay_order_id,
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpaySignature: response.razorpay_signature,
-                  orderId: data.order!.id,
-                }),
-              })
-              const verifyBody = (await verifyRes.json().catch(() => ({}))) as { error?: string }
-              if (!verifyRes.ok) {
-                toast.error(verifyBody.error || "Payment verification failed")
-                return
-              }
-              onOpenChange(false)
-              onPaidSuccess?.()
-            } catch {
-              toast.error("Verification request failed")
-            }
-          },
-          modal: {
-            ondismiss: () => {
-              setBusy(false)
-            },
-          },
-        }
-
-        const rzp = new Razorpay(options)
-        rzp.open()
-        return
-      }
-
-      toast.error("Unexpected payment response")
+      toast.success("Upgrade successful! Welcome to Studio.")
+      onOpenChange(false)
+      onPaidSuccess?.()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Payment failed")
     } finally {
       setBusy(false)
     }
-  }, [gateway, onOpenChange, onPaidSuccess, pricePaisa])
+  }, [isInsufficient, onOpenChange, onPaidSuccess])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,60 +119,57 @@ export function StudioUpgradeCheckoutDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
-            <span className="text-muted-foreground">Total due</span>
-            <p className="text-lg font-semibold text-foreground">{formatPaisa(pricePaisa)}</p>
+          <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/30 p-4">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Plan Cost</span>
+            <p className="text-2xl font-bold text-foreground">{formatPaisa(pricePaisa)}</p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Payment method</Label>
-            <RadioGroup
-              value={gateway}
-              onValueChange={(v) => setGateway(v as "razorpay" | "instamojo")}
-              className="grid gap-2"
-            >
-              <label
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                  gateway === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-                }`}
-              >
-                <RadioGroupItem value="razorpay" id="su-razorpay" />
-                <CreditCard className="h-5 w-5 text-blue-500" />
-                <div>
-                  <p className="font-medium">Razorpay</p>
-                  <p className="text-xs text-muted-foreground">Cards, UPI, NetBanking</p>
-                </div>
-              </label>
-              <label
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                  gateway === "instamojo" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-                }`}
-              >
-                <RadioGroupItem value="instamojo" id="su-instamojo" />
-                <Wallet className="h-5 w-5 text-purple-500" />
-                <div>
-                  <p className="font-medium">Instamojo</p>
-                  <p className="text-xs text-muted-foreground">Redirect to complete payment</p>
-                </div>
-              </label>
-            </RadioGroup>
+          <div className={`rounded-lg border p-4 space-y-2 ${isInsufficient ? "border-red-500/50 bg-red-500/5" : "border-emerald-500/50 bg-emerald-500/5"}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium uppercase text-muted-foreground">Your Wallet Balance</span>
+              <span className={`text-sm font-mono font-bold ${isInsufficient ? "text-red-500" : "text-emerald-500"}`}>
+                {formatPaisa(walletBalancePaise)}
+              </span>
+            </div>
+            
+            {isInsufficient && (
+              <p className="text-xs text-red-500/80 leading-relaxed border-t border-red-500/10 pt-2">
+                You need an additional <strong>{formatPaisa(pricePaisa - walletBalancePaise)}</strong> to upgrade. 
+                Please recharge your wallet first.
+              </p>
+            )}
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy} className="bg-transparent">
             Cancel
           </Button>
-          <Button type="button" onClick={() => void startCheckout()} disabled={busy}>
-            {busy ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Working…
-              </>
-            ) : (
-              "Pay now"
-            )}
-          </Button>
+          
+          {isInsufficient ? (
+            <Button className="bg-primary hover:bg-primary/90" asChild>
+              <Link href="/streamer/wallet">
+                <Wallet className="mr-2 h-4 w-4" />
+                Recharge wallet
+              </Link>
+            </Button>
+          ) : (
+            <Button 
+              type="button" 
+              onClick={() => void startCheckout()} 
+              disabled={busy}
+              className="bg-primary hover:bg-primary/90 min-w-[120px]"
+            >
+              {busy ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing…
+                </>
+              ) : (
+                "Pay via Wallet"
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

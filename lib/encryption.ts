@@ -46,3 +46,10 @@ export function decrypt(hash: string | null | undefined): string | null {
     return hash // Fallback to original
   }
 }
+
+/**
+ * Legacy initializer for encryption keys. Now a no-op as we use ENCRYPTION_SECRET from environment.
+ */
+export async function initEncryptionKeyFromDb(): Promise<void> {
+  return Promise.resolve()
+}

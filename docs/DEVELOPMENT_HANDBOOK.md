@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-05T11:51:59+05:30` |
-| Git revision | `367bd40` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-05T14:52:11+05:30` |
+| Git revision | `4230168` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -138,9 +138,11 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/streamer/dashboard/route.ts` | `/api/streamer/dashboard` |
 | `app/api/streaming/backend-info/route.ts` | `/api/streaming/backend-info` |
 | `app/api/streaming/stats/route.ts` | `/api/streaming/stats` |
+| `app/api/studio/branding/route.ts` | `/api/studio/branding` |
 | `app/api/studio/cloudflare/setup/route.ts` | `/api/studio/cloudflare/setup` |
 | `app/api/studio/dashboard/route.ts` | `/api/studio/dashboard` |
 | `app/api/studio/domains/route.ts` | `/api/studio/domains` |
+| `app/api/studio/domains/verify/route.ts` | `/api/studio/domains/verify` |
 | `app/api/studio/events/check-slug/route.ts` | `/api/studio/events/check-slug` |
 | `app/api/studio/events/route.ts` | `/api/studio/events` |
 | `app/api/studio/integrations/route.ts` | `/api/studio/integrations` |

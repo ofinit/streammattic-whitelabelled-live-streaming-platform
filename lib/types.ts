@@ -22,6 +22,9 @@ export type PaymentGateway = "razorpay" | "instamojo" | "cashfree" | "manual"
 // DNS Status
 export type DNSStatus = "pending" | "verified" | "failed"
 
+// Landing Themes
+export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elegance" | "nordic_slate" | "sunset_orchard"
+
 // Base User
   export interface User {
   id: string
@@ -584,6 +587,7 @@ export interface Branding {
   stats?: BrandingStat[]
   testimonials?: BrandingTestimonial[]
   galleryImages?: BrandingGalleryImage[]
+  selectedTheme?: LandingTheme
   smtpHost?: string
   smtpPort?: number
   smtpUser?: string

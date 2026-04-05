@@ -13,7 +13,11 @@ export const GET = withAuth(async (user, request) => {
       const sql = getDb()
       const rows = await sql`SELECT * FROM studio_branding WHERE user_id = ${userId}`
       if (rows.length === 0) return null
-      return toCamel(rows[0] as Record<string, unknown>)
+      const branding = toCamel(rows[0] as Record<string, unknown>)
+      return {
+        ...branding,
+        selectedTheme: rows[0].selected_theme || 'modern_emerald'
+      }
     }
   )
 
@@ -30,7 +34,8 @@ export const PUT = withAuth(async (user, request) => {
     googleAnalyticsId, aboutUs, termsConditions, privacyPolicy, refundPolicy,
     heroImage, aboutImage, address, phone, whatsapp, facebookUrl, instagramUrl,
     twitterUrl, youtubeUrl, linkedinUrl, companyLogoDark, preferredGateway,
-    smtpHost, smtpPort, smtpUser, smtpPassword, smtpFromEmail, smtpFromName, smtpSecure
+    smtpHost, smtpPort, smtpUser, smtpPassword, smtpFromEmail, smtpFromName, smtpSecure,
+    selectedTheme
   } = body
 
   const rows = await sql`
@@ -41,7 +46,8 @@ export const PUT = withAuth(async (user, request) => {
       terms_conditions, privacy_policy, refund_policy, hero_image, about_image,
       address, support_phone, whatsapp, facebook_url, instagram_url, 
       twitter_url, youtube_url, linkedin_url, company_logo_dark, preferred_gateway,
-      smtp_host, smtp_port, smtp_user, smtp_password, smtp_from_email, smtp_from_name, smtp_secure
+      smtp_host, smtp_port, smtp_user, smtp_password, smtp_from_email, smtp_from_name, smtp_secure,
+      selected_theme
     )
     VALUES (
       ${userId}, ${companyLogo || null}, ${favicon || null}, ${primaryColor || null}, ${secondaryColor || null}, ${accentColor || null}, 
@@ -50,7 +56,8 @@ export const PUT = withAuth(async (user, request) => {
       ${termsConditions || null}, ${privacyPolicy || null}, ${refundPolicy || null}, ${heroImage || null}, ${aboutImage || null},
       ${address || null}, ${phone || null}, ${whatsapp || null}, ${facebookUrl || null}, ${instagramUrl || null},
       ${twitterUrl || null}, ${youtubeUrl || null}, ${linkedinUrl || null}, ${companyLogoDark || null}, ${preferredGateway || null},
-      ${smtpHost || null}, ${smtpPort || null}, ${smtpUser || null}, ${smtpPassword || null}, ${smtpFromEmail || null}, ${smtpFromName || null}, ${smtpSecure ?? true}
+      ${smtpHost || null}, ${smtpPort || null}, ${smtpUser || null}, ${smtpPassword || null}, ${smtpFromEmail || null}, ${smtpFromName || null}, ${smtpSecure ?? true},
+      ${selectedTheme || 'modern_emerald'}
     )
     ON CONFLICT (user_id) DO UPDATE SET
       logo = COALESCE(${companyLogo ?? null}, studio_branding.logo),
@@ -89,6 +96,7 @@ export const PUT = withAuth(async (user, request) => {
       smtp_from_email = COALESCE(${smtpFromEmail ?? null}, studio_branding.smtp_from_email),
       smtp_from_name = COALESCE(${smtpFromName ?? null}, studio_branding.smtp_from_name),
       smtp_secure = COALESCE(${smtpSecure ?? null}, studio_branding.smtp_secure),
+      selected_theme = COALESCE(${selectedTheme ?? null}, studio_branding.selected_theme),
       updated_at = NOW()
     RETURNING *
   `

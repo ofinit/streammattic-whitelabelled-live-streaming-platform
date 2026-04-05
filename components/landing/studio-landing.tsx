@@ -2,8 +2,10 @@
 
 import { useState, useEffect, type ReactNode } from "react"
 import Link from "next/link"
+import Head from "next/head"
 import { useBranding } from "@/lib/branding-context"
 import { mockBranding } from "@/lib/mock-data"
+import { getThemeConfig } from "@/lib/landing-themes"
 import { Button } from "@/components/ui/button"
 import {
   Camera,
@@ -712,8 +714,18 @@ export function StudioLandingPage({
     if (fav) applyFaviconHrefToDocument(fav)
   }, [branding])
 
+  const theme = getThemeConfig(branding.selectedTheme)
+  const fontName = theme.fontFamily.split(",")[0].replace(/'/g, "")
+  const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div 
+      className="min-h-screen bg-background text-foreground"
+      style={{ fontFamily: theme.fontFamily }}
+    >
+      <Head>
+        <link rel="stylesheet" href={googleFontsUrl} />
+      </Head>
       {previewBanner}
       <SiteHeader branding={branding} />
       <main>

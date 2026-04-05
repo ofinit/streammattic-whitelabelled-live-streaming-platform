@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck } from "lucide-react"
+import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { LANDING_THEMES, getThemeConfig } from "@/lib/landing-themes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Branding } from "@/lib/types"
+import type { Branding, LandingTheme } from "@/lib/types"
 
 interface BrandingFormProps {
   branding: Branding
@@ -23,6 +25,7 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
     accentColor: "#059669",
     metaTitle: "",
     metaDescription: "",
+    selectedTheme: "modern_emerald"
   } as Branding)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -72,10 +75,14 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
           <TabsTrigger value="general" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
+            <Layout className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
+          </TabsTrigger>
+          <TabsTrigger value="themes" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            <span className="hidden sm:inline">Themes</span>
           </TabsTrigger>
           <TabsTrigger value="contact" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -434,6 +441,71 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
                   placeholder="Your refund policy..."
                   rows={4}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="themes" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Landing Page Themes</CardTitle>
+              <CardDescription>Choose an elegant theme for your public landing page</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {LANDING_THEMES.map((theme) => {
+                  const isSelected = formData.selectedTheme === theme.id || (!formData.selectedTheme && theme.id === "modern_emerald")
+                  return (
+                    <div
+                      key={theme.id}
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          selectedTheme: theme.id,
+                          themeColor: theme.primaryColor,
+                          accentColor: theme.accentColor,
+                        })
+                      }}
+                      className={cn(
+                        "group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all hover:shadow-md",
+                        isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="absolute right-2 top-2 z-10">
+                          <CheckCircle2 className="h-5 w-5 text-primary fill-background" />
+                        </div>
+                      )}
+                      
+                      <div className="mb-4 flex h-32 flex-col gap-2 rounded-lg p-3 bg-zinc-900 overflow-hidden relative">
+                         {/* Mini Preview mock */}
+                         <div className="h-4 w-2/3 rounded bg-white/20" />
+                         <div className="flex gap-2">
+                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: theme.primaryColor }} />
+                            <div className="flex-1 space-y-2">
+                               <div className="h-3 w-full rounded bg-white/10" />
+                               <div className="h-3 w-3/4 rounded bg-white/10" />
+                            </div>
+                         </div>
+                         <div className="mt-auto h-8 w-full rounded" style={{ backgroundColor: theme.accentColor }} />
+                         <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                      </div>
+
+                      <div className="space-y-1">
+                        <h4 className="font-semibold text-foreground">{theme.name}</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{theme.description}</p>
+                      </div>
+                      
+                      <div className="mt-4 flex items-center gap-3">
+                         <div className="flex gap-1">
+                            <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: theme.primaryColor }} />
+                            <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: theme.accentColor }} />
+                         </div>
+                         <span className="text-[10px] font-medium text-muted-foreground uppercase">{theme.fontFamily.split(",")[0].replace(/'/g, "")}</span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

@@ -1687,6 +1687,7 @@ export const mockBranding: Branding = {
   refundPolicy: "Refund policy content goes here...",
   preferredGateway: "razorpay",
   hasGatewayConfig: true,
+  selectedTheme: "modern_emerald",
   heroImage: "https://v3b.fal.media/files/b/0a9050f0/SroZCGJykTGOESyeDyNWY.jpg",
   aboutImage: "https://v3b.fal.media/files/b/0a9050f0/f-_58kA7Ac84zxbTd1RV1.jpg",
   services: [

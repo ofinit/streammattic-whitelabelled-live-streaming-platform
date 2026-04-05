@@ -3,6 +3,8 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { invalidateCache } from "@/lib/redis"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 
+export const dynamic = "force-dynamic"
+
 export const GET = withAuth(async (user, request) => {
   const url = new URL(request.url)
   const key = url.searchParams.get("key")

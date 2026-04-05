@@ -10,6 +10,8 @@ import { jsonError, jsonOk, withRole } from "@/lib/api-helpers"
 import { serializeSimulcastPricing } from "@/lib/stream-type-pricing"
 import type { StreamTypePricing } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 const CACHE_KEYS = [
   "stream_type_pricing",
   "simulcast_pricing",

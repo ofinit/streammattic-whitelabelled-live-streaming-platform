@@ -74,7 +74,7 @@ export default function AdminPricingPage() {
   const loadSettings = useCallback(async () => {
     setSettingsLoadState("loading")
     try {
-      const res = await fetch("/api/settings")
+      const res = await fetch("/api/settings", { cache: "no-store" })
       const data = (await res.json()) as { settings?: { key: string; value: unknown }[]; error?: string }
       if (!res.ok) {
         throw new Error(data.error || "Failed to load settings")

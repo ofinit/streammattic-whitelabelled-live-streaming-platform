@@ -1,6 +1,9 @@
 import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { withRedisCache, invalidateCache } from "@/lib/redis"
+import { encrypt, decrypt } from "@/lib/encryption"
+
+export const dynamic = "force-dynamic"
 
 export const GET = withAuth(async (user, request) => {
   const url = new URL(request.url)
@@ -14,6 +17,9 @@ export const GET = withAuth(async (user, request) => {
       const rows = await sql`SELECT * FROM studio_branding WHERE user_id = ${userId}`
       if (rows.length === 0) return null
       const branding = toCamel(rows[0] as Record<string, unknown>)
+      if (branding.smtpPassword) {
+        branding.smtpPassword = decrypt(branding.smtpPassword as string)
+      }
       return {
         ...branding,
         selectedTheme: rows[0].selected_theme || 'modern_emerald'
@@ -56,7 +62,7 @@ export const PUT = withAuth(async (user, request) => {
       ${termsConditions || null}, ${privacyPolicy || null}, ${refundPolicy || null}, ${heroImage || null}, ${aboutImage || null},
       ${address || null}, ${phone || null}, ${whatsapp || null}, ${facebookUrl || null}, ${instagramUrl || null},
       ${twitterUrl || null}, ${youtubeUrl || null}, ${linkedinUrl || null}, ${companyLogoDark || null}, ${preferredGateway || null},
-      ${smtpHost || null}, ${smtpPort || null}, ${smtpUser || null}, ${smtpPassword || null}, ${smtpFromEmail || null}, ${smtpFromName || null}, ${smtpSecure ?? true},
+      ${smtpHost || null}, ${smtpPort || null}, ${smtpUser || null}, ${encrypt(smtpPassword)}, ${smtpFromEmail || null}, ${smtpFromName || null}, ${smtpSecure ?? true},
       ${selectedTheme || 'modern_emerald'}
     )
     ON CONFLICT (user_id) DO UPDATE SET
@@ -92,7 +98,7 @@ export const PUT = withAuth(async (user, request) => {
       smtp_host = COALESCE(${smtpHost ?? null}, studio_branding.smtp_host),
       smtp_port = COALESCE(${smtpPort ?? null}, studio_branding.smtp_port),
       smtp_user = COALESCE(${smtpUser ?? null}, studio_branding.smtp_user),
-      smtp_password = COALESCE(${smtpPassword ?? null}, studio_branding.smtp_password),
+      smtp_password = COALESCE(${encrypt(smtpPassword)}, studio_branding.smtp_password),
       smtp_from_email = COALESCE(${smtpFromEmail ?? null}, studio_branding.smtp_from_email),
       smtp_from_name = COALESCE(${smtpFromName ?? null}, studio_branding.smtp_from_name),
       smtp_secure = COALESCE(${smtpSecure ?? null}, studio_branding.smtp_secure),

@@ -9,6 +9,7 @@ import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-chec
 import { mockTransactions, mockStreamerWalletSummary } from "@/lib/mock-data"
 import { CreditCard, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
 
 export default function StreamerWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
@@ -19,8 +20,8 @@ export default function StreamerWalletPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">My Wallet</h1>
-        <p className="text-muted-foreground">Manage your wallet and view transaction history</p>
+        <h1 className="text-2xl font-bold text-foreground">Billing & Wallet</h1>
+        <p className="text-muted-foreground">Manage your wallet, transactions, and tax invoices</p>
       </div>
 
       {/* Low Balance Alert */}
@@ -64,6 +65,7 @@ export default function StreamerWalletPage() {
           <TabsTrigger value="all">All Transactions</TabsTrigger>
           <TabsTrigger value="purchases">Purchases</TabsTrigger>
           <TabsTrigger value="topups">Top Ups</TabsTrigger>
+          <TabsTrigger value="invoices">GST Invoices</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -99,6 +101,10 @@ export default function StreamerWalletPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices" className="m-0 pt-2">
+           <GstInvoicesClient mode="self" title="" description="" />
         </TabsContent>
       </Tabs>
 

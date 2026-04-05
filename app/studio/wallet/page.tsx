@@ -8,6 +8,7 @@ import { TransactionList } from "@/components/wallet/transaction-list"
 import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
 import { mockTransactions, mockStudioWalletSummary } from "@/lib/mock-data"
 import { TrendingUp, ArrowUpRight, Clock } from "lucide-react"
+import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
 
 export default function StudioWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
@@ -18,8 +19,8 @@ export default function StudioWalletPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Wallet</h1>
-        <p className="text-muted-foreground">Manage your wallet balance and view transactions</p>
+        <h1 className="text-2xl font-bold text-foreground">Billing & Wallet</h1>
+        <p className="text-muted-foreground">Manage your wallet balance, transactions, and tax invoices</p>
       </div>
 
       {/* Wallet Summary */}
@@ -52,6 +53,7 @@ export default function StudioWalletPage() {
           <TabsTrigger value="all">All Transactions</TabsTrigger>
           <TabsTrigger value="credits">Credits</TabsTrigger>
           <TabsTrigger value="debits">Debits</TabsTrigger>
+          <TabsTrigger value="invoices">GST Invoices</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -85,6 +87,10 @@ export default function StudioWalletPage() {
               <TransactionList transactions={studioTransactions.filter((t) => t.type === "debit")} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices" className="m-0 pt-2">
+           <GstInvoicesClient mode="self" title="" description="" />
         </TabsContent>
       </Tabs>
 

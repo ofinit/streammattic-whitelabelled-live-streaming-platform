@@ -20,6 +20,16 @@ interface BrandingPreviewProps {
 }
 
 export function BrandingPreview({ branding }: BrandingPreviewProps) {
+  if (!branding) {
+    return (
+      <Card>
+        <CardContent className="flex h-96 items-center justify-center text-muted-foreground">
+          No branding data available
+        </CardContent>
+      </Card>
+    )
+  }
+
   const services = (branding.services || mockBranding.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
   const stats = branding.stats || mockBranding.stats || []
   const testimonial = (branding.testimonials || mockBranding.testimonials || [])[0]

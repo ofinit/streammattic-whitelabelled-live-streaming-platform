@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Save, Upload, ExternalLink, Palette, Globe, FileText } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,20 +17,62 @@ interface BrandingFormProps {
 }
 
 export function BrandingForm({ branding, onSave }: BrandingFormProps) {
-  const [formData, setFormData] = useState(branding)
+  const [formData, setFormData] = useState<Branding>(branding || {
+    brandName: "",
+    themeColor: "#10b981",
+    accentColor: "#059669",
+    metaTitle: "",
+    metaDescription: "",
+  } as Branding)
   const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    if (branding) {
+      setFormData(branding)
+    }
+  }, [branding])
+
+  const handleUpload = async (file: File, field: keyof Branding) => {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("subdir", "branding")
+    
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setFormData((prev: any) => ({ ...prev, [field]: data.url }))
+      }
+    } catch (err) {
+      console.error("Upload failed", err)
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise((r) => setTimeout(r, 1000))
-    onSave(formData)
-    setIsSaving(false)
+    try {
+      const res = await fetch("/api/studio/branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (res.ok) {
+        onSave(formData)
+      }
+    } catch (err) {
+      console.error("Save failed", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
@@ -47,7 +89,10 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Legal</span>
           </TabsTrigger>
-
+          <TabsTrigger value="smtp" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">SMTP</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -102,9 +147,21 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
                     ) : (
                       <div className="h-16 w-32 rounded bg-muted" />
                     )}
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload
+                    <Input
+                      type="file"
+                      id="logo-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUpload(file, "companyLogo")
+                      }}
+                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <label htmlFor="logo-upload" className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </label>
                     </Button>
                   </div>
                 </div>
@@ -121,9 +178,21 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
                     ) : (
                       <div className="h-16 w-32 rounded bg-zinc-800" />
                     )}
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload
+                    <Input
+                      type="file"
+                      id="logo-dark-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUpload(file, "companyLogoDark")
+                      }}
+                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <label htmlFor="logo-dark-upload" className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </label>
                     </Button>
                   </div>
                 </div>
@@ -135,14 +204,26 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
                       <img
                         src={formData.favicon || "/placeholder.svg"}
                         alt="Favicon"
-                        className="h-8 w-8 object-contain"
+                        className="h-10 w-10 object-contain"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded bg-muted" />
+                      <div className="h-10 w-10 rounded bg-muted" />
                     )}
-                    <Button variant="outline" size="sm">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload
+                    <Input
+                      type="file"
+                      id="favicon-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleUpload(file, "favicon")
+                      }}
+                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <label htmlFor="favicon-upload" className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                      </label>
                     </Button>
                   </div>
                 </div>
@@ -358,6 +439,94 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
           </Card>
         </TabsContent>
 
+        <TabsContent value="smtp" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>SMTP Configuration</CardTitle>
+              <CardDescription>Configure your own mail server to send emails</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="smtpHost">SMTP Host</Label>
+                  <Input
+                    id="smtpHost"
+                    value={formData.smtpHost || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
+                    placeholder="smtp.example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="smtpPort">SMTP Port</Label>
+                  <Input
+                    id="smtpPort"
+                    type="number"
+                    value={formData.smtpPort || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpPort: parseInt(e.target.value) || 0 })}
+                    placeholder="587"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="smtpUser">SMTP User</Label>
+                  <Input
+                    id="smtpUser"
+                    value={formData.smtpUser || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpUser: e.target.value })}
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="smtpPassword">SMTP Password</Label>
+                  <Input
+                    id="smtpPassword"
+                    type="password"
+                    value={formData.smtpPassword || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpPassword: e.target.value })}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="smtpFromEmail">From Email</Label>
+                  <Input
+                    id="smtpFromEmail"
+                    value={formData.smtpFromEmail || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpFromEmail: e.target.value })}
+                    placeholder="noreply@yourbrand.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="smtpFromName">From Name</Label>
+                  <Input
+                    id="smtpFromName"
+                    value={formData.smtpFromName || ""}
+                    onChange={(e) => setFormData({ ...formData, smtpFromName: e.target.value })}
+                    placeholder="Your Brand Support"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                 <input 
+                   type="checkbox" 
+                   id="smtpSecure" 
+                   checked={formData.smtpSecure ?? true} 
+                   onChange={(e) => setFormData({ ...formData, smtpSecure: e.target.checked })}
+                   className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                 />
+                 <Label htmlFor="smtpSecure">Use TLS/SSL (Secure)</Label>
+              </div>
+              <div className="rounded-lg bg-primary/5 p-4 flex gap-3 items-start">
+                <ShieldCheck className="h-5 w-5 text-primary mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  Once SMTP is configured correctly, all system emails (welcome, orders, event alerts) will be sent using your custom mail server instead of the platform default.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
       </Tabs>
 

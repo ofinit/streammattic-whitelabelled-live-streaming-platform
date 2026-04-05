@@ -43,8 +43,19 @@ export async function POST(req: Request) {
     
     await redis.set(key, payload, { ex: 600 }) // 10 minutes
 
+    // Determine studioId for custom branding/SMTP
+    let studioId: string | undefined = undefined
+    if (user.role === "studio") {
+      studioId = user.id
+    } else if (user.role === "streamer") {
+      const studioRow = await sql`SELECT studio_id FROM users WHERE id = ${user.id}`
+      if (studioRow.length > 0) {
+        studioId = studioRow[0].studio_id
+      }
+    }
+
     // Dispatch email securely using Nodemailer (or mock locally if missing SMTP_HOST)
-    const emailSent = await sendVerificationOTP(normalizedEmail, otp)
+    const emailSent = await sendVerificationOTP(normalizedEmail, otp, studioId)
 
     if (!emailSent) {
       return NextResponse.json({ error: "Failed to dispatch verification email. Please check server settings." }, { status: 500 })

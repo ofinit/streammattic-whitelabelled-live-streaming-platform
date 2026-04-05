@@ -36,6 +36,29 @@ export const POST = withAuth(async (user, request) => {
     return jsonError("Title and stream type are required")
   }
 
+  // Generate a unique slug (base title + random string to avoid collisions)
+  const baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+  const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`
+
+  // Fetch verified domain if studio
+  let publicUrl = ""
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://streamlivee.pro"
+
+  if (user.role === "studio") {
+    const domains = await sql`
+      SELECT domain FROM domains 
+      WHERE user_id = ${userId} AND verification_status = 'verified' AND is_primary = true
+      LIMIT 1
+    `
+    if (domains.length > 0) {
+      publicUrl = `https://${domains[0].domain}/${slug}`
+    } else {
+      publicUrl = `${appUrl}/${slug}`
+    }
+  } else {
+    publicUrl = `${appUrl}/${slug}`
+  }
+
   const creditCol = streamType === "rtmp" ? "rtmp" : streamType === "youtube_api" ? "youtube_api" : streamType === "youtube_embed" ? "youtube_embed" : "third_party"
 
   // Atomically check and deduct credit
@@ -52,8 +75,8 @@ export const POST = withAuth(async (user, request) => {
 
   // Insert event
   const rows = await sql`
-    INSERT INTO events (user_id, title, description, stream_type, scheduled_at, thumbnail_url, settings)
-    VALUES (${userId}, ${title}, ${description || null}, ${streamType}, ${scheduledAt || null}, ${thumbnailUrl || null}, ${JSON.stringify(settings || {})})
+    INSERT INTO events (user_id, title, description, stream_type, scheduled_at, thumbnail_url, settings, slug, public_url)
+    VALUES (${userId}, ${title}, ${description || null}, ${streamType}, ${scheduledAt || null}, ${thumbnailUrl || null}, ${JSON.stringify(settings || {})}, ${slug}, ${publicUrl})
     RETURNING *
   `
 

@@ -56,6 +56,7 @@ const statements = [
   `CREATE INDEX idx_events_user ON events(user_id)`,
   `ALTER TABLE events ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE`,
   `CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug)`,
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS public_url TEXT`,
   `CREATE INDEX idx_events_status ON events(status)`,
   `CREATE INDEX idx_events_scheduled ON events(scheduled_at)`,
   `CREATE INDEX idx_events_stream ON events(stream_type)`,

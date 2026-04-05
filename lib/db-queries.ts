@@ -429,6 +429,23 @@ export async function getUserCreditsRowByUserId(userId: string) {
 }
 
 // ============================================================
+// STUDIO BRANDING
+// ============================================================
+
+export async function getStudioBranding(studioId: string) {
+  return withRedisCache(
+    `studio_branding:${studioId}`,
+    3600, // 1 hour TTL
+    async () => {
+      const sql = getDb()
+      const rows = await sql`SELECT * FROM studio_branding WHERE user_id = ${studioId}`
+      if (rows.length === 0) return null
+      return toCamel(rows[0] as Record<string, unknown>)
+    }
+  )
+}
+
+// ============================================================
 // PLATFORM SETTINGS
 // ============================================================
 

@@ -40,10 +40,13 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
 
   const getStreamIcon = () => {
     switch (event.streamType) {
-      case "youtube":
+      case "youtube_api":
+      case "youtube_embed":
         return <Youtube className="h-4 w-4" />
-      case "embedded":
+      case "third_party":
         return <Globe className="h-4 w-4" />
+      case "rtmp":
+      case "hls":
       default:
         return <Video className="h-4 w-4" />
     }
@@ -106,12 +109,20 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.open(`/${(event.slug as string) || event.id}`, "_blank")}>
+              <DropdownMenuItem 
+                onClick={() => {
+                  const url = (event as any).publicUrl || `${window.location.origin}/${(event as any).slug || event.id}`
+                  window.open(url, "_blank")
+                }}
+              >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 View Event Page
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/${(event.slug as string) || event.id}`)}
+                onClick={() => {
+                  const url = (event as any).publicUrl || `${window.location.origin}/${(event as any).slug || event.id}`
+                  navigator.clipboard.writeText(url)
+                }}
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy Link

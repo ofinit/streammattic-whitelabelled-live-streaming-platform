@@ -75,6 +75,13 @@ export interface StudioBranding {
   termsUrl?: string
   privacyUrl?: string
   customCss?: string
+  smtpHost?: string
+  smtpPort?: number
+  smtpUser?: string
+  smtpPassword?: string
+  smtpFromEmail?: string
+  smtpFromName?: string
+  smtpSecure?: boolean
 }
 
 // Custom Domain
@@ -233,6 +240,8 @@ export interface LiveEvent {
   useCustomDomain?: boolean
   /** The verified primary domain of the studio owning this event */
   primaryDomain?: string | null
+  slug?: string
+  publicUrl?: string
 }
 
 // Event Analytics
@@ -575,6 +584,13 @@ export interface Branding {
   stats?: BrandingStat[]
   testimonials?: BrandingTestimonial[]
   galleryImages?: BrandingGalleryImage[]
+  smtpHost?: string
+  smtpPort?: number
+  smtpUser?: string
+  smtpPassword?: string
+  smtpFromEmail?: string
+  smtpFromName?: string
+  smtpSecure?: boolean
   createdAt: Date
   updatedAt: Date
 }

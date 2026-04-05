@@ -206,6 +206,8 @@ CREATE TABLE events (
   photographer_contact JSONB DEFAULT '{}',
   crew_pin_hash TEXT,
   credits_consumed INT DEFAULT 1,
+  slug TEXT UNIQUE,
+  public_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -214,6 +216,7 @@ CREATE INDEX idx_events_user_id ON events(user_id);
 CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_scheduled_at ON events(scheduled_at);
 CREATE INDEX idx_events_stream_type ON events(stream_type);
+CREATE INDEX idx_events_slug ON events(slug);
 
 -- ============================================================
 -- ORDERS

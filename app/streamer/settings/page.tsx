@@ -31,12 +31,6 @@ export default function StreamerSettingsPage() {
   })
   const [passwordError, setPasswordError] = useState("")
   const [passwordSuccess, setPasswordSuccess] = useState(false)
-  const [notifications, setNotifications] = useState({
-    email: true,
-    eventReminders: true,
-    marketing: false,
-  })
-
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
@@ -246,55 +240,6 @@ export default function StreamerSettingsPage() {
                 Change Password
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                <Bell className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle>Notifications</CardTitle>
-                <CardDescription>Manage your notification preferences</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">Email Notifications</p>
-                <p className="text-sm text-muted-foreground">Receive important updates via email</p>
-              </div>
-              <Switch
-                checked={notifications.email}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">Event Reminders</p>
-                <p className="text-sm text-muted-foreground">Get notified before your events start</p>
-              </div>
-              <Switch
-                checked={notifications.eventReminders}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, eventReminders: checked })}
-              />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">Marketing Emails</p>
-                <p className="text-sm text-muted-foreground">Receive tips, updates, and offers</p>
-              </div>
-              <Switch
-                checked={notifications.marketing}
-                onCheckedChange={(checked) => setNotifications({ ...notifications, marketing: checked })}
-              />
-            </div>
           </CardContent>
         </Card>
       </div>

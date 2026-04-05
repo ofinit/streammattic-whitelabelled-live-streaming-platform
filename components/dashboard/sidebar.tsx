@@ -84,7 +84,6 @@ const studioNav: NavItem[] = [
   { title: "Packages", href: "/studio/packages", icon: Package },
   { title: "Analytics", href: "/studio/analytics", icon: BarChart3 },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
-  { title: "Notifications", href: "/studio/notifications", icon: Bell },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
@@ -96,7 +95,6 @@ const streamerNav: NavItem[] = [
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
   { title: "Packages", href: "/streamer/packages", icon: Package },
   { title: "Analytics", href: "/streamer/analytics", icon: BarChart3 },
-  { title: "Notifications", href: "/streamer/notifications", icon: Bell },
   { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]
@@ -244,11 +242,11 @@ function AccountBlock({
         >
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Bell className="mr-2 h-4 w-4" />
-            Notifications
-          </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {
+            if (userRole === "admin") window.location.href = "/admin/settings"
+            else if (userRole === "studio") window.location.href = "/studio/settings"
+            else if (userRole === "streamer") window.location.href = "/streamer/settings"
+          }}>
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>

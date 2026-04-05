@@ -12,7 +12,24 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StudioBrandingPage() {
   const { data, error, mutate, isLoading } = useSWR("/api/studio/branding", fetcher)
-  const branding = data?.branding
+  const branding = data?.branding || {
+    id: "new",
+    userId: "new",
+    brandName: "",
+    themeColor: "#10b981",
+    accentColor: "#059669",
+    metaTitle: "",
+    metaDescription: "",
+    heroImage: "",
+    aboutImage: "",
+    services: [],
+    eventTypes: [],
+    galleryImages: [],
+    testimonials: [],
+    hasGatewayConfig: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } as Branding
 
   const handleSave = async (updates: Partial<Branding>) => {
     try {

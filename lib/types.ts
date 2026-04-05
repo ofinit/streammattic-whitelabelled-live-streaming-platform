@@ -248,6 +248,7 @@ export interface LiveEvent {
   slug?: string
   publicUrl?: string
   crewPinHash?: string
+  hasCrewPin?: boolean
 }
 
 // Event Analytics

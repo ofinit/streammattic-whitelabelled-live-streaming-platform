@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       rows = await sql`
         SELECT 
           e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
-          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug,
+          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
           u.id as "userId", u.name as "userName", u.email as "userEmail"
         FROM events e
         JOIN users u ON e.user_id = u.id
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       rows = await sql`
         SELECT 
           e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
-          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug,
+          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
           u.id as "userId", u.name as "userName", u.email as "userEmail"
         FROM events e
         JOIN users u ON e.user_id = u.id
@@ -49,7 +49,8 @@ export async function GET(req: Request) {
       studioName: r.userName,
       eventType: "Virtual",
       slug: r.slug,
-      userId: r.userId
+      userId: r.userId,
+      hasCrewPin: !!r.crew_pin_hash
     }))
 
     return NextResponse.json({ success: true, events })

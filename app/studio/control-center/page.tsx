@@ -514,7 +514,7 @@ export default function StudioEventsPage() {
           >
             {getEventPublicUrl(event)}
           </a>
-          {event.crewPinHash && (
+          {event.hasCrewPin && (
             <a
               href={`${getEventPublicUrl(event)}/crew`}
               target="_blank"

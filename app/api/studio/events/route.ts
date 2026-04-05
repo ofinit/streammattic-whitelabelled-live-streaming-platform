@@ -34,9 +34,11 @@ function toSlug(text: string): string {
 function sanitizeEventForClient(ev: Record<string, unknown>): Record<string, unknown> {
   if (!ev || typeof ev !== "object") return ev
   const out = { ...ev }
-  const hasCrewPin = !!(out.crewPinHash as string)
+  // Input ev is already camelCase from getEvents()
+  const hasCrewPin = !!(out.crewPinHash as string || out.crew_pin_hash as string)
   delete out.crewPinHash
-  out.hasCrewPin = hasCrewPin
+  delete out.crew_pin_hash
+  out.has_crew_pin = hasCrewPin
   return out
 }
 

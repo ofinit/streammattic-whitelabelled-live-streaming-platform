@@ -120,18 +120,21 @@ export async function POST(req: NextRequest) {
         INSERT INTO events (
           user_id, title, description, stream_type, stream_key, rtmp_url,
           status, scheduled_at, is_mock, slug, template_data,
-          allow_chat, allow_reactions, template_id
+          allow_chat, allow_reactions, template_id, crew_pin_hash
         ) VALUES (
           ${user.id}, ${template.name === "Default" ? `Mock ${template.category} Stream` : template.name}, 
           ${description}, 'rtmp', ${streamKey},
           ${rtmpUrl},
           'scheduled', NOW() + INTERVAL '1 day', true, ${slug}, ${templateDataJson}::jsonb,
-          true, true, ${template.id}
+          true, true, ${template.id}, 'e10adc3949ba59abbe56e057f20f883e'
         )
         RETURNING *
       `
       createdEvents.push(toCamel(rows[0] as Record<string, unknown>))
     }
+
+    // Reset mock_data_cleared since we just added mock data
+    await sql`UPDATE users SET mock_data_cleared = false WHERE id = ${user.id}`
 
     return NextResponse.json({ 
       events: createdEvents, 

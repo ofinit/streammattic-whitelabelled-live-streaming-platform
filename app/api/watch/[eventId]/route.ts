@@ -11,111 +11,90 @@ export async function GET(
 
   try {
     const sql = getDb()
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
+    console.log(`[api/watch/[eventId]] Fetching event for ID/Slug: ${eventId}`)
 
-    // Minimal select for DBs that don't have new columns yet
-    const minimalQuery = sql`
-      SELECT e.id, e.user_id, e.title, e.subtitle, e.description, e.status, e.stream_type,
-             e.scheduled_at, e.ended_at, e.thumbnail, e.slug,
-             e.hls_url, e.youtube_url, e.embed_code,
-             e.current_viewers, e.total_views,
-             e.allow_chat, e.allow_reactions, e.is_password_protected,
-             e.timezone, e.show_scheduled_page,
-             COALESCE(e.show_recording, false) AS show_recording,
-             e.template_id, e.template_data, e.use_custom_domain,
+    // Query for the event by ID or Slug
+    const rows = await sql`
+      SELECT e.*, 
              u.name AS studio_name,
-             (SELECT domain FROM domains WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true LIMIT 1) AS primary_domain,
-             COALESCE((
-               SELECT json_agg(
-                 json_build_object(
-                   'id', ed.id,
-                   'label', ed.label,
-                   'scheduledAt', ed.scheduled_at,
-                   'timezone', ed.timezone,
-                   'streamKey', ed.stream_key,
-                   'rtmpUrl', ed.rtmp_url,
-                   'sortOrder', ed.sort_order
-                 ) ORDER BY ed.sort_order
-               )
+             u.platform_name,
+             u.logo_url,
+             u.primary_color,
+             u.secondary_color,
+             u.custom_domain,
+             (
+               SELECT domain FROM domains 
+               WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true 
+               LIMIT 1
+             ) AS primary_domain,
+             (
+               SELECT json_agg(json_build_object(
+                 'id', ed.id,
+                 'label', ed.label,
+                 'scheduledAt', ed.scheduled_at,
+                 'timezone', ed.timezone,
+                 'streamKey', ed.stream_key,
+                 'rtmpUrl', ed.rtmp_url,
+                 'sortOrder', ed.sort_order
+               ) ORDER BY ed.sort_order)
                FROM event_dates ed
                WHERE ed.event_id = e.id
-             ), '[]'::json) AS event_dates
+             ) as event_dates
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
       WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
     `
-
-    const fullQuery = sql`
-      SELECT e.id, e.user_id, e.title, e.subtitle, e.description, e.status, e.stream_type,
-             e.scheduled_at, e.ended_at, e.thumbnail, e.slug,
-             e.hls_url, e.youtube_url, e.embed_code,
-             e.current_viewers, e.total_views,
-             e.allow_chat, e.allow_reactions, e.is_password_protected,
-             e.timezone, e.show_scheduled_page,
-             COALESCE(e.show_recording, false) AS show_recording,
-             e.validity_expires_at,
-             e.hero_image_url, e.player_image_url, e.photo_gallery_urls,
-             e.photographer_logo_url, e.photographer_contact,
-             e.template_id, e.template_data, e.use_custom_domain,
-             u.name AS studio_name,
-             (SELECT domain FROM domains WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true LIMIT 1) AS primary_domain,
-             COALESCE((
-               SELECT json_agg(
-                 json_build_object(
-                   'id', ed.id,
-                   'label', ed.label,
-                   'scheduledAt', ed.scheduled_at,
-                   'timezone', ed.timezone,
-                   'streamKey', ed.stream_key,
-                   'rtmpUrl', ed.rtmp_url,
-                   'sortOrder', ed.sort_order
-                 ) ORDER BY ed.sort_order
-               )
-               FROM event_dates ed
-               WHERE ed.event_id = e.id
-             ), '[]'::json) AS event_dates
-      FROM events e
-      LEFT JOIN users u ON e.user_id = u.id
-      WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
-    `
-
-    let rows: Record<string, unknown>[]
-    try {
-      rows = await fullQuery
-    } catch (colErr: unknown) {
-      const msg = colErr instanceof Error ? colErr.message : String(colErr)
-      if (msg.includes("does not exist") || msg.includes("column")) {
-        rows = await minimalQuery
-      } else {
-        throw colErr
-      }
-    }
-
-    // Optionally attach YouTube broadcast ID (separate query so we don't overwrite row)
-    if (rows.length > 0) {
-      try {
-        const ybRows = await sql`
-          SELECT broadcast_id FROM youtube_broadcasts
-          WHERE event_id = ${rows[0].id ?? eventId}
-          ORDER BY created_at DESC LIMIT 1
-        `
-        if (ybRows.length > 0 && ybRows[0]) {
-          (rows[0] as Record<string, unknown>).youtube_broadcast_id = (ybRows[0] as Record<string, unknown>).broadcast_id
-        }
-      } catch {
-        // youtube_broadcasts table may not exist
-      }
-    }
 
     if (rows.length === 0) {
+      console.log(`[api/watch/[eventId]] Event not found: ${eventId}`)
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
-    const eventRow = toCamel(rows[0] as Record<string, unknown>) as { userId?: string }
-    const ownerId = eventRow.userId ?? ""
+
+    const eventData = rows[0] as Record<string, unknown>
+    console.log(`[api/watch/[eventId]] Found event: ${eventData.id}`)
+    
+    // Attach YouTube broadcast ID if it exists
+    let youtubeBroadcastId = null
+    try {
+      if (eventData.id) {
+        const ybRows = await sql`
+          SELECT broadcast_id FROM youtube_broadcasts
+          WHERE event_id = ${eventData.id}
+          ORDER BY created_at DESC LIMIT 1
+        `
+        if (ybRows.length > 0) {
+          youtubeBroadcastId = (ybRows[0] as any).broadcast_id
+        }
+      }
+    } catch (e) {
+      console.warn(`[api/watch/[eventId]] YouTube broadcast lookup failed:`, e.message)
+    }
+
+    const eventRow = toCamel(eventData) as Record<string, any>
+    if (youtubeBroadcastId) {
+      eventRow.youtubeBroadcastId = youtubeBroadcastId
+    }
+
+    const ownerId = eventRow.userId
+    console.log(`[api/watch/[eventId]] Resolving favicon for owner: ${ownerId}`)
     const faviconHref = await resolveFaviconForWatchEvent(ownerId || null)
-    return NextResponse.json({ event: { ...eventRow, faviconHref } })
+
+    return NextResponse.json({
+      event: eventRow,
+      favicon: faviconHref
+    })
   } catch (err) {
-    console.error("Watch event fetch error:", err)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error(`[api/watch/[eventId]] CRITICAL ERROR:`, err)
+    // Fallback to minimal data if full query failed (maybe domains table doesn't exist?)
+    try {
+       const sql = getDb()
+       const rows = await sql`SELECT * FROM events WHERE id::text = ${eventId} OR slug = ${eventId} LIMIT 1`
+       if (rows.length > 0) {
+         return NextResponse.json({ event: toCamel(rows[0] as any) })
+       }
+    } catch (fallbackErr) {
+       console.error(`[api/watch/[eventId]] Fallback also failed:`, fallbackErr)
+    }
+    return NextResponse.json({ error: "Internal server error", message: err.message }, { status: 500 })
   }
 }

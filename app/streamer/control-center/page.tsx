@@ -581,7 +581,7 @@ export default function StreamerEventsPage() {
           >
             {getEventPublicUrl(event)}
           </a>
-          {event.crewPinHash && (
+          {event.hasCrewPin && (
             <a
               href={`${getEventPublicUrl(event)}/crew`}
               target="_blank"
@@ -878,7 +878,7 @@ export default function StreamerEventsPage() {
                         <Plus className="h-4 w-4 mr-2" />
                         Create Your First Event
                       </Button>
-                      {tab === "all" && !user?.mockDataCleared && (
+                      {tab === "all" && events.length === 0 && (
                         <Button
                           variant="ghost"
                           size="sm"

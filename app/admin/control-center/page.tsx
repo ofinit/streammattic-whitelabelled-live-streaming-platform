@@ -506,7 +506,7 @@ export default function AdminEventsPage() {
           >
             {getEventPublicUrl(event)}
           </a>
-          {(event as any).crewPinHash && (
+          {(event as any).hasCrewPin && (
             <a
               href={`${getEventPublicUrl(event)}/crew`}
               target="_blank"

@@ -63,7 +63,7 @@ const adminNav: NavItem[] = [
   { title: "Streamers", href: "/admin/streamers", icon: Users },
   { title: "Pricing", href: "/admin/packages", icon: Package },
   { title: "Control Center", href: "/admin/control-center", icon: Radio },
-  { title: "Create Events", href: "/admin/create-events", icon: Calendar },
+  { title: "Create Event", href: "/admin/create-events", icon: Calendar },
   { title: "Streaming", href: "/admin/streaming", icon: Server },
   { title: "Wallets", href: "/admin/wallets", icon: Wallet },
   { title: "GST invoices", href: "/admin/invoices", icon: Receipt },
@@ -79,7 +79,7 @@ const adminNav: NavItem[] = [
 const studioNav: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
   { title: "Control Center", href: "/studio/control-center", icon: Radio },
-  { title: "Create Events", href: "/studio/create-events", icon: Calendar },
+  { title: "Create Event", href: "/studio/create-events", icon: Calendar },
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Packages", href: "/studio/packages", icon: Package },
   { title: "Analytics", href: "/studio/analytics", icon: BarChart3 },
@@ -91,7 +91,7 @@ const studioNav: NavItem[] = [
 const streamerNav: NavItem[] = [
   { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
   { title: "Control Center", href: "/streamer/control-center", icon: Radio },
-  { title: "Create Events", href: "/streamer/create-events", icon: Calendar },
+  { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
   { title: "Packages", href: "/streamer/packages", icon: Package },
   { title: "Analytics", href: "/streamer/analytics", icon: BarChart3 },

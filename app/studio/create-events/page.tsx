@@ -89,7 +89,7 @@ export default function StudioCalendarPage() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Create Events</h1>
+          <h1 className="text-3xl font-bold">Create Event</h1>
           <p className="text-muted-foreground">Manage your studio streaming schedule</p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function StudioCalendarPage() {
           <Button className="w-full shadow-sm" size="lg" asChild>
             <Link href="/studio/control-center/new">
                 <Plus className="mr-2 h-5 w-5" />
-                Schedule Studio
+                Create Event
             </Link>
           </Button>
 

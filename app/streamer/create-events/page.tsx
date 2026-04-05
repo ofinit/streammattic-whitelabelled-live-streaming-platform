@@ -91,7 +91,7 @@ export default function UserCalendarPage() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Create Events</h1>
+          <h1 className="text-3xl font-bold">Create Event</h1>
           <p className="text-muted-foreground">Manage your stream schedule visually</p>
         </div>
       </div>

@@ -16,9 +16,10 @@ import type { Branding, LandingTheme } from "@/lib/types"
 interface BrandingFormProps {
   branding: Branding
   onSave: (branding: Partial<Branding>) => void
+  onChange?: (branding: Branding) => void
 }
 
-export function BrandingForm({ branding, onSave }: BrandingFormProps) {
+export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) {
   const [formData, setFormData] = useState<Branding>(branding || {
     brandName: "",
     themeColor: "#10b981",
@@ -34,6 +35,10 @@ export function BrandingForm({ branding, onSave }: BrandingFormProps) {
       setFormData(branding)
     }
   }, [branding])
+
+  useEffect(() => {
+    onChange?.(formData)
+  }, [formData, onChange])
 
   const handleUpload = async (file: File, field: keyof Branding) => {
     const formData = new FormData()

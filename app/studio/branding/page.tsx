@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Header } from "@/components/dashboard/header"
@@ -12,7 +13,9 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StudioBrandingPage() {
   const { data, error, mutate, isLoading } = useSWR("/api/studio/branding", fetcher)
-  const branding = data?.branding || {
+  const [localBranding, setLocalBranding] = useState<Branding | null>(null)
+
+  const initialBranding = data?.branding || {
     id: "new",
     userId: "new",
     brandName: "",
@@ -20,6 +23,7 @@ export default function StudioBrandingPage() {
     accentColor: "#059669",
     metaTitle: "",
     metaDescription: "",
+    selectedTheme: "modern_emerald",
     heroImage: "",
     aboutImage: "",
     services: [],
@@ -31,13 +35,24 @@ export default function StudioBrandingPage() {
     updatedAt: new Date(),
   } as Branding
 
-  const handleSave = async (updates: Partial<Branding>) => {
+  useEffect(() => {
+    if (data?.branding) {
+      setLocalBranding(data.branding)
+    } else if (!isLoading && !data?.branding) {
+      setLocalBranding(initialBranding)
+    }
+  }, [data, isLoading])
+
+  const handleSave = async (updates?: Partial<Branding>) => {
+    const finalBranding = updates ? { ...localBranding, ...updates } : localBranding
+    if (!finalBranding) return
+
     try {
-      mutate({ branding: { ...branding, ...updates } }, false)
+      mutate({ branding: finalBranding }, false)
       const res = await fetch("/api/studio/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...branding, ...updates }),
+        body: JSON.stringify(finalBranding),
       })
       if (res.ok) {
         toast.success("Branding updated successfully")
@@ -50,21 +65,34 @@ export default function StudioBrandingPage() {
     }
   }
 
+  const currentBranding = localBranding || initialBranding
+
   return (
     <div className="flex flex-col">
       <Header title="Branding" subtitle="Customize your white-label platform" />
       <main className="flex-1 p-6">
-        {isLoading ? (
+        {isLoading && !localBranding ? (
           <div className="flex h-96 items-center justify-center">Loading branding...</div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              <BrandingForm branding={branding} onSave={handleSave} />
-              <LandingImageEditor branding={branding} onBrandingUpdate={handleSave} />
+              <BrandingForm 
+                branding={currentBranding} 
+                onSave={() => handleSave()} 
+                onChange={setLocalBranding}
+              />
+              <LandingImageEditor 
+                branding={currentBranding} 
+                onBrandingUpdate={(updates) => {
+                  const updated = { ...currentBranding, ...updates }
+                  setLocalBranding(updated)
+                  handleSave(updates)
+                }} 
+              />
             </div>
             <div className="lg:col-span-1">
               <div className="sticky top-24">
-                <BrandingPreview branding={branding} />
+                <BrandingPreview branding={currentBranding} />
               </div>
             </div>
           </div>

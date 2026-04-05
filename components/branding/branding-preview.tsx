@@ -4,9 +4,11 @@ import { Monitor, Smartphone, Camera, Film, Radio, Plane, Star, ExternalLink } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import Head from "next/head"
 import type { Branding, BrandingService } from "@/lib/types"
 import { mockBranding } from "@/lib/mock-data"
 import { BRANDING_PREVIEW_SESSION_KEY } from "@/lib/branding-preview-session"
+import { getThemeConfig } from "@/lib/landing-themes"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
@@ -33,9 +35,16 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
   const services = (branding.services || mockBranding.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
   const stats = branding.stats || mockBranding.stats || []
   const testimonial = (branding.testimonials || mockBranding.testimonials || [])[0]
+  const theme = getThemeConfig(branding.selectedTheme)
+  const fontName = theme.fontFamily.split(",")[0].replace(/'/g, "")
+  const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`
 
   return (
-    <Card>
+    <>
+      <Head>
+         <link rel="stylesheet" href={googleFontsUrl} />
+      </Head>
+      <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -88,14 +97,20 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
               </div>
 
               {/* Preview Content */}
-              <div className="bg-background overflow-y-auto" style={{ maxHeight: 500 }}>
+              <div 
+                className="bg-background overflow-y-auto" 
+                style={{ 
+                  maxHeight: 500,
+                  fontFamily: theme.fontFamily 
+                }}
+              >
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-border/40 px-6 py-3">
                   <div className="flex items-center gap-3">
                     {branding.companyLogo ? (
                       <img src={branding.companyLogo || "/placeholder.svg"} alt="Logo" className="h-6" />
                     ) : (
-                      <div className="font-bold text-base" style={{ color: branding.themeColor }}>
+                      <div className="font-bold text-base" style={{ color: branding.themeColor || theme.primaryColor }}>
                         {branding.brandName}
                       </div>
                     )}
@@ -104,7 +119,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                     <span className="text-xs text-muted-foreground">Services</span>
                     <span className="text-xs text-muted-foreground">Gallery</span>
                     <span className="text-xs text-muted-foreground">About</span>
-                    <span className="rounded px-2.5 py-1 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                    <span className="rounded px-2.5 py-1 text-xs text-white" style={{ backgroundColor: branding.themeColor || theme.primaryColor }}>
                       Contact Us
                     </span>
                     <span className="rounded border border-border px-2.5 py-1 text-xs text-foreground">
@@ -123,7 +138,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                     {branding.metaDescription || "Professional photography, videography and live streaming services."}
                   </p>
                   <div className="flex items-center justify-center gap-3">
-                    <span className="rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                    <span className="rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor || theme.primaryColor }}>
                       WhatsApp Us
                     </span>
                     <span className="rounded border border-border px-3 py-1.5 text-xs text-foreground">
@@ -146,7 +161,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                 {/* Services Mini */}
                 {services.length > 0 && (
                   <div className="px-6 pb-8">
-                    <p className="mb-1 text-[10px] font-medium uppercase tracking-widest text-center" style={{ color: branding.themeColor }}>
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-widest text-center" style={{ color: branding.themeColor || theme.primaryColor }}>
                       What We Offer
                     </p>
                     <h2 className="text-base font-bold text-foreground text-center mb-4">Our Services</h2>
@@ -155,7 +170,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                         const Icon = iconMap[service.icon] || Camera
                         return (
                           <div key={service.id} className="rounded-lg border border-border/50 bg-card p-3 text-center">
-                            <Icon className="mx-auto mb-1.5 h-4 w-4" style={{ color: branding.themeColor }} />
+                            <Icon className="mx-auto mb-1.5 h-4 w-4" style={{ color: branding.themeColor || theme.primaryColor }} />
                             <p className="text-[10px] font-medium text-foreground">{service.title}</p>
                           </div>
                         )
@@ -170,7 +185,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                     <div className="rounded-xl border border-border/50 bg-card/50 p-5 text-center">
                       <div className="mb-2 flex items-center justify-center gap-0.5">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-3 w-3 fill-current" style={{ color: branding.themeColor }} />
+                          <Star key={i} className="h-3 w-3 fill-current" style={{ color: branding.themeColor || theme.primaryColor }} />
                         ))}
                       </div>
                       <p className="text-xs text-foreground leading-relaxed italic">
@@ -202,10 +217,16 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                 </div>
 
                 {/* Preview Content */}
-                <div className="bg-background overflow-y-auto" style={{ maxHeight: 500 }}>
+                <div 
+                  className="bg-background overflow-y-auto" 
+                  style={{ 
+                    maxHeight: 500,
+                    fontFamily: theme.fontFamily
+                  }}
+                >
                   {/* Header */}
                   <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-                    <div className="font-bold text-sm" style={{ color: branding.themeColor }}>
+                    <div className="font-bold text-sm" style={{ color: branding.themeColor || theme.primaryColor }}>
                       {branding.brandName}
                     </div>
                     <span className="text-xs text-muted-foreground">Menu</span>
@@ -220,7 +241,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                     <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed">
                       {branding.metaDescription || "Professional photography and live streaming services."}
                     </p>
-                    <span className="inline-block rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor }}>
+                    <span className="inline-block rounded px-3 py-1.5 text-xs text-white" style={{ backgroundColor: branding.themeColor || theme.primaryColor }}>
                       Contact Us
                     </span>
 
@@ -246,7 +267,7 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
                           const Icon = iconMap[service.icon] || Camera
                           return (
                             <div key={service.id} className="rounded-lg border border-border/50 bg-card p-2.5 text-center">
-                              <Icon className="mx-auto mb-1 h-3.5 w-3.5" style={{ color: branding.themeColor }} />
+                              <Icon className="mx-auto mb-1 h-3.5 w-3.5" style={{ color: branding.themeColor || theme.primaryColor }} />
                               <p className="text-[9px] font-medium text-foreground">{service.title}</p>
                             </div>
                           )
@@ -271,5 +292,6 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
         </Tabs>
       </CardContent>
     </Card>
+    </>
   )
 }

@@ -108,38 +108,52 @@ export function StreamCreditPricingSummary({
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full min-w-[320px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/40 text-left">
-                <th className="px-3 py-2 font-medium">Stream type</th>
-                <th className="px-3 py-2 font-medium">Base / credit</th>
-                <th className="hidden sm:table-cell px-3 py-2 font-medium">Volume pricing</th>
+              <tr className="border-b border-border bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 font-bold">Stream type</th>
+                <th className="px-4 py-3 font-bold text-center">Base Price</th>
+                <th className="px-4 py-3 font-bold">Volume Packing / Discounts</th>
               </tr>
             </thead>
             <tbody>
               {enabledRows.map(({ key, label, description, icon: Icon }) => {
                 const config = streamTypePricing[key]
                 const tiers = config.volumeDiscountTiers ?? []
-                const minVol = tiers.length > 0 ? Math.min(...tiers.map((t) => t.minQty)) : null
+                
                 return (
-                  <tr key={key} className="border-b border-border/80 last:border-0">
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-foreground">{label}</p>
-                          <p className="text-xs text-muted-foreground">{description}</p>
+                  <tr key={key} className="border-b border-border/60 last:border-0 hover:bg-muted/10 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted/50">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground text-sm">{label}</p>
+                          <p className="text-[11px] text-muted-foreground truncate max-w-[120px] md:max-w-none">
+                            {description}
+                          </p>
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-semibold tabular-nums">
-                      {formatPaisa(config.basePrice)}
+                    <td className="px-4 py-4 text-center">
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        {formatPaisa(config.basePrice)}
+                      </span>
                     </td>
-                    <td className="hidden sm:table-cell px-3 py-2.5 text-muted-foreground">
-                      {minVol != null ? (
-                        <span>
-                          From {minVol}+ credits: lower per-credit rates — see Packages for tiers.
-                        </span>
+                    <td className="px-4 py-4">
+                      {tiers.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {tiers.map((tier, idx) => (
+                            <div 
+                              key={idx} 
+                              className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[10px] font-medium"
+                            >
+                              <span className="text-primary mr-1.5">{tier.minQty}+ Pack</span>
+                              <span className="font-bold text-foreground">{formatPaisa(tier.pricePerEvent)}</span>
+                            </div>
+                          ))}
+                        </div>
                       ) : (
-                        "—"
+                        <span className="text-xs text-muted-foreground italic">Standard base pricing only</span>
                       )}
                     </td>
                   </tr>

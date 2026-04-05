@@ -48,7 +48,6 @@ export default function AdminSettingsPage() {
   })
   const [domainSettings, setDomainSettings] = useState({
     platformDomain: "",
-    studioCnameTarget: "",
   })
   const [domainSaved, setDomainSaved] = useState(false)
 
@@ -83,14 +82,12 @@ export default function AdminSettingsPage() {
         const nameRow = data.settings.find((s) => s.key === "platform_name")
         const ipRow = data.settings.find((s) => s.key === "platform_a_record_ip")
         const domainRow = data.settings.find((s) => s.key === "platform_domain")
-        const targetRow = data.settings.find((s) => s.key === "platform_cname_target")
         
         setPlatformFaviconUrl(parseSettingsValue(favRow?.value))
         setPlatformName(parseSettingsValue(nameRow?.value))
         setPlatformIp(parseSettingsValue(ipRow?.value))
         setDomainSettings({
           platformDomain: parseSettingsValue(domainRow?.value),
-          studioCnameTarget: parseSettingsValue(targetRow?.value),
         })
       })
       .catch(() => {})
@@ -177,20 +174,10 @@ export default function AdminSettingsPage() {
         }),
       })
 
-      await fetch("/api/settings", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: "platform_cname_target",
-          value: domainSettings.studioCnameTarget.trim() || null,
-        }),
-      })
-
       setDomainSaved(true)
       setTimeout(() => setDomainSaved(false), 3000)
     } catch {
-      // Show error? 
+      // Error
     }
   }
 
@@ -553,31 +540,30 @@ export default function AdminSettingsPage() {
                   The main domain your admin panel and platform runs on.
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="cnameTarget">Studio CNAME Target (Subdomains)</Label>
-                <Input
-                  id="cnameTarget"
-                  placeholder={getPlatformCnameDisplay(domainSettings.studioCnameTarget)}
-                  value={domainSettings.studioCnameTarget}
-                  onChange={(e) => setDomainSettings({ ...domainSettings, studioCnameTarget: e.target.value })}
-                  className="bg-secondary border-0"
-                />
-                <p className="text-xs text-muted-foreground">
-                  The target (usually your app&apos;s main domain) that studios&apos; **subdomain** CNAME records will point to. 
-                  Apex domains (@/www) now use **A records** pointing to the Server IP above.
-                </p>
-              </div>
               <Separator />
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                <p className="text-xs font-semibold text-foreground">Manual DNS Configuration (Non-Cloudflare)</p>
+                <p className="text-xs font-semibold text-foreground">Records Configuration (Cloudflare example)</p>
                 <div className="space-y-4 font-mono text-xs text-muted-foreground">
                   <div className="space-y-1">
                     <p className="font-bold text-foreground opacity-60 text-[10px] uppercase">Routing Records</p>
-                    <div className="grid grid-cols-1 gap-1">
-                      <p>Type: <span className="text-primary font-bold">A</span> &nbsp;&nbsp;&nbsp; Host: <span className="text-foreground">@</span> &nbsp;&nbsp;&nbsp; Value: {getPlatformARecordDisplay(platformIp)}</p>
-                      <p>Type: <span className="text-primary font-bold">A</span> &nbsp;&nbsp;&nbsp; Host: <span className="text-foreground">www</span> &nbsp; Value: {getPlatformARecordDisplay(platformIp)}</p>
+                    <div className="rounded border bg-background/50 divide-y overflow-hidden border-border/50">
+                       <div className="flex px-3 py-2 bg-muted/50 font-bold border-b text-[10px] uppercase">
+                          <span className="w-12">Type</span>
+                          <span className="w-32">Name</span>
+                          <span className="flex-1">Content</span>
+                       </div>
+                       <div className="flex px-3 py-2 items-center">
+                          <span className="w-12 text-primary font-bold">A</span>
+                          <span className="w-32 text-foreground">clientbrand.com</span>
+                          <span className="flex-1">{getPlatformARecordDisplay(platformIp)}</span>
+                       </div>
+                       <div className="flex px-3 py-2 items-center">
+                          <span className="w-12 text-primary font-bold">A</span>
+                          <span className="w-32 text-foreground">www</span>
+                          <span className="flex-1">{getPlatformARecordDisplay(platformIp)}</span>
+                       </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-2 italic">* Use A records for both @ and www. For subdomains (e.g. live), create an A record for the 'live' host pointing to the same IP.</p>
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">* Both must be A records. Subdomains should also use A records to the same IP. CNAMEs are not required.</p>
                   </div>
                   <div className="pt-2 border-t border-border/50">
                     <p className="font-bold text-foreground opacity-60 text-[10px] uppercase">Verification Record</p>

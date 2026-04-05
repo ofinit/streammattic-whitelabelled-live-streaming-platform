@@ -66,6 +66,11 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    
+    // Only streamers are allowed to seed mock data
+    if (user.role !== "streamer") {
+      return NextResponse.json({ error: "Only streamer accounts can seed mock data" }, { status: 403 })
+    }
 
     const sql = getDb()
 
@@ -112,6 +117,11 @@ export async function DELETE(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    // Only streamers are allowed to clear mock data
+    if (user.role !== "streamer") {
+      return NextResponse.json({ error: "Only streamer accounts can manage mock data" }, { status: 403 })
+    }
 
     const sql = getDb()
     

@@ -50,7 +50,6 @@ import {
   PlayCircle,
   Film,
   Loader2,
-  Sparkles,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -81,9 +80,6 @@ export default function StudioEventsPage() {
     scheduledAt?: string
     timezone?: string
   } | undefined>()
-
-  const [isSeeding, setIsSeeding] = useState(false)
-  const [isClearing, setIsClearing] = useState(false)
 
   // Open dialog when arriving from /studio/control-center/new
   useEffect(() => {
@@ -353,44 +349,6 @@ export default function StudioEventsPage() {
       mutate()
     } catch {
       toast.error("Failed to delete event")
-    }
-  }
-
-  const handleSeedMockData = async () => {
-    try {
-      setIsSeeding(true)
-      const res = await fetch("/api/events/seed", { method: "POST" })
-      const resData = await res.json()
-      if (!res.ok) {
-        toast.error(resData.error || "Failed to seed mock data")
-        return
-      }
-      toast.success("Mock data seeded successfully!")
-      mutate()
-    } catch (error) {
-      console.error("Seed error:", error)
-      toast.error("An error occurred while seeding mock data")
-    } finally {
-      setIsSeeding(false)
-    }
-  }
-
-  const handleClearMockData = async () => {
-    try {
-      setIsClearing(true)
-      const res = await fetch("/api/events/seed", { method: "DELETE" })
-      const resData = await res.json()
-      if (!res.ok) {
-        toast.error(resData.error || "Failed to clear mock data")
-        return
-      }
-      toast.success(resData.message || "Mock data cleared")
-      mutate()
-    } catch (error) {
-      console.error("Clear error:", error)
-      toast.error("An error occurred while clearing mock data")
-    } finally {
-      setIsClearing(false)
     }
   }
 
@@ -688,24 +646,10 @@ export default function StudioEventsPage() {
           <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
-        <div className="flex items-center gap-2">
-          {events.some((e: any) => e.isMock) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearMockData}
-              disabled={isClearing}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              {isClearing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              Clear Mock Data
-            </Button>
-          )}
-          <Button onClick={handleCreateEvent}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
-        </div>
+        <Button onClick={handleCreateEvent}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Event
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -830,28 +774,10 @@ export default function StudioEventsPage() {
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No {tab === "all" ? "" : tab} events found</p>
-                    <div className="flex flex-col items-center gap-3 mt-6">
-                      <Button variant="outline" className="bg-transparent" onClick={handleCreateEvent}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Event
-                      </Button>
-                      {tab === "all" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary hover:bg-primary/10"
-                          onClick={handleSeedMockData}
-                          disabled={isSeeding}
-                        >
-                          {isSeeding ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 mr-2" />
-                          )}
-                          Seed Mock Data
-                        </Button>
-                      )}
-                    </div>
+                    <Button variant="outline" className="mt-4 bg-transparent" onClick={handleCreateEvent}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Event
+                    </Button>
                   </div>
                 )}
               </div>

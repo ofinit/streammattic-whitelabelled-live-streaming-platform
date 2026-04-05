@@ -120,7 +120,7 @@ export function EventPackPurchaseDialog({
               onValueChange={(v) => setSelectedValidity(Number(v))}
               className="space-y-2"
             >
-              {/* 30 days -- free */}
+              {/* 30 days -- default validity */}
               <label
                 htmlFor="validity-30"
                 className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${

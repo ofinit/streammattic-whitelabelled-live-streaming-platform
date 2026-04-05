@@ -142,7 +142,14 @@ export const POST = withAuth(async (user, request) => {
         if (orderType === "studio_upgrade") {
           await tx.query(`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = $1`, [userId])
           
-          // Notification
+          // F. Initialize branding if not exists
+          await tx.query(`
+            INSERT INTO studio_branding (user_id, platform_name)
+            VALUES ($1, 'My Studio')
+            ON CONFLICT (user_id) DO NOTHING
+          `, [userId])
+
+          // G. Notification
           await tx.query(`
             INSERT INTO notifications (user_id, type, title, message)
             VALUES ($1, 'payment', 'Welcome to Studio!', 'Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding.')

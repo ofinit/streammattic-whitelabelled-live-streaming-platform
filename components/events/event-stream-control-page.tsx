@@ -197,6 +197,30 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
   const eventSlug = (event as Record<string, unknown> | null)?.slug as string | undefined
   const eventWatchPath = `/${eventSlug || eventId}`
 
+  /**
+   * Determine the public-facing share URL.
+   * If the event is configured for custom domains and a verified one belongs to the studio,
+   * we use that. Otherwise, we fallback to the current platform host.
+   */
+  const getEventWatchUrl = () => {
+    if (typeof window === "undefined") return eventWatchPath
+    const ev = event as LiveEvent
+    if (ev.useCustomDomain && ev.primaryDomain) {
+      return `https://${ev.primaryDomain}${eventWatchPath}`
+    }
+    return `${window.location.origin}${eventWatchPath}`
+  }
+
+  const getEventEmbedUrl = () => {
+    if (typeof window === "undefined") return `/embed/${eventId}`
+    const ev = event as LiveEvent
+    if (ev.useCustomDomain && ev.primaryDomain) {
+      return `https://${ev.primaryDomain}/embed/${eventId}`
+    }
+    return `${window.location.origin}/embed/${eventId}`
+  }
+
+
   const handleToggleRecording = async () => {
     const next = !showRecording
     try {
@@ -217,7 +241,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
   }
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}${eventWatchPath}`)
+    await navigator.clipboard.writeText(getEventWatchUrl())
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
   }
@@ -286,7 +310,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(eventWatchPath, "_blank")}
+                onClick={() => window.open(getEventWatchUrl(), "_blank")}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 View Page
@@ -472,7 +496,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
                       <p className="text-sm text-muted-foreground">Event Page URL</p>
                       <div className="flex gap-2">
                         <code className="flex-1 rounded-lg bg-muted/50 px-3 py-2 text-sm font-mono">
-                          {typeof window !== "undefined" ? `${window.location.origin}${eventWatchPath}` : eventWatchPath}
+                          {getEventWatchUrl()}
                         </code>
                         <Button variant="outline" size="sm" onClick={copyLink}>
                           {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -484,7 +508,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Embed Code</p>
                         <code className="block rounded-lg bg-muted/50 px-3 py-2 text-xs font-mono overflow-x-auto">
-                          {`<iframe src="${typeof window !== "undefined" ? window.location.origin : ""}/embed/${eventId}" width="640" height="360" frameborder="0" allowfullscreen></iframe>`}
+                          {`<iframe src="${getEventEmbedUrl()}" width="640" height="360" frameborder="0" allowfullscreen></iframe>`}
                         </code>
                       </div>
                     )}
@@ -513,12 +537,13 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
             {/* YouTube Live API Panel */}
             {event.streamType === "youtube_api" && (
               <YouTubeInfoPanel
-                broadcastId={`broadcast_${eventId}`}
-                streamId={`stream_${eventId}`}
+                channelDbId={(event as any).youtubeChannelId || ""}
+                broadcastId={event.youtubeBroadcastId || null}
+                streamId={event.youtubeStreamId || null}
                 rtmpUrl="rtmp://a.rtmp.youtube.com/live2"
                 streamKey={stream?.streamKey || null}
                 channelName={event.youtubeChannelName || "Connected Channel"}
-                broadcastStatus={isLive ? "live" : isCompleted ? "complete" : "created"}
+                broadcastStatus={(isLive ? "live" : isCompleted ? "complete" : "created") as any}
                 healthStatus={isLive ? "good" : "noData"}
                 youtubeUrl={event.youtubeUrl}
               />
@@ -538,7 +563,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
             )}
 
             {/* Third Party Embed Panel */}
-            {(event.streamType === "embedded" || event.streamType === "third_party") && (
+            {event.streamType === "third_party" && (
               <EmbedInfoPanel
                 embedUrl={event.hlsUrl || null}
                 embedType="third_party"

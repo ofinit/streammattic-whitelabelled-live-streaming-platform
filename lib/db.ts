@@ -38,16 +38,33 @@ async function sql(
     params = values.length === 1 && Array.isArray(values[0]) ? (values[0] as unknown[]) : values
   } else {
     // Tagged template literal: sql`SELECT ... ${value1} ... ${value2}`
-    text = strings.reduce(
-      (acc: string, part: string, i: number) => acc + part + (i < values.length ? `$${i + 1}` : ""),
-      ""
-    )
-    params = values
+    text = ""
+    params = []
+    let pCount = 1
+
+    for (let i = 0; i < strings.length; i++) {
+      text += strings[i]
+      if (i < values.length) {
+        const val = values[i]
+        if (val && typeof val === "object" && "__is_raw_sql" in val) {
+          text += (val as { __is_raw_sql: true; value: string }).value
+        } else {
+          text += `$${pCount++}`
+          params.push(val)
+        }
+      }
+    }
   }
 
   const result = await getPool().query(text, params)
   return (result.rows || []) as Record<string, unknown>[]
 }
+
+/** 
+ * Use for raw identifiers or column names (DANGER: only use with trusted keys).
+ * This bypasses parameterization for the given value.
+ */
+sql.unsafe = (val: string) => ({ __is_raw_sql: true, value: val })
 
 export function getDb() {
   if (!DATABASE_URL) {

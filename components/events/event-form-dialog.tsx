@@ -271,7 +271,7 @@ type ValidityStreamGroup = "ingest" | "embed"
 
 function streamValidityGroup(streamType: string): ValidityStreamGroup {
   const t = streamType || ""
-  if (t === "youtube" || t === "embedded") return "embed"
+  if (t === "youtube_api" || t === "youtube_embed" || t === "third_party") return "embed"
   return "ingest"
 }
 
@@ -279,8 +279,8 @@ function streamTypeLabelForSettings(streamType: string): string {
   const t = streamType || ""
   if (!t || t === "rtmp") return "RTMP / OBS encoder"
   if (t === "youtube_api") return "YouTube API (ingest)"
-  if (t === "youtube") return "YouTube embed (URL)"
-  if (t === "embedded") return "Third-party embed"
+  if (t === "youtube_embed") return "YouTube embed (URL)"
+  if (t === "third_party") return "Third-party embed"
   if (t === "hls") return "HLS"
   return "Stream"
 }
@@ -310,6 +310,8 @@ interface EventFormDialogProps {
   skipCreditsValidation?: boolean
   /** When backend returns 409 (duplicate slug), parent sets this so we show inline error and switch to Details tab */
   externalSlugError?: string | null
+  /** Studio's verified primary domain for URL preview */
+  primaryDomain?: string | null
 }
 
 export function EventFormDialog({
@@ -324,6 +326,7 @@ export function EventFormDialog({
   youtubeOwnerType,
   skipCreditsValidation = false,
   externalSlugError,
+  primaryDomain,
 }: EventFormDialogProps) {
   const isEditing = !!event
 
@@ -426,6 +429,7 @@ export function EventFormDialog({
     rtmpUrl: "",
     streamKey: "",
     showScheduledPage: false,
+    useCustomDomain: true,
   })
 
   // Slug state
@@ -437,8 +441,8 @@ export function EventFormDialog({
 
   const crewPathSegment =
     slug.trim() ||
-    (event && typeof (event as { slug?: string }).slug === "string" ? (event as { slug: string }).slug.trim() : "") ||
-    (event && typeof (event as { id?: string }).id === "string" ? String((event as { id: string }).id).trim() : "") ||
+    (event && typeof (event as any).slug === "string" ? (event as any).slug.trim() : "") ||
+    (event && typeof event.id === "string" ? String(event.id).trim() : "") ||
     ""
   const [crewPageOrigin, setCrewPageOrigin] = useState("")
   useEffect(() => {
@@ -1009,27 +1013,25 @@ export function EventFormDialog({
           title: event.title,
           subtitle: event.subtitle || "",
           description: event.description || "",
-          // If streamType is the default "rtmp", treat it as not explicitly selected in the UI
-          // so that events created without choosing a stream type don't show RTMP as preselected.
           streamType: (event.streamType === "rtmp" ? "" : event.streamType) as StreamType,
           youtubeUrl: event.youtubeUrl || "",
           embedCode: event.embedCode || "",
-          scheduledAt: event.scheduledAt ? new Date(event.scheduledAt).toISOString().slice(0, 16) : "",
+          scheduledAt: event.scheduledAt ? String(event.scheduledAt).slice(0, 16) : "",
           isPasswordProtected: event.isPasswordProtected,
           password: event.password || "",
           allowChat: event.allowChat,
           allowReactions: event.allowReactions,
-          showScheduledPage: (event as Record<string, unknown>).showScheduledPage === true,
-          templateId: ((event as any).templateId ?? (event as any).templateData?.templateId) || "tpl-default",
+          showScheduledPage: (event as any).show_scheduled_page === true || (event as any).showScheduledPage === true,
+          templateId: ((event as any).templateId ?? (event as any).template_id ?? (event as any).templateData?.templateId) || "tpl-default",
           rtmpUrl: event.rtmpUrl || "",
           streamKey: event.streamKey || "",
+          useCustomDomain: (event as any).use_custom_domain === true || (event as any).useCustomDomain === true,
         })
-        // Load simulcast config if editing
         if (event.simulcastConfig) {
           setSimulcastConfig(event.simulcastConfig)
         }
-        setTemplateData(parseTemplateDataFromEvent((event as Record<string, unknown>).templateData))
-        const ev = event as Record<string, unknown>
+        setTemplateData(parseTemplateDataFromEvent((event as any).templateData))
+        const ev = event as any
         setHeroImageUrl((ev.heroImageUrl as string) || "")
         setPlayerImageUrl((ev.playerImageUrl as string) || "")
         setPhotoGalleryUrls(parsePhotoGalleryUrls(ev.photoGalleryUrls))
@@ -1037,7 +1039,7 @@ export function EventFormDialog({
         setPhotographerContact(parsePhotographerContact(ev.photographerContact))
         setCrewPin("") // never load PIN
         // Pre-fill slug when editing
-        const existingSlug = ((event as unknown as Record<string, unknown>).slug as string) || ""
+        const existingSlug = ((event as any).slug as string) || ""
         setSlug(existingSlug)
         setSlugTouched(!!existingSlug)
         setSlugStatus(existingSlug ? "available" : "idle")
@@ -1062,6 +1064,8 @@ export function EventFormDialog({
           templateId: "tpl-default",
           rtmpUrl: "",
           streamKey: "",
+          showScheduledPage: false,
+          useCustomDomain: youtubeOwnerType === "studio", // Default to true if in studio mode
         })
         setHeroImageUrl("")
         setPlayerImageUrl("")
@@ -1102,6 +1106,7 @@ export function EventFormDialog({
           setSlugTouched(false)
           setSlugStatus("idle")
           setSlugError("")
+          setFormData((prev) => ({ ...prev, useCustomDomain: true }))
         }
       }
       setAdditionalDates([])
@@ -1349,11 +1354,11 @@ export function EventFormDialog({
       return { urls: [url] }
     }
 
-    const parseUploadJson = async (res: Response) => {
+    const parseUploadJson = async (res: Response): Promise<{ urls?: string[]; error?: string; partialErrors?: string[] }> => {
       try {
-        return (await res.json()) as { urls?: string[]; error?: string; partialErrors?: string[] }
+        return (await res.json())
       } catch {
-        return { error: `Invalid response (${res.status})` } as { error: string }
+        return { error: `Invalid response (${res.status})` }
       }
     }
 
@@ -1363,11 +1368,11 @@ export function EventFormDialog({
     const res = await fetch("/api/upload", { method: "POST", body: form })
     const data = await parseUploadJson(res)
     if (res.ok) {
-      const urls = Array.isArray(data.urls)
+      const urls = "urls" in data && Array.isArray(data.urls)
         ? data.urls.filter((u): u is string => typeof u === "string" && u.length > 0)
         : []
       if (urls.length > 0) {
-        return { urls, partialErrors: data.partialErrors }
+        return { urls, partialErrors: "partialErrors" in data ? data.partialErrors : undefined }
       }
     }
 
@@ -1544,8 +1549,8 @@ export function EventFormDialog({
       slug: slug || undefined,
       scheduledAt: scheduledAtUtc,
       timezone: formData.scheduledAt ? timezone : undefined,
-      youtubeUrl: formData.streamType === "youtube" ? formData.youtubeUrl : undefined,
-      embedCode: formData.streamType === "embedded" ? formData.embedCode : undefined,
+      youtubeUrl: (formData.streamType === "youtube_api" || formData.streamType === "youtube_embed") ? formData.youtubeUrl : undefined,
+      embedCode: formData.streamType === "third_party" ? formData.embedCode : undefined,
       isPasswordProtected: formData.isPasswordProtected,
       password: formData.isPasswordProtected ? formData.password : undefined,
       allowChat: formData.allowChat,
@@ -1579,6 +1584,7 @@ export function EventFormDialog({
                 })()
               : undefined,
       crewPin: crewPin.trim() || undefined,
+      useCustomDomain: formData.useCustomDomain,
     }
 
     const needsCredentials = !isEditing && (formData.streamType === "rtmp" || formData.streamType === "youtube_api") && !crewPin.trim()
@@ -1777,7 +1783,7 @@ export function EventFormDialog({
                 <div className="relative">
                   <div className="flex items-center rounded-md border border-input bg-secondary overflow-hidden focus-within:ring-1 focus-within:ring-ring">
                     <span className="px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-r border-input whitespace-nowrap select-none">
-                      {typeof window !== "undefined" ? window.location.host : "yourdomain.com"}/
+                      {formData.useCustomDomain && primaryDomain ? primaryDomain : (typeof window !== "undefined" ? window.location.host : "streamlivee.com")}/
                     </span>
                     <input
                       id="slug"
@@ -1802,6 +1808,23 @@ export function EventFormDialog({
                     </span>
                   </div>
                 </div>
+
+                {(youtubeOwnerType === "studio" || youtubeOwnerType === "admin") && primaryDomain && (
+                  <div className="flex items-center justify-between py-1 px-1 mt-1 bg-muted/30 rounded-md border border-border/50">
+                    <div className="space-y-0.5">
+                      <Label className="text-[11px] font-medium flex items-center gap-1.5">
+                        <Globe className="h-3 w-3 text-primary" />
+                        Custom Domain URL
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground leading-none">Use your verified brand domain: {primaryDomain}</p>
+                    </div>
+                    <Switch
+                      checked={formData.useCustomDomain}
+                      onCheckedChange={(checked) => setFormData({ ...formData, useCustomDomain: checked })}
+                      className="scale-75 origin-right"
+                    />
+                  </div>
+                )}
                 {slugStatus === "available" && (
                   <p className="text-xs text-emerald-500 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Available</p>
                 )}
@@ -2610,7 +2633,7 @@ export function EventFormDialog({
                 )}
               </div>
 
-              {isEditing && formData.streamType === "rtmp" && ((event as Record<string, unknown>)?.hasCrewPin || crewPin.trim()) && (
+              {isEditing && formData.streamType === "rtmp" && ((event as any)?.hasCrewPin || crewPin.trim()) && (
                   <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
                       <Lock className="h-4 w-4" />
@@ -2637,7 +2660,7 @@ export function EventFormDialog({
               {isEditing &&
                 showRtmpCredentials &&
                 formData.streamType === "rtmp" &&
-                !(event as Record<string, unknown>)?.hasCrewPin &&
+                !(event as any)?.hasCrewPin &&
                 !crewPin.trim() && (
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
@@ -2746,7 +2769,7 @@ export function EventFormDialog({
                           <Youtube className="h-4 w-4 text-red-500" />
                           YouTube API – Stream credentials
                         </h4>
-                        {((event as Record<string, unknown>)?.hasCrewPin || crewPin.trim()) ? (
+                        {((event as any)?.hasCrewPin || crewPin.trim()) ? (
                           <>
                             <Alert className="border-primary/50 bg-primary/5">
                               <Lock className="h-4 w-4" />
@@ -2862,7 +2885,7 @@ export function EventFormDialog({
                 </>
               )}
 
-              {formData.streamType === "youtube" && (
+              {formData.streamType === "youtube_embed" && (
                 <div className="space-y-2">
                   <Label htmlFor="youtubeUrl">YouTube Live URL *</Label>
                   <Input
@@ -2874,7 +2897,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {formData.streamType === "embedded" && (
+              {formData.streamType === "third_party" && (
                 <div className="space-y-2">
                   <Label htmlFor="embedCode">Embed Code *</Label>
                   <Textarea

@@ -8,10 +8,10 @@ export type UserStatus = "active" | "inactive" | "suspended"
 export type OrderStatus = "completed" | "failed" | "cancelled"
 
 // Event Status
-export type EventStatus = "draft" | "scheduled" | "live" | "completed" | "cancelled"
+export type EventStatus = "draft" | "scheduled" | "live" | "completed" | "cancelled" | "on_break" | "ended"
 
 // Stream Type
-export type StreamType = "rtmp" | "hls" | "youtube" | "embedded"
+export type StreamType = "rtmp" | "hls" | "youtube_api" | "youtube_embed" | "third_party"
 
 // Transaction Type
 export type TransactionType = "credit" | "debit" | "transfer" | "purchase" | "refund"
@@ -229,6 +229,10 @@ export interface LiveEvent {
   simulcastConfig?: SimulcastConfig
   /** Resolved for watch UI: platform → owning studio → default (set by /api/watch) */
   faviconHref?: string
+  /** If true, this event should be shared via the studio's custom domain if available */
+  useCustomDomain?: boolean
+  /** The verified primary domain of the studio owning this event */
+  primaryDomain?: string | null
 }
 
 // Event Analytics

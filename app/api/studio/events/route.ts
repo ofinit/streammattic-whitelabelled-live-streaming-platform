@@ -191,6 +191,8 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
+
 
     const subtitleValue =
       subtitle !== undefined && subtitle !== null ? (String(subtitle).trim() || null) : null
@@ -202,7 +204,7 @@ export async function POST(req: NextRequest) {
         is_password_protected, event_password, allow_chat, allow_reactions,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
         validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
-        photographer_logo_url, photographer_contact, crew_pin_hash
+        photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
         ${dbStreamType}, ${streamKey},
@@ -219,7 +221,8 @@ export async function POST(req: NextRequest) {
         ${templateDataJson}::jsonb,
         ${validityExpiresAtValue},
         ${heroImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
-        ${photographerLogoUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash}
+        ${photographerLogoUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
+        ${user.role === 'studio'}
       )
       RETURNING *
     `
@@ -292,6 +295,8 @@ export async function PUT(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
+
 
     const existingRow = existing[0] as Record<string, unknown>
     const existingTemplateData = existingRow.template_data as Record<string, unknown> | null | undefined

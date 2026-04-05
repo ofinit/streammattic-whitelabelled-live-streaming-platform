@@ -68,6 +68,8 @@ export default function StudioEventsPage() {
   const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
 
   const [searchQuery, setSearchQuery] = useState("")
+  const { data: brandingData } = useSWR(studioId ? "/api/studio/branding" : null, fetcher)
+  const primaryDomain = brandingData?.branding?.primary_domain || null
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [editingEvent, setEditingEvent] = useState<LiveEvent | undefined>()
   const [eventDialogInitialTab, setEventDialogInitialTab] = useState<string | undefined>()
@@ -459,7 +461,7 @@ export default function StudioEventsPage() {
     }
   }
 
-  const getEventPublicUrl = (event: Record<string, unknown>) => {
+  const getEventPublicUrl = (event: any) => {
     const path = `/${(event.slug as string) || event.id}`
     if (typeof window !== "undefined") {
       return `${window.location.origin}${path}`
@@ -467,7 +469,7 @@ export default function StudioEventsPage() {
     return path
   }
 
-  const renderEventCard = (event: Record<string, unknown>) => (
+  const renderEventCard = (event: any) => (
     <div
       key={event.id as string}
       className="flex flex-wrap items-center gap-3 gap-y-2 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
@@ -767,7 +769,7 @@ export default function StudioEventsPage() {
                     </div>
                   ))
                 ) : tabEvents.length > 0 ? (
-                  tabEvents.map((event: Record<string, unknown>) => renderEventCard(event))
+                  tabEvents.map((event: any) => renderEventCard(event))
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -808,6 +810,7 @@ export default function StudioEventsPage() {
         youtubeOwnerId={studioId}
         youtubeOwnerType="studio"
         externalSlugError={saveError?.slug ?? undefined}
+        primaryDomain={primaryDomain}
       />
 
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>

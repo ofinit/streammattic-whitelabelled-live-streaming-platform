@@ -22,8 +22,9 @@ export async function GET(
              e.allow_chat, e.allow_reactions, e.is_password_protected,
              e.timezone, e.show_scheduled_page,
              COALESCE(e.show_recording, false) AS show_recording,
-             e.template_id, e.template_data,
+             e.template_id, e.template_data, e.use_custom_domain,
              u.name AS studio_name,
+             (SELECT domain FROM domains WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true LIMIT 1) AS primary_domain,
              COALESCE((
                SELECT json_agg(
                  json_build_object(
@@ -55,8 +56,9 @@ export async function GET(
              e.validity_expires_at,
              e.hero_image_url, e.player_image_url, e.photo_gallery_urls,
              e.photographer_logo_url, e.photographer_contact,
-             e.template_id, e.template_data,
+             e.template_id, e.template_data, e.use_custom_domain,
              u.name AS studio_name,
+             (SELECT domain FROM domains WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true LIMIT 1) AS primary_domain,
              COALESCE((
                SELECT json_agg(
                  json_build_object(

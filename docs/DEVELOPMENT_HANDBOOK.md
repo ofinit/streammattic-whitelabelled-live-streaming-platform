@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-05T14:52:11+05:30` |
-| Git revision | `4230168` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-05T15:47:25+05:30` |
+| Git revision | `8589163` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -114,6 +114,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/domains/cloudflare/status/route.ts` | `/api/domains/cloudflare/status` |
 | `app/api/events/[id]/route.ts` | `/api/events/[id]` |
 | `app/api/events/route.ts` | `/api/events` |
+| `app/api/events/seed/route.ts` | `/api/events/seed` |
 | `app/api/favicon/resolve/route.ts` | `/api/favicon/resolve` |
 | `app/api/generate-image/route.ts` | `/api/generate-image` |
 | `app/api/gst/config/route.ts` | `/api/gst/config` |

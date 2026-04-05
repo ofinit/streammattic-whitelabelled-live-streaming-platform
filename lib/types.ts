@@ -243,6 +243,7 @@ export interface LiveEvent {
   useCustomDomain?: boolean
   /** The verified primary domain of the studio owning this event */
   primaryDomain?: string | null
+  isMock?: boolean
   slug?: string
   publicUrl?: string
 }

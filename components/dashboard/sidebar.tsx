@@ -62,8 +62,8 @@ const adminNav: NavItem[] = [
   { title: "Studios", href: "/admin/studios", icon: Building2 },
   { title: "Streamers", href: "/admin/streamers", icon: Users },
   { title: "Pricing", href: "/admin/packages", icon: Package },
-  { title: "Events", href: "/admin/events", icon: Radio },
-  { title: "Event Calendar", href: "/admin/calendar", icon: Calendar },
+  { title: "Control Center", href: "/admin/events", icon: Radio },
+  { title: "Create Events", href: "/admin/calendar", icon: Calendar },
   { title: "Streaming", href: "/admin/streaming", icon: Server },
   { title: "Wallets", href: "/admin/wallets", icon: Wallet },
   { title: "GST invoices", href: "/admin/invoices", icon: Receipt },
@@ -78,8 +78,8 @@ const adminNav: NavItem[] = [
 
 const studioNav: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
-  { title: "Events", href: "/studio/events", icon: Radio },
-  { title: "Event Calendar", href: "/studio/calendar", icon: Calendar },
+  { title: "Control Center", href: "/studio/events", icon: Radio },
+  { title: "Create Events", href: "/studio/calendar", icon: Calendar },
   { title: "Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "GST invoices", href: "/studio/invoices", icon: Receipt },
   { title: "Packages", href: "/studio/packages", icon: Package },
@@ -92,9 +92,8 @@ const studioNav: NavItem[] = [
 
 const streamerNav: NavItem[] = [
   { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
-  { title: "My Events", href: "/streamer/events", icon: Radio },
-  { title: "Schedule Event", href: "/streamer/events/new", icon: Calendar },
-  { title: "Event Calendar", href: "/streamer/calendar", icon: Calendar },
+  { title: "Control Center", href: "/streamer/events", icon: Radio },
+  { title: "Create Events", href: "/streamer/calendar", icon: Calendar },
   { title: "Wallet & transactions", href: "/streamer/wallet", icon: Wallet },
   { title: "GST invoices", href: "/streamer/invoices", icon: Receipt },
   { title: "Packages", href: "/streamer/packages", icon: Package },

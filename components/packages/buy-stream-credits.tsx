@@ -438,8 +438,8 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           <CardContent>
             <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
               <div>
-                <p className="font-semibold">AI Image Generation (Flux Schnell)</p>
-                <p className="text-sm text-muted-foreground">Generate high-fidelity event thumbnails via prompt.</p>
+                <p className="font-semibold">AI Image Generation</p>
+                <p className="text-sm text-muted-foreground">Generate high-fidelity event images via prompt.</p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-lg font-bold">{formatPaisa(aiImagePricing.price)}</p>

@@ -33,7 +33,6 @@ const statusFilters = [
   { id: "live", label: "Live", color: "bg-red-500" },
   { id: "scheduled", label: "Scheduled", color: "bg-blue-500" },
   { id: "completed", label: "Completed", color: "bg-emerald-500" },
-  { id: "cancelled", label: "Cancelled", color: "bg-muted-foreground" },
 ]
 
 export default function StudioCalendarPage() {
@@ -44,8 +43,7 @@ export default function StudioCalendarPage() {
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     live: true,
     scheduled: true,
-    completed: true,
-    cancelled: false
+    completed: true
   })
 
   // Get events for this studio
@@ -119,26 +117,35 @@ export default function StudioCalendarPage() {
           </Card>
 
           <div className="space-y-4 px-1">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Filters</h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Filters</h3>
+                <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                    {filteredEvents.length} / {relevantEvents.length} Total
+                </span>
+            </div>
             <div className="space-y-3">
-              {statusFilters.map(filter => (
-                <div key={filter.id} className="flex items-center space-x-3">
-                  <Checkbox 
-                    id={`filter-${filter.id}`} 
-                    checked={activeFilters[filter.id]}
-                    onCheckedChange={(checked) => toggleFilter(filter.id, checked === true)}
-                  />
-                  <div className="flex items-center gap-2">
-                     <div className={`w-3 h-3 rounded-full ${filter.color}`} />
-                     <label 
-                        htmlFor={`filter-${filter.id}`} 
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                     >
-                       {filter.label}
-                     </label>
+              {statusFilters.map(filter => {
+                const count = relevantEvents.filter(e => e.status.toLowerCase() === filter.id).length;
+                return (
+                  <div key={filter.id} className="flex items-center space-x-3">
+                    <Checkbox 
+                      id={`filter-${filter.id}`} 
+                      checked={activeFilters[filter.id]}
+                      onCheckedChange={(checked) => toggleFilter(filter.id, checked === true)}
+                    />
+                    <div className="flex items-center gap-2 flex-1">
+                       <div className={`w-3 h-3 rounded-full ${filter.color}`} />
+                       <label 
+                          htmlFor={`filter-${filter.id}`} 
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                       >
+                         {filter.label}
+                       </label>
+                       <span className="text-xs text-muted-foreground">{count}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

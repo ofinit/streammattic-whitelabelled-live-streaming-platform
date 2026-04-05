@@ -33,6 +33,7 @@ RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/scripts ./scripts
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
 
 USER nextjs

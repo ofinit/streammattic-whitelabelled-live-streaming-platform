@@ -1,66 +1,78 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
+import { eventFormSelectableTemplates } from "@/lib/mock-data"
 
 function generateStreamKey() {
   return `sk_mock_${Math.random().toString(36).substring(2, 18)}`
 }
 
-const MOCK_EVENTS = [
-  {
-    title: "Enchanted Garden Wedding",
-    category: "Wedding",
-    templateId: "tpl-wedding-garden",
-    description: "A beautiful mock wedding event in a lush garden setting. Experience the premium watch page with live chat and reactions.",
-    streamType: "rtmp",
-    templateData: {
-      brideName: "Sophia",
-      groomName: "James",
-      venueName: "Royal Garden Estates",
-      familyNames: "The Andersons & The Smiths",
-      customMessage: "Thank you for joining our special day!",
-    },
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "-and-")   // Replace & with 'and'
+    .replace(/\//g, "-")      // Replace / with -
+    .replace(/[-\s]+/g, "-")  // Replace spaces and dashes with a single dash
+    .replace(/[^\w-]+/g, "")  // Remove all remaining non-word chars except dashes
+    .replace(/--+/g, "-")     // Final pass to collapse multiple dashes
+    .replace(/^-+|-+$/g, "")  // Remove leading/trailing dashes
+}
+
+const CATEGORY_SAMPLE_DATA: Record<string, any> = {
+  Wedding: {
+    brideName: "Sophia",
+    groomName: "James",
+    venueName: "Royal Garden Estates",
+    familyNames: "The Andersons & The Smiths",
+    customMessage: "Thank you for joining our special day!",
   },
-  {
-    title: "Global Tech Summit 2025",
-    category: "Corporate",
-    templateId: "tpl-corporate-tech-forward",
-    description: "Preview the corporate template with professional speaker profiles and company branding.",
-    streamType: "youtube_api",
-    templateData: {
-      companyName: "TechFlow Systems",
-      speakerName: "Dr. Elena Vance",
-      speakerTitle: "Chief Innovation Officer",
-      eventTagline: "Future of Decentralized AI",
-    },
+  Corporate: {
+    companyName: "TechFlow Systems",
+    speakerName: "Dr. Elena Vance",
+    speakerTitle: "Chief Innovation Officer",
+    eventTagline: "Future of Decentralized AI",
   },
-  {
-    title: "Friday Night Live - Indie Session",
-    category: "Entertainment",
-    templateId: "tpl-concert",
-    description: "See how the concert template highlights the artist and venue with a vibrant theme.",
-    streamType: "rtmp",
-    templateData: {
-      artistName: "The Midnight Echoes",
-      venueName: "Neon Blue Lounge",
-      tourName: "Acoustic Journeys Tour",
-    },
+  Entertainment: {
+    artistName: "The Midnight Echoes",
+    venueName: "Neon Blue Lounge",
+    tourName: "Acoustic Journeys Tour",
   },
-  {
-    title: "Morning Yoga & Mindfulness",
-    category: "Health",
-    templateId: "tpl-yoga",
-    description: "A serene mock event showcasing the Health/Yoga template for wellness streams.",
-    streamType: "rtmp",
-    templateData: {
-      instructorName: "Maya Rivers",
-      sessionType: "Vinyasa Flow",
-      studioName: "Inner Peace Studio",
-      sessionDuration: "60 mins",
-      level: "All Levels",
-    },
+  Health: {
+    instructorName: "Maya Rivers",
+    sessionType: "Vinyasa Flow",
+    studioName: "Inner Peace Studio",
+    sessionDuration: "60 mins",
+    level: "All Levels",
   },
-]
+  Education: {
+    schoolName: "Evergreen Academy",
+    graduationClass: "2025",
+    speakerName: "Prof. Arthur Miller",
+  },
+  Business: {
+    productName: "Quantum Streamer X",
+    companyName: "Innovate Labs",
+    priceRange: "Premium",
+  },
+  Celebration: {
+    hostName: "The Roberts Family",
+    celebrationType: "Annual Gala",
+    venueName: "Ballroom",
+  },
+  Memorial: {
+    deceasedName: "Robert Winston",
+    dateOfBirth: "1945-05-12",
+    dateOfPassing: "2024-11-20",
+    serviceLocation: "Grace Memorial Chapel",
+  },
+  Cultural: {
+    festivalName: "Spring Harmony Festival",
+    traditionOrigin: "Eastern Heritage",
+    performanceType: "Traditional Dance",
+  },
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,32 +93,51 @@ export async function POST(req: NextRequest) {
 
     const createdEvents = []
 
-    for (const mock of MOCK_EVENTS) {
+    // Seed an event for every selectable template (exactly 12)
+    for (const template of eventFormSelectableTemplates) {
+      if (!template.isActive) continue
+
       const streamKey = generateStreamKey()
-      const slug = `${mock.title.toLowerCase().replace(/\s+/g, "-")}-${Math.random().toString(36).substring(2, 7)}`
+      // Robust slug generation
+      const baseSlug = slugify(template.name === "Default" ? `Mock ${template.category} Event` : template.name)
+      const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`
       
+      const sampleData = CATEGORY_SAMPLE_DATA[template.category] || {
+        hostName: "Platform User",
+        location: "Virtual Studio",
+        message: "Welcome to this live stream!",
+      }
+
       const templateDataJson = JSON.stringify({
-        ...mock.templateData,
-        templateId: mock.templateId,
+        ...sampleData,
+        templateId: template.id,
+        category: template.category,
       })
+
+      const description = `This is a mock event using the ${template.name} template (${template.category}). Preview all interactive features like live chat and reactions.`
 
       const rows = await sql`
         INSERT INTO events (
           user_id, title, description, stream_type, stream_key, rtmp_url,
           status, scheduled_at, is_mock, slug, template_data,
-          allow_chat, allow_reactions
+          allow_chat, allow_reactions, template_id
         ) VALUES (
-          ${user.id}, ${mock.title}, ${mock.description}, ${mock.streamType}, ${streamKey},
-          ${mock.streamType === "rtmp" ? rtmpUrl : null},
+          ${user.id}, ${template.name === "Default" ? `Mock ${template.category} Stream` : template.name}, 
+          ${description}, 'rtmp', ${streamKey},
+          ${rtmpUrl},
           'scheduled', NOW() + INTERVAL '1 day', true, ${slug}, ${templateDataJson}::jsonb,
-          true, true
+          true, true, ${template.id}
         )
         RETURNING *
       `
       createdEvents.push(toCamel(rows[0] as Record<string, unknown>))
     }
 
-    return NextResponse.json({ events: createdEvents, message: "Mock data seeded successfully" })
+    return NextResponse.json({ 
+      events: createdEvents, 
+      count: createdEvents.length,
+      message: `Successfully seeded ${createdEvents.length} templates` 
+    })
   } catch (error) {
     console.error("[api/events/seed POST] Error:", error)
     return NextResponse.json({ error: "Failed to seed mock data" }, { status: 500 })
@@ -127,12 +158,17 @@ export async function DELETE(req: NextRequest) {
     
     // Ensure is_mock column exists before attempting to delete (prevents errors if it doesn't exist yet)
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN DEFAULT false`.catch(() => {})
+    // Ensure mock_data_cleared column exists on users
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS mock_data_cleared BOOLEAN DEFAULT false`.catch(() => {})
 
     const res = await sql`
       DELETE FROM events 
       WHERE user_id = ${user.id} AND is_mock = true
       RETURNING id
     `
+
+    // Mark that the user has cleared mock data so we don't show the seeding option again
+    await sql`UPDATE users SET mock_data_cleared = true WHERE id = ${user.id}`
 
     return NextResponse.json({ 
       deletedCount: res.length, 

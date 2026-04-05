@@ -36,6 +36,7 @@ export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elega
   avatar?: string
   createdAt: Date
   updatedAt: Date
+  mockDataCleared?: boolean
   }
 
 // Studio extends User with branding
@@ -246,6 +247,7 @@ export interface LiveEvent {
   isMock?: boolean
   slug?: string
   publicUrl?: string
+  crewPinHash?: string
 }
 
 // Event Analytics

@@ -504,15 +504,28 @@ export default function StudioEventsPage() {
               : event.status as string}
           </Badge>
         </div>
-        <a
-          href={getEventPublicUrl(event)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-[11px] text-muted-foreground/90 hover:text-primary hover:underline truncate mt-0.5 font-mono"
-          title={getEventPublicUrl(event)}
-        >
-          {getEventPublicUrl(event)}
-        </a>
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          <a
+            href={getEventPublicUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-muted-foreground/90 hover:text-primary hover:underline truncate font-mono"
+            title={getEventPublicUrl(event)}
+          >
+            {getEventPublicUrl(event)}
+          </a>
+          {event.crewPinHash && (
+            <a
+              href={`${getEventPublicUrl(event)}/crew`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-primary/60 hover:text-primary hover:underline truncate font-mono"
+              title={`${getEventPublicUrl(event)}/crew`}
+            >
+              {getEventPublicUrl(event)}/crew
+            </a>
+          )}
+        </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
           <span className="flex items-center gap-1">
             <Eye className="h-3 w-3 shrink-0" />

@@ -16,6 +16,7 @@ interface AuthUser {
   emailVerified?: boolean
   createdAt?: string
   updatedAt?: string
+  mockDataCleared?: boolean
 }
 
 interface AuthContextType {

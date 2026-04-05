@@ -1186,7 +1186,6 @@ export const EVENT_FORM_HIDDEN_TEMPLATE_IDS: ReadonlySet<string> = new Set([
   "tpl-thanksgiving",
   "tpl-halloween",
   "tpl-fitness",
-  "tpl-yoga",
   "tpl-charity",
 ])
 
@@ -1530,14 +1529,6 @@ export const mockEventTemplates: EventTemplate[] = [
     category: "Health",
     isActive: true,
     sortOrder: 33,
-  },
-  {
-    id: "tpl-yoga",
-    name: "Yoga/Meditation",
-    thumbnail: "/templates/yoga-template.jpg",
-    category: "Health",
-    isActive: true,
-    sortOrder: 34,
   },
   {
     id: "tpl-charity",

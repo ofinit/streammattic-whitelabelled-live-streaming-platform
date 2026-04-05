@@ -97,7 +97,7 @@ export async function createSession(userId: string, ip?: string, userAgent?: str
 export async function getSessionUser(token: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT u.id, u.email, u.name, u.phone, u.role, u.status, u.avatar, u.email_verified, u.created_at, u.updated_at
+    SELECT u.id, u.email, u.name, u.phone, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared, u.created_at, u.updated_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ${token} AND s.expires_at > NOW()
@@ -172,7 +172,7 @@ export async function getCurrentUser() {
 
   const sql = getDb()
   const rows = await sql`
-    SELECT id, email, name, phone, role, status, avatar, email_verified, created_at, updated_at
+    SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
     FROM users 
     WHERE id = ${session.user.id}
   `
@@ -214,7 +214,7 @@ export async function createUser(data: {
   const rows = await sql`
     INSERT INTO users (email, password_hash, name, phone, role)
     VALUES (${data.email}, ${passwordHash}, ${data.name}, ${data.phone ?? null}, ${role})
-    RETURNING id, email, name, phone, role, status, avatar, email_verified, created_at, updated_at
+    RETURNING id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
   `
 
   const user = toCamel(rows[0] as Record<string, unknown>)
@@ -232,7 +232,7 @@ export async function getOrCreateUserByOAuth(profile: { email: string; name?: st
   const sql = getDb()
   const email = profile.email?.toLowerCase().trim()
   if (!email) return null
-  let rows = await sql`SELECT id, email, name, role, status FROM users WHERE email = ${email}`
+  let rows = await sql`SELECT id, email, name, role, status, mock_data_cleared FROM users WHERE email = ${email}`
   if (rows.length > 0) {
     const u = rows[0] as Record<string, unknown>
     if (u.status === "suspended" || u.status === "deactivated") return null
@@ -279,7 +279,7 @@ export async function getOrCreateDemoUser(email: string): Promise<Record<string,
   const account = getDemoAccountByEmail(email)
   if (!account) return null
   const emailNorm = account.email.toLowerCase()
-  const rows = await sql`SELECT id, email, name, role, status FROM users WHERE email = ${emailNorm}`
+  const rows = await sql`SELECT id, email, name, role, status, mock_data_cleared FROM users WHERE email = ${emailNorm}`
   if (rows.length > 0) {
     const u = rows[0] as Record<string, unknown>
     if (u.status === "suspended" || u.status === "deactivated") return null

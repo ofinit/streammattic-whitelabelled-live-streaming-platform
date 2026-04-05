@@ -400,14 +400,14 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
             <CardTitle className="text-base">Event Validity Extensions</CardTitle>
           </div>
           <CardDescription>
-            Each event includes {ve.defaultDays} days free. Extending costs additional credits of the same stream type (admin-configured).
+            Each event is valid for {ve.defaultDays} days by default. Extending costs additional credits of the same stream type (admin-configured).
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
               <p className="text-lg font-bold">{ve.defaultDays} days</p>
-              <p className="text-xs text-primary">Included free</p>
+              <p className="text-xs text-primary">Default validity</p>
             </div>
             {ve.tiers
               .filter((t) => t.enabled)

@@ -497,7 +497,7 @@ export default function AdminPricingPage() {
               <CardTitle>Event Validity Extensions</CardTitle>
               <CardDescription>
                 Default validity is{" "}
-                <span className="text-foreground font-medium">{validityDefaultDays} days</span> (free with event creation).
+                <span className="text-foreground font-medium">{validityDefaultDays} days</span> (default with event creation).
                 Extensions cost additional credits of the same stream type.
               </CardDescription>
             </div>
@@ -509,7 +509,7 @@ export default function AdminPricingPage() {
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-primary" />
               <span className="font-medium">Default: {validityDefaultDays} days</span>
-              <span className="text-muted-foreground">-- included free with every event creation (1 credit)</span>
+              <span className="text-muted-foreground">-- included by default with every event creation (1 credit)</span>
             </div>
           </div>
 

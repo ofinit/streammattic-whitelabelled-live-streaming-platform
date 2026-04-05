@@ -597,7 +597,7 @@ export function FullscreenCustomPricingDialog({
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
                   <div className="flex items-center gap-3">
                     <Clock className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Default validity: {validityDefaultDays} days (included free)</span>
+                    <span className="text-sm font-medium">Default validity: {validityDefaultDays} days (included by default)</span>
                   </div>
                 </div>
                 <div className="space-y-3">

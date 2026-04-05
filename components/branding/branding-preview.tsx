@@ -57,11 +57,11 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
             size="sm"
             onClick={() => {
               try {
-                sessionStorage.setItem(BRANDING_PREVIEW_SESSION_KEY, JSON.stringify(branding))
+                localStorage.setItem(BRANDING_PREVIEW_SESSION_KEY, JSON.stringify(branding))
               } catch {
                 // ignore quota / private mode
               }
-              window.open("/site?preview=draft", "_blank", "noopener,noreferrer")
+              window.open("/site?preview=draft", "_blank")
             }}
           >
             <ExternalLink className="mr-2 h-3.5 w-3.5" />

@@ -19,7 +19,7 @@ function SitePageInner() {
       return
     }
     try {
-      const raw = sessionStorage.getItem(BRANDING_PREVIEW_SESSION_KEY)
+      const raw = localStorage.getItem(BRANDING_PREVIEW_SESSION_KEY)
       if (!raw) {
         setDraftBranding(null)
         return
@@ -28,6 +28,23 @@ function SitePageInner() {
     } catch {
       setDraftBranding(null)
     }
+  }, [isDraftPreview])
+
+  useEffect(() => {
+    if (!isDraftPreview) return
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === BRANDING_PREVIEW_SESSION_KEY && e.newValue) {
+        try {
+          setDraftBranding(JSON.parse(e.newValue) as Branding)
+        } catch {
+          // ignore invalid json
+        }
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+    return () => window.removeEventListener("storage", handleStorageChange)
   }, [isDraftPreview])
 
   if (isDraftPreview && draftBranding === undefined) {

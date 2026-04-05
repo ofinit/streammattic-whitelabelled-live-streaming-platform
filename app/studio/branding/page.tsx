@@ -7,6 +7,7 @@ import { Header } from "@/components/dashboard/header"
 import { BrandingForm } from "@/components/branding/branding-form"
 import { BrandingPreview } from "@/components/branding/branding-preview"
 import { LandingImageEditor } from "@/components/branding/landing-image-editor"
+import { BRANDING_PREVIEW_SESSION_KEY } from "@/lib/branding-preview-session"
 import type { Branding } from "@/lib/types"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -79,13 +80,21 @@ export default function StudioBrandingPage() {
               <BrandingForm 
                 branding={currentBranding} 
                 onSave={() => handleSave()} 
-                onChange={setLocalBranding}
+                onChange={(updated) => {
+                  setLocalBranding(updated)
+                  try {
+                    localStorage.setItem(BRANDING_PREVIEW_SESSION_KEY, JSON.stringify(updated))
+                  } catch {}
+                }}
               />
               <LandingImageEditor 
                 branding={currentBranding} 
                 onBrandingUpdate={(updates) => {
                   const updated = { ...currentBranding, ...updates }
                   setLocalBranding(updated)
+                  try {
+                    localStorage.setItem(BRANDING_PREVIEW_SESSION_KEY, JSON.stringify(updated))
+                  } catch {}
                   handleSave(updates)
                 }} 
               />

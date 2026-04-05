@@ -268,6 +268,7 @@ CREATE TABLE IF NOT EXISTS events (
   slug                    TEXT            UNIQUE,
   credit_deduction_id     UUID            REFERENCES credit_deductions(id),
   metadata                JSONB           DEFAULT '{}',
+  use_custom_domain       BOOLEAN         NOT NULL DEFAULT false,
   created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );

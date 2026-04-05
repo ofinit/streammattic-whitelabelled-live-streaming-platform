@@ -277,7 +277,6 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
                   </div>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="googleAnalyticsId">Google Analytics ID</Label>
                 <Input
@@ -287,6 +286,7 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
                   placeholder="G-XXXXXXXXXX"
                 />
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>

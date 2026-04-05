@@ -81,7 +81,6 @@ const studioNav: NavItem[] = [
   { title: "Create Event", href: "/studio/create-events", icon: Calendar },
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Packages", href: "/studio/packages", icon: Package },
-  { title: "Analytics", href: "/studio/analytics", icon: BarChart3 },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
   { title: "Settings", href: "/studio/settings", icon: Settings },
@@ -93,7 +92,6 @@ const streamerNav: NavItem[] = [
   { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
   { title: "Packages", href: "/streamer/packages", icon: Package },
-  { title: "Analytics", href: "/streamer/analytics", icon: BarChart3 },
   { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]

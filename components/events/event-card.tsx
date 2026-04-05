@@ -35,7 +35,7 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
   const router = useRouter()
 
   const openControlRoom = () => {
-    router.push(`/streamer/events/${event.id}/stream`)
+    router.push(`/streamer/control-center/${event.id}/stream`)
   }
 
   const getStreamIcon = () => {

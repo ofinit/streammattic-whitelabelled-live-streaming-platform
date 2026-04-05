@@ -32,7 +32,7 @@ export function PoliticalTemplate({
       {/* Header with official styling */}
       <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-900 via-slate-800 to-red-900 shadow-lg">
         <div className="flex items-center gap-4">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

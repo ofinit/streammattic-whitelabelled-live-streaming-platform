@@ -27,7 +27,7 @@ export function WeddingCoastalTemplate({
     <div className="min-h-screen overflow-x-hidden coastal-sand-texture-bg font-coastal-sans text-slate-800">
       <div className="border-b border-teal-200/60 bg-white/75 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 text-[#006d77]">
               <ArrowLeft className="h-4 w-4" />
               Back

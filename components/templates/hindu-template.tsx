@@ -39,7 +39,7 @@ export function HinduTemplate({
 
       <header className="relative flex items-center justify-between px-3 py-2 md:px-4 md:py-3 bg-gradient-to-r from-orange-100 to-amber-100 border-b border-orange-200 shadow-sm">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

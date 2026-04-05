@@ -39,7 +39,7 @@ export function MuslimTemplate({
 
       <header className="relative flex items-center justify-between px-3 py-2 md:px-4 md:py-3 bg-white/90 backdrop-blur-sm border-b border-emerald-100 shadow-sm">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

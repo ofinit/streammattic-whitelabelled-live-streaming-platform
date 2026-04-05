@@ -38,7 +38,7 @@ export function WeddingGardenTemplate({
 
       <div className="border-b border-emerald-200/60 bg-white/70 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 text-emerald-800">
               <ArrowLeft className="h-4 w-4" />
               Back

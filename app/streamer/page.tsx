@@ -81,7 +81,7 @@ export default function StreamerDashboard() {
   const hasCredits = totalCredits > 0
 
   const handleGoLive = (eventId: string) => {
-    router.push(`/streamer/events/${eventId}/stream`)
+    router.push(`/streamer/control-center/${eventId}/stream`)
   }
 
   const eventColumns = [
@@ -296,7 +296,7 @@ export default function StreamerDashboard() {
             </Link>
           </Button>
           <Button variant="outline" className="border-border bg-transparent" asChild>
-            <Link href="/streamer/events/new">
+            <Link href="/streamer/control-center/new">
               <Plus className="mr-2 h-4 w-4" />
               Create event
             </Link>
@@ -370,7 +370,7 @@ export default function StreamerDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full justify-start" asChild>
-                <Link href="/streamer/events/new">
+                <Link href="/streamer/control-center/new">
                   <Plus className="mr-2 h-4 w-4" />
                   New event
                 </Link>
@@ -395,7 +395,7 @@ export default function StreamerDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">My events</CardTitle>
             <Button size="sm" asChild>
-              <Link href="/streamer/events/new">
+              <Link href="/streamer/control-center/new">
                 <Plus className="mr-2 h-4 w-4" />
                 New event
               </Link>

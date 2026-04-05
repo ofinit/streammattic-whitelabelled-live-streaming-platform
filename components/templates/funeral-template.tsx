@@ -47,7 +47,7 @@ export function FuneralTemplate({
     <div className="min-h-screen overflow-x-hidden bg-[#f8f5f0] font-memorial-serif text-[#2c3e50]">
       <div className="border-b border-[#c9a961]/25 bg-[#2c3e50] px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 text-white/90 hover:bg-white/10">
               <ArrowLeft className="h-4 w-4" />
               Back

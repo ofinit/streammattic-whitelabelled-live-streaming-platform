@@ -1,26 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useAuth } from "@/lib/auth-context"
+import { useState, useMemo, useEffect } from "react"
 import { EventCalendar } from "@/components/calendar/event-calendar"
 import { FullCalendar, type CalendarEvent } from "@/components/calendar/full-calendar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { mockEvents } from "@/lib/mock-data"
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import {
-  CalendarIcon,
   Video,
   Youtube,
   MonitorPlay,
   Globe,
-  Radio,
   Clock,
   Eye,
-  CheckCircle,
-  XCircle,
   Plus
 } from "lucide-react"
 import { format } from "date-fns"
@@ -39,29 +33,36 @@ const statusFilters = [
   { id: "completed", label: "Completed", color: "bg-emerald-500" },
 ]
 
-export default function UserCalendarPage() {
-  const { user } = useAuth()
+export default function AdminCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   
+  const [allEvents, setAllEvents] = useState<CalendarEvent[]>([])
+
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     live: true,
     scheduled: true,
     completed: true
   })
 
-  // Get only user's own events
-  const userEvents = useMemo(() => {
-    return mockEvents.filter((e) => e.userId === user?.id) as unknown as CalendarEvent[]
-  }, [user])
+  useEffect(() => {
+    fetch("/api/admin/events")
+      .then(res => res.json())
+      .then(data => {
+        if (data.events) {
+          setAllEvents(data.events as CalendarEvent[])
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   // Filter events by selected status checkboxes
   const filteredEvents = useMemo(() => {
-    return userEvents.filter((event) => {
+    return allEvents.filter((event) => {
        const status = event.status.toLowerCase()
        return activeFilters[status] ?? true
     })
-  }, [userEvents, activeFilters])
+  }, [allEvents, activeFilters])
 
   const toggleFilter = (id: string, checked: boolean) => {
     setActiveFilters(prev => ({ ...prev, [id]: checked }))
@@ -91,8 +92,8 @@ export default function UserCalendarPage() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Calendar</h1>
-          <p className="text-muted-foreground">Manage your stream schedule visually</p>
+          <h1 className="text-3xl font-bold">Create Events</h1>
+          <p className="text-muted-foreground">Monitor all platform streaming events</p>
         </div>
       </div>
 
@@ -100,7 +101,7 @@ export default function UserCalendarPage() {
         {/* Left Sidebar */}
         <div className="w-full lg:w-64 shrink-0 space-y-6">
           <Button className="w-full shadow-sm" size="lg" asChild>
-            <Link href="/streamer/events/new">
+            <Link href="/admin/control-center/new">
                 <Plus className="mr-2 h-5 w-5" />
                 Create Event
             </Link>
@@ -112,7 +113,7 @@ export default function UserCalendarPage() {
                 mode="single" 
                 selected={currentDate} 
                 onSelect={(d) => d && setCurrentDate(d)} 
-                events={userEvents}
+                events={allEvents}
                 className="border-0 shadow-none ring-0 w-full"
               />
             </CardContent>
@@ -122,12 +123,12 @@ export default function UserCalendarPage() {
             <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Filters</h3>
                 <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                    {filteredEvents.length} / {userEvents.length} Total
+                    {filteredEvents.length} / {allEvents.length} Total
                 </span>
             </div>
             <div className="space-y-3">
               {statusFilters.map(filter => {
-                const count = userEvents.filter(e => e.status.toLowerCase() === filter.id).length;
+                const count = allEvents.filter(e => e.status.toLowerCase() === filter.id).length;
                 return (
                   <div key={filter.id} className="flex items-center space-x-3">
                     <Checkbox 
@@ -214,7 +215,7 @@ export default function UserCalendarPage() {
 
               <div className="p-4 border-t border-border bg-muted/10">
                   <Button className="w-full" variant="outline" asChild>
-                      <Link href={`/streamer/events/${selectedEvent.id}`}>
+                      <Link href={`/admin/control-center/${selectedEvent.id}`}>
                           View Full Event Dashboard
                       </Link>
                   </Button>

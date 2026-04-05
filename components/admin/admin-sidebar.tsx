@@ -32,7 +32,7 @@ const menuItems = [
   { icon: Users, label: "Studios", href: "/admin/studios" },
   { icon: Users, label: "Streamers", href: "/admin/streamers" },
   { icon: Package, label: "Pricing", href: "/admin/packages" },
-  { icon: Calendar, label: "Calendar", href: "/admin/calendar" },
+  { icon: Calendar, label: "Calendar", href: "/admin/create-events" },
   { icon: ShoppingCart, label: "Orders", href: "/admin/orders" },
   { icon: Wallet, label: "Wallets", href: "/admin/wallets" },
   { icon: CreditCard, label: "Payments", href: "/admin/payments" },

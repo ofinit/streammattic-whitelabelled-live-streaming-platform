@@ -45,7 +45,7 @@ export function CorporateTemplate({
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center justify-between px-3 py-2 md:px-6 md:py-4 bg-white border-b border-slate-200 shadow-sm">
         <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

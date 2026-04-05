@@ -38,7 +38,7 @@ export function WeddingMidnightTemplate({
 
       <div className="border-b border-amber-500/20 bg-black/80 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

@@ -44,7 +44,7 @@ export function SchoolTemplate({
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md">
         <div className="flex items-center gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

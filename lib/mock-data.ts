@@ -1019,7 +1019,7 @@ export const mockNotifications: Notification[] = [
     message: "Your event 'Product Launch Webinar' has been scheduled for Dec 20",
     type: "info",
     isRead: false,
-    link: "/studio/events",
+    link: "/studio/control-center",
     createdAt: new Date(),
   },
   {
@@ -1040,7 +1040,7 @@ export const mockNotifications: Notification[] = [
     type: "success",
     isRead: true,
     readAt: new Date(Date.now() - 7200000),
-    link: "/streamer/events",
+    link: "/streamer/control-center",
     createdAt: new Date(Date.now() - 7200000),
   },
   {

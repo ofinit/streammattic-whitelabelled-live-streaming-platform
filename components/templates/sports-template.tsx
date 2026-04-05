@@ -49,7 +49,7 @@ export function SportsTemplate({
       {/* Header - responsive */}
       <header className="relative flex items-center justify-between px-2 py-2 md:px-4 md:py-3 bg-gradient-to-r from-red-600 to-blue-600 shadow-lg z-10">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

@@ -53,7 +53,7 @@ export function DefaultTemplate({
     <div className="min-h-screen bg-zinc-900 text-white">
       <header className="flex items-center justify-between px-2 py-2 md:px-4 md:py-3 bg-zinc-800 border-b border-zinc-700">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white p-2 md:px-3">
               <ArrowLeft className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Back</span>

@@ -79,7 +79,7 @@ export default function StudioEventsPage() {
     timezone?: string
   } | undefined>()
 
-  // Open dialog when arriving from /studio/events/new
+  // Open dialog when arriving from /studio/control-center/new
   useEffect(() => {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
@@ -641,7 +641,7 @@ export default function StudioEventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Events Management</h1>
+          <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
         <Button onClick={handleCreateEvent}>

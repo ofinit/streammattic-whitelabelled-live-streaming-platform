@@ -244,7 +244,7 @@ export function ChristianWeddingRoseTemplate({
 
       <header className="relative z-20 border-b border-white/30 bg-white/80 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 text-[#8b4f5c]">
               <ArrowLeft className="h-4 w-4" />
               Back

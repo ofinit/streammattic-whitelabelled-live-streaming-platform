@@ -65,7 +65,7 @@ export default function StudioDashboard() {
   const hasCredits = totalCredits > 0
 
   const handleGoLive = (eventId: string) => {
-    router.push(`/studio/events/${eventId}/stream`)
+    router.push(`/studio/control-center/${eventId}/stream`)
   }
 
   const eventColumns = [
@@ -250,7 +250,7 @@ export default function StudioDashboard() {
             </Link>
           </Button>
           <Button variant="outline" className="border-border bg-transparent" asChild>
-            <Link href="/studio/events/new">
+            <Link href="/studio/control-center/new">
               <Plus className="mr-2 h-4 w-4" />
               Create event
             </Link>
@@ -324,7 +324,7 @@ export default function StudioDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full justify-start" asChild>
-                <Link href="/studio/events/new">
+                <Link href="/studio/control-center/new">
                   <Plus className="mr-2 h-4 w-4" />
                   New event
                 </Link>
@@ -349,7 +349,7 @@ export default function StudioDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">My events</CardTitle>
             <Button size="sm" asChild>
-              <Link href="/studio/events/new">
+              <Link href="/studio/control-center/new">
                 <Plus className="mr-2 h-4 w-4" />
                 New event
               </Link>

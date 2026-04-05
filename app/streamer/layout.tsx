@@ -16,7 +16,7 @@ function StreamerDashboardLayoutInner({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const { isCollapsed } = useSidebar()
 
-  const isDemoPage = pathname?.startsWith("/streamer/events/new/demo-")
+  const isDemoPage = pathname?.startsWith("/streamer/control-center/new/demo-")
 
   useEffect(() => {
     if (isDemoPage || isLoading) return

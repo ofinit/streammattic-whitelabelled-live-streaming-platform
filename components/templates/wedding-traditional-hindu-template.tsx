@@ -27,7 +27,7 @@ export function WeddingTraditionalHinduTemplate({
     <div className="min-h-screen overflow-x-hidden bg-[#FFF8DC] font-hindu-wedding-serif text-[#5c0a0a]">
       <div className="border-b border-amber-400/40 bg-gradient-to-r from-red-900/90 via-orange-800/85 to-red-900/90 px-4 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 text-amber-100 hover:bg-white/10 hover:text-white">
               <ArrowLeft className="h-4 w-4" />
               Back

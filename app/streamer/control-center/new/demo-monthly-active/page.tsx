@@ -3,15 +3,16 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info, Package } from "lucide-react"
+import { ArrowLeft, Play, Calendar, Video, MessageSquare, Check, Info } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DemoStreamTypeSelector } from "@/components/events/demo-stream-type-selector"
 import { demoUserStates } from "@/lib/demo-user-states"
 import type { StreamTypeKey } from "@/lib/types"
+import { Progress } from "@/components/ui/progress"
 
-export default function DemoNoPackagePage() {
+export default function DemoMonthlyActivePage() {
   const router = useRouter()
-  const demoState = demoUserStates.noCredits
+  const demoState = demoUserStates.withCredits
   const [selectedType, setSelectedType] = useState<StreamTypeKey | "">("")
 
   const steps = [
@@ -21,6 +22,8 @@ export default function DemoNoPackagePage() {
     { id: 3, name: "Settings", icon: MessageSquare },
     { id: 4, name: "Review", icon: Check },
   ]
+
+  const totalCredits = Object.values(demoState.credits).reduce((s, c) => s + c, 0)
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,7 +35,7 @@ export default function DemoNoPackagePage() {
               <h1 className="text-3xl font-bold text-foreground">Create New Event</h1>
               <p className="mt-1 text-muted-foreground">Set up your live streaming event in a few steps</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push("/streamer/events")}>
+            <Button variant="ghost" onClick={() => router.push("/streamer/control-center")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Cancel
             </Button>
@@ -77,21 +80,27 @@ export default function DemoNoPackagePage() {
           </AlertDescription>
         </Alert>
 
-        {/* No Credits Info */}
-        <Alert className="mb-6 bg-orange-500/10 border-orange-500/20">
-          <Package className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="text-orange-600 dark:text-orange-400">
-            You have no stream credits yet. Purchase credits to get started or pay per event from your wallet.
-          </AlertDescription>
-        </Alert>
-
-        {/* Wallet Display */}
-        <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Wallet Balance</p>
-            <p className="text-2xl font-bold text-foreground">₹{demoState.walletBalance.toLocaleString()}</p>
+        {/* Credits Status */}
+        <div className="mb-6 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Stream Credits</p>
+              <p className="text-sm text-muted-foreground">
+                {totalCredits} credits remaining across all stream types
+              </p>
+            </div>
+            <Button variant="outline" size="sm">
+              View Pricing
+            </Button>
           </div>
-          <Button variant="outline">Recharge Wallet</Button>
+          <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+            {Object.entries(demoState.credits).map(([key, count]) => (
+              <div key={key} className="flex justify-between">
+                <span className="capitalize">{key.replace("_", " ")}</span>
+                <span className="font-medium text-foreground">{count}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -104,22 +113,16 @@ export default function DemoNoPackagePage() {
           <DemoStreamTypeSelector
             value={selectedType}
             onChange={setSelectedType}
-            availableEvents={0}
+            availableEvents={totalCredits}
           />
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4">
-            <Button variant="outline" onClick={() => router.push("/streamer/events")}>
+            <Button variant="outline" onClick={() => router.push("/streamer/control-center")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => router.push("/streamer/packages")}>
-                <Package className="mr-2 h-4 w-4" />
-                Buy Credits
-              </Button>
-              <Button disabled>Pay Per Event (Demo mode)</Button>
-            </div>
+            <Button disabled>Next (Demo mode - view only)</Button>
           </div>
         </div>
       </div>

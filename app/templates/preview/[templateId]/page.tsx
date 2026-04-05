@@ -272,7 +272,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
           <Radio className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h1 className="text-xl font-semibold text-foreground">Template Not Found</h1>
           <p className="text-muted-foreground">This template doesn't exist.</p>
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button className="mt-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Events

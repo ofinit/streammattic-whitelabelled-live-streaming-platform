@@ -44,6 +44,7 @@ import {
   Globe,
   Play,
   Square,
+  StopCircle,
   PauseCircle,
   PlayCircle,
   Loader2,
@@ -61,7 +62,7 @@ import { toast } from "sonner"
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
 
-export default function StreamerEventsPage() {
+export default function AdminEventsPage() {
   const { user } = useAuth()
   const ownerId = user?.id || ""
 
@@ -77,23 +78,6 @@ export default function StreamerEventsPage() {
     timezone?: string
   } | undefined>()
 
-  // Open dialog when arriving from /streamer/events/new
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("openModal") === "1") {
-      const url = new URL(window.location.href)
-      url.searchParams.delete("openModal")
-      window.history.replaceState({}, "", url.toString())
-      setEditingEvent(undefined)
-      setEventDialogInitialTab(undefined)
-      setEventDialogInitialStreamType(undefined)
-      setEventDialogInitialDraft(undefined)
-      setShowEventDialog(true)
-    }
-  }, [])
-
-  // Restore event modal after YouTube OAuth redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const ytConnected = params.get("yt_connected")
@@ -155,16 +139,21 @@ export default function StreamerEventsPage() {
   }
 
   const { data, isLoading, mutate } = useSWR(
-    ownerId ? `/api/studio/events?studioId=${ownerId}${searchQuery ? `&search=${searchQuery}` : ""}&limit=${eventsLimit}&offset=0` : null,
+    `/api/admin/events${searchQuery ? `?search=${searchQuery}` : ""}`,
     fetcher,
     { refreshInterval: 15000 }
   )
 
   const events = data?.events ?? []
-  const totalCount = data?.totalCount ?? 0
-  const liveCount = data?.liveCount ?? 0
-  const scheduledCount = data?.scheduledCount ?? 0
-  const completedCount = data?.completedCount ?? 0
+  const totalCount = events.length
+  
+  const liveEvents = events.filter((e: Record<string, unknown>) => e.status === "live" || e.status === "on_break")
+  const scheduledEvents = events.filter((e: Record<string, unknown>) => e.status === "scheduled")
+  const completedEvents = events.filter((e: Record<string, unknown>) => e.status === "completed" || e.status === "ended")
+
+  const liveCount = liveEvents.length
+  const scheduledCount = scheduledEvents.length
+  const completedCount = completedEvents.length
   const hasMoreEvents = events.length < totalCount
 
   useEffect(() => {
@@ -190,11 +179,7 @@ export default function StreamerEventsPage() {
     return () => observer.disconnect()
   }, [hasMoreEvents, isLoading, events.length])
 
-  const liveEvents = events.filter((e: Record<string, unknown>) => e.status === "live" || e.status === "on_break")
-  const scheduledEvents = events.filter((e: Record<string, unknown>) => e.status === "scheduled")
-  const completedEvents = events.filter((e: Record<string, unknown>) => e.status === "completed" || e.status === "ended")
-
-  const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.currentViewers) || 0), 0)
+  const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.viewers) || 0), 0)
 
   const handleCreateEvent = () => {
     setEditingEvent(undefined)
@@ -261,7 +246,7 @@ export default function StreamerEventsPage() {
         }
         mutate()
         setShowEventDialog(false)
-        if (showCredentials && eventData.streamType === "youtube_api") {
+        if (showCredentials && (eventData as any).streamType === "youtube_api") {
           const channelId = (eventData as Record<string, unknown>).youtubeChannelId as string | undefined
           const bSettings = (eventData as Record<string, unknown>).youtubeBroadcastSettings as Record<string, unknown> | undefined
           if (channelId && resData.event?.id) {
@@ -523,9 +508,9 @@ export default function StreamerEventsPage() {
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
           <span className="flex items-center gap-1">
             <Eye className="h-3 w-3 shrink-0" />
-            {Number(event.currentViewers) || 0}
+            {Number((event as any).viewers) || 0}
           </span>
-          {(event.scheduledAt || event.scheduledStart) && (
+          {Boolean(event.scheduledAt || event.scheduledStart) && (
             <span className="flex min-w-0 max-w-full items-center gap-1">
               <Clock className="h-3 w-3 shrink-0" />
               <span className="truncate">
@@ -542,9 +527,9 @@ export default function StreamerEventsPage() {
       <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
         <span className="flex items-center gap-1">
           <Eye className="h-3 w-3" />
-          {Number(event.currentViewers) || 0}
+          {Number((event as any).viewers) || 0}
         </span>
-        {(event.scheduledAt || event.scheduledStart) && (
+        {Boolean(event.scheduledAt || event.scheduledStart) && (
           <span
             className="flex max-w-[min(100%,15rem)] items-center gap-1 truncate"
             title={formatEventScheduledDisplay(
@@ -656,8 +641,8 @@ export default function StreamerEventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Events</h1>
-          <p className="text-muted-foreground">Manage your live streaming events</p>
+          <h1 className="text-2xl font-bold">Control Center</h1>
+          <p className="text-muted-foreground">Create and manage events (admin — credits not required)</p>
         </div>
         <Button onClick={handleCreateEvent}>
           <Plus className="h-4 w-4 mr-2" />
@@ -788,7 +773,7 @@ export default function StreamerEventsPage() {
                     <p>No {tab === "all" ? "" : tab} events found</p>
                     <Button variant="outline" className="mt-4 bg-transparent" onClick={handleCreateEvent}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Event
+                      Create Event
                     </Button>
                   </div>
                 )}
@@ -820,7 +805,8 @@ export default function StreamerEventsPage() {
         initialStreamType={eventDialogInitialStreamType}
         initialDraft={eventDialogInitialDraft}
         youtubeOwnerId={ownerId || undefined}
-        youtubeOwnerType="streamer"
+        youtubeOwnerType="admin"
+        skipCreditsValidation
         externalSlugError={saveError?.slug ?? undefined}
       />
 

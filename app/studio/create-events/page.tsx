@@ -89,7 +89,7 @@ export default function StudioCalendarPage() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Studio Calendar</h1>
+          <h1 className="text-3xl font-bold">Create Events</h1>
           <p className="text-muted-foreground">Manage your studio streaming schedule</p>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function StudioCalendarPage() {
         {/* Left Sidebar */}
         <div className="w-full lg:w-64 shrink-0 space-y-6">
           <Button className="w-full shadow-sm" size="lg" asChild>
-            <Link href="/studio/events/new">
+            <Link href="/studio/control-center/new">
                 <Plus className="mr-2 h-5 w-5" />
                 Schedule Studio
             </Link>
@@ -212,7 +212,7 @@ export default function StudioCalendarPage() {
 
               <div className="p-4 border-t border-border bg-muted/10">
                   <Button className="w-full" variant="outline" asChild>
-                      <Link href={`/studio/events/${selectedEvent.id}`}>
+                      <Link href={`/studio/control-center/${selectedEvent.id}`}>
                           View Full Event Dashboard
                       </Link>
                   </Button>

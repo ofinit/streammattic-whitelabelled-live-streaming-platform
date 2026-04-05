@@ -10,7 +10,7 @@ export default function StudioNewEventPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace("/studio/events?openModal=1")
+    router.replace("/studio/control-center?openModal=1")
   }, [router])
 
   return (

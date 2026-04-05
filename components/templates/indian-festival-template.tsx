@@ -41,7 +41,7 @@ export function IndianFestivalTemplate({
       {/* Header - responsive */}
       <header className="relative flex items-center justify-between px-2 py-2 md:px-4 md:py-3 bg-gradient-to-r from-orange-500 via-yellow-500 to-pink-500 shadow-lg">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button
               variant="ghost"
               size="sm"

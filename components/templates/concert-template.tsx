@@ -46,7 +46,7 @@ export function ConcertTemplate({ eventTitle = "Live Concert", eventDescription 
       {/* Header */}
       <header className="relative flex items-center justify-between px-3 py-2 md:px-4 md:py-3 bg-black/50 backdrop-blur-md border-b border-white/10 z-10">
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10 p-2 md:px-3">
               <ArrowLeft className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Back</span>

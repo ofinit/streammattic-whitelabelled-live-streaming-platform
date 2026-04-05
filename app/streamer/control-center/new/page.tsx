@@ -11,7 +11,7 @@ export default function StreamerNewEventPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace("/streamer/events?openModal=1")
+    router.replace("/streamer/control-center?openModal=1")
   }, [router])
 
   return (

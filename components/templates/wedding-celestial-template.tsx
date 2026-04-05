@@ -41,7 +41,7 @@ export function WeddingCelestialTemplate({
     <div className="min-h-screen overflow-x-hidden bg-[#0b0d17] font-celestial-sans text-zinc-100">
       <div className="border-b border-violet-600/35 bg-black/40 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="gap-2 font-mono text-yellow-300/90">
               <ArrowLeft className="h-4 w-4" />
               Back

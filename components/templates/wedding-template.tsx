@@ -83,7 +83,7 @@ export function WeddingTemplate({
       {/* Preview chrome */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-stone-200/80 bg-[#faf6f0]/95 px-3 py-2 backdrop-blur-md md:px-4">
         <div className="flex items-center gap-2">
-          <Link href="/admin/events">
+          <Link href="/admin/control-center">
             <Button variant="ghost" size="sm" className="text-stone-600 hover:text-stone-900 hover:bg-stone-200/60">
               <ArrowLeft className="mr-1 h-4 w-4" />
               <span className="hidden sm:inline">Back</span>

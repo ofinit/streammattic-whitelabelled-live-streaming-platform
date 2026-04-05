@@ -23,7 +23,6 @@ import {
   CreditCard,
   BarChart3,
   Radio,
-  Bell,
   LogOut,
   ChevronDown,
   Building2,

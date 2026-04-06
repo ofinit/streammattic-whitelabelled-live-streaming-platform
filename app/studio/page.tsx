@@ -18,8 +18,6 @@ import type { StreamTypeCredits } from "@/lib/types"
 import { Radio, Wallet, Eye, Calendar, Package, Plus, Play, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { StreamCreditPricingSummary } from "@/components/dashboard/stream-credit-pricing-summary"
-import type { StreamCreditPricingSnapshot } from "@/components/dashboard/stream-credit-pricing-summary"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -47,7 +45,6 @@ export default function StudioDashboard() {
   const stats = data?.stats as DashboardStats | undefined
   const events = (data?.events ?? []) as Record<string, unknown>[]
   const transactions = (data?.transactions ?? []) as Record<string, unknown>[]
-  const creditPricing = data?.creditPricing as StreamCreditPricingSnapshot | undefined
 
   const walletBalancePaise = Number(stats?.walletBalance ?? 0)
   const lowBalanceWarning = walletBalancePaise < LOW_WALLET_THRESHOLD_PAISE
@@ -263,11 +260,6 @@ export default function StudioDashboard() {
           </Button>
         </div>
 
-        <StreamCreditPricingSummary
-          packagesHref="/studio/packages"
-          creditPricing={creditPricing}
-          loading={isLoading}
-        />
 
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="border-border bg-card lg:col-span-2">

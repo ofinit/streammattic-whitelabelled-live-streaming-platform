@@ -78,7 +78,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
       setValidityExtensions(
         pData.validityExtensions ?? {
           defaultDays: 30,
-          tiers: [],
+          extendedTiers: [],
         },
       )
 
@@ -182,7 +182,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
     )
   }
 
-  const ve = validityExtensions ?? { defaultDays: 30, tiers: [] }
+  const ve = validityExtensions ?? { defaultDays: 30, extendedTiers: [] }
   const enabledStreamTypes = streamTypeInfo.filter((st) => streamTypePricing[st.key].enabled)
 
   return (
@@ -409,9 +409,9 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
               <p className="text-lg font-bold">{ve.defaultDays} days</p>
               <p className="text-xs text-primary">Default validity</p>
             </div>
-            {ve.tiers
-              .filter((t) => t.enabled)
-              .map((tier) => (
+            {ve.extendedTiers
+              .filter((t: any) => t.enabled)
+              .map((tier: any) => (
                 <div key={tier.days} className="rounded-lg bg-secondary/50 p-3 text-center">
                   <p className="text-lg font-bold">{tier.days} days</p>
                   <p className="text-xs text-muted-foreground">

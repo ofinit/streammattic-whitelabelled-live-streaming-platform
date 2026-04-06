@@ -159,10 +159,9 @@ export function parseStreamTypePricing(streamRaw: unknown, volumeDiscountRaw?: u
     }
 
     tiers.sort((a, b) => a.minQty - b.minQty)
-    if (tiers.length === 0) {
-      tiers = clonePricing(INTERNAL_DEFAULT_STREAM_TYPE_PRICING)[key].volumeDiscountTiers.map((t) => ({ ...t }))
-    }
-
+    // REMOVED: Auto-fallback for empty tiers. If the admin explicitly deletes all tiers,
+    // they should STAY deleted. Fallback ONLY if the entire stream type block is missing or invalid.
+    
     out[key] = { basePrice, enabled, volumeDiscountTiers: tiers }
   }
 

@@ -3,13 +3,13 @@ import type { ValidityTier } from "@/lib/types"
 
 export type ParsedValidityExtensions = {
   defaultDays: number
-  tiers: ValidityTier[]
+  extendedTiers: ValidityTier[]
 }
 
 function fallbackValidityExtensions(): ParsedValidityExtensions {
   return {
     defaultDays: masterValiditySettings.defaultDays,
-    tiers: masterValiditySettings.extendedTiers.map((t) => ({ ...t })),
+    extendedTiers: masterValiditySettings.extendedTiers.map((t) => ({ ...t })),
   }
 }
 
@@ -30,8 +30,8 @@ export function parseValidityExtensionsSetting(raw: unknown): ParsedValidityExte
   else if (Array.isArray(o.tiers)) list = o.tiers
   else if (Array.isArray(o.extendedTiers)) list = o.extendedTiers
 
-  const tiers: ValidityTier[] = list
-    .map((item) => {
+  const tiers = list
+    .map((item): ValidityTier | null => {
       if (!item || typeof item !== "object") return null
       const t = item as Record<string, unknown>
       const days = typeof t.days === "number" ? t.days : 0
@@ -45,11 +45,11 @@ export function parseValidityExtensionsSetting(raw: unknown): ParsedValidityExte
       return { days, creditCost, enabled, label }
     })
     .filter((x): x is ValidityTier => x !== null)
-    .sort((a, b) => a.days - b.days)
+    .sort((a, b) => (a?.days ?? 0) - (b?.days ?? 0))
 
   return {
     defaultDays,
-    tiers: tiers.length > 0 ? tiers : fallback.tiers,
+    extendedTiers: tiers, // Explicitly allow empty array if tiers exist but list is empty
   }
 }
 
@@ -93,7 +93,7 @@ export function inferValidityChoiceFromEvent(
     if (days === settings.defaultDays) {
       return { choiceKey: "included", expiresAt: "" }
     }
-    const tier = settings.tiers.find((t) => t.enabled && t.days === days)
+    const tier = settings.extendedTiers.find((t: ValidityTier) => t.enabled && t.days === days)
     if (tier) {
       return { choiceKey: `tier:${tier.days}`, expiresAt: "" }
     }

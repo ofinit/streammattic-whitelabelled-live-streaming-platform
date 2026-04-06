@@ -88,7 +88,7 @@ export default function AdminPricingPage() {
       setSimulcastPricing(parseSimulcastPricing(map.simulcast_pricing ?? null))
       const ve = parseValidityExtensionsSetting(map.validity_extensions ?? null)
       setValidityDefaultDays(ve.defaultDays)
-      setValidityTiers(ve.tiers.map((t) => ({ ...t })))
+      setValidityTiers(ve.extendedTiers.map((t) => ({ ...t })))
 
       const sub = map.studio_annual_subscription
       if (sub && typeof sub === "object" && sub !== null) {

@@ -6,18 +6,53 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   try {
     await requireRole(["admin"])
     const { id } = await props.params
-    const { status } = await req.json()
-
-    if (!status || !["active", "suspended", "pending", "deactivated"].includes(status)) {
-      return NextResponse.json({ error: "Invalid status value" }, { status: 400 })
-    }
+    const body = await req.json()
+    const { name, phone, status, branding } = body
 
     const sql = getDb()
-    await sql`UPDATE users SET status = ${status}, updated_at = NOW() WHERE id = ${id}`
 
-    return NextResponse.json({ success: true, message: `User status updated to ${status}` })
+    // 1. Update User Basic Info
+    if (name || phone || status) {
+       const setClause: string[] = []
+       if (name) setClause.push(`name = ${name}`)
+       if (phone) setClause.push(`phone = ${phone}`)
+       if (status) {
+         if (!["active", "suspended", "pending", "deactivated"].includes(status)) {
+           return NextResponse.json({ error: "Invalid status value" }, { status: 400 })
+         }
+         setClause.push(`status = ${status}`)
+       }
+
+       // We use a safe manual update or just separate updates for simplicity if only few fields
+       // For better performance we can combine, but here we just update if set
+       await sql`
+         UPDATE users 
+         SET 
+           name = COALESCE(${name ?? null}, name),
+           phone = COALESCE(${phone ?? null}, phone),
+           status = COALESCE(${status ?? null}, status),
+           updated_at = NOW() 
+         WHERE id = ${id}
+       `
+    }
+
+    // 2. Update Branding if provided
+    if (branding) {
+       const { platformName, primaryColor, secondaryColor } = branding
+       await sql`
+         INSERT INTO studio_branding (user_id, platform_name, primary_color, secondary_color)
+         VALUES (${id}, ${platformName}, ${primaryColor}, ${secondaryColor})
+         ON CONFLICT (user_id) DO UPDATE SET 
+           platform_name = COALESCE(${platformName ?? null}, platform_name),
+           primary_color = COALESCE(${primaryColor ?? null}, primary_color),
+           secondary_color = COALESCE(${secondaryColor ?? null}, secondary_color),
+           updated_at = NOW()
+       `
+    }
+
+    return NextResponse.json({ success: true, message: "Studio updated successfully" })
   } catch (error: any) {
-    console.error("Admin User Status PATCH error:", error)
+    console.error("Admin Studio Update PATCH error:", error)
     if (error.message === "Forbidden" || error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

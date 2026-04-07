@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
 import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
+import { toast } from "sonner"
 
 export default function AdminStudiosPage() {
   const { impersonate } = useAuth()
@@ -57,14 +58,55 @@ export default function AdminStudiosPage() {
   })
 
   const handleCreate = async (data: StudioFormData) => {
-    // In production, would POST to /api/admin/users
-    console.log("[create API] Creating studio:", data)
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Failed to create studio")
+      
+      toast.success("Studio created successfully")
+      // Refresh list
+      const updated = await fetch("/api/admin/users?role=studio").then(r => r.json())
+      if (updated.users) setStudios(updated.users)
+      setIsCreateOpen(false)
+    } catch (err: any) {
+      toast.error(err.message)
+      console.error(err)
+    }
   }
 
   const handleEdit = async (data: StudioFormData) => {
-    // In production, would PUT /api/admin/users
-    console.log("[edit API] Updating studio:", editingStudio?.id, data)
-    setEditingStudio(null)
+    if (!editingStudio) return
+    try {
+      const res = await fetch(`/api/admin/users/${editingStudio.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.companyName,
+          phone: data.phone,
+          status: data.status,
+          branding: {
+            platformName: data.platformName,
+            primaryColor: data.primaryColor,
+            secondaryColor: data.secondaryColor,
+          }
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Failed to update studio")
+
+      toast.success("Studio updated successfully")
+      // Refresh list
+      const updated = await fetch("/api/admin/users?role=studio").then(r => r.json())
+      if (updated.users) setStudios(updated.users)
+      setEditingStudio(null)
+    } catch (err: any) {
+      toast.error(err.message)
+      console.error(err)
+    }
   }
 
   const handleStatusChange = async (id: string, newStatus: string) => {

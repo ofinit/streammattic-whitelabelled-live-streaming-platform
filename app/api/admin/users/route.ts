@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth"
+import { requireRole, createUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 
 export async function GET(req: Request) {
@@ -64,6 +64,59 @@ export async function GET(req: Request) {
     console.error("Admin Users API error:", error)
     if (error.message === "Forbidden" || error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+export async function POST(req: Request) {
+  try {
+    await requireRole(["admin"])
+    const body = await req.json()
+    const { companyName, email, password, phone, platformName, primaryColor, secondaryColor } = body
+
+    if (!companyName || !email || !password || !platformName) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    const sql = getDb()
+    
+    // 1. Create the user (this also creates wallet & credits)
+    const user: any = await createUser({
+      email,
+      password,
+      name: companyName,
+      phone,
+      role: "studio",
+    })
+
+    // 2. Initialize branding
+    await sql`
+      INSERT INTO studio_branding (user_id, platform_name, primary_color, secondary_color)
+      VALUES (${user.id}, ${platformName}, ${primaryColor}, ${secondaryColor})
+      ON CONFLICT (user_id) DO UPDATE SET 
+        platform_name = ${platformName},
+        primary_color = ${primaryColor},
+        secondary_color = ${secondaryColor},
+        updated_at = NOW()
+    `
+
+    // 3. Optional: Create a default domain record so the studio is "ready" to configured DNS
+    const verificationToken = `v=${Math.random().toString(36).substring(2, 10)}`
+    await sql`
+      INSERT INTO domains (user_id, domain, verification_token, verification_status, is_primary)
+      VALUES (${user.id}, ${companyName.toLowerCase().replace(/[^a-z0-9]/g, "") + ".platform.com"}, ${verificationToken}, 'pending', true)
+      ON CONFLICT DO NOTHING
+    `
+
+    return NextResponse.json({ success: true, user })
+  } catch (error: any) {
+    console.error("Admin Create Studio error:", error)
+    if (error.message === "Forbidden" || error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    // Check for unique constraint violation (email)
+    if (error.code === '23505') {
+       return NextResponse.json({ error: "A user with this email already exists" }, { status: 400 })
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

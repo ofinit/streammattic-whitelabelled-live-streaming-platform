@@ -49,6 +49,7 @@ import {
   PlayCircle,
   Loader2,
   Film,
+  ShieldCheck,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -518,6 +519,12 @@ export default function AdminEventsPage() {
                                 )}
                             </span>
                         )}
+                        {(event as any).validityExpiresAt && (
+                            <span className="flex items-center gap-1 text-orange-500/80">
+                                <ShieldCheck className="h-2.5 w-2.5" />
+                                {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -590,6 +597,17 @@ export default function AdminEventsPage() {
                 (event.timezone as string) || undefined,
                 true
               )}
+            </span>
+          </span>
+        )}
+        {(event as any).validityExpiresAt && (
+          <span
+            className="flex items-center gap-1 text-orange-500/80 shrink-0"
+            title={`Validity expires on: ${new Date((event as any).validityExpiresAt).toLocaleString()}`}
+          >
+            <ShieldCheck className="h-3 w-3" />
+            <span>
+              Exp: {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
             </span>
           </span>
         )}

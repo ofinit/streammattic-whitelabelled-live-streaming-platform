@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         SELECT 
           e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
           e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
-          e.is_mock as "isMock",
+          e.is_mock as "isMock", e.validity_expires_at as "validityExpiresAt",
           u.id as "userId", u.name as "userName", u.email as "userEmail", u.role as "userRole"
         FROM events e
         JOIN users u ON e.user_id = u.id
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
         SELECT 
           e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
           e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
-          e.is_mock as "isMock",
+          e.is_mock as "isMock", e.validity_expires_at as "validityExpiresAt",
           u.id as "userId", u.name as "userName", u.email as "userEmail", u.role as "userRole"
         FROM events e
         JOIN users u ON e.user_id = u.id
@@ -46,6 +46,7 @@ export async function GET(req: Request) {
       streamType: r.streamType,
       status: r.status,
       scheduledAt: r.scheduledAt,
+      validityExpiresAt: r.validityExpiresAt,
       viewers: r.currentViewers || 0,
       revenue: 0,
       studioName: r.userName, // Legacy field

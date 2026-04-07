@@ -34,6 +34,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Menu,
+  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -72,6 +73,7 @@ const adminNav: NavItem[] = [
   { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },
   { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
   { title: "GST", href: "/admin/settings/gst", icon: Receipt },
+  { title: "Platform Setup", href: "/studio/setup", icon: Zap },
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
@@ -81,6 +83,7 @@ const studioNav: NavItem[] = [
   { title: "Create Event", href: "/studio/create-events", icon: Calendar },
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Packages", href: "/studio/packages", icon: Package },
+  { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
   { title: "Settings", href: "/studio/settings", icon: Settings },

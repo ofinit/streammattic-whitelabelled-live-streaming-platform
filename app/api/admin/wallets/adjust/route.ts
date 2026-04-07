@@ -72,3 +72,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    await requireRole(["admin"])
+    const sql = getDb()
+    
+    // Join with users for target and initiator names
+    const rows = await sql`
+      SELECT 
+        wa.*,
+        u_target.name as target_user_name,
+        u_target.role as target_user_role,
+        u_target.email as target_user_email,
+        u_init.name as initiator_name
+      FROM wallet_adjustments wa
+      JOIN users u_target ON wa.target_user_id = u_target.id
+      JOIN users u_init ON wa.initiated_by = u_init.id
+      ORDER BY wa.created_at DESC
+    `
+    
+    const { toCamelRows } = require("@/lib/db")
+    return NextResponse.json({ data: toCamelRows(rows as Record<string, unknown>[]) })
+  } catch (error: any) {
+    console.error("Admin Wallet Adjust GET API error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

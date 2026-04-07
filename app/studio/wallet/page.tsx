@@ -1,20 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
-import { mockTransactions, mockStudioWalletSummary } from "@/lib/mock-data"
-import { TrendingUp, ArrowUpRight, Clock } from "lucide-react"
+import { TrendingUp, ArrowUpRight, Clock, Loader2 } from "lucide-react"
 import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
 
 export default function StudioWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [wallet, setWallet] = useState<any>(null)
+  const [summary, setSummary] = useState<any>(null)
+  const [transactions, setTransactions] = useState<any[]>([])
 
-  // Filter transactions for this studio
-  const studioTransactions = mockTransactions.filter((t) => t.userId === "studio-1")
+  useEffect(() => {
+    fetch("/api/wallet")
+      .then(res => res.json())
+      .then(data => {
+        if (data.wallet) setWallet(data.wallet)
+        if (data.summary) setSummary(data.summary)
+        if (data.transactions) setTransactions(data.transactions)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-muted-foreground">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm">Loading billing details…</p>
+      </div>
+    )
+  }
+
+  const walletSummary = {
+    balance: wallet?.balance || 0,
+    currency: wallet?.currency || "INR",
+    lastUpdated: wallet?.updatedAt,
+    totalCredits: summary?.monthlyCredits || 0,
+    totalDebits: summary?.monthlyDebits || 0,
+    pendingAmount: 0
+  }
 
   return (
     <div className="space-y-6">
@@ -25,25 +55,25 @@ export default function StudioWalletPage() {
 
       {/* Wallet Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <WalletCard summary={mockStudioWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
+        <WalletCard summary={walletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">This Month</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">This Month (Credits)</CardTitle>
             <TrendingUp className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-500">+₹12,500</p>
-            <p className="text-sm text-muted-foreground">Total credits</p>
+            <p className="text-2xl font-bold text-emerald-500">+₹{( (summary?.monthlyCredits || 0) / 100).toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">Total money added</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Platform Usage</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">This Month (Debits)</CardTitle>
             <ArrowUpRight className="h-5 w-5 text-red-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-red-500">-₹4,800</p>
-            <p className="text-sm text-muted-foreground">Streaming costs</p>
+            <p className="text-2xl font-bold text-red-500">-₹{( (summary?.monthlyDebits || 0) / 100).toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">Platform costs & charges</p>
           </CardContent>
         </Card>
       </div>
@@ -62,7 +92,7 @@ export default function StudioWalletPage() {
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={studioTransactions} />
+              <TransactionList transactions={transactions} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -73,7 +103,7 @@ export default function StudioWalletPage() {
               <CardTitle>Credits</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={studioTransactions.filter((t) => t.type === "credit")} />
+              <TransactionList transactions={transactions.filter((t: any) => t.type === "credit")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -84,7 +114,7 @@ export default function StudioWalletPage() {
               <CardTitle>Debits</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={studioTransactions.filter((t) => t.type === "debit")} />
+              <TransactionList transactions={transactions.filter((t: any) => t.type === "debit")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -101,10 +131,9 @@ export default function StudioWalletPage() {
             <Clock className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium text-foreground">Understanding Platform Debits</p>
+            <p className="font-medium text-foreground">Understanding Wallet Deductions</p>
             <p className="text-sm text-muted-foreground mt-1">
-              When events are created or streaming services are used, your wallet is automatically debited for the
-              platform cost. Recharge your wallet regularly to ensure uninterrupted event creation.
+              Your wallet balance is used for service charges, AI processing, and extended event validities. Credits show all recharges and manual admin adjustments in your favor.
             </p>
           </div>
         </CardContent>

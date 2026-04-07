@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import useSWR from "swr"
 import { useAuth } from "@/lib/auth-context"
 import { EventCalendar } from "@/components/calendar/event-calendar"
 import { FullCalendar, type CalendarEvent } from "@/components/calendar/full-calendar"
@@ -9,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { mockEvents } from "@/lib/mock-data"
 import {
   Video,
   Youtube,
@@ -17,16 +17,19 @@ import {
   Globe,
   Clock,
   Eye,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 const streamTypeDisplayNames: Record<string, string> = {
   rtmp: "RTMP Server",
-  youtube: "YouTube Live API",
-  hls: "YouTube Embed",
-  embedded: "Third Party Embed",
+  youtube_api: "YouTube Live API",
+  youtube_embed: "YouTube Embed",
+  third_party: "Third Party Embed",
 }
 
 const statusFilters = [
@@ -46,14 +49,12 @@ export default function StudioCalendarPage() {
     completed: true
   })
 
-  // Get events for this studio
+  const { data: eventsData, isLoading: isLoadingEvents } = useSWR(user ? "/api/events" : null, fetcher)
+  
   const relevantEvents = useMemo(() => {
-    if (!user) return []
-    // Studio sees only their own events
-    return mockEvents.filter((e) => e.studioId === user.id || e.userId === user.id) as unknown as CalendarEvent[]
-  }, [user])
+    return (eventsData?.events || []) as unknown as CalendarEvent[]
+  }, [eventsData])
 
-  // Filter events by selected status checkboxes
   const filteredEvents = useMemo(() => {
     return relevantEvents.filter((event) => {
        const status = event.status.toLowerCase()
@@ -79,8 +80,8 @@ export default function StudioCalendarPage() {
   const getStreamIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case "rtmp": return <Video className="h-4 w-4" />
-      case "youtube": return <Youtube className="h-4 w-4" />
-      case "hls": return <MonitorPlay className="h-4 w-4" />
+      case "youtube_api": return <Youtube className="h-4 w-4" />
+      case "youtube_embed": return <MonitorPlay className="h-4 w-4" />
       default: return <Globe className="h-4 w-4" />
     }
   }
@@ -89,8 +90,8 @@ export default function StudioCalendarPage() {
     <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Create Event</h1>
-          <p className="text-muted-foreground">Manage your studio streaming schedule</p>
+          <h1 className="text-3xl font-bold text-foreground">Events Calendar</h1>
+          <p className="text-muted-foreground font-medium">Manage your studio streaming schedule</p>
         </div>
       </div>
 
@@ -152,12 +153,18 @@ export default function StudioCalendarPage() {
 
         {/* Main Calendar Grid */}
         <div className="flex-1 w-full min-w-0 h-full">
-            <FullCalendar 
-               currentDate={currentDate}
-               onDateChange={setCurrentDate}
-               events={filteredEvents}
-               onEventClick={setSelectedEvent}
-            />
+            {isLoadingEvents ? (
+               <div className="flex items-center justify-center h-[600px] bg-card border border-border rounded-xl">
+                  <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+               </div>
+            ) : (
+               <FullCalendar 
+                  currentDate={currentDate}
+                  onDateChange={setCurrentDate}
+                  events={filteredEvents}
+                  onEventClick={setSelectedEvent}
+               />
+            )}
         </div>
       </div>
 
@@ -173,11 +180,11 @@ export default function StudioCalendarPage() {
                           ID: {selectedEvent.id.substring(0, 8)}
                       </span>
                   </div>
-                  <SheetTitle className="text-2xl font-bold mb-2 pr-6 leading-tight">
+                  <SheetTitle className="text-2xl font-bold mb-2 pr-6 leading-tight text-foreground">
                       {selectedEvent.title}
                   </SheetTitle>
-                  <SheetDescription className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
+                  <SheetDescription className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4 text-primary" />
                       {format(new Date(selectedEvent.scheduledAt || selectedEvent.createdAt), "EEEE, MMMM d, yyyy 'at' h:mm a")}
                   </SheetDescription>
               </div>
@@ -190,29 +197,29 @@ export default function StudioCalendarPage() {
                               {getStreamIcon(selectedEvent.streamType)}
                           </div>
                           <div>
-                              <p className="font-medium">{streamTypeDisplayNames[selectedEvent.streamType] || selectedEvent.streamType}</p>
+                              <p className="font-medium text-foreground">{streamTypeDisplayNames[selectedEvent.streamType] || selectedEvent.streamType}</p>
                               <p className="text-xs text-muted-foreground">Stream Type</p>
                           </div>
                       </div>
                   </div>
 
                   <div className="space-y-3">
-                      <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Stats</h4>
+                      <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Live Information</h4>
                       <div className="grid grid-cols-2 gap-4">
                           <div className="rounded-lg border border-border bg-muted/20 p-3">
                               <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                  <Eye className="w-3 h-3" />
-                                  <span className="text-xs">Total Views</span>
+                                  <Eye className="w-3 h-3 text-primary" />
+                                  <span className="text-xs">Current Viewers</span>
                               </div>
-                              <p className="text-lg font-semibold">{/*@ts-ignore*/}{selectedEvent.totalViews || 0}</p>
+                              <p className="text-lg font-semibold text-foreground">{/*@ts-ignore*/}{selectedEvent.currentViewers || 0}</p>
                           </div>
                       </div>
                   </div>
               </div>
 
               <div className="p-4 border-t border-border bg-muted/10">
-                  <Button className="w-full" variant="outline" asChild>
-                      <Link href={`/studio/control-center/${selectedEvent.id}`}>
+                  <Button className="w-full" asChild>
+                      <Link href={`/${user?.role === 'studio' ? 'studio' : 'streamer'}/control-center/${selectedEvent.id}`}>
                           View Full Event Dashboard
                       </Link>
                   </Button>

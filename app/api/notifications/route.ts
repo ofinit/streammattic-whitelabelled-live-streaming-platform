@@ -20,3 +20,47 @@ export const GET = withAuth(async (user, request) => {
 
   return jsonOk({ notifications: toCamelRows(rows as Record<string, unknown>[]), unreadCount, page, limit })
 })
+
+export const PATCH = withAuth(async (user, request) => {
+  const body = await request.json()
+  const { id, markAll } = body
+  const sql = getDb()
+  const userId = user.id as string
+
+  if (markAll) {
+    await sql`UPDATE notifications SET is_read = true, read_at = NOW() WHERE user_id = ${userId} AND is_read = false`
+    return jsonOk({ success: true, message: "All notifications marked as read" })
+  }
+
+  if (!id) return jsonError("Notification ID is required")
+
+  const rows = await sql`
+    UPDATE notifications 
+    SET is_read = true, read_at = NOW() 
+    WHERE id = ${id} AND user_id = ${userId}
+    RETURNING *
+  `
+
+  if (rows.length === 0) return jsonError("Notification not found", 404)
+
+  return jsonOk({ notification: toCamelRows(rows as Record<string, unknown>[])[0] })
+})
+
+export const DELETE = withAuth(async (user, request) => {
+  const url = new URL(request.url)
+  const id = url.searchParams.get("id")
+  const sql = getDb()
+  const userId = user.id as string
+
+  if (!id) return jsonError("Notification ID is required")
+
+  const rows = await sql`
+    DELETE FROM notifications 
+    WHERE id = ${id} AND user_id = ${userId}
+    RETURNING id
+  `
+
+  if (rows.length === 0) return jsonError("Notification not found", 404)
+
+  return jsonOk({ success: true, message: "Notification deleted" })
+})

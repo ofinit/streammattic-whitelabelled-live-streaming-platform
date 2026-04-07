@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     // Fetch orders and join related tables
     const rows = await sql`
       SELECT 
-        o.id, o.order_number as "orderNumber", o.total_amount as amount, o.status, o.created_at,
+        o.id, o.order_number as "orderNumber", o.total_amount as amount, o.status, o.created_at, o.order_type as "orderType",
         u.id as "buyerId", u.name as "buyerName", u.email as "buyerEmail",
         e.id as "eventId", e.title as "eventTitle"
       FROM orders o
@@ -25,6 +25,7 @@ export async function GET(req: Request) {
     const orders = rows.map(r => ({
       id: r.id,
       orderNumber: r.orderNumber,
+      orderType: r.orderType,
       amount: Number(r.amount) || 0,
       currency: "INR",
       status: r.status,

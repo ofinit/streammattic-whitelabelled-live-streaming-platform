@@ -1,23 +1,30 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import useSWR from "swr"
 import { ServerStatsPanel } from "@/components/streaming/server-stats-panel"
 import { LiveStreamsMonitor } from "@/components/streaming/live-streams-monitor"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { mockEvents } from "@/lib/mock-data"
-import { Radio, Eye, Users, Activity, Settings } from "lucide-react"
+import { Radio, Eye, Users, Activity, Settings, Loader2 } from "lucide-react"
 import { getActiveBackendType, BACKEND_INFO } from "@/lib/streaming"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function AdminStreamingPage() {
   const router = useRouter()
   const backendType = getActiveBackendType()
   const backendInfo = BACKEND_INFO[backendType]
-  const liveEvents = mockEvents.filter((e) => e.status === "live")
-  const totalViewers = liveEvents.reduce((sum, e) => sum + e.currentViewers, 0)
-  const totalBandwidth = liveEvents.length * 4.5 // Mock: 4.5 Mbps per stream
+  
+  const { data: eventsData, isLoading: isLoadingEvents } = useSWR("/api/events?status=live", fetcher, {
+    refreshInterval: 10000 // refresh every 10 seconds
+  })
+
+  const liveEvents = eventsData?.events || []
+  const totalViewers = liveEvents.reduce((sum: number, e: any) => sum + (e.currentViewers || 0), 0)
+  const totalBandwidth = liveEvents.length * 4.5 // Still mock bandwidth calculation for now as it depends on server stats
 
   return (
     <div className="space-y-6">
@@ -44,18 +51,16 @@ export default function AdminStreamingPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard
           title="Live Streams"
-          value={liveEvents.length.toString()}
+          value={isLoadingEvents ? "..." : liveEvents.length.toString()}
           icon={Radio}
-          trend={{ value: 2, isPositive: true }}
         />
         <StatsCard
           title="Total Viewers"
-          value={totalViewers.toLocaleString()}
+          value={isLoadingEvents ? "..." : totalViewers.toLocaleString()}
           icon={Eye}
-          trend={{ value: 15, isPositive: true }}
         />
-        <StatsCard title="Connected Clients" value={(totalViewers + liveEvents.length).toLocaleString()} icon={Users} />
-        <StatsCard title="Bandwidth Out" value={`${totalBandwidth.toFixed(1)} Mbps`} icon={Activity} />
+        <StatsCard title="Connected Clients" value={isLoadingEvents ? "..." : (totalViewers + liveEvents.length).toLocaleString()} icon={Users} />
+        <StatsCard title="Bandwidth Out" value={isLoadingEvents ? "..." : `${totalBandwidth.toFixed(1)} Mbps`} icon={Activity} />
       </div>
 
       {/* Main Content */}
@@ -70,41 +75,28 @@ export default function AdminStreamingPage() {
       {/* Recent Stream Activity */}
       <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg">Stream Activity Log</CardTitle>
+          <CardTitle className="text-lg">Recent Stream Activity</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[
-              { time: "2 min ago", event: "Stream started", stream: "Tech Conference 2024", type: "start" },
-              { time: "5 min ago", event: "Peak viewers reached", stream: "Music Festival Live", type: "peak" },
-              { time: "12 min ago", event: "Recording started", stream: "Product Launch", type: "recording" },
-              { time: "25 min ago", event: "Stream ended", stream: "Gaming Tournament", type: "end" },
-              { time: "1 hour ago", event: "Stream started", stream: "Yoga Class", type: "start" },
-            ].map((log, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <Badge
-                    variant="outline"
-                    className={
-                      log.type === "start"
-                        ? "bg-green-500/20 text-green-500 border-green-500/30"
-                        : log.type === "end"
-                          ? "bg-gray-500/20 text-gray-500 border-gray-500/30"
-                          : log.type === "peak"
-                            ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
-                            : "bg-blue-500/20 text-blue-500 border-blue-500/30"
-                    }
-                  >
-                    {log.type}
-                  </Badge>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{log.event}</p>
-                    <p className="text-xs text-muted-foreground">{log.stream}</p>
+             {liveEvents.length === 0 ? (
+               <p className="text-sm text-muted-foreground py-4 text-center">No active streams monitored</p>
+             ) : (
+               liveEvents.slice(0, 5).map((event: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-green-500/20 text-green-500 border-green-500/30">
+                      LIVE
+                    </Badge>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">User: {event.userName}</p>
+                    </div>
                   </div>
+                  <span className="text-xs text-muted-foreground">{event.currentViewers || 0} viewers</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{log.time}</span>
-              </div>
-            ))}
+               ))
+             )}
           </div>
         </CardContent>
       </Card>

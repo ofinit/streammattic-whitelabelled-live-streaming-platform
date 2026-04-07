@@ -3,7 +3,6 @@
  * and watch-page banner themes (by category) + per-template accent borders.
  */
 
-import { mockEventTemplates } from "@/lib/mock-data"
 import { getTemplateFields } from "@/lib/template-fields"
 
 /** Tailwind gradient classes for template cards in the event form picker */
@@ -177,10 +176,24 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
 }
 
 export function getTemplateCategoryAndName(templateId: string): { category: string; name: string } {
-  const t = mockEventTemplates.find((x) => x.id === templateId)
+  // Direct mapping to avoid loading mock-data.ts in visual logic
+  if (templateId.includes("wedding")) return { category: "Wedding", name: "Wedding" }
+  if (templateId.includes("corporate")) return { category: "Corporate", name: "Corporate" }
+  if (templateId === "tpl-concert") return { category: "Entertainment", name: "Concert" }
+  if (templateId === "tpl-christian") return { category: "Wedding", name: "Christian Wedding" }
+  if (templateId === "tpl-muslim") return { category: "Wedding", name: "Muslim Wedding" }
+  if (templateId === "tpl-hindu") return { category: "Religious", name: "Hindu Ceremony" }
+  if (templateId === "tpl-sports") return { category: "Sports", name: "Sports Event" }
+  if (templateId === "tpl-political") return { category: "Political", name: "Political Event" }
+  if (templateId === "tpl-school") return { category: "Education", name: "School Event" }
+  if (templateId === "tpl-funeral") return { category: "Memorial", name: "Memorial Service" }
+  if (templateId === "tpl-gaming") return { category: "Entertainment", name: "Gaming/Esports" }
+  if (templateId === "tpl-podcast") return { category: "Entertainment", name: "Podcast/Talk Show" }
+  if (templateId === "tpl-webinar") return { category: "Business", name: "Webinar/Training" }
+  
   return {
-    category: t?.category ?? "General",
-    name: t?.name ?? "Event",
+    category: "General",
+    name: "Event",
   }
 }
 

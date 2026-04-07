@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
-import { eventFormSelectableTemplates } from "@/lib/mock-data"
+import { SELECTABLE_EVENT_TEMPLATES } from "@/lib/template-registry"
 
 function generateStreamKey() {
   return `sk_mock_${Math.random().toString(36).substring(2, 18)}`
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     const createdEvents = []
 
     // Seed an event for every selectable template (exactly 12)
-    for (const template of eventFormSelectableTemplates) {
+    for (const template of SELECTABLE_EVENT_TEMPLATES) {
       if (!template.isActive) continue
 
       const streamKey = generateStreamKey()

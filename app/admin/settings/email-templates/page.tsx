@@ -1,17 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import useSWR from "swr"
 import { Header } from "@/components/dashboard/header"
 import { EmailTemplatePreview } from "@/components/notifications/email-template-preview"
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import { mockEmailTemplates } from "@/lib/mock-data"
+import { Search, Loader2 } from "lucide-react"
+import type { EmailTemplate } from "@/lib/types"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function EmailTemplatesPage() {
   const [search, setSearch] = useState("")
+  const { data, error, isLoading } = useSWR("/api/admin/email-templates", fetcher)
 
-  const filteredTemplates = mockEmailTemplates.filter(
-    (t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.type.toLowerCase().includes(search.toLowerCase()),
+  const templates = useMemo(() => data?.data?.templates || [], [data])
+
+  const filteredTemplates = useMemo(() => 
+    templates.filter(
+      (t: EmailTemplate) => 
+        t.name.toLowerCase().includes(search.toLowerCase()) || 
+        t.type.toLowerCase().includes(search.toLowerCase())
+    ),
+    [templates, search]
   )
 
   return (
@@ -23,16 +34,26 @@ export default function EmailTemplatesPage() {
           <Input
             placeholder="Search templates..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {filteredTemplates.map((template) => (
-            <EmailTemplatePreview key={template.id} template={template} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed rounded-lg">
+            <p className="text-muted-foreground">No email templates found.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {filteredTemplates.map((template: EmailTemplate) => (
+              <EmailTemplatePreview key={template.id} template={template} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

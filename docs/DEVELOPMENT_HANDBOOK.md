@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-07T00:38:09+05:30` |
-| Git revision | `b456234` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-07T10:11:09+05:30` |
+| Git revision | `493e99b` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -72,7 +72,9 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | File | Approx. URL prefix |
 | --- | --- |
 | `app/api/admin/analytics/overview/route.ts` | `/api/admin/analytics/overview` |
+| `app/api/admin/analytics/revenue/route.ts` | `/api/admin/analytics/revenue` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
+| `app/api/admin/email-templates/route.ts` | `/api/admin/email-templates` |
 | `app/api/admin/events/route.ts` | `/api/admin/events` |
 | `app/api/admin/gst/route.ts` | `/api/admin/gst` |
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
@@ -83,6 +85,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/refunds/route.ts` | `/api/admin/refunds` |
 | `app/api/admin/run-migration/route.ts` | `/api/admin/run-migration` |
 | `app/api/admin/transactions/route.ts` | `/api/admin/transactions` |
+| `app/api/admin/users/[id]/domains/route.ts` | `/api/admin/users/[id]/domains` |
 | `app/api/admin/users/[id]/route.ts` | `/api/admin/users/[id]` |
 | `app/api/admin/users/route.ts` | `/api/admin/users` |
 | `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
@@ -105,6 +108,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/auth/stack-exchange/route.ts` | `/api/auth/stack-exchange` |
 | `app/api/auth/youtube/callback/route.ts` | `/api/auth/youtube/callback` |
 | `app/api/auth/youtube/route.ts` | `/api/auth/youtube` |
+| `app/api/branding/lookup/route.ts` | `/api/branding/lookup` |
 | `app/api/branding/route.ts` | `/api/branding` |
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
@@ -136,9 +140,11 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/stream/stop/route.ts` | `/api/stream/stop` |
 | `app/api/stream/webhook/route.ts` | `/api/stream/webhook` |
 | `app/api/stream/youtube/route.ts` | `/api/stream/youtube` |
+| `app/api/streamer/analytics/route.ts` | `/api/streamer/analytics` |
 | `app/api/streamer/dashboard/route.ts` | `/api/streamer/dashboard` |
 | `app/api/streaming/backend-info/route.ts` | `/api/streaming/backend-info` |
 | `app/api/streaming/stats/route.ts` | `/api/streaming/stats` |
+| `app/api/studio/analytics/route.ts` | `/api/studio/analytics` |
 | `app/api/studio/branding/route.ts` | `/api/studio/branding` |
 | `app/api/studio/cloudflare/setup/route.ts` | `/api/studio/cloudflare/setup` |
 | `app/api/studio/dashboard/route.ts` | `/api/studio/dashboard` |
@@ -147,10 +153,12 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/studio/events/check-slug/route.ts` | `/api/studio/events/check-slug` |
 | `app/api/studio/events/route.ts` | `/api/studio/events` |
 | `app/api/studio/integrations/route.ts` | `/api/studio/integrations` |
+| `app/api/studio/setup/route.ts` | `/api/studio/setup` |
 | `app/api/upload/route.ts` | `/api/upload` |
 | `app/api/uploads/[...path]/route.ts` | `/api/uploads/[...path]` |
 | `app/api/users/[id]/route.ts` | `/api/users/[id]` |
 | `app/api/users/route.ts` | `/api/users` |
+| `app/api/wallet/route.ts` | `/api/wallet` |
 | `app/api/wallets/adjust/route.ts` | `/api/wallets/adjust` |
 | `app/api/wallets/route.ts` | `/api/wallets` |
 | `app/api/wallets/transactions/route.ts` | `/api/wallets/transactions` |

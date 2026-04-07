@@ -1,16 +1,44 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { mockEvents } from "@/lib/mock-data"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Radio, Eye, Calendar, Search, Lock, Play } from "lucide-react"
+import { Radio, Eye, Calendar, Search, Lock, Play, Loader2 } from "lucide-react"
 
 export default function PublicEventsPage() {
-  const liveEvents = mockEvents.filter((e) => e.status === "live")
-  const upcomingEvents = mockEvents.filter((e) => e.status === "scheduled")
+  const [events, setEvents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+
+  useEffect(() => {
+    fetch("/api/events?public=true")
+      .then(res => res.json())
+      .then(data => {
+        if (data.events) setEvents(data.events)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filteredEvents = events.filter(e => 
+    e.title.toLowerCase().includes(search.toLowerCase()) || 
+    e.userName?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const liveEvents = filteredEvents.filter((e) => e.status === "live")
+  const upcomingEvents = filteredEvents.filter((e) => e.status === "scheduled")
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background text-muted-foreground gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p>Fetching live streams...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,7 +54,13 @@ export default function PublicEventsPage() {
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input type="search" placeholder="Search events..." className="w-64 bg-secondary border-0 pl-9" />
+              <Input 
+                type="search" 
+                placeholder="Search events..." 
+                className="w-64 bg-secondary border-0 pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
             <Button asChild>
               <Link href="/">Sign In</Link>
@@ -60,12 +94,13 @@ export default function PublicEventsPage() {
                       <Badge className="absolute left-2 top-2 bg-red-600 text-white">LIVE</Badge>
                       <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs text-white">
                         <Eye className="h-3 w-3" />
-                        {event.currentViewers}
+                        {event.currentViewers || 0}
                       </div>
                       {event.isPasswordProtected && <Lock className="absolute right-2 top-2 h-4 w-4 text-white" />}
                     </div>
                     <CardContent className="p-4">
                       <h3 className="font-semibold text-foreground line-clamp-1">{event.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">by {event.userName}</p>
                       {event.description && (
                         <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{event.description}</p>
                       )}
@@ -99,10 +134,11 @@ export default function PublicEventsPage() {
                     </div>
                     <CardContent className="p-4">
                       <h3 className="font-semibold text-foreground line-clamp-1">{event.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">by {event.userName}</p>
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {event.scheduledAt?.toLocaleDateString("en-US", {
+                          {new Date(event.scheduledAt).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             hour: "2-digit",
@@ -119,7 +155,7 @@ export default function PublicEventsPage() {
         )}
 
         {/* Empty State */}
-        {liveEvents.length === 0 && upcomingEvents.length === 0 && (
+        {!loading && liveEvents.length === 0 && upcomingEvents.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <Radio className="mb-4 h-16 w-16 text-muted-foreground" />
             <h2 className="text-xl font-semibold text-foreground">No Events Available</h2>

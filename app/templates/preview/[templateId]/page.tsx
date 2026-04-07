@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react";
-import { mockEventTemplates } from "@/lib/mock-data"
+import { EVENT_TEMPLATES } from "@/lib/template-registry"
 import type { EventTemplate } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Radio, ArrowLeft } from "lucide-react"
@@ -260,7 +260,7 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
   const [template, setTemplate] = useState<EventTemplate | null>(null)
 
   useEffect(() => {
-    const foundTemplate = mockEventTemplates.find((t) => t.id === params.templateId)
+    const foundTemplate = EVENT_TEMPLATES.find((t) => t.id === params.templateId)
     setTemplate(foundTemplate || null)
   }, [params.templateId])
 

@@ -12,9 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Globe, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ShieldCheck } from "lucide-react"
-import { mockDomains } from "@/lib/mock-data"
-import type { Studio } from "@/lib/types"
+import { Globe, CheckCircle, Clock, AlertCircle, Copy, ExternalLink, ShieldCheck, Loader2 } from "lucide-react"
+import type { Studio, Domain } from "@/lib/types"
 import {
   getPlatformARecordDisplay,
   getPlatformCnameDisplay,
@@ -29,18 +28,32 @@ interface StudioDomainDialogProps {
 }
 
 export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainDialogProps) {
-  const existingDomain = mockDomains.find((d) => d.userId === studio.id && d.isPrimary)
-  const [domain, setDomain] = useState(existingDomain?.domain || "")
+  const [domainRecord, setDomainRecord] = useState<Domain | null>(null)
+  const [domain, setDomain] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isFetchingDomain, setIsFetchingDomain] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
 
-  const verificationToken = existingDomain?.verificationToken || `streamlivee-verify-${studio.id}`
+  const verificationToken = domainRecord?.verificationToken || `streamlivee-verify-${studio.id}`
 
   const [platformA, setPlatformA] = useState(getPlatformARecordDisplay())
   const [platformCname, setPlatformCname] = useState(getPlatformCnameDisplay())
 
   useEffect(() => {
+    if (!open) return
+    setIsFetchingDomain(true)
+    fetch(`/api/admin/users/${studio.id}/domains`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.domains && data.domains.length > 0) {
+          const primary = data.domains.find((d: Domain) => d.isPrimary) || data.domains[0]
+          setDomainRecord(primary)
+          setDomain(primary.domain)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsFetchingDomain(false))
     if (!open) return
     fetch("/api/settings")
       .then(res => res.ok ? res.json() : null)
@@ -75,14 +88,51 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
   const handleSave = async () => {
     if (!domain.trim()) return
     setIsSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsSaving(false)
+    try {
+      const res = await fetch(`/api/admin/users/${studio.id}/domains`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domain.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setDomainRecord(data.domain)
+      } else {
+        alert(data.error || "Failed to save domain")
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleVerify = async () => {
     setIsVerifying(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsVerifying(false)
+    try {
+      // In production, trigger server-side DNS verification
+      const res = await fetch(`/api/studio/domains/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domainId: domainRecord?.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        // Refresh domain state
+        fetch(`/api/admin/users/${studio.id}/domains`)
+          .then(res => res.json())
+          .then(d => {
+            if (d.domains) {
+              const primary = d.domains.find((x: Domain) => x.id === domainRecord?.id)
+              setDomainRecord(primary || d.domains[0])
+            }
+          })
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   const copyToClipboard = (text: string, key: string) => {
@@ -92,8 +142,8 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
   }
 
   const getStatusBadge = () => {
-    if (!existingDomain) return null
-    if (existingDomain.verificationStatus === "verified" && existingDomain.sslStatus === "active") {
+    if (!domainRecord) return null
+    if (domainRecord.verificationStatus === "verified" && domainRecord.sslStatus === "active") {
       return (
         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
           <CheckCircle className="h-3 w-3 mr-1" />
@@ -101,7 +151,7 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
         </Badge>
       )
     }
-    if (existingDomain.verificationStatus === "pending") {
+    if (domainRecord.verificationStatus === "pending") {
       return (
         <Badge variant="outline" className="border-yellow-500/30 text-yellow-600">
           <Clock className="h-3 w-3 mr-1" />
@@ -132,16 +182,20 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
 
         <div className="space-y-6 pt-2">
           {/* Current Status */}
-          {existingDomain && (
+          {isFetchingDomain ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : domainRecord && (
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
                   <Globe className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">{existingDomain.domain}</p>
+                  <p className="text-sm font-medium text-foreground">{domainRecord.domain}</p>
                   <p className="text-xs text-muted-foreground">
-                    Added {existingDomain.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    Added {new Date(domainRecord.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
               </div>
@@ -160,7 +214,7 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
                 onChange={(e) => setDomain(e.target.value)}
               />
               <Button onClick={handleSave} disabled={!domain.trim() || isSaving}>
-                {isSaving ? "Saving..." : existingDomain ? "Update" : "Set Domain"}
+                {isSaving ? "Saving..." : domainRecord ? "Update" : "Set Domain"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -173,10 +227,10 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>DNS Records (Studio must add these)</Label>
-                {existingDomain && (
+                {domainRecord && (
                   <CloudflareSetupDialog 
-                    domainId={existingDomain.id} 
-                    domainName={existingDomain.domain} 
+                    domainId={domainRecord.id} 
+                    domainName={domainRecord.domain} 
                     onSuccess={() => {}} 
                   />
                 )}
@@ -219,7 +273,7 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
           )}
 
           {/* SSL & Verification */}
-          {existingDomain && (
+          {domainRecord && (
             <div className="space-y-3">
               <Label>Verification & SSL</Label>
               <div className="flex items-center justify-between rounded-lg border p-3">
@@ -228,12 +282,12 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
                   <div>
                     <p className="text-sm font-medium text-foreground">SSL Certificate</p>
                     <p className="text-xs text-muted-foreground">
-                      {existingDomain.sslStatus === "active" ? "Auto-provisioned via Let's Encrypt" : "Will be provisioned after DNS verification"}
+                      {domainRecord.sslStatus === "active" ? "Auto-provisioned via Let's Encrypt" : "Will be provisioned after DNS verification"}
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className={existingDomain.sslStatus === "active" ? "border-green-500/30 text-green-500" : "border-yellow-500/30 text-yellow-600"}>
-                  {existingDomain.sslStatus === "active" ? "Active" : "Pending"}
+                <Badge variant="outline" className={domainRecord.sslStatus === "active" ? "border-green-500/30 text-green-500" : "border-yellow-500/30 text-yellow-600"}>
+                  {domainRecord.sslStatus === "active" ? "Active" : "Pending"}
                 </Badge>
               </div>
 
@@ -249,15 +303,15 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
           )}
 
           {/* Quick link */}
-          {existingDomain?.verificationStatus === "verified" && (
+          {domainRecord?.verificationStatus === "verified" && (
             <a
-              href={`https://${existingDomain.domain}`}
+              href={`https://${domainRecord.domain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm text-primary hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Visit {existingDomain.domain}
+              Visit {domainRecord.domain}
             </a>
           )}
         </div>

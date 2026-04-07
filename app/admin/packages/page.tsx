@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown, Loader2 } from "lucide-react"
 import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTypePricing } from "@/lib/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { masterStreamTypePricing, masterSimulcastPricing, masterValiditySettings } from "@/lib/mock-data"
 import { toast } from "sonner"
 import { parseStreamTypePricing, parseSimulcastPricing } from "@/lib/stream-type-pricing"
 import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
@@ -47,13 +46,25 @@ function sanitizeStreamPricingForSave(source: StreamTypePricing): StreamTypePric
 }
 
 export default function AdminPricingPage() {
-  const [streamPricing, setStreamPricing] = useState<StreamTypePricing>(() => cloneStreamPricing(masterStreamTypePricing))
+  const [streamPricing, setStreamPricing] = useState<StreamTypePricing>({
+    rtmp: { enabled: true, basePrice: 2500, volumeDiscountTiers: [] },
+    youtube_api: { enabled: true, basePrice: 1500, volumeDiscountTiers: [] },
+    youtube_embed: { enabled: true, basePrice: 1000, volumeDiscountTiers: [] },
+    third_party: { enabled: true, basePrice: 1000, volumeDiscountTiers: [] },
+  })
 
-  const [simulcastPricing, setSimulcastPricing] = useState({ ...masterSimulcastPricing })
+  const [simulcastPricing, setSimulcastPricing] = useState({
+    youtube: { enabled: true, price: 500 },
+    facebook: { enabled: true, price: 500 },
+    customRtmp: { enabled: true, price: 500 },
+  })
 
-  const [validityTiers, setValidityTiers] = useState<ValidityTier[]>(
-    masterValiditySettings.extendedTiers.map((t) => ({ ...t })),
-  )
+  const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
+    { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
+    { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
+    { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
+    { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
+  ])
 
   const [validityDefaultDays, setValidityDefaultDays] = useState(30)
 

@@ -1,4 +1,3 @@
-import { masterValiditySettings } from "@/lib/mock-data"
 import type { ValidityTier } from "@/lib/types"
 
 export type ParsedValidityExtensions = {
@@ -8,8 +7,13 @@ export type ParsedValidityExtensions = {
 
 function fallbackValidityExtensions(): ParsedValidityExtensions {
   return {
-    defaultDays: masterValiditySettings.defaultDays,
-    extendedTiers: masterValiditySettings.extendedTiers.map((t) => ({ ...t })),
+    defaultDays: 30,
+    extendedTiers: [
+      { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
+      { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
+      { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
+      { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
+    ],
   }
 }
 

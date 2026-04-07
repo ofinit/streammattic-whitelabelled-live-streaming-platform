@@ -12,8 +12,7 @@ import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { TopUpDialog } from "@/components/wallet/top-up-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
-import { mockStudios, mockStreamers, mockTransactions, mockAdminWalletSummary } from "@/lib/mock-data"
-import { Search, MoreHorizontal, Plus, TrendingUp, Wallet, Users, Building2 } from "lucide-react"
+import { Search, MoreHorizontal, Plus, TrendingUp, Wallet, Users, Building2, Loader2 } from "lucide-react"
 
 export default function AdminWalletsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -22,9 +21,12 @@ export default function AdminWalletsPage() {
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string; balance: number } | null>(null)
 
   const [wallets, setWallets] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchWallets = () => {
+    setLoading(true)
     fetch("/api/admin/wallets")
       .then(res => res.json())
       .then(data => {
@@ -40,6 +42,8 @@ export default function AdminWalletsPage() {
           }))
           setWallets(formatted)
         }
+        if (data.summary) setSummary(data.summary)
+        if (data.transactions) setTransactions(data.transactions)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -51,8 +55,8 @@ export default function AdminWalletsPage() {
 
   const filteredWallets = wallets.filter(
     (w) =>
-      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      w.email.toLowerCase().includes(searchQuery.toLowerCase()),
+      w.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.email?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const handleTopUp = (userId: string, userName: string) => {
@@ -101,7 +105,6 @@ export default function AdminWalletsPage() {
     } catch (err) { console.error(err) }
   }
 
-  // Calculate totals dynamically
   const totalStudioBalance = wallets.filter(w => w.type === 'studio').reduce((sum, w) => sum + (w.balance || 0), 0)
   const totalStreamerBalance = wallets.filter(w => w.type === 'streamer').reduce((sum, w) => sum + (w.balance || 0), 0)
 
@@ -112,9 +115,17 @@ export default function AdminWalletsPage() {
         <p className="text-muted-foreground">Manage platform wallets and transactions</p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <WalletCard summary={mockAdminWalletSummary} />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Platform Total Balance</CardTitle>
+            <Wallet className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">₹{( (summary?.totalBalance || 0) / 100).toLocaleString("en-IN")}</p>
+            <p className="text-sm text-muted-foreground">Current liquidity</p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Studio Balance</CardTitle>
@@ -141,8 +152,8 @@ export default function AdminWalletsPage() {
             <TrendingUp className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">24</p>
-            <p className="text-sm text-emerald-500">+₹45,000 volume</p>
+            <p className="text-2xl font-bold">{summary?.transactionsToday || 0}</p>
+            <p className="text-sm text-emerald-500">+₹{( (summary?.volumeToday || 0) / 100).toLocaleString("en-IN")} volume</p>
           </CardContent>
         </Card>
       </div>
@@ -154,7 +165,6 @@ export default function AdminWalletsPage() {
         </TabsList>
 
         <TabsContent value="wallets" className="space-y-4">
-          {/* Search */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -165,9 +175,9 @@ export default function AdminWalletsPage() {
                 className="pl-9"
               />
             </div>
+            {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
           </div>
 
-          {/* Wallets Table */}
           <Card>
             <Table>
               <TableHeader>
@@ -180,53 +190,57 @@ export default function AdminWalletsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredWallets.map((wallet) => (
-                  <TableRow key={wallet.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{wallet.name}</p>
-                        <p className="text-sm text-muted-foreground">{wallet.email}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={wallet.type === "studio" ? "default" : "secondary"}>{wallet.type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={wallet.status === "active" ? "default" : "destructive"}
-                        className={wallet.status === "active" ? "bg-emerald-500/20 text-emerald-500" : ""}
-                      >
-                        {wallet.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ₹{(wallet.balance / 100).toLocaleString("en-IN")}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleTopUp(wallet.id, wallet.name)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Recharge wallet
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleAdjust(wallet.id, wallet.name, wallet.balance)}>
-                            <TrendingUp className="mr-2 h-4 w-4" />
-                            Adjust Balance
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Wallet className="mr-2 h-4 w-4" />
-                            View Transactions
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {filteredWallets.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      {loading ? "Loading wallets..." : "No wallets found."}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredWallets.map((wallet) => (
+                    <TableRow key={wallet.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{wallet.name}</p>
+                          <p className="text-sm text-muted-foreground">{wallet.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={wallet.type === "studio" ? "default" : "secondary"}>{wallet.type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={wallet.status === "active" ? "default" : "destructive"}
+                          className={wallet.status === "active" ? "bg-emerald-500/20 text-emerald-500" : ""}
+                        >
+                          {wallet.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        ₹{(wallet.balance / 100).toLocaleString("en-IN")}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTopUp(wallet.id, wallet.name)}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Recharge wallet
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAdjust(wallet.id, wallet.name, wallet.balance)}>
+                              <TrendingUp className="mr-2 h-4 w-4" />
+                              Adjust Balance
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -238,15 +252,12 @@ export default function AdminWalletsPage() {
               <CardTitle>Recent Transactions</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={mockTransactions} showUser />
+              <TransactionList transactions={transactions} showUser />
             </CardContent>
           </Card>
         </TabsContent>
-
-
       </Tabs>
 
-      {/* Dialogs */}
       {selectedUser && (
         <>
           <TopUpDialog

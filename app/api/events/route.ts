@@ -1,29 +1,44 @@
 import { getDb, toCamel, toCamelRows } from "@/lib/db"
-import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
+import { jsonOk, jsonError, withOptionalAuth, withAuth } from "@/lib/api-helpers"
 
-export const GET = withAuth(async (user, request) => {
+export const GET = withOptionalAuth(async (user, request) => {
   const url = new URL(request.url)
   const status = url.searchParams.get("status")
   const page = parseInt(url.searchParams.get("page") || "1")
-  const limit = parseInt(url.searchParams.get("limit") || "20")
+  const limit = parseInt(url.searchParams.get("limit") || "50")
   const offset = (page - 1) * limit
+  const isPublic = url.searchParams.get("public") === "true"
   const sql = getDb()
-  const userId = user.id as string
-  const isAdmin = user.role === "admin"
 
-  const rows = isAdmin
-    ? status
-      ? await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id WHERE e.status = ${status} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-      : await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-    : status
-      ? await sql`SELECT * FROM events WHERE user_id = ${userId} AND status = ${status} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
-      : await sql`SELECT * FROM events WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+  if (!user && !isPublic) {
+    return jsonError("Unauthorized", 401)
+  }
 
-  const countRows = isAdmin
-    ? await sql`SELECT count(*)::int as total FROM events`
-    : await sql`SELECT count(*)::int as total FROM events WHERE user_id = ${userId}`
+  const isAdmin = user?.role === "admin"
+  const userId = user?.id as string
 
-  return jsonOk({ events: toCamelRows(rows as Record<string, unknown>[]), total: (countRows[0] as Record<string, unknown>).total, page, limit })
+  let rows: any[] = []
+  let total = 0
+
+  if (isPublic) {
+    // Public sees all live/scheduled events
+    const filter = status ? sql`AND status = ${status}` : sql`AND status IN ('live', 'scheduled')`
+    rows = await sql`SELECT e.*, u.name as user_name FROM events e JOIN users u ON e.user_id = u.id WHERE 1=1 ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    const count = await sql`SELECT count(*)::int as total FROM events WHERE 1=1 ${filter}`
+    total = count[0].total as number
+  } else if (isAdmin) {
+    const filter = status ? sql`WHERE e.status = ${status}` : sql``
+    rows = await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    const count = await sql`SELECT count(*)::int as total FROM events e ${filter}`
+    total = count[0].total as number
+  } else {
+    const filter = status ? sql`AND status = ${status}` : sql``
+    rows = await sql`SELECT * FROM events WHERE user_id = ${userId} ${filter} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    const count = await sql`SELECT count(*)::int as total FROM events WHERE user_id = ${userId} ${filter}`
+    total = count[0].total as number
+  }
+
+  return jsonOk({ events: toCamelRows(rows as Record<string, unknown>[]), total, page, limit })
 })
 
 export const POST = withAuth(async (user, request) => {

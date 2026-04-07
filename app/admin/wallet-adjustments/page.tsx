@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import useSWR from "swr"
 import { AdminLayout } from "@/components/layouts/admin-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,28 +17,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { PlusCircle, Wallet, TrendingUp, TrendingDown } from "lucide-react"
-import { mockWalletAdjustments, mockStreamers, mockStudios } from "@/lib/mock-data"
+import { PlusCircle, Wallet, TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react"
 import { formatCurrency } from "@/lib/refund-service"
-import type { WalletAdjustment } from "@/lib/types"
+import type { WalletAdjustment, User } from "@/lib/types"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function AdminWalletAdjustmentsPage() {
-  const [adjustments] = useState<WalletAdjustment[]>(mockWalletAdjustments)
+  const { data: adjData, mutate: mutateAdj, isLoading: isLoadingAdj, error: errorAdj } = useSWR("/api/admin/wallets/adjust", fetcher)
+  const { data: usersData, isLoading: isLoadingUsers } = useSWR("/api/admin/users?role=all", fetcher)
+
+  const adjustments = useMemo(() => adjData?.data || [], [adjData])
+  const allUsers = useMemo(() => usersData?.users || [], [usersData])
+
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
   const [targetUserId, setTargetUserId] = useState("")
   const [adjustmentType, setAdjustmentType] = useState<"credit" | "debit">("credit")
   const [amount, setAmount] = useState("")
-  const [category, setCategory] = useState<WalletAdjustment["category"]>("payment_recovery")
+  const [category, setCategory] = useState<WalletAdjustment["category"]>("manual_adjustment")
   const [reason, setReason] = useState("")
   const [notes, setNotes] = useState("")
-  const [paymentGatewayId, setPaymentGatewayId] = useState("")
-  const [paymentGateway, setPaymentGateway] = useState<"razorpay" | "instamojo" | "cashfree">("razorpay")
-  const [supportTicketId, setSupportTicketId] = useState("")
-
-  const allUsers = [...mockStreamers, ...mockStudios]
 
   const handleOpenAddDialog = () => {
     setShowAddDialog(true)
@@ -51,41 +54,63 @@ export default function AdminWalletAdjustmentsPage() {
     setShowConfirmDialog(true)
   }
 
-  const confirmAdjustment = () => {
-    // In real app: call API to create adjustment
-    console.log("[v0] Creating wallet adjustment:", {
-      targetUserId,
-      type: adjustmentType,
-      amount: Number(amount),
-      category,
-      reason,
-      notes,
-      paymentGatewayId,
-      paymentGateway,
-      supportTicketId,
-    })
+  const confirmAdjustment = async () => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch("/api/admin/wallets/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: targetUserId,
+          type: adjustmentType,
+          amount: Number(amount),
+          category,
+          reason,
+          notes,
+        }),
+      })
 
-    // Reset form
-    setShowConfirmDialog(false)
-    resetForm()
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to create adjustment")
+      }
+
+      mutateAdj()
+      setShowConfirmDialog(false)
+      resetForm()
+    } catch (err) {
+      console.error("Failed to create wallet adjustment:", err)
+      alert(err instanceof Error ? err.message : "Adjustment failed")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const resetForm = () => {
     setTargetUserId("")
     setAdjustmentType("credit")
     setAmount("")
-    setCategory("payment_recovery")
+    setCategory("manual_adjustment")
     setReason("")
     setNotes("")
-    setPaymentGatewayId("")
-    setPaymentGateway("razorpay")
-    setSupportTicketId("")
   }
 
-  const selectedUser = allUsers.find((u) => u.id === targetUserId)
+  const selectedUser = allUsers.find((u: User) => u.id === targetUserId)
   const currentBalance = selectedUser?.walletBalance || 0
   const newBalance =
     adjustmentType === "credit" ? currentBalance + Number(amount || 0) : currentBalance - Number(amount || 0)
+
+  if (errorAdj) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <AlertCircle className="h-12 w-12 text-destructive" />
+          <p className="text-muted-foreground">Failed to load adjustments</p>
+          <Button onClick={() => mutateAdj()}>Retry</Button>
+        </div>
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout>
@@ -93,7 +118,7 @@ export default function AdminWalletAdjustmentsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Wallet Adjustments</h1>
-            <p className="text-muted-foreground">Manually add or deduct funds from streamer wallets</p>
+            <p className="text-muted-foreground">Manually add or deduct funds from streamer/studio wallets</p>
           </div>
           <Button onClick={handleOpenAddDialog}>
             <PlusCircle className="h-4 w-4 mr-2" />
@@ -107,7 +132,7 @@ export default function AdminWalletAdjustmentsPage() {
             <CardHeader className="pb-2">
               <CardDescription>Total Credits Added</CardDescription>
               <CardTitle className="text-3xl">
-                {formatCurrency(adjustments.filter((a) => a.type === "credit").reduce((sum, a) => sum + a.amount, 0))}
+                {formatCurrency(adjustments.filter((a: any) => a.type === "credit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -115,15 +140,15 @@ export default function AdminWalletAdjustmentsPage() {
             <CardHeader className="pb-2">
               <CardDescription>Total Debits</CardDescription>
               <CardTitle className="text-3xl">
-                {formatCurrency(adjustments.filter((a) => a.type === "debit").reduce((sum, a) => sum + a.amount, 0))}
+                {formatCurrency(adjustments.filter((a: any) => a.type === "debit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Payment Recoveries</CardDescription>
+              <CardDescription>Adjustments Count</CardDescription>
               <CardTitle className="text-3xl">
-                {adjustments.filter((a) => a.category === "payment_recovery").length}
+                {adjustments.length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -136,18 +161,20 @@ export default function AdminWalletAdjustmentsPage() {
             <CardDescription>Manual wallet adjustments performed by admins</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {adjustments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No adjustments yet</p>
-                  <p className="text-sm text-muted-foreground">Manual adjustments will appear here</p>
-                </div>
-              ) : (
-                adjustments.map((adjustment) => {
-                  const user = allUsers.find((u) => u.id === adjustment.targetUserId)
-
-                  return (
+            {isLoadingAdj ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {adjustments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium">No adjustments yet</p>
+                    <p className="text-sm text-muted-foreground">Manual adjustments will appear here</p>
+                  </div>
+                ) : (
+                  adjustments.map((adjustment: any) => (
                     <div
                       key={adjustment.id}
                       className="flex items-start gap-4 border-b border-border pb-4 last:border-0 last:pb-0"
@@ -166,9 +193,9 @@ export default function AdminWalletAdjustmentsPage() {
                       <div className="flex-1 space-y-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-medium">{user?.name || "Unknown User"}</p>
+                            <p className="font-medium">{adjustment.targetUserName || "Unknown User"}</p>
                             <p className="text-sm text-muted-foreground capitalize">
-                              {adjustment.category.replace(/_/g, " ")}
+                              {adjustment.category.replace(/_/g, " ")} ({adjustment.targetUserRole})
                             </p>
                           </div>
                           <p
@@ -180,20 +207,15 @@ export default function AdminWalletAdjustmentsPage() {
                         </div>
                         <p className="text-sm">{adjustment.reason}</p>
                         {adjustment.notes && <p className="text-xs text-muted-foreground italic">{adjustment.notes}</p>}
-                        {adjustment.paymentGatewayId && (
-                          <p className="text-xs text-muted-foreground">
-                            Payment ID: {adjustment.paymentGatewayId} ({adjustment.paymentGateway})
-                          </p>
-                        )}
                         <p className="text-xs text-muted-foreground">
-                          {new Date(adjustment.initiatedAt).toLocaleString()} by Admin
+                          {new Date(adjustment.createdAt).toLocaleString()} by {adjustment.initiatorName || "Admin"}
                         </p>
                       </div>
                     </div>
-                  )
-                })
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -204,22 +226,22 @@ export default function AdminWalletAdjustmentsPage() {
           <DialogHeader>
             <DialogTitle>Add Wallet Adjustment</DialogTitle>
             <DialogDescription>
-              Manually credit or debit a streamer's wallet. This should only be done for specific reasons like payment
-              recovery or compensation.
+              Manually credit or debit a streamer or studio's wallet.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label htmlFor="user">Target Streamer *</Label>
+                <Label htmlFor="user">Target User *</Label>
                 <Select value={targetUserId} onValueChange={setTargetUserId}>
                   <SelectTrigger id="user">
-                    <SelectValue placeholder="Select streamer" />
+                    <SelectValue placeholder={isLoadingUsers ? "Loading users..." : "Select user"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allUsers.map((user) => (
+                    {allUsers.map((user: User) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name} ({user.role})
+                        <span className="ml-2 text-xs text-muted-foreground">{formatCurrency(user.walletBalance)}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -258,12 +280,13 @@ export default function AdminWalletAdjustmentsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="payment_recovery">Payment Recovery</SelectItem>
+                    <SelectItem value="goodwill">Goodwill</SelectItem>
                     <SelectItem value="compensation">Compensation</SelectItem>
                     <SelectItem value="correction">Correction</SelectItem>
-                    <SelectItem value="goodwill">Goodwill</SelectItem>
-                    <SelectItem value="manual_topup">Manual Top-up</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="manual_top_up">Manual Top-up</SelectItem>
+                    <SelectItem value="manual_debit">Manual Debit</SelectItem>
+                    <SelectItem value="promotional">Promotional</SelectItem>
+                    <SelectItem value="penalty">Penalty</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -273,12 +296,11 @@ export default function AdminWalletAdjustmentsPage() {
               <Label htmlFor="reason">Reason *</Label>
               <Textarea
                 id="reason"
-                placeholder="Enter reason for this adjustment (minimum 10 characters)"
+                placeholder="Enter reason for this adjustment"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground mt-1">{reason.length}/10 characters minimum</p>
             </div>
 
             <div>
@@ -291,49 +313,12 @@ export default function AdminWalletAdjustmentsPage() {
                 rows={2}
               />
             </div>
-
-            {category === "payment_recovery" && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="payment-id">Payment Gateway ID</Label>
-                  <Input
-                    id="payment-id"
-                    placeholder="pay_ABC123"
-                    value={paymentGatewayId}
-                    onChange={(e) => setPaymentGatewayId(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="gateway">Payment Gateway</Label>
-                  <Select value={paymentGateway} onValueChange={(v: any) => setPaymentGateway(v)}>
-                    <SelectTrigger id="gateway">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="razorpay">Razorpay</SelectItem>
-                      <SelectItem value="instamojo">Instamojo</SelectItem>
-                      <SelectItem value="cashfree">Cashfree</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="ticket">Support Ticket ID</Label>
-              <Input
-                id="ticket"
-                placeholder="ticket_1234"
-                value={supportTicketId}
-                onChange={(e) => setSupportTicketId(e.target.value)}
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitForm} disabled={!targetUserId || !amount || reason.length < 10}>
+            <Button onClick={handleSubmitForm} disabled={!targetUserId || !amount || !reason}>
               Continue
             </Button>
           </DialogFooter>
@@ -349,7 +334,7 @@ export default function AdminWalletAdjustmentsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Target Streamer</Label>
+              <Label>Target User</Label>
               <p className="font-medium">{selectedUser?.name}</p>
               <p className="text-sm text-muted-foreground">{selectedUser?.email}</p>
             </div>
@@ -380,11 +365,18 @@ export default function AdminWalletAdjustmentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={confirmAdjustment}>
-              Confirm & {adjustmentType === "credit" ? "Add" : "Deduct"} Funds
+            <Button onClick={confirmAdjustment} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>Confirm & {adjustmentType === "credit" ? "Add" : "Deduct"} Funds</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,9 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { Branding, Studio, Domain } from "./types"
-import { mockStudios, mockDomains } from "./mock-data"
-import { hostnameMatchesDevHints } from "./platform-dns"
+import type { Branding, Studio } from "./types"
 
 // Default platform branding (StreamLivee)
 const defaultBranding: Branding = {
@@ -26,54 +24,11 @@ interface BrandingContextType {
   isWhiteLabel: boolean
   isLoading: boolean
   currentDomain: string | null
-  setDemoStudio: (studioId: string | null) => void
+  setDemoStudio: (customBranding: Branding | null) => void
 }
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined)
 
-// Simulates domain lookup - in production this would be server-side middleware
-function lookupDomainStudio(hostname: string): { studio: Studio; domain: Domain } | null {
-  // Check custom domains
-  const domain = mockDomains.find((d) => d.domain === hostname && d.verificationStatus === "verified")
-
-  if (domain) {
-    const foundStudio = mockStudios.find((r) => r.id === domain.userId)
-    if (foundStudio) {
-      return { studio: foundStudio, domain }
-    }
-  }
-
-  // Check for subdomain pattern: {studio-slug}.streamlivee.com
-  const subdomainMatch = hostname.match(/^([^.]+)\.streamlivee\.com$/)
-  if (subdomainMatch) {
-    const slug = subdomainMatch[1]
-    const foundStudio = mockStudios.find((r) => r.branding.platformName.toLowerCase().replace(/\s+/g, "-") === slug)
-    if (foundStudio) {
-      return { studio: foundStudio, domain: null as unknown as Domain }
-    }
-  }
-
-  return null
-}
-
-// Convert studio branding to full Branding interface
-function studioToBranding(s: Studio): Branding {
-  return {
-    id: s.branding.id,
-    userId: s.id,
-    brandName: s.branding.platformName,
-    companyLogo: s.branding.logo,
-    themeColor: s.branding.primaryColor,
-    accentColor: s.branding.secondaryColor,
-    email: s.branding.supportEmail,
-    phone: s.branding.supportPhone,
-    termsConditions: s.branding.termsUrl,
-    privacyPolicy: s.branding.privacyUrl,
-    hasGatewayConfig: false,
-    createdAt: s.createdAt,
-    updatedAt: s.updatedAt,
-  }
-}
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<Branding>(defaultBranding)
@@ -87,33 +42,21 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       const hostname = typeof window !== "undefined" ? window.location.hostname : ""
       setCurrentDomain(hostname)
 
-      // Skip for localhost / optional preview hints — but we still want to load platform settings if not a studio subdomain
-      const isLocal = hostname === "localhost" || hostname.includes("v0.dev") || hostnameMatchesDevHints(hostname)
-      
-      const result = !isLocal ? lookupDomainStudio(hostname) : null
-      if (result) {
-        setStudio(result.studio)
-        setBranding(studioToBranding(result.studio))
-        setIsLoading(false)
-        return
-      }
-
-      // If not a studio-specific domain, fetch the general platform settings for the brand name
       try {
-        const response = await fetch("/api/settings")
+        const response = await fetch(`/api/branding/lookup?hostname=${hostname}`)
         if (response.ok) {
-          const data = await response.json()
-          const platformName = data.settings?.find((s: any) => s.key === "platform_name")?.value
-          
-          if (platformName && typeof platformName === "string") {
-            setBranding(prev => ({
-              ...prev,
-              brandName: platformName
-            }))
+          const result = await response.json()
+          if (result.success) {
+            setBranding(result.data.branding)
+            // Fetch the actual studio user if whiteLabeled
+            if (result.data.isWhiteLabel && result.data.userId) {
+               // Optional: Fetch specific studio details if needed for context
+               // For now just branding is enough
+            }
           }
         }
       } catch (error) {
-        console.error("Failed to fetch platform branding settings:", error)
+        console.error("Failed to load branding context:", error)
       } finally {
         setIsLoading(false)
       }
@@ -172,19 +115,17 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [branding])
 
-  // For demo purposes - allows switching studio context
-  const setDemoStudio = (studioId: string | null) => {
-    if (!studioId) {
+   // For demo/preview purposes - allows switching branding context manually
+  const setDemoStudio = (customBranding: Branding | null) => {
+    if (!customBranding) {
       setStudio(null)
-      setBranding(defaultBranding)
+      // This will trigger the effect to reload from hostname
+      window.location.reload()
       return
     }
 
-    const foundStudio = mockStudios.find((r) => r.id === studioId)
-    if (foundStudio) {
-      setStudio(foundStudio)
-      setBranding(studioToBranding(foundStudio))
-    }
+    setBranding(customBranding)
+    setStudio(null) // We don't have the full studio object here usually, branding is enough for preview
   }
 
   return (

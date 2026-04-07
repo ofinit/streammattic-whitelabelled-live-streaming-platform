@@ -10,12 +10,14 @@ export async function GET() {
 
     const statsQuery = await sql`
       SELECT 
-        (SELECT COUNT(*) FROM users WHERE role = 'studio') as total_studios,
-        (SELECT COUNT(*) FROM users WHERE role = 'streamer') as total_streamers,
-        (SELECT COUNT(*) FROM events WHERE status = 'live') as live_events,
-        (SELECT COUNT(*) FROM events) as total_events,
-        (SELECT COALESCE(SUM(balance), 0) FROM wallets) as total_wallet_balance,
-        (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed') as total_revenue
+        (SELECT COUNT(*)::int FROM users WHERE role = 'studio') as total_studios,
+        (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') as active_studios,
+        (SELECT COUNT(*)::int FROM users WHERE role = 'streamer') as total_streamers,
+        (SELECT COUNT(*)::int FROM events WHERE status = 'live') as live_events,
+        (SELECT COUNT(*)::int FROM events) as total_events,
+        (SELECT COALESCE(SUM(balance), 0)::numeric FROM wallets) as total_wallet_balance,
+        (SELECT COALESCE(SUM(total_amount), 0)::numeric FROM orders WHERE status = 'completed') as total_revenue,
+        (SELECT COALESCE(SUM(total_amount), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= date_trunc('month', now())) as monthly_revenue
     `
     const statsRow = statsQuery[0] || {}
 
@@ -46,13 +48,13 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       stats: {
-        totalRevenue: Number(statsRow.total_revenue) || 0,
-        monthlyRevenue: 0, // Mock for now
+        totalRevenue: Number(statsRow.total_revenue) / 100 || 0,
+        monthlyRevenue: Number(statsRow.monthly_revenue) / 100 || 0,
         totalStudios: Number(statsRow.total_studios) || 0,
         totalStreamers: Number(statsRow.total_streamers) || 0,
         liveEvents: Number(statsRow.live_events) || 0,
         totalEvents: Number(statsRow.total_events) || 0,
-        activeStudios: Number(statsRow.total_studios) || 0,
+        activeStudios: Number(statsRow.active_studios) || 0,
       },
       studios: studios.map(s => ({
         id: s.id,

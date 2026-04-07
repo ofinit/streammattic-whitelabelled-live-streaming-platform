@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
+import useSWR from "swr"
 import { useBranding } from "@/lib/branding-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,20 +9,63 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { BrandedLogo } from "@/components/branding/branded-logo"
-import { mockStudios } from "@/lib/mock-data"
-import { ArrowLeft, Globe, Palette, Building2 } from "lucide-react"
+import { ArrowLeft, Globe, Palette, Building2, Loader2 } from "lucide-react"
 import Link from "next/link"
+import type { Branding, User } from "@/lib/types"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function WhiteLabelDemoPage() {
   const { branding, studio, isWhiteLabel, setDemoStudio } = useBranding()
-  const [selectedStudio, setSelectedStudio] = useState<string>(studio?.id || "")
+  const [selectedStudioId, setSelectedStudioId] = useState<string>("")
+  const [isApplying, setIsApplying] = useState(false)
 
-  const handleApply = () => {
-    setDemoStudio(selectedStudio || null)
+  const { data: studiosData, isLoading: isLoadingStudios } = useSWR("/api/admin/users?role=studio", fetcher)
+  const studios = useMemo(() => studiosData?.users || [], [studiosData])
+
+  const handleApply = async () => {
+    if (!selectedStudioId) {
+       setDemoStudio(null)
+       return
+    }
+
+    setIsApplying(true)
+    try {
+      const res = await fetch(`/api/branding?userId=${selectedStudioId}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.branding) {
+           // The API returns camelCase branding, BrandingProvider expects Branding type
+           // studio_branding table has matching fields but some might need mapping
+           const b = data.branding
+           const customBranding: Branding = {
+              id: b.id,
+              userId: b.userId,
+              brandName: b.platformName || "Untitled",
+              companyLogo: b.logo,
+              companyLogoDark: b.companyLogoDark,
+              themeColor: b.primaryColor || "#10b981",
+              accentColor: b.accentColor || b.secondaryColor || "#059669",
+              email: b.supportEmail,
+              phone: b.supportPhone,
+              metaTitle: b.metaTitle,
+              metaDescription: b.metaDescription,
+              hasGatewayConfig: !!b.preferredGateway,
+              createdAt: new Date(b.createdAt),
+              updatedAt: new Date(b.updatedAt),
+           }
+           setDemoStudio(customBranding)
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch branding for demo:", err)
+    } finally {
+      setIsApplying(false)
+    }
   }
 
   const handleReset = () => {
-    setSelectedStudio("")
+    setSelectedStudioId("")
     setDemoStudio(null)
   }
 
@@ -44,8 +88,7 @@ export default function WhiteLabelDemoPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">White-Label Demo</h1>
           <p className="text-muted-foreground">
-            Test how the platform appears with different studio brandings. Select a studio to see their colors and
-            branding applied.
+            Test how the platform appears with different studio brandings from the database.
           </p>
         </div>
 
@@ -55,7 +98,7 @@ export default function WhiteLabelDemoPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Current Branding
+                Current Active Branding
               </CardTitle>
               {isWhiteLabel && <Badge variant="secondary">White-Label Active</Badge>}
             </div>
@@ -87,14 +130,6 @@ export default function WhiteLabelDemoPage() {
                 </div>
               </div>
             </div>
-
-            {studio && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-1">Studio</p>
-                <p className="font-semibold">{studio.name}</p>
-                <p className="text-sm text-muted-foreground">{studio.email}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -103,70 +138,63 @@ export default function WhiteLabelDemoPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Select Studio Branding
+              Select Studio from Database
             </CardTitle>
             <CardDescription>Choose a studio to preview their white-label experience</CardDescription>
           </CardHeader>
           <CardContent>
-            <RadioGroup value={selectedStudio} onValueChange={setSelectedStudio} className="space-y-4">
-              <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
-                <RadioGroupItem value="" id="platform" />
-                <Label htmlFor="platform" className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-10 w-10 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: "#10b981" }}
-                    >
-                      <Globe className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">StreamLivee (Platform Default)</p>
-                      <p className="text-sm text-muted-foreground">Default platform branding</p>
-                    </div>
-                  </div>
-                </Label>
+            {isLoadingStudios ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-
-              {mockStudios.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-                >
-                  <RadioGroupItem value={r.id} id={r.id} />
-                  <Label htmlFor={r.id} className="flex-1 cursor-pointer">
+            ) : (
+              <RadioGroup value={selectedStudioId} onValueChange={setSelectedStudioId} className="space-y-4">
+                <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                  <RadioGroupItem value="" id="platform" />
+                  <Label htmlFor="platform" className="flex-1 cursor-pointer">
                     <div className="flex items-center gap-3">
                       <div
                         className="h-10 w-10 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: r.branding.primaryColor }}
+                        style={{ backgroundColor: "#10b981" }}
                       >
                         <Globe className="h-5 w-5 text-white" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold">{r.branding.platformName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {r.name} - {r.email}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-4 w-4 rounded-full border border-border"
-                          style={{ backgroundColor: r.branding.primaryColor }}
-                          title="Primary"
-                        />
-                        <div
-                          className="h-4 w-4 rounded-full border border-border"
-                          style={{ backgroundColor: r.branding.secondaryColor }}
-                          title="Secondary"
-                        />
+                      <div>
+                        <p className="font-semibold">StreamLivee (Platform Default)</p>
+                        <p className="text-sm text-muted-foreground">Default platform branding</p>
                       </div>
                     </div>
                   </Label>
                 </div>
-              ))}
-            </RadioGroup>
+
+                {studios.map((s: User) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
+                  >
+                    <RadioGroupItem value={s.id} id={s.id} />
+                    <Label htmlFor={s.id} className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-10 w-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: s.branding?.primaryColor || "#eee" }}
+                        >
+                          <Globe className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold">{s.branding?.platformName || s.name}</p>
+                          <p className="text-sm text-muted-foreground"> {s.email} </p>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            )}
 
             <div className="flex gap-3 mt-6">
-              <Button onClick={handleApply} className="flex-1">
+              <Button onClick={handleApply} className="flex-1" disabled={isApplying}>
+                {isApplying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Apply Branding
               </Button>
               <Button variant="outline" onClick={handleReset}>
@@ -176,65 +204,25 @@ export default function WhiteLabelDemoPage() {
           </CardContent>
         </Card>
 
-        {/* Preview */}
+        {/* Preview UI Elements */}
         <Card>
           <CardHeader>
-            <CardTitle>Branding Preview</CardTitle>
-            <CardDescription>See how UI elements appear with the current branding</CardDescription>
+            <CardTitle>UI Elements Preview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Buttons */}
             <div>
-              <p className="text-sm font-medium mb-3">Buttons</p>
+              <p className="text-sm font-medium mb-3">Buttons (Themed)</p>
               <div className="flex flex-wrap gap-3">
-                <Button>Primary Button</Button>
+                <Button>Primary Action</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
               </div>
             </div>
-
-            {/* Badges */}
             <div>
               <p className="text-sm font-medium mb-3">Badges</p>
               <div className="flex flex-wrap gap-2">
-                <Badge>Default</Badge>
-                <Badge variant="secondary">Secondary</Badge>
-                <Badge variant="outline">Outline</Badge>
-                <Badge variant="destructive">Destructive</Badge>
-              </div>
-            </div>
-
-            {/* Cards */}
-            <div>
-              <p className="text-sm font-medium mb-3">Example Cards</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Globe className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Active Events</p>
-                        <p className="text-2xl font-bold text-primary">12</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center">
-                        <Building2 className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Total Users</p>
-                        <p className="text-2xl font-bold">156</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Badge>Live Now</Badge>
+                <Badge variant="secondary">Draft</Badge>
               </div>
             </div>
           </CardContent>

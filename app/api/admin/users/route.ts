@@ -10,15 +10,24 @@ export async function GET(req: Request) {
     
     // Default search parameters, can be expanded as needed.
     const sql = getDb()
-    const rows = await sql`
-      SELECT 
-        u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
-        sb.platform_name, sb.primary_color
-      FROM users u
-      LEFT JOIN studio_branding sb ON u.id = sb.user_id
-      WHERE u.role = ${role}
-      ORDER BY u.created_at DESC
-    `
+    const rows = (role === "all") 
+      ? await sql`
+          SELECT 
+            u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
+            sb.platform_name, sb.primary_color
+          FROM users u
+          LEFT JOIN studio_branding sb ON u.id = sb.user_id
+          ORDER BY u.created_at DESC
+        `
+      : await sql`
+          SELECT 
+            u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
+            sb.platform_name, sb.primary_color
+          FROM users u
+          LEFT JOIN studio_branding sb ON u.id = sb.user_id
+          WHERE u.role = ${role}
+          ORDER BY u.created_at DESC
+        `
 
     // Mock data compatibility wrapper
     const users = rows.map(r => ({

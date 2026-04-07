@@ -18,7 +18,24 @@ export async function GET(req: Request) {
       ORDER BY w.updated_at DESC
     `
 
-    // Output formatted to expected UI model
+    // Summary stats
+    const totalBalance = await sql`SELECT SUM(balance) as total FROM wallets`
+    const transactionsToday = await sql`
+      SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as volume 
+      FROM wallet_transactions 
+      WHERE created_at >= NOW() - INTERVAL '1 day'
+    `
+    const recentTransactions = await sql`
+      SELECT 
+        t.*, 
+        u.name as user_name,
+        u.email as user_email
+      FROM wallet_transactions t
+      JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
+      LIMIT 20
+    `
+
     const wallets = rows.map(r => ({
       id: r.wallet_id,
       userId: r.user_id,
@@ -31,7 +48,28 @@ export async function GET(req: Request) {
       lastUpdated: r.updated_at
     }))
 
-    return NextResponse.json({ success: true, wallets })
+    return NextResponse.json({ 
+      success: true, 
+      wallets,
+      summary: {
+        totalBalance: Number(totalBalance[0]?.total || 0),
+        transactionsToday: Number(transactionsToday[0]?.count || 0),
+        volumeToday: Number(transactionsToday[0]?.volume || 0)
+      },
+      transactions: recentTransactions.map(t => ({
+        id: t.id,
+        userId: t.user_id,
+        userName: t.user_name,
+        userEmail: t.user_email,
+        type: t.type,
+        amount: Number(t.amount),
+        currency: t.currency,
+        category: t.category,
+        reason: t.reason,
+        status: t.status,
+        createdAt: t.created_at
+      }))
+    })
   } catch (error: any) {
     console.error("Admin Wallets API error:", error)
     if (error.message === "Forbidden" || error.message === "Unauthorized") {

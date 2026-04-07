@@ -1,21 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
 import { TransactionList } from "@/components/wallet/transaction-list"
 import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
-import { mockTransactions, mockStreamerWalletSummary } from "@/lib/mock-data"
-import { CreditCard, AlertCircle } from "lucide-react"
+import { CreditCard, AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
 
 export default function StreamerWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [wallet, setWallet] = useState<any>(null)
+  const [transactions, setTransactions] = useState<any[]>([])
 
-  // Filter transactions for this streamer
-  const streamerTransactions = mockTransactions.filter((t) => t.userId === "streamer-1")
+  useEffect(() => {
+    fetch("/api/wallet")
+      .then(res => res.json())
+      .then(data => {
+        if (data.wallet) setWallet(data.wallet)
+        if (data.transactions) setTransactions(data.transactions)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-muted-foreground">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm">Loading wallet details…</p>
+      </div>
+    )
+  }
+
+  const walletSummary = {
+    balance: wallet?.balance || 0,
+    currency: wallet?.currency || "INR",
+    lastUpdated: wallet?.updatedAt
+  }
+
+  const lowBalance = (wallet?.balance || 0) < 50000
 
   return (
     <div className="space-y-6">
@@ -24,38 +51,36 @@ export default function StreamerWalletPage() {
         <p className="text-muted-foreground">Manage your wallet, transactions, and tax invoices</p>
       </div>
 
-      {/* Low Balance Alert */}
-      {mockStreamerWalletSummary.balance < 50000 && (
+      {lowBalance && (
         <Alert variant="destructive" className="border-yellow-500/50 bg-yellow-500/10">
           <AlertCircle className="h-4 w-4 text-yellow-500" />
           <AlertTitle className="text-yellow-500">Low Balance</AlertTitle>
           <AlertDescription className="text-yellow-500/80">
-            Your wallet balance is low. Top up to continue purchasing packages or events.
+            Your wallet balance is below ₹500. Top up to ensure you have enough for event creations and validities.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Wallet Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        <WalletCard summary={mockStreamerWalletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
+        <WalletCard summary={walletSummary} showTopUp onTopUp={() => setTopUpOpen(true)} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Credits</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Transactions</CardTitle>
             <CreditCard className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold">18</p>
-            <p className="text-sm text-muted-foreground">Across all stream types</p>
+            <p className="text-2xl font-bold">{transactions.length}</p>
+            <p className="text-sm text-muted-foreground">Total records found</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Purchases</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Activity</CardTitle>
             <CreditCard className="h-5 w-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold">3</p>
-            <p className="text-sm text-muted-foreground">In the last 30 days</p>
+            <p className="text-2xl font-bold">Live</p>
+            <p className="text-sm text-muted-foreground">Connected to database</p>
           </CardContent>
         </Card>
       </div>
@@ -74,7 +99,7 @@ export default function StreamerWalletPage() {
               <CardTitle>Transaction History</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={streamerTransactions} />
+              <TransactionList transactions={transactions} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -85,7 +110,7 @@ export default function StreamerWalletPage() {
               <CardTitle>Purchases</CardTitle>
             </CardHeader>
             <CardContent>
-              <TransactionList transactions={streamerTransactions.filter((t) => t.category === "credit_purchase" || t.category === "service_charge")} />
+              <TransactionList transactions={transactions.filter((t: any) => t.category === "credit_purchase" || t.category === "service_charge" || t.type === "debit")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -97,7 +122,7 @@ export default function StreamerWalletPage() {
             </CardHeader>
             <CardContent>
               <TransactionList
-                transactions={streamerTransactions.filter((t) => t.category === "top_up" || t.category === "order_refund")}
+                transactions={transactions.filter((t: any) => t.category === "top_up" || t.category === "order_refund" || t.type === "credit")}
               />
             </CardContent>
           </Card>

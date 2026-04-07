@@ -18,9 +18,15 @@ import {
   ChevronLeft,
   Upload,
   ExternalLink,
+  Zap,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import type { Studio } from "@/lib/types"
+import type { CloudflareZone } from "@/lib/cloudflare-dns"
 import {
   getRoutingTargetDisplayForDomain,
   getVerificationTxtHostDisplay,
@@ -65,7 +71,7 @@ function DnsSetupHint({ domain }: { domain: string }) {
 export default function StudioSetupPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const studioUser = user as Studio
+  const studioUser = user as unknown as Studio
 
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -82,15 +88,20 @@ export default function StudioSetupPage() {
 
   const [brandingData, setBrandingData] = useState({
     platformName: studioUser?.branding?.platformName || "",
-    logo: null as File | null,
-    favicon: null as File | null,
+    logo: studioUser?.branding?.logo || "",
+    favicon: studioUser?.branding?.favicon || "",
     primaryColor: studioUser?.branding?.primaryColor || "#10b981",
     secondaryColor: studioUser?.branding?.secondaryColor || "#059669",
   })
 
+  const [isUploading, setIsUploading] = useState({ logo: false, favicon: false })
+
   const [domainData, setDomainData] = useState({
     customDomain: "",
     skipDomain: false,
+    useCloudflare: false,
+    cfApiToken: "",
+    cfZoneId: "",
   })
 
   const [paymentData, setPaymentData] = useState({
@@ -106,18 +117,120 @@ export default function StudioSetupPage() {
     }
   }
 
+  const [isCloudflareLoading, setIsCloudflareLoading] = useState(false)
+  const [cloudflareError, setCloudflareError] = useState<string | null>(null)
+  const [cfZones, setCfZones] = useState<CloudflareZone[]>([])
+  const [cfStep, setCfStep] = useState<1 | 2>(1)
+  const [copiedNS, setCopiedNS] = useState<string | null>(null)
+
   const handlePrev = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "favicon") => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading((prev) => ({ ...prev, [type]: true }))
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("subdir", "branding")
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (data.url) {
+        setBrandingData((prev) => ({ ...prev, [type]: data.url }))
+      }
+    } catch (err) {
+      console.error("Upload failed:", err)
+    } finally {
+      setIsUploading((prev) => ({ ...prev, [type]: false }))
+    }
+  }
+
   const handleComplete = async () => {
     setIsSubmitting(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsSubmitting(false)
-    router.push("/studio")
+    try {
+      const res = await fetch("/api/studio/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyData,
+          brandingData,
+          domainData,
+          paymentData,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || "Failed to complete setup")
+      }
+
+      router.push("/studio")
+    } catch (err) {
+      console.error("Setup error:", err)
+      alert(err instanceof Error ? err.message : "An unexpected error occurred during setup.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleFetchZones = async () => {
+    if (!domainData.cfApiToken) return
+    setIsCloudflareLoading(true)
+    setCloudflareError(null)
+    try {
+      const res = await fetch(`/api/studio/cloudflare/setup?apiToken=${domainData.cfApiToken}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to fetch zones")
+      setCfZones(data.zones || [])
+      setCfStep(2)
+      
+      // Auto-select if match found
+      if (data.zones?.length > 0) {
+        const match = data.zones.find((z: CloudflareZone) => domainData.customDomain.endsWith(z.name))
+        if (match) setDomainData(prev => ({ ...prev, cfZoneId: match.id }))
+      }
+    } catch (err) {
+      setCloudflareError(err instanceof Error ? err.message : "Invalid API Token")
+    } finally {
+      setIsCloudflareLoading(false)
+    }
+  }
+
+  const handleSetupCloudflare = async () => {
+    if (!domainData.cfZoneId) return
+    setIsCloudflareLoading(true)
+    setCloudflareError(null)
+    try {
+      const res = await fetch("/api/studio/cloudflare/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          apiToken: domainData.cfApiToken, 
+          zoneId: domainData.cfZoneId, 
+          domainId: "platform" // During onboarding, we treat this as the station domain
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Setup failed")
+      
+      // Proceed to next step automatically or show success in UI
+      setDomainData(prev => ({ ...prev, useCloudflare: false })) // Reset to show summary
+      handleNext()
+    } catch (err) {
+      setCloudflareError(err instanceof Error ? err.message : "Failed to create DNS records")
+    } finally {
+      setIsCloudflareLoading(false)
+    }
   }
 
   const canProceed = () => {
@@ -306,19 +419,59 @@ export default function StudioSetupPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Company Logo</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 2MB (recommended: 200x50px)</p>
-                  </div>
+                  <label className={`border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer block relative ${isUploading.logo ? "opacity-50" : ""}`}>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, "logo")}
+                      disabled={isUploading.logo}
+                    />
+                    {brandingData.logo ? (
+                      <div className="relative h-12 w-32 mx-auto">
+                        <img src={brandingData.logo} alt="Logo Preview" className="h-full w-full object-contain" />
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Click to upload logo</p>
+                      </>
+                    )}
+                    {isUploading.logo && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
+                        <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG recommended: 200x50px</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Favicon</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                    <p className="text-xs text-muted-foreground mt-1">PNG, ICO up to 500KB (32x32px)</p>
-                  </div>
+                  <label className={`border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer block relative ${isUploading.favicon ? "opacity-50" : ""}`}>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, "favicon")}
+                      disabled={isUploading.favicon}
+                    />
+                    {brandingData.favicon ? (
+                      <div className="relative h-8 w-8 mx-auto">
+                        <img src={brandingData.favicon} alt="Favicon Preview" className="h-full w-full object-contain" />
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Click to upload favicon</p>
+                      </>
+                    )}
+                    {isUploading.favicon && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg">
+                        <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, ICO recommended: 32x32px</p>
                 </div>
               </div>
 
@@ -428,7 +581,98 @@ export default function StudioSetupPage() {
                 </p>
               </div>
 
-              {domainData.customDomain && !domainData.skipDomain && (
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Cloudflare Auto-Setup</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically configure DNS records if your domain is on Cloudflare
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setDomainData({ ...domainData, useCloudflare: !domainData.useCloudflare })}
+                    disabled={domainData.skipDomain || !domainData.customDomain}
+                    className={`h-6 w-11 rounded-full transition-colors relative ${
+                      domainData.useCloudflare ? "bg-primary" : "bg-secondary"
+                    } ${(domainData.skipDomain || !domainData.customDomain) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <div className={`h-4 w-4 rounded-full bg-white absolute top-1 transition-all ${
+                      domainData.useCloudflare ? "left-6" : "left-1"
+                    }`} />
+                  </button>
+                </div>
+
+                {domainData.useCloudflare && !domainData.skipDomain && (
+                  <div className="space-y-4 p-4 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                    {cfStep === 1 ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Cloudflare API Token</Label>
+                          <Input
+                            type="password"
+                            value={domainData.cfApiToken}
+                            onChange={(e) => setDomainData({ ...domainData, cfApiToken: e.target.value })}
+                            placeholder="Paste your token here..."
+                            className="bg-background border-border"
+                          />
+                          <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            Requires <code className="text-primary font-mono font-bold">Zone.DNS:Edit</code> permission.
+                          </p>
+                        </div>
+                        {cloudflareError && (
+                          <div className="flex items-center gap-2 text-xs text-destructive p-2 bg-destructive/10 rounded">
+                            <AlertCircle className="h-3 w-3" />
+                            {cloudflareError}
+                          </div>
+                        )}
+                        <Button 
+                          className="w-full bg-orange-600 hover:bg-orange-700 text-white" 
+                          onClick={handleFetchZones}
+                          disabled={!domainData.cfApiToken || isCloudflareLoading}
+                        >
+                          {isCloudflareLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                          Verify & Fetch Zones
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Label>Select Your Cloudflare Zone</Label>
+                        <div className="grid gap-2 max-h-40 overflow-y-auto pr-1">
+                          {cfZones.map((zone) => (
+                            <button
+                              key={zone.id}
+                              onClick={() => setDomainData({ ...domainData, cfZoneId: zone.id })}
+                              className={`text-left rounded-lg border p-3 transition-all ${
+                                domainData.cfZoneId === zone.id 
+                                  ? "bg-orange-500/10 border-orange-500 ring-1 ring-orange-500" 
+                                  : "hover:bg-secondary/50 border-border bg-background"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">{zone.name}</span>
+                                {domainData.cfZoneId === zone.id && <CheckCircle2 className="h-4 w-4 text-orange-500" />}
+                              </div>
+                            </button>
+                          ))}
+                          {cfZones.length === 0 && <p className="text-xs text-center text-muted-foreground">No zones found</p>}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" className="flex-1" onClick={() => setCfStep(1)}>Back</Button>
+                          <Button 
+                            className="flex-[2] bg-orange-600 hover:bg-orange-700 text-white" 
+                            onClick={handleSetupCloudflare}
+                            disabled={!domainData.cfZoneId || isCloudflareLoading}
+                          >
+                            {isCloudflareLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Run Auto-Setup"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!domainData.useCloudflare && domainData.customDomain && !domainData.skipDomain && (
                 <DnsSetupHint domain={domainData.customDomain.trim()} />
               )}
 

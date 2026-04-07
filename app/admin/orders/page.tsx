@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { mockOrders } from "@/lib/mock-data"
 import type { Order } from "@/lib/types"
 import { OrderCard } from "@/components/orders/order-card"
 import { Input } from "@/components/ui/input"

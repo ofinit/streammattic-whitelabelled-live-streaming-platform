@@ -24,6 +24,20 @@ export function withAuth(
   }
 }
 
+/** Wraps a route handler but doesn't throw 401 if user is not signed in. */
+export function withOptionalAuth(
+  handler: (user: Record<string, unknown> | null, request: Request) => Promise<NextResponse>
+) {
+  return async (request: Request) => {
+    try {
+      const user = await getCurrentUser()
+      return handler(user as Record<string, unknown> | null, request)
+    } catch {
+      return handler(null, request)
+    }
+  }
+}
+
 /** Wraps a route handler with role-based auth check. */
 export function withRole(
   roles: string[],

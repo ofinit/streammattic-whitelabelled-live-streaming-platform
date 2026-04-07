@@ -3,7 +3,7 @@
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -1719,21 +1719,113 @@ export function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90vh,90dvh)] w-full max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border">
+        <DialogHeader className="p-4 sm:p-6 border-b shrink-0">
           <DialogTitle>{isEditing ? "Edit Event" : "Create New Event"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4 sm:gap-0">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="stream">Stream</TabsTrigger>
-              <TabsTrigger value="template">Template</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="overflow-x-auto pb-1 mb-2 -mx-1 px-1 scrollbar-hide">
+                <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 sm:grid sm:grid-cols-4 whitespace-nowrap">
+                  <TabsTrigger value="details" className="shrink-0 px-4">Details</TabsTrigger>
+                  <TabsTrigger value="stream" className="shrink-0 px-4">Stream</TabsTrigger>
+                  <TabsTrigger value="template" className="shrink-0 px-4">Template</TabsTrigger>
+                  <TabsTrigger value="settings" className="shrink-0 px-4">Settings</TabsTrigger>
+                </TabsList>
+              </div>
 
             <TabsContent value="details" className="space-y-4 mt-4">
+              <div className="space-y-3">
+                {(() => {
+                  const isDateLocked = isEditing && !!event?.scheduledAt && new Date(event.scheduledAt as unknown as string) <= new Date()
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="scheduledAt">
+                            Date & Time <span className="text-destructive">*</span>
+                          </Label>
+                          {isDateLocked && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              Locked
+                            </span>
+                          )}
+                        </div>
+                        <Input
+                          id="scheduledAt"
+                          type="datetime-local"
+                          disabled={isDateLocked}
+                          value={formData.scheduledAt || ""}
+                          onChange={(e) => {
+                            setFormData({ ...formData, scheduledAt: e.target.value })
+                            if (e.target.value) setFieldErrors((prev) => ({ ...prev, scheduledAt: undefined }))
+                          }}
+                          required
+                          className={`${fieldErrors.scheduledAt ? "border-destructive bg-destructive/5" : ""} [color-scheme:dark]`}
+                        />
+                        {fieldErrors.scheduledAt && (
+                          <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {fieldErrors.scheduledAt}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="timezone">Timezone</Label>
+                        <Select value={timezone} onValueChange={setTimezone} disabled={isDateLocked}>
+                          <SelectTrigger id="timezone" className="w-full">
+                            <SelectValue placeholder="Select timezone" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            <SelectItem value="Asia/Kolkata">IST (UTC+5:30)</SelectItem>
+                            <SelectItem value="UTC">UTC (UTC+0)</SelectItem>
+                            <SelectItem value="America/New_York">EST/EDT (UTC−5/−4)</SelectItem>
+                            <SelectItem value="America/Chicago">CST/CDT (UTC−6/−5)</SelectItem>
+                            <SelectItem value="America/Denver">MST/MDT (UTC−7/−6)</SelectItem>
+                            <SelectItem value="America/Los_Angeles">PST/PDT (UTC−8/−7)</SelectItem>
+                            <SelectItem value="Europe/London">GMT/BST (UTC+0/+1)</SelectItem>
+                            <SelectItem value="Europe/Paris">CET/CEST (UTC+1/+2)</SelectItem>
+                            <SelectItem value="Europe/Moscow">MSK (UTC+3)</SelectItem>
+                            <SelectItem value="Asia/Dubai">GST (UTC+4)</SelectItem>
+                            <SelectItem value="Asia/Karachi">PKT (UTC+5)</SelectItem>
+                            <SelectItem value="Asia/Bangkok">ICT (UTC+7)</SelectItem>
+                            <SelectItem value="Asia/Singapore">SGT (UTC+8)</SelectItem>
+                            <SelectItem value="Asia/Tokyo">JST (UTC+9)</SelectItem>
+                            <SelectItem value="Australia/Sydney">AEST (UTC+10/+11)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )
+                })()}
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, showScheduledPage: !formData.showScheduledPage })}
+                    className={`h-4 w-4 rounded-sm border flex items-center justify-center transition-colors shrink-0 ${
+                      formData.showScheduledPage
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground bg-transparent"
+                    }`}
+                  >
+                    {formData.showScheduledPage && (
+                      <Check className="h-3 w-3" />
+                    )}
+                  </button>
+                  <Label 
+                    className="text-xs text-muted-foreground cursor-pointer select-none"
+                    onClick={() => setFormData({ ...formData, showScheduledPage: !formData.showScheduledPage })}
+                  >
+                    {formData.showScheduledPage
+                      ? "Countdown page enabled (viewers see a countdown)"
+                      : "Countdown page disabled (viewers see event page directly)"}
+                  </Label>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="title">Event Title <span className="text-destructive">*</span></Label>
                 <Input
@@ -2327,124 +2419,6 @@ export function EventFormDialog({
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">Type <code>/</code> in description to insert canned messages.</p>
-              </div>
-
-              <div className="space-y-2">
-                {(() => {
-                  // Lock date/time editing once the scheduled date has passed (edit mode only)
-                  const isDateLocked = isEditing && !!event?.scheduledAt && new Date(event.scheduledAt as unknown as string) <= new Date()
-                  return (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <Label>
-                          <Calendar className="h-4 w-4 inline mr-2" />
-                          Scheduled Date & Time <span className="text-destructive">*</span>
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          {isDateLocked && (
-                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M11 7V5a3 3 0 0 0-6 0v2H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1zm-5-2a2 2 0 1 1 4 0v2H6V5zm2 5.5a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 1 0v1z"/>
-                              </svg>
-                              Locked — date has passed
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            title={formData.showScheduledPage ? "Scheduled page enabled — viewers will see a countdown" : "Scheduled page disabled — viewers will see the event page"}
-                            onClick={() => setFormData({ ...formData, showScheduledPage: !formData.showScheduledPage })}
-                            className={`h-5 w-5 rounded-sm border-2 flex items-center justify-center transition-colors shrink-0 ${
-                              formData.showScheduledPage
-                                ? "bg-primary border-primary text-primary-foreground"
-                                : "border-muted-foreground bg-transparent"
-                            }`}
-                          >
-                            {formData.showScheduledPage && (
-                              <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className={`flex gap-2 ${isDateLocked ? "opacity-50 pointer-events-none select-none" : ""}`}>
-                        <Input
-                          id="scheduledDate"
-                          type="date"
-                          disabled={isDateLocked}
-                          className={`flex-1 [color-scheme:dark] ${fieldErrors.scheduledAt ? "border-destructive" : ""}`}
-                          value={formData.scheduledAt ? formData.scheduledAt.slice(0, 10) : ""}
-                          onChange={(e) => {
-                            const date = e.target.value
-                            const time = formData.scheduledAt ? formData.scheduledAt.slice(11, 16) : "00:00"
-                            setFormData({ ...formData, scheduledAt: date ? `${date}T${time}` : "" })
-                            if (date) setFieldErrors((prev) => ({ ...prev, scheduledAt: undefined }))
-                          }}
-                        />
-                        <Input
-                          id="scheduledTime"
-                          type="time"
-                          disabled={isDateLocked}
-                          className={`w-32 [color-scheme:dark] ${fieldErrors.scheduledAt ? "border-destructive" : ""}`}
-                          value={formData.scheduledAt ? formData.scheduledAt.slice(11, 16) : ""}
-                          onChange={(e) => {
-                            const time = e.target.value
-                            const date = formData.scheduledAt ? formData.scheduledAt.slice(0, 10) : new Date().toISOString().slice(0, 10)
-                            setFormData({ ...formData, scheduledAt: date ? `${date}T${time}` : "" })
-                            if (time) setFieldErrors((prev) => ({ ...prev, scheduledAt: undefined }))
-                          }}
-                        />
-                        <Select value={timezone} onValueChange={setTimezone} disabled={isDateLocked}>
-                          <SelectTrigger className="w-44 text-xs shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-72">
-                            {[
-                              { value: "Asia/Kolkata",       label: "IST (UTC+5:30)" },
-                              { value: "UTC",                label: "UTC (UTC+0)" },
-                              { value: "America/New_York",   label: "EST/EDT (UTC−5/−4)" },
-                              { value: "America/Chicago",    label: "CST/CDT (UTC−6/−5)" },
-                              { value: "America/Denver",     label: "MST/MDT (UTC−7/−6)" },
-                              { value: "America/Los_Angeles",label: "PST/PDT (UTC−8/−7)" },
-                              { value: "Europe/London",      label: "GMT/BST (UTC+0/+1)" },
-                              { value: "Europe/Paris",       label: "CET/CEST (UTC+1/+2)" },
-                              { value: "Europe/Moscow",      label: "MSK (UTC+3)" },
-                              { value: "Asia/Dubai",         label: "GST (UTC+4)" },
-                              { value: "Asia/Karachi",       label: "PKT (UTC+5)" },
-                              { value: "Asia/Dhaka",         label: "BST (UTC+6)" },
-                              { value: "Asia/Bangkok",       label: "ICT (UTC+7)" },
-                              { value: "Asia/Singapore",     label: "SGT (UTC+8)" },
-                              { value: "Asia/Tokyo",         label: "JST (UTC+9)" },
-                              { value: "Australia/Sydney",   label: "AEST (UTC+10/+11)" },
-                              { value: "Pacific/Auckland",   label: "NZST (UTC+12)" },
-                            ].map((tz) => (
-                              <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {fieldErrors.scheduledAt && (
-                        <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{fieldErrors.scheduledAt}</p>
-                      )}
-                    </>
-                  )
-                })()}
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <span className={`inline-block h-1.5 w-1.5 rounded-sm ${formData.showScheduledPage ? "bg-primary" : "bg-muted-foreground/40"}`} />
-                  {formData.showScheduledPage
-                    ? "Countdown page shown to viewers until stream starts"
-                    : "Event page shown directly — no countdown screen"}
-                </p>
-                {formData.scheduledAt && (
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(formData.scheduledAt).toLocaleString("en-IN", {
-                      timeZone: timezone,
-                      dateStyle: "full",
-                      timeStyle: "short",
-                    })}
-                    {" "}({timezone.split("/").pop()?.replace("_", " ")})
-                  </p>
-                )}
               </div>
 
               {/* Additional dates */}
@@ -3274,19 +3248,23 @@ export function EventFormDialog({
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </div>
 
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
-            >
-              {slugStatus === "checking" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? "Save Changes" : "Create Event"}
-            </Button>
+          <div className="fixed sm:static bottom-0 left-0 right-0 p-4 sm:p-0 bg-background border-t sm:border-t-0 sm:bg-transparent z-50 shrink-0">
+            <DialogFooter className="flex flex-row sm:flex-row gap-2 px-4 sm:px-0 py-2 sm:py-0">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={(slugStatus as string) === "checking" || slugStatus === "taken" || slugStatus === "invalid" || (slugTouched && slugStatus === "checking")}
+                className="flex-1 sm:flex-none"
+              >
+                {slugStatus === "checking" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? "Save Changes" : "Create Event"}
+              </Button>
+            </DialogFooter>
           </div>
         </form>
       </DialogContent>

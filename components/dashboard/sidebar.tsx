@@ -61,7 +61,7 @@ const adminNav: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Studios", href: "/admin/studios", icon: Building2 },
   { title: "Streamers", href: "/admin/streamers", icon: Users },
-  { title: "Pricing", href: "/admin/packages", icon: Package },
+  { title: "Packages", href: "/admin/packages", icon: Package },
   { title: "Control Center", href: "/admin/control-center", icon: Radio },
   { title: "Create Event", href: "/admin/create-events", icon: Calendar },
   { title: "Streaming", href: "/admin/streaming", icon: Server },

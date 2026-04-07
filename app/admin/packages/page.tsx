@@ -261,7 +261,7 @@ export default function AdminPricingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pricing</h1>
+        <h1 className="text-2xl font-bold">Packages</h1>
         <p className="text-muted-foreground">Configure stream type pricing, volume discounts, and validity extensions</p>
       </div>
 

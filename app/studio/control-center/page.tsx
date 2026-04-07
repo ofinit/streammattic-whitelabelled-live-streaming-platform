@@ -472,27 +472,48 @@ export default function StudioEventsPage() {
   const renderEventCard = (event: any) => (
     <div
       key={event.id as string}
-      className="flex flex-wrap items-center gap-3 gap-y-2 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
+      className="flex flex-col sm:flex-row items-start sm:items-center gap-3 gap-y-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
     >
-      {/* Minimal thumbnail */}
-      <div className={`relative h-10 w-14 rounded flex-shrink-0 flex items-center justify-center overflow-hidden ${getThumbnailBg(event.streamType as string)}`}>
-        {event.thumbnailUrl ? (
-          <img src={event.thumbnailUrl as string} alt="" className="h-full w-full object-cover" />
-        ) : (
-          getStreamIcon(event.streamType as string)
-        )}
-        {event.status === "live" && (
-          <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-red-600 text-white px-0.5 rounded-sm leading-tight">LIVE</span>
-        )}
-        {event.status === "on_break" && (
-          <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-orange-500 text-white px-0.5 rounded-sm leading-tight">BRB</span>
-        )}
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div
+          className={`relative h-10 w-14 rounded flex-shrink-0 flex items-center justify-center overflow-hidden ${getThumbnailBg(event.streamType as string)}`}
+        >
+          {event.thumbnailUrl ? (
+            <img src={event.thumbnailUrl as string} alt="" className="h-full w-full object-cover" />
+          ) : (
+            getStreamIcon(event.streamType as string)
+          )}
+          {event.status === "live" && (
+            <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-red-600 text-white px-0.5 rounded-sm leading-tight">
+              LIVE
+            </span>
+          )}
+          {event.status === "on_break" && (
+            <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-orange-500 text-white px-0.5 rounded-sm leading-tight">
+              BRB
+            </span>
+          )}
+        </div>
+        <span className={`h-2 w-2 rounded-full flex-shrink-0 ${getStatusDot(event.status as string)}`} />
+        
+        <div className="flex-1 min-w-0 sm:hidden">
+            <div className="flex items-center gap-2">
+                <span className="font-medium text-sm truncate">{event.title as string}</span>
+                <Badge
+                    variant={event.status === "live" ? "destructive" : event.status === "scheduled" ? "default" : "secondary"}
+                    className={`text-[10px] px-1.5 py-0 h-4 shrink-0 ${event.status === "on_break" ? "bg-orange-500 text-white border-0" : ""}`}
+                >
+                    {event.status === "ended"
+                    ? "completed"
+                    : event.status === "on_break"
+                        ? "on break"
+                        : (event.status as string)}
+                </Badge>
+            </div>
+        </div>
       </div>
-      {/* Status dot */}
-      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${getStatusDot(event.status as string)}`} />
 
-      {/* Title + description */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 hidden sm:block">
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm truncate">{event.title as string}</span>
           <Badge
@@ -570,103 +591,104 @@ export default function StudioEventsPage() {
         )}
       </div>
 
-      {/* Go Live / Break / Resume / Stop button */}
-      {(event.status === "scheduled" || event.status === "draft") && (
-        <Button size="sm" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleGoLive(event)}>
-          <Play className="h-3 w-3" />
-          Go Live
-        </Button>
-      )}
-      {event.status === "on_break" && (
-        <Button size="sm" className="h-7 text-xs gap-1 shrink-0 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleResumeEvent(event)}>
-          <PlayCircle className="h-3 w-3" />
-          Resume
-        </Button>
-      )}
-      {event.status === "live" && (
-        <Button size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0 border-orange-500 text-orange-400 hover:bg-orange-500/10" onClick={() => handleBreak(event)}>
-          <PauseCircle className="h-3 w-3" />
-          Break
-        </Button>
-      )}
-      {(event.status === "live" || event.status === "on_break") && (
-        <Button size="sm" variant="destructive" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleForceStop(event)}>
-          <Square className="h-3 w-3" />
-          Stop
-        </Button>
-      )}
-      {(event.status === "completed" || event.status === "ended") && (
-        <Button
-          size="sm"
-          variant="outline"
-          className={`h-7 text-xs gap-1 shrink-0 ${event.showRecording ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
-          onClick={() => handleToggleRecording(event)}
-          title={event.showRecording ? "Hide recording from viewers" : "Show recording to viewers"}
-        >
-          <Film className="h-3 w-3" />
-          {event.showRecording ? "Recording On" : "Show Recording"}
-        </Button>
-      )}
 
-      {/* Actions */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => window.open(`/${(event.slug as string) || event.id}`, "_blank")}>
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Event
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleEditEvent(event)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit Event
-          </DropdownMenuItem>
-          {event.status === "live" && (
-            <DropdownMenuItem onClick={() => handleBreak(event)}>
-              <PauseCircle className="h-4 w-4 mr-2 text-orange-400" />
-              Take a Break
+      <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
+        {(event.status === "scheduled" || event.status === "draft") && (
+            <Button size="sm" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleGoLive(event)}>
+            <Play className="h-3 w-3" />
+            Go Live
+            </Button>
+        )}
+        {event.status === "on_break" && (
+            <Button size="sm" className="h-7 text-xs gap-1 shrink-0 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleResumeEvent(event)}>
+            <PlayCircle className="h-3 w-3" />
+            Resume
+            </Button>
+        )}
+        {event.status === "live" && (
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0 border-orange-500 text-orange-400 hover:bg-orange-500/10" onClick={() => handleBreak(event)}>
+            <PauseCircle className="h-3 w-3" />
+            Break
+            </Button>
+        )}
+        {(event.status === "live" || event.status === "on_break") && (
+            <Button size="sm" variant="destructive" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleForceStop(event)}>
+            <Square className="h-3 w-3" />
+            Stop
+            </Button>
+        )}
+        {(event.status === "completed" || event.status === "ended") && (
+            <Button
+            size="sm"
+            variant="outline"
+            className={`h-7 text-xs gap-1 shrink-0 ${event.showRecording ? "border-primary text-primary" : "border-border text-muted-foreground"}`}
+            onClick={() => handleToggleRecording(event)}
+            title={event.showRecording ? "Hide recording from viewers" : "Show recording to viewers"}
+            >
+            <Film className="h-3 w-3" />
+            {event.showRecording ? "Recording On" : "Show Recording"}
+            </Button>
+        )}
+
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="h-4 w-4" />
+            </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => window.open(`/${(event.slug as string) || event.id}`, "_blank")}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Event
             </DropdownMenuItem>
-          )}
-          {event.status === "on_break" && (
-            <DropdownMenuItem onClick={() => handleResumeEvent(event)}>
-              <PlayCircle className="h-4 w-4 mr-2 text-green-500" />
-              Resume Stream
+            <DropdownMenuItem onClick={() => handleEditEvent(event)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Event
             </DropdownMenuItem>
-          )}
-          {(event.status === "live" || event.status === "on_break") && (
-            <DropdownMenuItem onClick={() => handleForceStop(event)} className="text-destructive">
-              <StopCircle className="h-4 w-4 mr-2" />
-              Force Stop
+            {event.status === "live" && (
+                <DropdownMenuItem onClick={() => handleBreak(event)}>
+                <PauseCircle className="h-4 w-4 mr-2 text-orange-400" />
+                Take a Break
+                </DropdownMenuItem>
+            )}
+            {event.status === "on_break" && (
+                <DropdownMenuItem onClick={() => handleResumeEvent(event)}>
+                <PlayCircle className="h-4 w-4 mr-2 text-green-500" />
+                Resume Stream
+                </DropdownMenuItem>
+            )}
+            {(event.status === "live" || event.status === "on_break") && (
+                <DropdownMenuItem onClick={() => handleForceStop(event)} className="text-destructive">
+                <StopCircle className="h-4 w-4 mr-2" />
+                Force Stop
+                </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEvent(event)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Event
             </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEvent(event)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Event
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   )
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
-        <Button onClick={handleCreateEvent}>
+        <Button onClick={handleCreateEvent} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Event
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
           [1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -734,28 +756,30 @@ export default function StudioEventsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all" className="gap-2">
-            All
-            <span className="bg-muted px-2 py-0.5 rounded text-xs">{totalCount}</span>
-          </TabsTrigger>
-          <TabsTrigger value="live" className="gap-2">
-            <Video className="h-4 w-4" />
-            Live
-            <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-xs">{liveCount}</span>
-          </TabsTrigger>
-          <TabsTrigger value="scheduled" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Scheduled
-            <span className="bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded text-xs">{scheduledCount}</span>
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-2">
-            <CheckCircle className="h-4 w-4" />
-            Completed
-            <span className="bg-muted px-2 py-0.5 rounded text-xs">{completedCount}</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="all" className="w-full">
+        <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+          <TabsList className="w-auto inline-flex whitespace-nowrap min-w-full sm:min-w-0">
+            <TabsTrigger value="all" className="gap-2 shrink-0">
+              All
+              <span className="bg-muted px-2 py-0.5 rounded text-xs">{totalCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="live" className="gap-2 shrink-0">
+              <Video className="h-4 w-4" />
+              Live
+              <span className="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-xs">{liveCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="scheduled" className="gap-2 shrink-0">
+              <Calendar className="h-4 w-4" />
+              Scheduled
+              <span className="bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded text-xs">{scheduledCount}</span>
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="gap-2 shrink-0">
+              <CheckCircle className="h-4 w-4" />
+              Completed
+              <span className="bg-muted px-2 py-0.5 rounded text-xs">{completedCount}</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {["all", "live", "scheduled", "completed"].map((tab) => {
           const tabEvents =

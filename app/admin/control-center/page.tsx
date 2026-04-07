@@ -493,22 +493,32 @@ export default function AdminEventsPage() {
                     >
                         {event.status === "ended" ? "ended" : event.status === "on_break" ? "BRB" : (event.status as string)}
                     </Badge>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
-                    <span className="flex items-center gap-1">
-                        <Eye className="h-2.5 w-2.5" />
-                        {Number((event as any).viewers) || 0}
-                    </span>
-                    {Boolean(event.scheduledAt || event.scheduledStart) && (
-                        <span className="flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" />
-                            {formatEventScheduledDisplay(
-                                (event.scheduledAt || event.scheduledStart) as string,
-                                (event.timezone as string) || undefined,
-                                true // use short format
-                            )}
-                        </span>
+                    {(event as any).isMock && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 shrink-0 bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold uppercase">
+                            Mock
+                        </Badge>
                     )}
+                </div>
+                <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] text-primary/80 font-semibold truncate leading-none">
+                        {(event as any).userName || 'Unknown'} ({(event as any).userRole || 'user'})
+                    </span>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
+                        <span className="flex items-center gap-1">
+                            <Eye className="h-2.5 w-2.5" />
+                            {Number((event as any).viewers) || 0}
+                        </span>
+                        {Boolean(event.scheduledAt || event.scheduledStart) && (
+                            <span className="flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" />
+                                {formatEventScheduledDisplay(
+                                    (event.scheduledAt || event.scheduledStart) as string,
+                                    (event.timezone as string) || undefined,
+                                    true // use short format
+                                )}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -526,6 +536,14 @@ export default function AdminEventsPage() {
               : event.status === "on_break"
                 ? "on break"
                 : (event.status as string)}
+          </Badge>
+          {(event as any).isMock && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0 bg-orange-500/10 text-orange-500 border-orange-500/20">
+              Mock Data
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary/80 bg-primary/5 font-medium">
+            {(event as any).userRole === 'studio' ? 'Studio' : 'Streamer'}: {(event as any).userName || 'Unknown'}
           </Badge>
         </div>
         <div className="flex flex-col gap-0.5 mt-0.5">

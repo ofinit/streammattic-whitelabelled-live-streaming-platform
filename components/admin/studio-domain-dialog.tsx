@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,8 +36,31 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
 
   const verificationToken = existingDomain?.verificationToken || `streamlivee-verify-${studio.id}`
 
-  const platformA = getPlatformARecordDisplay()
-  const platformCname = getPlatformCnameDisplay()
+  const [platformA, setPlatformA] = useState(getPlatformARecordDisplay())
+  const [platformCname, setPlatformCname] = useState(getPlatformCnameDisplay())
+
+  useEffect(() => {
+    if (!open) return
+    fetch("/api/settings")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data?.settings) return
+        const ipRow = data.settings.find((s: any) => s.key === "platform_a_record_ip")
+        const cnameRow = data.settings.find((s: any) => s.key === "platform_cname_target")
+        const domainRow = data.settings.find((s: any) => s.key === "platform_domain")
+
+        if (ipRow?.value) setPlatformA(String(ipRow.value))
+        
+        // If there's a custom CNAME target (like a load balancer), use it.
+        // Otherwise, if there's a platform domain, CNAMEs usually point to that domain.
+        if (cnameRow?.value) {
+          setPlatformCname(String(cnameRow.value))
+        } else if (domainRow?.value) {
+          setPlatformCname(String(domainRow.value))
+        }
+      })
+      .catch(console.error)
+  }, [open])
 
   // Root/apex domains can't use CNAME, so we need an A record + CNAME for www
   const displayDomain = domain || "yourbrand.com"

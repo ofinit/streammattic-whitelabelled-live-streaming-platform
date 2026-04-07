@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Building2, Settings, Palette } from "lucide-react"
+import { Loader2, Building2, Palette } from "lucide-react"
 import type { Studio } from "@/lib/types"
 
 interface StudioFormDialogProps {
@@ -97,13 +97,13 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
           <DialogDescription>
             {mode === "create"
               ? "Create a new white-label studio account with their own branding and users."
-              : "Update studio account settings and permissions."}
+              : "Update studio account details and branding."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="company" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Company</span>
@@ -111,10 +111,6 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
               <TabsTrigger value="branding" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 <span className="hidden sm:inline">Branding</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
             </TabsList>
 
@@ -296,82 +292,6 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
               </Card>
             </TabsContent>
 
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="space-y-4">
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base">Limits & Permissions</CardTitle>
-                  <CardDescription>Resource limits and feature permissions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="maxUsers">Max Users</Label>
-                      <Input
-                        id="maxUsers"
-                        type="number"
-                        min="1"
-                        value={formData.maxUsers}
-                        onChange={(e) => updateField("maxUsers", Number.parseInt(e.target.value) || 1)}
-                        className="bg-secondary border-0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maxEvents">Max Events / Month</Label>
-                      <Input
-                        id="maxEvents"
-                        type="number"
-                        min="1"
-                        value={formData.maxEvents}
-                        onChange={(e) => updateField("maxEvents", Number.parseInt(e.target.value) || 1)}
-                        className="bg-secondary border-0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Custom Pricing</p>
-                        <p className="text-sm text-muted-foreground">
-                          Allow studio to set custom prices for their users
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.canSetCustomPricing}
-                        onCheckedChange={(checked) => updateField("canSetCustomPricing", checked)}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Payment Gateway Access</p>
-                        <p className="text-sm text-muted-foreground">
-                          Allow studio to configure their own payment gateways
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.canManagePaymentGateway}
-                        onCheckedChange={(checked) => updateField("canManagePaymentGateway", checked)}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Auto-Approve Orders</p>
-                        <p className="text-sm text-muted-foreground">
-                          Automatically approve user orders (skip manual approval)
-                        </p>
-                      </div>
-                      <Switch
-                        checked={formData.autoApproveOrders}
-                        onCheckedChange={(checked) => updateField("autoApproveOrders", checked)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
 
           <DialogFooter className="mt-6">

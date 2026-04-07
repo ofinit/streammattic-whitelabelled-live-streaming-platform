@@ -18,6 +18,7 @@ import {
 } from "@/lib/platform-dns"
 
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
+import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
 
 export default function AdminSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
@@ -515,14 +516,23 @@ export default function AdminSettingsPage() {
         {/* Platform Domain */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                <Globe className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Platform Domain</CardTitle>
+                  <CardDescription>Set your primary platform domain. Studio DNS records will reference this.</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle>Platform Domain</CardTitle>
-                <CardDescription>Set your primary platform domain. Studio DNS records will reference this.</CardDescription>
-              </div>
+              {domainSettings.platformDomain && (
+                <CloudflareSetupDialog 
+                  domainId="platform" 
+                  domainName={domainSettings.platformDomain} 
+                  onSuccess={() => {}} 
+                />
+              )}
             </div>
           </CardHeader>
           <CardContent>

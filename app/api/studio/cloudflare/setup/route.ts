@@ -3,7 +3,7 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { autoConfigureDomain, verifyApiToken, getZonesByToken } from "@/lib/cloudflare-dns"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 
-export const POST = withRole(["studio"], async (user, request) => {
+export const POST = withRole(["studio", "admin"], async (user, request) => {
   try {
     const body = await request.json()
     const { apiToken, zoneId, domainId } = body
@@ -13,11 +13,23 @@ export const POST = withRole(["studio"], async (user, request) => {
     }
 
     const sql = getDb()
-    
-    // 1. Get the domain record
-    const domains = await sql`SELECT * FROM domains WHERE id = ${domainId} AND user_id = ${user.id}`
-    if (domains.length === 0) return jsonError("Domain record not found", 404)
-    const domainRecord = domains[0]
+    let domainName = ""
+    let verificationToken = ""
+
+    if (domainId === "platform") {
+      // Platform-wide setup
+      if (user.role !== "admin") return jsonError("Forbidden", 403)
+      domainName = (await getPlatformSetting("platform_domain")) as string
+      verificationToken = `streamlivee-verify-platform` // Generic or custom token
+      if (!domainName) return jsonError("Platform domain not configured in settings", 400)
+    } else {
+      // Studio-specific setup
+      const domains = await sql`SELECT * FROM domains WHERE id = ${domainId} ${user.role === "admin" ? sql`` : sql`AND user_id = ${user.id}`}`
+      if (domains.length === 0) return jsonError("Domain record not found", 404)
+      const domainRecord = domains[0]
+      domainName = domainRecord.domain as string
+      verificationToken = domainRecord.verification_token as string
+    }
 
     // 2. Get Platform settings for IP/CNAME
     const platformIp = (await getPlatformSetting("platform_a_record_ip")) as string
@@ -31,8 +43,8 @@ export const POST = withRole(["studio"], async (user, request) => {
     const result = await autoConfigureDomain(
       apiToken,
       zoneId,
-      domainRecord.domain as string,
-      domainRecord.verification_token as string,
+      domainName,
+      verificationToken,
       platformIp,
       cnameTarget
     )
@@ -54,7 +66,7 @@ export const POST = withRole(["studio"], async (user, request) => {
 })
 
 // Helper to list zones for the UI
-export const GET = withRole(["studio"], async (user, request) => {
+export const GET = withRole(["studio", "admin"], async (user, request) => {
   const url = new URL(request.url)
   const apiToken = url.searchParams.get("apiToken")
 

@@ -20,6 +20,7 @@ import {
   getPlatformCnameDisplay,
   getVerificationTxtHostDisplay,
 } from "@/lib/platform-dns"
+import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
 
 interface StudioDomainDialogProps {
   open: boolean
@@ -170,7 +171,16 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
           {/* DNS Records */}
           {domain && (
             <div className="space-y-3">
-              <Label>DNS Records (Studio must add these)</Label>
+              <div className="flex items-center justify-between">
+                <Label>DNS Records (Studio must add these)</Label>
+                {existingDomain && (
+                  <CloudflareSetupDialog 
+                    domainId={existingDomain.id} 
+                    domainName={existingDomain.domain} 
+                    onSuccess={() => {}} 
+                  />
+                )}
+              </div>
               <div className="space-y-2">
                 {dnsRecords.map((record, i) => (
                   <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-2">

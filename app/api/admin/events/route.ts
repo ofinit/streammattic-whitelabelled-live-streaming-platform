@@ -40,25 +40,31 @@ export async function GET(req: Request) {
       `
     }
 
-    const events = rows.map(r => ({
-      id: r.id,
-      title: r.title,
-      streamType: r.streamType,
-      status: r.status,
-      scheduledAt: r.scheduledAt,
-      validityExpiresAt: r.validityExpiresAt,
-      viewers: r.currentViewers || 0,
-      revenue: 0,
-      studioName: r.userName, // Legacy field
-      userName: r.userName,
-      userEmail: r.userEmail,
-      userRole: r.userRole,
-      isMock: !!r.isMock,
-      eventType: "Virtual",
-      slug: r.slug,
-      userId: r.userId,
-      hasCrewPin: !!r.crew_pin_hash
-    }))
+    const events = rows.map(r => {
+      // Fallback: Default to 30 days from creation if validity_expires_at is missing (common for old mock data)
+      const createdAt = new Date(r.created_at as string)
+      const fallbackExpiry = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000)
+      
+      return {
+        id: r.id,
+        title: r.title,
+        streamType: r.streamType,
+        status: r.status,
+        scheduledAt: r.scheduledAt,
+        validityExpiresAt: r.validityExpiresAt || fallbackExpiry.toISOString(),
+        viewers: r.currentViewers || 0,
+        revenue: 0,
+        studioName: r.userName, // Legacy field
+        userName: r.userName,
+        userEmail: r.userEmail,
+        userRole: r.userRole,
+        isMock: !!r.isMock,
+        eventType: "Virtual",
+        slug: r.slug,
+        userId: r.userId,
+        hasCrewPin: !!r.crew_pin_hash
+      }
+    })
 
     return NextResponse.json({ success: true, events })
   } catch (error: any) {

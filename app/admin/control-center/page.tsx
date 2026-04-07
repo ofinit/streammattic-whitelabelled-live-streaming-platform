@@ -132,6 +132,25 @@ export default function AdminEventsPage() {
   const [showStreamKey, setShowStreamKey] = useState(false)
   const [eventsLimit, setEventsLimit] = useState(EVENTS_PAGE_SIZE)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const [isFixingValidity, setIsFixingValidity] = useState(false)
+
+  const handleFixValidity = async () => {
+    setIsFixingValidity(true)
+    try {
+      const res = await fetch("/api/admin/maintenance/fix-validity", { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(data.message)
+        mutate() // Refresh event list
+      } else {
+        toast.error(data.error || "Failed to fix validity dates")
+      }
+    } catch (err) {
+      toast.error("An error occurred while fixing validity dates")
+    } finally {
+      setIsFixingValidity(false)
+    }
+  }
 
   const copyToClipboard = (text: string, field: "rtmp" | "key") => {
     navigator.clipboard.writeText(text)
@@ -712,10 +731,23 @@ export default function AdminEventsPage() {
           <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage events (admin — credits not required)</p>
         </div>
-        <Button onClick={handleCreateEvent} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Event
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFixValidity}
+            disabled={isFixingValidity}
+            className="h-9 hidden lg:flex gap-2 border-orange-500/20 hover:bg-orange-500/5 text-orange-500/80"
+            title="Align old mock events with current validity standards"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {isFixingValidity ? "Fixing..." : "Update Older Events"}
+          </Button>
+          <Button onClick={handleCreateEvent} className="h-9 gap-2">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Create Event</span>
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {isLoading ? (

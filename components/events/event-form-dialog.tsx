@@ -1728,11 +1728,11 @@ export function EventFormDialog({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="overflow-x-auto pb-1 mb-2 -mx-1 px-1 scrollbar-hide">
-                <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 sm:grid sm:grid-cols-4 whitespace-nowrap">
-                  <TabsTrigger value="details" className="shrink-0 px-4">Details</TabsTrigger>
-                  <TabsTrigger value="stream" className="shrink-0 px-4">Stream</TabsTrigger>
-                  <TabsTrigger value="template" className="shrink-0 px-4">Template</TabsTrigger>
-                  <TabsTrigger value="settings" className="shrink-0 px-4">Settings</TabsTrigger>
+                <TabsList className="flex w-full bg-muted/50 p-1 h-auto sm:grid sm:grid-cols-4 gap-1">
+                  <TabsTrigger value="details" className="flex-1 sm:flex-none py-2 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Details</TabsTrigger>
+                  <TabsTrigger value="stream" className="flex-1 sm:flex-none py-2 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Stream</TabsTrigger>
+                  <TabsTrigger value="template" className="flex-1 sm:flex-none py-2 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Template</TabsTrigger>
+                  <TabsTrigger value="settings" className="flex-1 sm:flex-none py-2 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Settings</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -1874,7 +1874,7 @@ export function EventFormDialog({
                 </Label>
                 <div className="relative">
                   <div className="flex items-center rounded-md border border-input bg-secondary overflow-hidden focus-within:ring-1 focus-within:ring-ring">
-                    <span className="px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-r border-input whitespace-nowrap select-none">
+                    <span className="hidden sm:inline-block px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-r border-input whitespace-nowrap select-none">
                       {formData.useCustomDomain && primaryDomain ? primaryDomain : (typeof window !== "undefined" ? window.location.host : "streamlivee.com")}/
                     </span>
                     <input

@@ -484,18 +484,32 @@ export default function AdminEventsPage() {
         <span className={`h-2 w-2 rounded-full flex-shrink-0 ${getStatusDot(event.status as string)}`} />
         
         <div className="flex-1 min-w-0 sm:hidden">
-            <div className="flex items-center gap-2">
-                <span className="font-medium text-sm truncate">{event.title as string}</span>
-                <Badge
-                    variant={event.status === "live" ? "destructive" : event.status === "scheduled" ? "default" : "secondary"}
-                    className={`text-[10px] px-1.5 py-0 h-4 shrink-0 ${event.status === "on_break" ? "bg-orange-500 text-white border-0" : ""}`}
-                >
-                    {event.status === "ended"
-                    ? "completed"
-                    : event.status === "on_break"
-                        ? "on break"
-                        : (event.status as string)}
-                </Badge>
+            <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm truncate max-w-[140px] uppercase tracking-tighter">{event.title as string}</span>
+                    <Badge
+                        variant={event.status === "live" ? "destructive" : event.status === "scheduled" ? "default" : "secondary"}
+                        className={`text-[9px] px-1 py-0 h-3.5 shrink-0 font-bold uppercase ${event.status === "on_break" ? "bg-orange-500 text-white border-0" : ""}`}
+                    >
+                        {event.status === "ended" ? "ended" : event.status === "on_break" ? "BRB" : (event.status as string)}
+                    </Badge>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
+                    <span className="flex items-center gap-1">
+                        <Eye className="h-2.5 w-2.5" />
+                        {Number((event as any).viewers) || 0}
+                    </span>
+                    {Boolean(event.scheduledAt || event.scheduledStart) && (
+                        <span className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {formatEventScheduledDisplay(
+                                (event.scheduledAt || event.scheduledStart) as string,
+                                (event.timezone as string) || undefined,
+                                true // use short format
+                            )}
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
       </div>
@@ -536,23 +550,6 @@ export default function AdminEventsPage() {
             </a>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
-          <span className="flex items-center gap-1">
-            <Eye className="h-3 w-3 shrink-0" />
-            {Number((event as any).viewers) || 0}
-          </span>
-          {Boolean(event.scheduledAt || event.scheduledStart) && (
-            <span className="flex min-w-0 max-w-full items-center gap-1">
-              <Clock className="h-3 w-3 shrink-0" />
-              <span className="truncate">
-                {formatEventScheduledDisplay(
-                  (event.scheduledAt || event.scheduledStart) as string,
-                  (event.timezone as string) || undefined,
-                )}
-              </span>
-            </span>
-          )}
-        </div>
       </div>
 
       <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
@@ -573,6 +570,7 @@ export default function AdminEventsPage() {
               {formatEventScheduledDisplay(
                 (event.scheduledAt || event.scheduledStart) as string,
                 (event.timezone as string) || undefined,
+                true
               )}
             </span>
           </span>
@@ -683,58 +681,55 @@ export default function AdminEventsPage() {
           Create Event
         </Button>
       </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {isLoading ? (
           [1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
+            <Card key={i} className="p-3 bg-muted/20 border-border/50">
+              <Skeleton className="h-3 w-16 mb-2" />
+              <Skeleton className="h-6 w-10" />
             </Card>
           ))
         ) : (
           <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Live Now</CardTitle>
-                <Video className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{liveCount}</div>
-                <p className="text-xs text-muted-foreground">{totalViewers} total viewers</p>
-              </CardContent>
+            <Card className="p-3 bg-muted/20 border-border/50">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">Live Now</p>
+                <Video className="h-3 w-3 text-red-500" />
+              </div>
+              <div className="mt-1">
+                <p className="text-xl font-bold">{liveCount}</p>
+                <p className="text-[10px] text-muted-foreground">{totalViewers} total</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Scheduled</CardTitle>
-                <Calendar className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{scheduledCount}</div>
-                <p className="text-xs text-muted-foreground">Upcoming events</p>
-              </CardContent>
+            <Card className="p-3 bg-muted/20 border-border/50">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">Scheduled</p>
+                <Calendar className="h-3 w-3 text-blue-500" />
+              </div>
+              <div className="mt-1">
+                <p className="text-xl font-bold">{scheduledCount}</p>
+                <p className="text-[10px] text-muted-foreground">Upcoming</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{completedCount}</div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
+            <Card className="p-3 bg-muted/20 border-border/50">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">Completed</p>
+                <CheckCircle className="h-3 w-3 text-emerald-500" />
+              </div>
+              <div className="mt-1">
+                <p className="text-xl font-bold">{completedCount}</p>
+                <p className="text-[10px] text-muted-foreground">This month</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Events</CardTitle>
-                <Video className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalCount}</div>
-                <p className="text-xs text-muted-foreground">All time</p>
-              </CardContent>
+            <Card className="p-3 bg-muted/20 border-border/50">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">Total Events</p>
+                <Video className="h-3 w-3 text-primary" />
+              </div>
+              <div className="mt-1">
+                <p className="text-xl font-bold">{events.length}</p>
+                <p className="text-[10px] text-muted-foreground">All time</p>
+              </div>
             </Card>
           </>
         )}

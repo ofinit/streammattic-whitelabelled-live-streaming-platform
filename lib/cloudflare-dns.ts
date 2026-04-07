@@ -19,6 +19,7 @@ export interface CloudflareZone {
   id: string
   name: string
   status: string
+  name_servers: string[]
 }
 
 export interface CloudflareDnsRecord {

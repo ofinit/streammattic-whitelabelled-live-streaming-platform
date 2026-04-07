@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Zap, CheckCircle2, AlertCircle } from "lucide-react"
+import { Loader2, Zap, CheckCircle2, AlertCircle, Copy, Check } from "lucide-react"
 import type { CloudflareZone } from "@/lib/cloudflare-dns"
 
 interface CloudflareSetupDialogProps {
@@ -32,6 +32,15 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
   
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  const selectedZone = zones.find(z => z.id === selectedZoneId)
+
+  const copyToClipboard = (text: string, index: number) => {
+    navigator.clipboard.writeText(text)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 2000)
+  }
 
   const handleFetchZones = async () => {
     if (!apiToken) return
@@ -174,11 +183,40 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
                   <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold">Successfully Configured!</h3>
-                <p className="text-sm text-muted-foreground">
-                  We&apos;ve added the root (@) and www A-records, as well as the verification TXT.
-                  Propogation usually takes 5-15 minutes.
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold">Successfully Configured!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We&apos;ve added the required A and TXT records to your Cloudflare account.
+                  </p>
+                </div>
+
+                {selectedZone?.name_servers && selectedZone.name_servers.length > 0 && (
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3 text-left">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Required Nameservers</p>
+                      <p className="text-[10px] text-muted-foreground italic">Point your domain to these at your registrar (e.g. GoDaddy)</p>
+                    </div>
+                    <div className="space-y-2">
+                      {selectedZone.name_servers.map((ns, idx) => (
+                        <div key={idx} className="flex items-center justify-between rounded bg-background border px-3 py-2">
+                          <code className="text-xs font-mono">{ns}</code>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => copyToClipboard(ns, idx)}
+                          >
+                            {copiedIndex === idx ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-[10px] text-muted-foreground px-4">
+                  Note: Changes may take 5-15 minutes to propagate globally.
                 </p>
               </div>
               <Button className="w-full" onClick={() => setOpen(false)}>Done</Button>

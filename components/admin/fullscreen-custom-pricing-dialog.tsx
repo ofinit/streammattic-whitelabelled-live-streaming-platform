@@ -91,7 +91,7 @@ export function FullscreenCustomPricingDialog({
   const [masterPricing, setMasterPricing] = useState<{
     stream: StreamTypePricing
     simulcast: typeof masterSimulcastPricing
-    validity: { defaultDays: number; tiers: ValidityTier[] }
+    validity: { defaultDays: number; extendedTiers: ValidityTier[] }
   } | null>(null)
 
   // ── Load master settings from DB on first open ─────────────────────────────
@@ -104,7 +104,7 @@ export function FullscreenCustomPricingDialog({
       const stream    = parseStreamTypePricing(map.stream_type_pricing ?? null, map.volume_discount_tiers ?? null)
       const simulcast = parseSimulcastPricing(map.simulcast_pricing ?? null)
       const ve        = parseValidityExtensionsSetting(map.validity_extensions ?? null)
-      const validity  = { defaultDays: ve.defaultDays, tiers: ve.tiers }
+      const validity  = { defaultDays: ve.defaultDays, extendedTiers: ve.extendedTiers }
       setMasterPricing({ stream, simulcast, validity })
       return { stream, simulcast, validity }
     } catch {
@@ -140,14 +140,14 @@ export function FullscreenCustomPricingDialog({
       // Validity
       if (cp?.validityTiers) {
         setValidityOverrideEnabled(true)
-        const ve = parseValidityExtensionsSetting({ tiers: cp.validityTiers, defaultDays: cp.validityDefaultDays })
+        const ve = parseValidityExtensionsSetting({ extendedTiers: cp.validityTiers, defaultDays: cp.validityDefaultDays })
         setValidityDefaultDays(ve.defaultDays)
-        setValidityTiers(ve.tiers.map(t => ({ ...t })))
+        setValidityTiers(ve.extendedTiers.map(t => ({ ...t })))
       } else {
         setValidityOverrideEnabled(false)
         if (master) {
           setValidityDefaultDays(master.validity.defaultDays)
-          setValidityTiers(master.validity.tiers.map((t: ValidityTier) => ({ ...t })))
+          setValidityTiers(master.validity.extendedTiers.map((t: ValidityTier) => ({ ...t })))
         }
       }
 
@@ -231,7 +231,7 @@ export function FullscreenCustomPricingDialog({
       setSimulcastOverrideEnabled(false)
     } else if (section === "validity") {
       setValidityDefaultDays(masterPricing.validity.defaultDays)
-      setValidityTiers(masterPricing.validity.tiers.map(t => ({ ...t })))
+      setValidityTiers(masterPricing.validity.extendedTiers.map(t => ({ ...t })))
       setValidityOverrideEnabled(false)
     } else if (section === "subscription") {
       setStudioSubscription({ price: 1800000, enabled: true })

@@ -1177,7 +1177,7 @@ export function EventFormDialog({
     }
     if (!event?.id) return
 
-    const tierFp = validityExtSettings.tiers.map((t) => `${t.days}:${t.enabled ? 1 : 0}`).join(",")
+    const tierFp = validityExtSettings.extendedTiers.map((t) => `${t.days}:${t.enabled ? 1 : 0}`).join(",")
     const fp = `${String(event.id)}|${editEventSchedKey}|${editEventExpKey}|${validityExtSettings.defaultDays}|${tierFp}`
     if (lastValidityInferenceFingerprintRef.current === fp) return
     lastValidityInferenceFingerprintRef.current = fp
@@ -3239,7 +3239,7 @@ export function EventFormDialog({
                       <SelectItem value="included">
                         Default ({validityExtSettings.defaultDays} days, included when you create the event)
                       </SelectItem>
-                      {validityExtSettings.tiers
+                      {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)
                         .map((t) => (
                           <SelectItem key={t.days} value={`tier:${t.days}`}>

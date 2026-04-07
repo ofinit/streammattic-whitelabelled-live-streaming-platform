@@ -120,13 +120,15 @@ export async function POST(req: NextRequest) {
         INSERT INTO events (
           user_id, title, description, stream_type, stream_key, rtmp_url,
           status, scheduled_at, is_mock, slug, template_data,
-          allow_chat, allow_reactions, template_id, crew_pin_hash
+          allow_chat, allow_reactions, template_id, crew_pin_hash,
+          validity_expires_at
         ) VALUES (
           ${user.id}, ${template.name === "Default" ? `Mock ${template.category} Stream` : template.name}, 
           ${description}, 'rtmp', ${streamKey},
           ${rtmpUrl},
           'scheduled', NOW() + INTERVAL '1 day', true, ${slug}, ${templateDataJson}::jsonb,
-          true, true, ${template.id}, 'e10adc3949ba59abbe56e057f20f883e'
+          true, true, ${template.id}, 'e10adc3949ba59abbe56e057f20f883e',
+          NOW() + INTERVAL '30 days'
         )
         RETURNING *
       `

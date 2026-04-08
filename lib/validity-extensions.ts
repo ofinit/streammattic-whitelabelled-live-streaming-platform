@@ -5,15 +5,37 @@ export type ParsedValidityExtensions = {
   extendedTiers: ValidityTier[]
 }
 
+/** Total stream-type credits for validity duration (1 per default-day block, e.g. 30-day blocks). */
+export function validityCreditsForDuration(validityDays: number, defaultDays: number): number {
+  const d = Math.max(1, Math.floor(Number(validityDays)) || 1)
+  const block = Math.max(1, Math.floor(Number(defaultDays)) || 1)
+  return Math.ceil(d / block)
+}
+
+/** Extra credits beyond the first default-day block (for labels and admin “extension” column). */
+export function validityExtensionCredits(totalDays: number, defaultDays: number): number {
+  return Math.max(0, validityCreditsForDuration(totalDays, defaultDays) - 1)
+}
+
+function formatExtensionLabel(days: number, extensionCredits: number): string {
+  const c = extensionCredits
+  return `${days} days (+${c} credit${c === 1 ? "" : "s"})`
+}
+
 function fallbackValidityExtensions(): ParsedValidityExtensions {
+  const defaultDays = 30
+  const mk = (days: number): ValidityTier => {
+    const ext = validityExtensionCredits(days, defaultDays)
+    return {
+      days,
+      creditCost: ext,
+      enabled: true,
+      label: formatExtensionLabel(days, ext),
+    }
+  }
   return {
-    defaultDays: 30,
-    extendedTiers: [
-      { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
-      { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
-      { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
-      { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
-    ],
+    defaultDays,
+    extendedTiers: [mk(60), mk(90), mk(180), mk(365)],
   }
 }
 
@@ -39,13 +61,13 @@ export function parseValidityExtensionsSetting(raw: unknown): ParsedValidityExte
       if (!item || typeof item !== "object") return null
       const t = item as Record<string, unknown>
       const days = typeof t.days === "number" ? t.days : 0
-      const creditCost = typeof t.creditCost === "number" ? t.creditCost : 0
       const enabled = t.enabled !== false
+      if (days <= 0) return null
+      const creditCost = validityExtensionCredits(days, defaultDays)
       const label =
         typeof t.label === "string" && t.label.trim()
           ? t.label.trim()
-          : `${days} days (+${creditCost} credit${creditCost === 1 ? "" : "s"})`
-      if (days <= 0) return null
+          : formatExtensionLabel(days, creditCost)
       return { days, creditCost, enabled, label }
     })
     .filter((x): x is ValidityTier => x !== null)

@@ -791,8 +791,8 @@ async function step13_seed_settings(c) {
         extensions: [
           { days: 60, creditCost: 1, label: "60 Days (+1 credit)", enabled: true },
           { days: 90, creditCost: 2, label: "90 Days (+2 credits)", enabled: true },
-          { days: 180, creditCost: 4, label: "180 Days (+4 credits)", enabled: true },
-          { days: 365, creditCost: 8, label: "365 Days (+8 credits)", enabled: true },
+          { days: 180, creditCost: 5, label: "180 Days (+5 credits)", enabled: true },
+          { days: 365, creditCost: 12, label: "365 Days (+12 credits)", enabled: true },
         ],
       },
     },

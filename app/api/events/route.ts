@@ -89,6 +89,7 @@ export const POST = withAuth(async (user, request) => {
     scheduledAt,
     additionalDates: settings?.additionalDates,
     validityDays: settings?.validityDays,
+    validityExpiresAt: settings?.validityExpiresAt ?? null,
   })
 
   const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)

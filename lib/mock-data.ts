@@ -252,8 +252,8 @@ export const masterValiditySettings: EventValiditySettings = {
   extendedTiers: [
     { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
     { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
-    { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
-    { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
+    { days: 180, creditCost: 5, enabled: true, label: "180 Days (+5 credits)" },
+    { days: 365, creditCost: 12, enabled: true, label: "365 Days (+12 credits)" },
   ],
 }
 

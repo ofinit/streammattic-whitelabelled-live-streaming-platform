@@ -52,6 +52,7 @@ import type {
 import {
   inferValidityChoiceFromEvent,
   parseValidityExtensionsSetting,
+  validityCreditsForDuration,
   type ParsedValidityExtensions,
 } from "@/lib/validity-extensions"
 import {
@@ -1313,14 +1314,27 @@ export function EventFormDialog({
       return
     }
 
-    const validityDaysCost = validityChoiceKey.startsWith("tier:")
-      ? Number(validityChoiceKey.split(":")[1])
-      : 0
-    const selectedTier = validityExtSettings.extendedTiers.find((t) => t.days === validityDaysCost)
-    const extraValidityCost = selectedTier && selectedTier.enabled ? selectedTier.creditCost : 0
+    let validityDaysChosen = validityExtSettings.defaultDays
+    if (validityChoiceKey === "included") {
+      validityDaysChosen = validityExtSettings.defaultDays
+    } else if (validityChoiceKey.startsWith("tier:")) {
+      const n = Number(validityChoiceKey.split(":")[1])
+      validityDaysChosen =
+        Number.isFinite(n) && n > 0 ? n : validityExtSettings.defaultDays
+    } else if (validityChoiceKey === "until" && formData.scheduledAt && validityExpiresAt) {
+      const startMs = new Date(formData.scheduledAt).getTime()
+      const expMs = new Date(validityExpiresAt).getTime()
+      if (!Number.isNaN(startMs) && !Number.isNaN(expMs)) {
+        const d = Math.round((expMs - startMs) / 86_400_000)
+        validityDaysChosen = Math.max(1, d)
+      }
+    }
 
-    const baseCost = 1
-    const need = baseCost + uniqueExtraDates.length + extraValidityCost
+    const validityCreditTotal = validityCreditsForDuration(
+      validityDaysChosen,
+      validityExtSettings.defaultDays,
+    )
+    const need = validityCreditTotal + uniqueExtraDates.length
 
     if (need === 0) {
       setCreditStatus("idle")
@@ -1352,8 +1366,16 @@ export function EventFormDialog({
         setCreditStatus("idle")
       }
     }, 400)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [additionalDates, formData.scheduledAt, formData.streamType, skipCreditsValidation, validityChoiceKey, creditsUserId])
+  }, [
+    additionalDates,
+    formData.scheduledAt,
+    formData.streamType,
+    skipCreditsValidation,
+    validityChoiceKey,
+    validityExpiresAt,
+    validityExtSettings.defaultDays,
+    creditsUserId,
+  ])
 
   const generateCredentials = () => {
     const streamKey = `live_${Math.random().toString(36).substring(2, 15)}`

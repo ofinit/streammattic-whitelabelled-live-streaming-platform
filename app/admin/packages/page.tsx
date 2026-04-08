@@ -13,7 +13,11 @@ import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTyp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
 import { parseStreamTypePricing, parseSimulcastPricing } from "@/lib/stream-type-pricing"
-import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
+import {
+  parseValidityExtensionsSetting,
+  validityCreditsForDuration,
+  validityExtensionCredits,
+} from "@/lib/validity-extensions"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -62,8 +66,8 @@ export default function AdminPricingPage() {
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
     { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
     { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
-    { days: 180, creditCost: 4, enabled: true, label: "180 Days (+4 credits)" },
-    { days: 365, creditCost: 8, enabled: true, label: "365 Days (+8 credits)" },
+    { days: 180, creditCost: 5, enabled: true, label: "180 Days (+5 credits)" },
+    { days: 365, creditCost: 12, enabled: true, label: "365 Days (+12 credits)" },
   ])
 
   const [validityDefaultDays, setValidityDefaultDays] = useState(30)
@@ -593,8 +597,13 @@ export default function AdminPricingPage() {
             <p className="text-sm font-medium">Example</p>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>Create RTMP event = 1 RTMP credit (includes {validityDefaultDays} days validity)</p>
-              <p>Extend to 90 days = +{validityTiers.find((t) => t.days === 90)?.creditCost ?? 2} RTMP credits</p>
-              <p className="text-foreground font-medium">Total: {1 + (validityTiers.find((t) => t.days === 90)?.creditCost ?? 2)} RTMP credits for a 90-day event</p>
+              <p>
+                Extend to 90 days = +{validityExtensionCredits(90, validityDefaultDays)} RTMP credits
+              </p>
+              <p className="text-foreground font-medium">
+                Total: {validityCreditsForDuration(90, validityDefaultDays)} RTMP credits for a 90-day
+                event
+              </p>
             </div>
           </div>
         </CardContent>

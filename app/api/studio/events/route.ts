@@ -137,6 +137,7 @@ export async function POST(req: NextRequest) {
       scheduledAt,
       additionalDates,
       validityDays,
+      validityExpiresAt: validityExpiresAt ?? null,
     })
 
     const targetUserId = user.id as string
@@ -336,6 +337,7 @@ export async function PUT(req: NextRequest) {
         scheduledAt: prevScheduled,
         additionalDates: prevAdditional,
         validityDays: prevValidityDays,
+        validityExpiresAt: (existingRow.validity_expires_at as string | null) ?? null,
       }
 
       const nextScheduled = (scheduledAt ?? existingRow.scheduled_at) as string | null
@@ -375,6 +377,7 @@ export async function PUT(req: NextRequest) {
         scheduledAt: nextScheduled,
         additionalDates: nextAdditional,
         validityDays: nextValidityDays,
+        validityExpiresAt: mergedValidityExpires ?? null,
       }
 
       const incrementalNeed = await computeIncrementalCreditsRequired(previous, next)

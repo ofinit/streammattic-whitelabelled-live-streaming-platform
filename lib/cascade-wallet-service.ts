@@ -25,6 +25,7 @@ import {
   masterValiditySettings,
   getBestPriceForQuantity,
 } from "./mock-data"
+import { validityExtensionCredits } from "./validity-extensions"
 
 // Get price for stream type (single price, no cascade)
 export function getStreamTypePrice(
@@ -91,14 +92,19 @@ export function hasEnoughCredits(
   return credits[streamType] >= amount
 }
 
-// Get validity extension cost in credits
+// Get validity extension cost in credits (linear: one credit per default-day block beyond the first)
 export function getValidityExtensionCost(extensionDays: number): {
   creditCost: number
   label: string
 } | null {
-  const tier = masterValiditySettings.extendedTiers.find(t => t.days === extensionDays && t.enabled)
-  if (!tier) return null
-  return { creditCost: tier.creditCost, label: tier.label || `${tier.days} Days` }
+  const defaultDays = masterValiditySettings.defaultDays
+  if (extensionDays <= defaultDays) return null
+  const tier = masterValiditySettings.extendedTiers.find((t) => t.days === extensionDays && t.enabled)
+  const creditCost = validityExtensionCredits(extensionDays, defaultDays)
+  return {
+    creditCost,
+    label: tier?.label || `${extensionDays} days`,
+  }
 }
 
 // Get pricing display info for UI

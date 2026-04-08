@@ -1,5 +1,8 @@
 import { getDb } from "@/lib/db"
-import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
+import {
+  parseValidityExtensionsSetting,
+  validityCreditsForDuration,
+} from "@/lib/validity-extensions"
 
 /**
  * Stream type mapping: form values → DB enum values / internal keys
@@ -28,18 +31,34 @@ export type CreditNeedInput = {
   scheduledAt: string | null
   additionalDates?: { scheduledAt: string }[]
   validityDays?: number
+  /** When `validityDays` is absent, used with `scheduledAt` to derive duration (custom “until” expiry). */
+  validityExpiresAt?: string | null
 }
 
 /**
- * Calculate total credits required based on policy:
- * 1 base credit (if stream type selected) + extra calendar dates + validity tier cost
+ * Credits for stream type: linear validity (ceil(days/defaultDays)) + billable extra calendar dates.
  */
 export async function calculateTotalCreditsRequired(input: CreditNeedInput) {
-  const { streamType, scheduledAt, additionalDates, validityDays } = input
+  const { streamType, scheduledAt, additionalDates, validityDays, validityExpiresAt } = input
 
   if (!streamType) return 0
 
-  const baseCost = 1
+  const sql = getDb()
+  const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
+  const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
+  const defaultDays = settings.defaultDays
+
+  let validityCredits = 1
+  if (typeof validityDays === "number" && validityDays > 0) {
+    validityCredits = validityCreditsForDuration(validityDays, defaultDays)
+  } else if (validityExpiresAt && scheduledAt) {
+    const expMs = new Date(validityExpiresAt).getTime()
+    const startMs = new Date(scheduledAt).getTime()
+    if (!Number.isNaN(expMs) && !Number.isNaN(startMs)) {
+      const d = Math.round((expMs - startMs) / 86_400_000)
+      if (d > 0) validityCredits = validityCreditsForDuration(d, defaultDays)
+    }
+  }
 
   let extraDatesCost = 0
   if (Array.isArray(additionalDates) && additionalDates.length > 0) {
@@ -50,18 +69,7 @@ export async function calculateTotalCreditsRequired(input: CreditNeedInput) {
     extraDatesCost = billableDates.length
   }
 
-  let validityTierCost = 0
-  if (typeof validityDays === "number" && validityDays > 0) {
-    const sql = getDb()
-    const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
-    const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
-    const tier = settings.extendedTiers.find((t) => t.days === validityDays)
-    if (tier && tier.enabled) {
-      validityTierCost = tier.creditCost
-    }
-  }
-
-  return baseCost + extraDatesCost + validityTierCost
+  return validityCredits + extraDatesCost
 }
 
 /**
@@ -148,5 +156,6 @@ export async function inferValidityDaysForBilling(
   const tier = settings.extendedTiers.find((t) => t.enabled && t.days === days)
   if (tier) return tier.days
 
-  return undefined
+  if (days > 0) return days
+  return settings.defaultDays
 }

@@ -23,12 +23,44 @@ const ROLE_PREFIXES: Record<string, string[]> = {
   "/streamer": ["admin", "studio", "streamer"],
 }
 
+/**
+ * First path segments reserved for app routes — not event slugs at apex (`/{slug}`, `/{slug}/crew`).
+ * Omit `events` so `/events` stays public.
+ */
+const RESERVED_ROOT_SEGMENT = new Set([
+  "admin",
+  "api",
+  "auth",
+  "handler",
+  "login",
+  "payment",
+  "signup",
+  "site",
+  "streamer",
+  "studio",
+  "templates",
+  "upgrade",
+  "watch",
+])
+
+function isPublicEventSlugPath(pathname: string): boolean {
+  const crew = pathname.match(/^\/([^/]+)\/crew\/?$/)
+  if (crew) {
+    return !RESERVED_ROOT_SEGMENT.has(crew[1]!.toLowerCase())
+  }
+  const one = pathname.match(/^\/([^/]+)\/?$/)
+  if (!one) return false
+  return !RESERVED_ROOT_SEGMENT.has(one[1]!.toLowerCase())
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public paths, NextAuth routes, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
+    isPublicEventSlugPath(pathname) ||
+    pathname.startsWith("/demo/") ||
     pathname.startsWith("/api/favicon/") ||
     /** Liveness for Coolify/Docker — must bypass auth (no session cookie on probes) */
     pathname.startsWith("/api/health") ||

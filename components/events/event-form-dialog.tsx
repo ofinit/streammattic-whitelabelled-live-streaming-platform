@@ -93,7 +93,9 @@ function computeCreditPreviewNeed(
   validityChoiceKey: string,
   validityExpiresAt: string,
   validityExtSettings: ParsedValidityExtensions,
+  formStreamType: string,
 ): number {
+  if (!String(formStreamType || "").trim()) return 0
   const primaryDatePart = scheduledAt ? scheduledAt.slice(0, 10) : ""
   const uniqueExtraDates = additionalDates.filter(
     (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
@@ -322,7 +324,8 @@ function streamValidityGroup(streamType: string): ValidityStreamGroup {
 
 function streamTypeLabelForSettings(streamType: string): string {
   const t = streamType || ""
-  if (!t || t === "rtmp") return "RTMP / OBS encoder"
+  if (!t) return "Draft (stream not configured yet)"
+  if (t === "rtmp") return "RTMP / OBS encoder"
   if (t === "youtube_api") return "YouTube API (ingest)"
   if (t === "youtube_embed") return "YouTube embed (URL)"
   if (t === "third_party") return "Third-party embed"
@@ -517,12 +520,7 @@ export function EventFormDialog({
       : ""
 
   // Field-level errors for mandatory fields
-  const [fieldErrors, setFieldErrors] = useState<{
-    title?: string
-    slug?: string
-    scheduledAt?: string
-    streamType?: string
-  }>({})
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; slug?: string; scheduledAt?: string }>({})
 
   // Multi-date state
   type ExtraDate = { id: string; label: string; scheduledAt: string; timezone?: string }
@@ -1082,7 +1080,7 @@ export function EventFormDialog({
           title: event.title,
           subtitle: event.subtitle || "",
           description: event.description || "",
-          streamType: (event.streamType === "rtmp" ? "" : event.streamType) as StreamType,
+          streamType: (event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) as StreamType,
           youtubeUrl: event.youtubeUrl || "",
           embedCode: event.embedCode || "",
           scheduledAt: event.scheduledAt ? String(event.scheduledAt).slice(0, 16) : "",
@@ -1186,7 +1184,7 @@ export function EventFormDialog({
       setActiveTab(initialTab ?? "details")
 
       const hydratedStreamTypeForRef = event
-        ? String((event.streamType === "rtmp" ? "" : event.streamType) ?? "")
+        ? String((event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) ?? "")
         : String((initialStreamType ?? "") ?? "")
       prevValidityStreamGroupRef.current = streamValidityGroup(hydratedStreamTypeForRef)
   }, [open, event, showCredentialsScreen, initialStreamType])
@@ -1266,6 +1264,7 @@ export function EventFormDialog({
 
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])
+  const hasConcreteStreamType = Boolean(String(formData.streamType || "").trim())
   const creditPreviewCanonical = useMemo((): CanonicalStreamTypeKey | null => {
     const selected = formStreamTypeToCanonical(formData.streamType)
     if (selected) return selected
@@ -1285,6 +1284,7 @@ export function EventFormDialog({
         validityChoiceKey,
         validityExpiresAt,
         validityExtSettings,
+        formData.streamType,
       ),
     [
       formData.scheduledAt,
@@ -1292,19 +1292,17 @@ export function EventFormDialog({
       validityChoiceKey,
       validityExpiresAt,
       validityExtSettings,
+      formData.streamType,
     ],
   )
-  const mustSelectStreamType =
-    !skipCreditsValidation &&
-    !!streamTypePricing &&
-    streamTypePricing.rtmp?.enabled === false &&
-    !String(formData.streamType || "").trim()
   const showCreditPreviewNeedsStreamType =
     !skipCreditsValidation && creditPreviewCanonical === null && creditPreviewNeed > 0 && !!streamTypePricing
-  const eventValidityHelpText = useMemo(
-    () => eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays),
-    [validityStreamGroup, validityExtSettings.defaultDays],
-  )
+  const eventValidityHelpText = useMemo(() => {
+    if (!hasConcreteStreamType) {
+      return "Draft events are kept 30 days from creation. Choose a stream type on the Stream tab to use paid validity tiers and extended retention."
+    }
+    return eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays)
+  }, [hasConcreteStreamType, validityStreamGroup, validityExtSettings.defaultDays])
 
   useEffect(() => {
     if (!isEditing) {
@@ -1406,6 +1404,7 @@ export function EventFormDialog({
       validityChoiceKey,
       validityExpiresAt,
       validityExtSettings,
+      formData.streamType,
     )
 
     if (need === 0) {
@@ -1454,8 +1453,7 @@ export function EventFormDialog({
   ])
 
   const creditsPreventSubmit =
-    !skipCreditsValidation &&
-    (creditStatus === "insufficient" || creditStatus === "checking" || mustSelectStreamType)
+    !skipCreditsValidation && (creditStatus === "insufficient" || creditStatus === "checking")
 
   // Clear stream type if admin disabled it after this dialog was built with stale pricing
   useEffect(() => {
@@ -1651,7 +1649,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string; streamType?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1665,14 +1663,9 @@ export function EventFormDialog({
     if (!skipCreditsValidation && creditStatus === "insufficient") {
       errors.scheduledAt = `Insufficient credits: need ${creditInfo?.need} for this event (validity + extra event days), have ${creditInfo?.have}.`
     }
-    if (mustSelectStreamType) {
-      errors.streamType =
-        "RTMP is disabled. Select an available stream type before creating this event."
-    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
-      if (errors.streamType) setActiveTab("stream")
-      else setActiveTab("details")
+      setActiveTab("details")
       return
     }
     setFieldErrors({})
@@ -1681,22 +1674,24 @@ export function EventFormDialog({
     const scheduledAtUtc = formData.scheduledAt ? localToUtc(formData.scheduledAt, timezone) : null
 
     // Convert additional dates to UTC (each uses its own timezone if set)
-    const additionalDatesUtc = additionalDates
-      .filter((d) => d.scheduledAt)
-      .map((d, i) => {
-        const tz = d.timezone ?? timezone
-        return {
-          label: d.label || `Day ${i + 2}`,
-          scheduledAt: localToUtc(d.scheduledAt, tz),
-          timezone: tz,
-        }
-      })
+    const additionalDatesUtc = hasConcreteStreamType
+      ? additionalDates
+          .filter((d) => d.scheduledAt)
+          .map((d, i) => {
+            const tz = d.timezone ?? timezone
+            return {
+              label: d.label || `Day ${i + 2}`,
+              scheduledAt: localToUtc(d.scheduledAt, tz),
+              timezone: tz,
+            }
+          })
+      : []
 
     const payload = {
       title: formData.title,
       subtitle: formData.subtitle.trim(),
       description: formData.description,
-      streamType: formData.streamType,
+      streamType: formData.streamType.trim() ? formData.streamType : undefined,
       slug: slug || undefined,
       scheduledAt: scheduledAtUtc,
       timezone: formData.scheduledAt ? timezone : undefined,
@@ -1722,10 +1717,12 @@ export function EventFormDialog({
       photographerLogoUrl: photographerLogoUrl.trim() ? photographerLogoUrl.trim() : null,
       photographerContact: Object.keys(photographerContact).length ? photographerContact : undefined,
       validityExpiresAt:
-        validityChoiceKey === "until" && validityExpiresAt ? new Date(validityExpiresAt).toISOString() : undefined,
+        formData.streamType.trim() && validityChoiceKey === "until" && validityExpiresAt
+          ? new Date(validityExpiresAt).toISOString()
+          : undefined,
       validityDays:
-        !formData.streamType
-          ? 30
+        !formData.streamType.trim()
+          ? undefined
           : validityChoiceKey === "included"
             ? validityExtSettings.defaultDays
             : validityChoiceKey.startsWith("tier:")
@@ -2593,12 +2590,24 @@ export function EventFormDialog({
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs gap-1"
+                    disabled={!hasConcreteStreamType}
+                    title={
+                      hasConcreteStreamType
+                        ? undefined
+                        : "Choose a stream type on the Stream tab to add extra event days (each day uses stream credits)."
+                    }
                     onClick={() => setAdditionalDates([...additionalDates, { id: crypto.randomUUID(), label: "", scheduledAt: "", timezone }])}
                   >
                     <Plus className="h-3 w-3" />
                     Add Date
                   </Button>
                 </div>
+
+                {!hasConcreteStreamType && (
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Extra event days require a configured stream type. Select one on the Stream tab first.
+                  </p>
+                )}
 
                 {additionalDates.length === 0 && (
                   <p className="text-xs text-muted-foreground italic">No additional dates. Click &quot;Add Date&quot; to add more sessions.</p>
@@ -2764,7 +2773,6 @@ export function EventFormDialog({
                         }`}
                         onClick={() => {
                           if (cardDisabled) return
-                          setFieldErrors((prev) => ({ ...prev, streamType: undefined }))
                           setFormData({
                             ...formData,
                             streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
@@ -2774,7 +2782,6 @@ export function EventFormDialog({
                           if (cardDisabled) return
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault()
-                            setFieldErrors((prev) => ({ ...prev, streamType: undefined }))
                             setFormData({
                               ...formData,
                               streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
@@ -2805,15 +2812,8 @@ export function EventFormDialog({
                 </div>
                 {!formData.streamType && (
                   <p className="text-xs text-muted-foreground pt-1">
-                    {mustSelectStreamType
-                      ? "RTMP is disabled. Select another stream type before you can create this event."
-                      : "No stream type selected. You can add one after creating the event."}
-                  </p>
-                )}
-                {fieldErrors.streamType && (
-                  <p className="text-xs text-destructive flex items-center gap-1 pt-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {fieldErrors.streamType}
+                    No stream type selected. Create a free draft (30-day retention) or pick a type when you are ready to
+                    stream.
                   </p>
                 )}
                 {!skipCreditsValidation && (
@@ -3444,13 +3444,14 @@ export function EventFormDialog({
                   </div>
                   <Select
                     value={validityChoiceKey}
+                    disabled={!hasConcreteStreamType}
                     onValueChange={(v) => {
                       setValidityChoiceKey(v)
                       if (v !== "until") setValidityExpiresAt("")
                     }}
                   >
-                    <SelectTrigger className="w-full max-w-md">
-                      <SelectValue placeholder="Choose validity" />
+                    <SelectTrigger className="w-full max-w-md" disabled={!hasConcreteStreamType}>
+                      <SelectValue placeholder={hasConcreteStreamType ? "Choose validity" : "Select a stream type first"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="included">
@@ -3492,15 +3493,6 @@ export function EventFormDialog({
                           {creditInfo.have}.
                         </p>
                       )}
-                      {!formData.streamType &&
-                        creditPreviewCanonical === "rtmp" &&
-                        creditStatus !== "idle" &&
-                        creditStatus !== "checking" &&
-                        creditInfo && (
-                          <p className="text-[11px] text-muted-foreground">
-                            Preview uses RTMP credits until you choose a stream type (same as create).
-                          </p>
-                        )}
                     </div>
                   )}
                 </div>
@@ -3559,13 +3551,7 @@ export function EventFormDialog({
                   (slugTouched && slugStatus === "checking") ||
                   creditsPreventSubmit
                 }
-                title={
-                  mustSelectStreamType
-                    ? "Select an available stream type to continue."
-                    : creditsPreventSubmit
-                      ? "Add credits or change validity or stream type to continue."
-                      : undefined
-                }
+                title={creditsPreventSubmit ? "Add credits or change validity or stream type to continue." : undefined}
                 className="flex-1 sm:flex-none"
               >
                 {slugStatus === "checking" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

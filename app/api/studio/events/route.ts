@@ -6,6 +6,7 @@ import type { SimulcastConfig } from "@/lib/types"
 import { hashCrewPin } from "@/lib/crew-pin"
 import {
   STREAM_TYPE_MAP,
+  PENDING_STREAM_DB,
   getCreditColumn,
   calculateTotalCreditsRequired,
   shouldBypassCredits,
@@ -18,7 +19,6 @@ import {
   loadStreamAndSimulcastPricing,
   assertStreamTypeEnabled,
   assertSimulcastAllowed,
-  effectiveDbStreamTypeForCreate,
   bodyStreamTypeToDb,
 } from "@/lib/server/event-stream-policy"
 
@@ -113,19 +113,19 @@ export async function POST(req: NextRequest) {
     } = body
 
     if (!title || !title.trim()) return NextResponse.json({ error: "Event title is required" }, { status: 400 })
-    // Stream type is optional during creation. Default to RTMP if not provided;
-    // the user can explicitly set/change the stream type later in the UI.
-    // If streamType is truly missing/falsy, do not default to 'rtmp' for billing
     const normalizedStreamType = streamType || null
     const dbStreamType = normalizedStreamType ? (STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType) : null
     const sql = getDb()
+    const isPendingCreate = !dbStreamType
+    const insertStreamType = isPendingCreate ? PENDING_STREAM_DB : dbStreamType
 
     const { streamTypePricing, simulcastPricing } = await loadStreamAndSimulcastPricing(sql)
-    const effectiveStreamType = effectiveDbStreamTypeForCreate(dbStreamType)
-    const streamPol = assertStreamTypeEnabled(streamTypePricing, effectiveStreamType)
-    if (streamPol) return NextResponse.json({ error: streamPol.error }, { status: streamPol.status })
-    const simPol = assertSimulcastAllowed(simulcastPricing, simulcastConfig, effectiveStreamType)
-    if (simPol) return NextResponse.json({ error: simPol.error }, { status: simPol.status })
+    if (!isPendingCreate) {
+      const streamPol = assertStreamTypeEnabled(streamTypePricing, insertStreamType)
+      if (streamPol) return NextResponse.json({ error: streamPol.error }, { status: streamPol.status })
+      const simPol0 = assertSimulcastAllowed(simulcastPricing, simulcastConfig, insertStreamType)
+      if (simPol0) return NextResponse.json({ error: simPol0.error }, { status: simPol0.status })
+    }
 
     // Resolve slug: use provided (validate) or auto-generate unique one
     let finalSlug: string
@@ -147,19 +147,29 @@ export async function POST(req: NextRequest) {
       ? additionalDates.filter((d: { scheduledAt?: string }) => d.scheduledAt)
       : []
 
+    if (isPendingCreate && extraDates.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Extra event days require a stream type. Remove additional days or select a stream type first.",
+        },
+        { status: 400 },
+      )
+    }
+
     const totalNeed = await calculateTotalCreditsRequired({
-      streamType: effectiveStreamType,
+      streamType: isPendingCreate ? null : insertStreamType,
       scheduledAt,
-      additionalDates,
-      validityDays,
-      validityExpiresAt: validityExpiresAt ?? null,
+      additionalDates: isPendingCreate ? [] : extraDates,
+      validityDays: isPendingCreate ? undefined : validityDays,
+      validityExpiresAt: isPendingCreate ? null : (validityExpiresAt ?? null),
     })
 
     const targetUserId = user.id as string
     const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
 
-    if (!shouldBypassCreditsDeduction && effectiveStreamType && totalNeed > 0) {
-      const creditCol = getCreditColumn(effectiveStreamType)
+    if (!shouldBypassCreditsDeduction && !isPendingCreate && insertStreamType && totalNeed > 0) {
+      const creditCol = getCreditColumn(insertStreamType)
       const deducted = await sql`
         UPDATE user_credits
         SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
@@ -175,7 +185,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const streamKey = generateStreamKey()
+    const streamKey = isPendingCreate ? null : generateStreamKey()
     const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
 
     // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
@@ -192,20 +202,16 @@ export async function POST(req: NextRequest) {
           })
         : "{}"
 
-    // Validity: explicit date, tier days, or fallback
-    let validityExpiresAtValue: string | null = null
-    if (validityExpiresAt && typeof validityExpiresAt === "string") {
+    // Validity: pending creates use DB clock (30 days from insert); otherwise client tiers / until date
+    let validityExpiresAtValue: string | null | ReturnType<typeof sql.unsafe> = null
+    if (isPendingCreate) {
+      validityExpiresAtValue = sql.unsafe("NOW() + INTERVAL '30 days'")
+    } else if (validityExpiresAt && typeof validityExpiresAt === "string") {
       validityExpiresAtValue = validityExpiresAt
     } else if (typeof validityDays === "number" && validityDays > 0) {
-      // If extension provided, add to scheduledAt (if available) or NOW
       const base = scheduledAt ? new Date(scheduledAt) : new Date()
       base.setDate(base.getDate() + validityDays)
       validityExpiresAtValue = base.toISOString()
-    } else if (!dbStreamType) {
-      // Requirement: Events without stream type MUST auto-delete within 30 days of creation
-      const d = new Date()
-      d.setDate(d.getDate() + 30)
-      validityExpiresAtValue = d.toISOString()
     }
 
     const crewPinHash =
@@ -238,14 +244,14 @@ export async function POST(req: NextRequest) {
         photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
-        ${effectiveStreamType}, ${streamKey},
-        ${["rtmp", "youtube_api"].includes(effectiveStreamType || "") ? rtmpUrl : null},
+        ${insertStreamType}, ${streamKey},
+        ${!isPendingCreate && ["rtmp", "youtube_api"].includes(insertStreamType || "") ? rtmpUrl : null},
         ${youtubeUrl || null}, ${embedCode || null},
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
         ${isPasswordProtected ? (password || null) : null},
         ${allowChat ?? true}, ${allowReactions ?? true},
-        ${JSON.stringify(effectiveStreamType === "rtmp" ? (simulcastConfig || {}) : {})},
+        ${JSON.stringify(insertStreamType === "rtmp" ? (simulcastConfig || {}) : {})},
         ${finalSlug},
         ${timezone || "UTC"},
         ${showScheduledPage ?? false},
@@ -261,14 +267,14 @@ export async function POST(req: NextRequest) {
     const event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
 
-    if (totalNeed > 0 && !shouldBypassCreditsDeduction && effectiveStreamType) {
+    if (totalNeed > 0 && !shouldBypassCreditsDeduction && !isPendingCreate) {
       await sql`
         INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
-        VALUES (${targetUserId}, ${eventId}, ${effectiveStreamType}, ${totalNeed}, 'Event creation')
+        VALUES (${targetUserId}, ${eventId}, ${insertStreamType}, ${totalNeed}, 'Event creation')
       `
     }
 
-    const needsOwnKey = ["rtmp", "youtube_api"].includes(effectiveStreamType || "")
+    const needsOwnKey = !isPendingCreate && ["rtmp", "youtube_api"].includes(insertStreamType || "")
 
     // Insert additional date rows
     for (let i = 0; i < extraDates.length; i++) {
@@ -334,7 +340,22 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const resolvedStreamType = (streamTypeForUpdate !== undefined ? streamTypeForUpdate : prevStreamType) || "rtmp"
+    const resolvedStreamType =
+      (streamTypeForUpdate !== undefined ? streamTypeForUpdate : prevStreamType) ||
+      (prevStreamType === PENDING_STREAM_DB ? PENDING_STREAM_DB : "rtmp")
+
+    const putAdditionalWithSchedule = Array.isArray(additionalDates)
+      ? (additionalDates as { scheduledAt?: string }[]).filter((d) => d.scheduledAt)
+      : []
+    if (resolvedStreamType === PENDING_STREAM_DB && putAdditionalWithSchedule.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Extra event days require a stream type. Remove additional days or select a stream type first.",
+        },
+        { status: 400 },
+      )
+    }
 
     const rawExistingSim = existingRow.simulcast_config
     const existingSim: SimulcastConfig =
@@ -560,7 +581,8 @@ export async function PUT(req: NextRequest) {
     if (Array.isArray(additionalDates)) {
       await sql`DELETE FROM event_dates WHERE event_id = ${id}`
       const existing = await sql`SELECT stream_type FROM events WHERE id = ${id}`
-      const evStreamType = ((existing[0] as Record<string, unknown>)?.stream_type as string) || resolvedStreamType || "rtmp"
+      const evStreamType =
+        ((existing[0] as Record<string, unknown>)?.stream_type as string) || resolvedStreamType || PENDING_STREAM_DB
       const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
       const needsOwnKey = ["rtmp", "youtube_api"].includes(evStreamType)
       for (let i = 0; i < additionalDates.length; i++) {

@@ -10,8 +10,8 @@ export type OrderStatus = "completed" | "failed" | "cancelled"
 // Event Status
 export type EventStatus = "draft" | "scheduled" | "live" | "completed" | "cancelled" | "on_break" | "ended"
 
-// Stream Type
-export type StreamType = "rtmp" | "hls" | "youtube_api" | "youtube_embed" | "third_party"
+// Stream Type (`pending` = created as draft / encoder not chosen yet)
+export type StreamType = "rtmp" | "hls" | "youtube_api" | "youtube_embed" | "third_party" | "pending"
 
 // Transaction Type
 export type TransactionType = "credit" | "debit" | "transfer" | "purchase" | "refund"

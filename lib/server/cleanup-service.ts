@@ -79,11 +79,17 @@ export async function runEventCleanupTask() {
         }
       }
 
-      // 4. Delete event from DB
+      // 4. Break optional FK links (orders/refund_requests do not use ON DELETE CASCADE)
+      await sql`UPDATE orders SET event_id = NULL WHERE event_id = ${event.id as string}`
+      await sql`UPDATE refund_requests SET event_id = NULL WHERE event_id = ${event.id as string}`
+
+      // 5. Remove dependent rows (some deployments use FK to events without CASCADE)
+      await sql`DELETE FROM event_dates WHERE event_id = ${event.id as string}`.catch(() => {})
+
       await sql`DELETE FROM events WHERE id = ${event.id as string}`
       deletedCount++
 
-      // 5. Log per-event deletion
+      // 6. Log per-event deletion
       await sql`
         INSERT INTO deleted_events_log (event_id, event_title, owner_email, reason, assets_found, assets_deleted)
         VALUES (
@@ -97,7 +103,7 @@ export async function runEventCleanupTask() {
       `
     }
 
-    // 6. Finalize job log
+    // 7. Finalize job log
     await sql`
       UPDATE cron_job_logs 
       SET status = 'success', ended_at = NOW(), deleted_count = ${deletedCount} 

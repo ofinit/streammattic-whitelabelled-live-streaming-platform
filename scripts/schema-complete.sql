@@ -25,6 +25,7 @@ DO $$ BEGIN CREATE TYPE user_role AS ENUM ('admin','studio','streamer'); EXCEPTI
 DO $$ BEGIN CREATE TYPE user_status AS ENUM ('active','suspended','pending','deactivated'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE event_status AS ENUM ('draft','scheduled','live','ended','cancelled'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE stream_type_key AS ENUM ('rtmp','youtube_api','youtube_embed','third_party'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TYPE stream_type_key ADD VALUE IF NOT EXISTS 'pending';
 DO $$ BEGIN CREATE TYPE order_type AS ENUM ('credit_purchase','wallet_recharge','validity_extension','service_charge','studio_upgrade','annual_subscription'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE order_status AS ENUM ('pending','completed','failed','refunded','cancelled'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE payment_gateway AS ENUM ('razorpay','instamojo','wallet','manual'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;

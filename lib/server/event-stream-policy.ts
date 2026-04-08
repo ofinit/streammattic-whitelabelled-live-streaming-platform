@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db"
 import { parseSimulcastPricing, parseStreamTypePricing } from "@/lib/stream-type-pricing"
-import { STREAM_TYPE_MAP } from "@/lib/server/credits-logic"
+import { PENDING_STREAM_DB, STREAM_TYPE_MAP } from "@/lib/server/credits-logic"
 import type { SimulcastConfig, SimulcastPricing, StreamTypePricing } from "@/lib/types"
 
 type Sql = ReturnType<typeof getDb>
@@ -35,7 +35,7 @@ export function assertStreamTypeEnabled(
   streamTypePricing: StreamTypePricing,
   dbStreamType: string | null,
 ): StreamPolicyError | null {
-  if (!dbStreamType) return null
+  if (!dbStreamType || dbStreamType === PENDING_STREAM_DB) return null
   const key = dbStreamType as keyof StreamTypePricing
   const cfg = streamTypePricing[key]
   if (!cfg || !cfg.enabled) {
@@ -96,7 +96,7 @@ export function assertSimulcastAllowed(
 }
 
 /**
- * When stream type is omitted on create, DB still stores RTMP — enforce RTMP enabled in that case.
+ * When stream type is omitted on create, default billing/DB used to be RTMP; use {@link PENDING_STREAM_DB} instead for zero-credit draft rows.
  */
 export function effectiveDbStreamTypeForCreate(dbStreamType: string | null): string {
   return dbStreamType || "rtmp"

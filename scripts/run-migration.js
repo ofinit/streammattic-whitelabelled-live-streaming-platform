@@ -93,6 +93,8 @@ const statements = [
   `CREATE INDEX idx_packages_slug ON packages(slug)`,
   `CREATE INDEX idx_packages_active ON packages(is_active)`,
   `CREATE INDEX idx_packages_type ON packages(type)`,
+  // Draft events (no stream selected): add enum value (idempotent on PG 10+)
+  `ALTER TYPE stream_type_key ADD VALUE IF NOT EXISTS 'pending'`,
 ];
 
 const seedSettings = [

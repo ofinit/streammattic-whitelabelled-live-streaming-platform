@@ -7,6 +7,9 @@ import {
 /**
  * Stream type mapping: form values → DB enum values / internal keys
  */
+/** DB enum: stream chosen later; no stream credits until a concrete type is set. */
+export const PENDING_STREAM_DB = "pending"
+
 export const STREAM_TYPE_MAP: Record<string, string> = {
   rtmp: "rtmp",
   youtube_api: "youtube_api",
@@ -14,12 +17,16 @@ export const STREAM_TYPE_MAP: Record<string, string> = {
   youtube_embed: "youtube_embed",
   embedded: "third_party",
   third_party: "third_party",
+  pending: PENDING_STREAM_DB,
 }
 
 /**
  * Map DB stream type to credit column name in user_credits table
  */
 export function getCreditColumn(dbStreamType: string): string {
+  if (dbStreamType === PENDING_STREAM_DB) {
+    throw new Error("getCreditColumn: pending stream type has no credit bucket")
+  }
   if (dbStreamType === "rtmp") return "rtmp"
   if (dbStreamType === "youtube_api") return "youtube_api"
   if (dbStreamType === "youtube_embed") return "youtube_embed"
@@ -41,7 +48,7 @@ export type CreditNeedInput = {
 export async function calculateTotalCreditsRequired(input: CreditNeedInput) {
   const { streamType, scheduledAt, additionalDates, validityDays, validityExpiresAt } = input
 
-  if (!streamType) return 0
+  if (!streamType || streamType === PENDING_STREAM_DB) return 0
 
   const sql = getDb()
   const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`

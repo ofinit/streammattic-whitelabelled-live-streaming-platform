@@ -9,8 +9,10 @@ export type CanonicalStreamTypeKey = "rtmp" | "youtube_api" | "youtube_embed" | 
 export type CreditsResponseBalanceKey = "rtmp" | "youtubeApi" | "youtubeEmbed" | "thirdParty"
 
 /**
- * Which stream-type credit bucket to use for live balance preview.
- * Matches server create when stream type is omitted (`effectiveDbStreamTypeForCreate` → RTMP).
+ * Stream-type credit bucket when the implicit default RTMP create path applies.
+ * If RTMP is admin-disabled, callers that need a bucket for an *unset* stream type must not use this;
+ * they should treat the preview as indeterminate until the user picks an enabled type.
+ * @see effectiveDbStreamTypeForCreate in server policy
  */
 export function creditBucketForPreview(formStreamType: string): CanonicalStreamTypeKey {
   return formStreamTypeToCanonical(formStreamType) ?? "rtmp"

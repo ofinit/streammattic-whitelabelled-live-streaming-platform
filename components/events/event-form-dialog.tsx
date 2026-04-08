@@ -81,10 +81,44 @@ import {
   formStreamTypeToCanonical,
   canonicalStreamTypeToCreditsResponseKey,
   streamTypeLabelForCredits,
-  creditBucketForPreview,
+  type CanonicalStreamTypeKey,
 } from "@/lib/stream-type-form"
 import { compressImageFileToWebp } from "@/lib/client-image-webp"
 import { toast } from "@/hooks/use-toast"
+
+/** Validity + distinct extra event days — must stay in sync with the credit-check effect. */
+function computeCreditPreviewNeed(
+  scheduledAt: string,
+  additionalDates: { scheduledAt: string }[],
+  validityChoiceKey: string,
+  validityExpiresAt: string,
+  validityExtSettings: ParsedValidityExtensions,
+): number {
+  const primaryDatePart = scheduledAt ? scheduledAt.slice(0, 10) : ""
+  const uniqueExtraDates = additionalDates.filter(
+    (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
+  )
+  let validityDaysChosen = validityExtSettings.defaultDays
+  if (validityChoiceKey === "included") {
+    validityDaysChosen = validityExtSettings.defaultDays
+  } else if (validityChoiceKey.startsWith("tier:")) {
+    const n = Number(validityChoiceKey.split(":")[1])
+    validityDaysChosen =
+      Number.isFinite(n) && n > 0 ? n : validityExtSettings.defaultDays
+  } else if (validityChoiceKey === "until" && scheduledAt && validityExpiresAt) {
+    const startMs = new Date(scheduledAt).getTime()
+    const expMs = new Date(validityExpiresAt).getTime()
+    if (!Number.isNaN(startMs) && !Number.isNaN(expMs)) {
+      const d = Math.round((expMs - startMs) / 86_400_000)
+      validityDaysChosen = Math.max(1, d)
+    }
+  }
+  const validityCreditTotal = validityCreditsForDuration(
+    validityDaysChosen,
+    validityExtSettings.defaultDays,
+  )
+  return validityCreditTotal + uniqueExtraDates.length
+}
 
 const EVENT_TITLE_PLACEHOLDERS = [
   "Romeo weds Juliet",
@@ -483,7 +517,12 @@ export function EventFormDialog({
       : ""
 
   // Field-level errors for mandatory fields
-  const [fieldErrors, setFieldErrors] = useState<{ title?: string; slug?: string; scheduledAt?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string
+    slug?: string
+    scheduledAt?: string
+    streamType?: string
+  }>({})
 
   // Multi-date state
   type ExtraDate = { id: string; label: string; scheduledAt: string; timezone?: string }
@@ -1227,11 +1266,41 @@ export function EventFormDialog({
 
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])
-  const creditPreviewBucket = useMemo(
-    () => creditBucketForPreview(formData.streamType),
-    [formData.streamType],
+  const creditPreviewCanonical = useMemo((): CanonicalStreamTypeKey | null => {
+    const selected = formStreamTypeToCanonical(formData.streamType)
+    if (selected) return selected
+    if (!streamTypePricing) return "rtmp"
+    if (streamTypePricing.rtmp?.enabled === false) return null
+    return "rtmp"
+  }, [formData.streamType, streamTypePricing])
+  const creditPreviewBucketLabel = useMemo(
+    () => (creditPreviewCanonical ? streamTypeLabelForCredits(creditPreviewCanonical) : null),
+    [creditPreviewCanonical],
   )
-  const creditPreviewBucketLabel = useMemo(() => streamTypeLabelForCredits(creditPreviewBucket), [creditPreviewBucket])
+  const creditPreviewNeed = useMemo(
+    () =>
+      computeCreditPreviewNeed(
+        formData.scheduledAt,
+        additionalDates,
+        validityChoiceKey,
+        validityExpiresAt,
+        validityExtSettings,
+      ),
+    [
+      formData.scheduledAt,
+      additionalDates,
+      validityChoiceKey,
+      validityExpiresAt,
+      validityExtSettings,
+    ],
+  )
+  const mustSelectStreamType =
+    !skipCreditsValidation &&
+    !!streamTypePricing &&
+    streamTypePricing.rtmp?.enabled === false &&
+    !String(formData.streamType || "").trim()
+  const showCreditPreviewNeedsStreamType =
+    !skipCreditsValidation && creditPreviewCanonical === null && creditPreviewNeed > 0 && !!streamTypePricing
   const eventValidityHelpText = useMemo(
     () => eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays),
     [validityStreamGroup, validityExtSettings.defaultDays],
@@ -1331,34 +1400,22 @@ export function EventFormDialog({
       return
     }
 
-    const primaryDatePart = formData.scheduledAt ? formData.scheduledAt.slice(0, 10) : ""
-    const uniqueExtraDates = additionalDates.filter(
-      (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
+    const need = computeCreditPreviewNeed(
+      formData.scheduledAt,
+      additionalDates,
+      validityChoiceKey,
+      validityExpiresAt,
+      validityExtSettings,
     )
-
-    let validityDaysChosen = validityExtSettings.defaultDays
-    if (validityChoiceKey === "included") {
-      validityDaysChosen = validityExtSettings.defaultDays
-    } else if (validityChoiceKey.startsWith("tier:")) {
-      const n = Number(validityChoiceKey.split(":")[1])
-      validityDaysChosen =
-        Number.isFinite(n) && n > 0 ? n : validityExtSettings.defaultDays
-    } else if (validityChoiceKey === "until" && formData.scheduledAt && validityExpiresAt) {
-      const startMs = new Date(formData.scheduledAt).getTime()
-      const expMs = new Date(validityExpiresAt).getTime()
-      if (!Number.isNaN(startMs) && !Number.isNaN(expMs)) {
-        const d = Math.round((expMs - startMs) / 86_400_000)
-        validityDaysChosen = Math.max(1, d)
-      }
-    }
-
-    const validityCreditTotal = validityCreditsForDuration(
-      validityDaysChosen,
-      validityExtSettings.defaultDays,
-    )
-    const need = validityCreditTotal + uniqueExtraDates.length
 
     if (need === 0) {
+      setCreditStatus("idle")
+      setCreditInfo(null)
+      return
+    }
+
+    if (creditPreviewCanonical === null) {
+      if (creditCheckRef.current) clearTimeout(creditCheckRef.current)
       setCreditStatus("idle")
       setCreditInfo(null)
       return
@@ -1376,8 +1433,7 @@ export function EventFormDialog({
         if (!res.ok) throw new Error("Failed to fetch credits")
         const data = await res.json()
         const credits = data.credits || data
-        const canonical = creditBucketForPreview(formData.streamType)
-        const creditCol = canonicalStreamTypeToCreditsResponseKey(canonical)
+        const creditCol = canonicalStreamTypeToCreditsResponseKey(creditPreviewCanonical)
         const have = credits[creditCol] ?? 0
         setCreditInfo({ need, have })
         setCreditStatus(have >= need ? "ok" : "insufficient")
@@ -1394,10 +1450,12 @@ export function EventFormDialog({
     validityExpiresAt,
     validityExtSettings,
     creditsUserId,
+    creditPreviewCanonical,
   ])
 
   const creditsPreventSubmit =
-    !skipCreditsValidation && (creditStatus === "insufficient" || creditStatus === "checking")
+    !skipCreditsValidation &&
+    (creditStatus === "insufficient" || creditStatus === "checking" || mustSelectStreamType)
 
   // Clear stream type if admin disabled it after this dialog was built with stale pricing
   useEffect(() => {
@@ -1593,7 +1651,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string; streamType?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1607,9 +1665,14 @@ export function EventFormDialog({
     if (!skipCreditsValidation && creditStatus === "insufficient") {
       errors.scheduledAt = `Insufficient credits: need ${creditInfo?.need} for this event (validity + extra event days), have ${creditInfo?.have}.`
     }
+    if (mustSelectStreamType) {
+      errors.streamType =
+        "RTMP is disabled. Select an available stream type before creating this event."
+    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
-      setActiveTab("details")
+      if (errors.streamType) setActiveTab("stream")
+      else setActiveTab("details")
       return
     }
     setFieldErrors({})
@@ -2625,12 +2688,17 @@ export function EventFormDialog({
                 ))}
 
                 {/* Credit status */}
-                {!skipCreditsValidation && creditStatus === "checking" && (
+                {!skipCreditsValidation && showCreditPreviewNeedsStreamType && (
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    RTMP is disabled for new events. Select an available stream type on the Stream tab to preview credits.
+                  </p>
+                )}
+                {!skipCreditsValidation && !showCreditPreviewNeedsStreamType && creditStatus === "checking" && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Loader2 className="h-3 w-3 animate-spin" /> Checking credits...
                   </p>
                 )}
-                {!skipCreditsValidation && creditStatus === "ok" && creditInfo && (
+                {!skipCreditsValidation && !showCreditPreviewNeedsStreamType && creditStatus === "ok" && creditInfo && creditPreviewBucketLabel && (
                   <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3 w-3" />
                     {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
@@ -2638,7 +2706,7 @@ export function EventFormDialog({
                     {creditInfo.have} available)
                   </p>
                 )}
-                {!skipCreditsValidation && creditStatus === "insufficient" && creditInfo && (
+                {!skipCreditsValidation && !showCreditPreviewNeedsStreamType && creditStatus === "insufficient" && creditInfo && creditPreviewBucketLabel && (
                   <p className="text-xs text-destructive flex items-center gap-1.5">
                     <AlertCircle className="h-3 w-3" />
                     {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need} for validity + extra event
@@ -2696,6 +2764,7 @@ export function EventFormDialog({
                         }`}
                         onClick={() => {
                           if (cardDisabled) return
+                          setFieldErrors((prev) => ({ ...prev, streamType: undefined }))
                           setFormData({
                             ...formData,
                             streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
@@ -2705,6 +2774,7 @@ export function EventFormDialog({
                           if (cardDisabled) return
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault()
+                            setFieldErrors((prev) => ({ ...prev, streamType: undefined }))
                             setFormData({
                               ...formData,
                               streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
@@ -2735,24 +2805,38 @@ export function EventFormDialog({
                 </div>
                 {!formData.streamType && (
                   <p className="text-xs text-muted-foreground pt-1">
-                    No stream type selected. You can add one after creating the event.
+                    {mustSelectStreamType
+                      ? "RTMP is disabled. Select another stream type before you can create this event."
+                      : "No stream type selected. You can add one after creating the event."}
+                  </p>
+                )}
+                {fieldErrors.streamType && (
+                  <p className="text-xs text-destructive flex items-center gap-1 pt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.streamType}
                   </p>
                 )}
                 {!skipCreditsValidation && (
                   <div className="pt-2 space-y-1">
-                    {creditStatus === "checking" && (
+                    {showCreditPreviewNeedsStreamType && (
+                      <p className="text-xs text-muted-foreground leading-snug">
+                        RTMP is disabled for new events. Select an available stream type below to preview credits for this
+                        event.
+                      </p>
+                    )}
+                    {!showCreditPreviewNeedsStreamType && creditStatus === "checking" && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <Loader2 className="h-3 w-3 animate-spin" /> Checking credits…
                       </p>
                     )}
-                    {creditStatus === "ok" && creditInfo && (
+                    {!showCreditPreviewNeedsStreamType && creditStatus === "ok" && creditInfo && creditPreviewBucketLabel && (
                       <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                         <CheckCircle2 className="h-3 w-3" />
                         {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
                         {creditInfo.need > 1 ? "s" : ""} for validity + extra event days ({creditInfo.have} available)
                       </p>
                     )}
-                    {creditStatus === "insufficient" && creditInfo && (
+                    {!showCreditPreviewNeedsStreamType && creditStatus === "insufficient" && creditInfo && creditPreviewBucketLabel && (
                       <p className="text-xs text-destructive flex items-center gap-1.5">
                         <AlertCircle className="h-3 w-3" />
                         {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need}, have {creditInfo.have}.
@@ -3383,30 +3467,40 @@ export function EventFormDialog({
                   </Select>
                   {!skipCreditsValidation && (
                     <div className="pt-2 space-y-1">
-                      {creditStatus === "checking" && (
+                      {showCreditPreviewNeedsStreamType && (
+                        <p className="text-xs text-muted-foreground leading-snug">
+                          RTMP is disabled for new events. Select an available stream type on the Stream tab to preview
+                          credits.
+                        </p>
+                      )}
+                      {!showCreditPreviewNeedsStreamType && creditStatus === "checking" && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                           <Loader2 className="h-3 w-3 animate-spin" /> Checking credits…
                         </p>
                       )}
-                      {creditStatus === "ok" && creditInfo && (
+                      {!showCreditPreviewNeedsStreamType && creditStatus === "ok" && creditInfo && creditPreviewBucketLabel && (
                         <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                           <CheckCircle2 className="h-3 w-3" />
                           {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
                           {creditInfo.need > 1 ? "s" : ""} for validity + extra event days ({creditInfo.have} available)
                         </p>
                       )}
-                      {creditStatus === "insufficient" && creditInfo && (
+                      {!showCreditPreviewNeedsStreamType && creditStatus === "insufficient" && creditInfo && creditPreviewBucketLabel && (
                         <p className="text-xs text-destructive flex items-center gap-1.5">
                           <AlertCircle className="h-3 w-3" />
                           {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need}, have{" "}
                           {creditInfo.have}.
                         </p>
                       )}
-                      {!formData.streamType && creditStatus !== "idle" && creditStatus !== "checking" && creditInfo && (
-                        <p className="text-[11px] text-muted-foreground">
-                          Preview uses RTMP credits until you choose a stream type (same as create).
-                        </p>
-                      )}
+                      {!formData.streamType &&
+                        creditPreviewCanonical === "rtmp" &&
+                        creditStatus !== "idle" &&
+                        creditStatus !== "checking" &&
+                        creditInfo && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Preview uses RTMP credits until you choose a stream type (same as create).
+                          </p>
+                        )}
                     </div>
                   )}
                 </div>
@@ -3466,9 +3560,11 @@ export function EventFormDialog({
                   creditsPreventSubmit
                 }
                 title={
-                  creditsPreventSubmit
-                    ? "Add credits or change validity or stream type to continue."
-                    : undefined
+                  mustSelectStreamType
+                    ? "Select an available stream type to continue."
+                    : creditsPreventSubmit
+                      ? "Add credits or change validity or stream type to continue."
+                      : undefined
                 }
                 className="flex-1 sm:flex-none"
               >

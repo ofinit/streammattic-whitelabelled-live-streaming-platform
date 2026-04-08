@@ -19,7 +19,7 @@ export function validityExtensionCredits(totalDays: number, defaultDays: number)
 
 function formatExtensionLabel(days: number, extensionCredits: number): string {
   const c = extensionCredits
-  return `${days} days (+${c} credit${c === 1 ? "" : "s"})`
+  return `${days} Days (+${c} credit${c === 1 ? "" : "s"})`
 }
 
 function fallbackValidityExtensions(): ParsedValidityExtensions {
@@ -64,10 +64,8 @@ export function parseValidityExtensionsSetting(raw: unknown): ParsedValidityExte
       const enabled = t.enabled !== false
       if (days <= 0) return null
       const creditCost = validityExtensionCredits(days, defaultDays)
-      const label =
-        typeof t.label === "string" && t.label.trim()
-          ? t.label.trim()
-          : formatExtensionLabel(days, creditCost)
+      // Always derive label from linear math so UI matches billing (ignore stale DB labels).
+      const label = formatExtensionLabel(days, creditCost)
       return { days, creditCost, enabled, label }
     })
     .filter((x): x is ValidityTier => x !== null)

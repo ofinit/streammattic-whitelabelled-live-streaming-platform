@@ -3,16 +3,17 @@ import { getEvents, getEventCount } from "@/lib/db-queries"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 import { hashCrewPin } from "@/lib/crew-pin"
+import {
+  STREAM_TYPE_MAP,
+  getCreditColumn,
+  calculateTotalCreditsRequired,
+  shouldBypassCredits,
+  computeIncrementalCreditsRequired,
+  eventDateRowsToCreditAdditionalDates,
+  inferValidityDaysForBilling,
+  type CreditNeedInput,
+} from "@/lib/server/credits-logic"
 
-// Stream type mapping: form values → DB enum values
-const STREAM_TYPE_MAP: Record<string, string> = {
-  rtmp: "rtmp",
-  youtube_api: "youtube_api",
-  youtube: "youtube_embed",
-  youtube_embed: "youtube_embed",
-  embedded: "third_party",
-  third_party: "third_party",
-}
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -91,9 +92,7 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    // Detect if we are on the master domain for admin bypass logic
     const host = req.headers.get("host") || ""
-    const isMasterDomain = host.includes("streamlivee.com") || host.includes("localhost") || host === "127.0.0.1"
 
     const body = await req.json()
     const {
@@ -129,41 +128,27 @@ export async function POST(req: NextRequest) {
       finalSlug = await ensureUniqueSlug(sql, title)
     }
 
-    // Determine which extra dates require a credit deduction (different calendar date from primary)
-    const primaryDatePart = scheduledAt ? scheduledAt.slice(0, 10) : null
     const extraDates: { label: string; scheduledAt: string; timezone: string }[] = Array.isArray(additionalDates)
       ? additionalDates.filter((d: { scheduledAt?: string }) => d.scheduledAt)
       : []
-    const billableDates = extraDates.filter((d) => d.scheduledAt.slice(0, 10) !== primaryDatePart)
-    // Identify validity tier cost
-    let validityTierCost = 0
-    if (typeof validityDays === "number" && validityDays > 0) {
-      const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
-      const { parseValidityExtensionsSetting } = await import("@/lib/validity-extensions")
-      const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
-      const tier = settings.extendedTiers.find((t) => t.days === validityDays)
-      if (tier && tier.enabled) validityTierCost = tier.creditCost
-    }
 
-    // Determine total credit deduction
-    // NEW POLICY: 1 base credit + extra dates + validity tier cost
-    const baseCreditNeed = dbStreamType ? 1 : 0
-    const totalNeed = baseCreditNeed + billableDates.length + validityTierCost
-    const creditCol = dbStreamType === "rtmp" ? "rtmp"
-      : dbStreamType === "youtube_api" ? "youtube_api"
-      : dbStreamType === "youtube_embed" ? "youtube_embed"
-      : "third_party"
+    const totalNeed = await calculateTotalCreditsRequired({
+      streamType: dbStreamType,
+      scheduledAt,
+      additionalDates,
+      validityDays,
+    })
 
-    // Deduct credits atomically
-    // ADMIN BYPASS: only on master domain
-    const shouldBypassGroup = user.role === "admin" && isMasterDomain
-    
-    if (!shouldBypassGroup && dbStreamType && totalNeed > 0) {
+    const targetUserId = user.id as string
+    const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
+
+    if (!shouldBypassCreditsDeduction && dbStreamType && totalNeed > 0) {
+      const creditCol = getCreditColumn(dbStreamType)
       const deducted = await sql`
         UPDATE user_credits
         SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
             updated_at = NOW()
-        WHERE user_id = ${user.id as string}
+        WHERE user_id = ${targetUserId}
           AND ${sql.unsafe(creditCol)} >= ${totalNeed}
         RETURNING *
       `
@@ -259,7 +244,15 @@ export async function POST(req: NextRequest) {
 
     const event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
-    const needsOwnKey = ["rtmp", "youtube_api"].includes(dbStreamType)
+
+    if (totalNeed > 0 && !shouldBypassCreditsDeduction && dbStreamType) {
+      await sql`
+        INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
+        VALUES (${targetUserId}, ${eventId}, ${dbStreamType}, ${totalNeed}, 'Event creation')
+      `
+    }
+
+    const needsOwnKey = ["rtmp", "youtube_api"].includes(dbStreamType || "")
 
     // Insert additional date rows
     for (let i = 0; i < extraDates.length; i++) {
@@ -284,9 +277,7 @@ export async function PUT(req: NextRequest) {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    // Detect if we are on the master domain for admin bypass logic
     const host = req.headers.get("host") || ""
-    const isMasterDomain = host.includes("streamlivee.com") || host.includes("localhost") || host === "127.0.0.1"
 
     const body = await req.json()
     const {
@@ -304,14 +295,14 @@ export async function PUT(req: NextRequest) {
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     
     const existingRow = existing[0] as Record<string, unknown>
+    // Determine if credits should be bypassed
     const targetUserId = existingRow.user_id as string
     
     if (targetUserId !== user.id && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Determine if credits should be bypassed
-    const shouldBypassGroup = user.role === "admin" && user.id === targetUserId && isMasterDomain
+    const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
     const dbStreamType = (existingRow.stream_type || null) as string | null
 
     let finalSlug: string | null = null
@@ -327,53 +318,80 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Handle Credit Deduction for edits (Incremental costs)
-    if (!shouldBypassGroup && dbStreamType) {
-      let totalNeed = 0
+    if (!shouldBypassCreditsDeduction && dbStreamType) {
+      const oldDatesRows = await sql`SELECT scheduled_at FROM event_dates WHERE event_id = ${id}`
+      const prevAdditional = eventDateRowsToCreditAdditionalDates(
+        oldDatesRows as { scheduled_at: unknown }[],
+      )
 
-      // 1. Check for additional dates increase
-      if (Array.isArray(additionalDates)) {
-        const primaryDatePart = (scheduledAt || existingRow.scheduled_at as string)?.slice(0, 10)
-        const newBillableCount = additionalDates.filter(
-          (d: any) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart
-        ).length
-        
-        const oldDates = await sql`SELECT count(*) FROM event_dates WHERE event_id = ${id}`
-        const oldBillableCount = Number(oldDates[0]?.count || 0)
-        
-        if (newBillableCount > oldBillableCount) {
-          totalNeed += (newBillableCount - oldBillableCount)
-        }
+      const prevScheduled = (existingRow.scheduled_at as string) || null
+      const prevValidityDays = await inferValidityDaysForBilling(
+        prevScheduled,
+        existingRow.validity_expires_at as string | null,
+        existingRow.created_at as string | null,
+      )
+
+      const previous: CreditNeedInput = {
+        streamType: dbStreamType,
+        scheduledAt: prevScheduled,
+        additionalDates: prevAdditional,
+        validityDays: prevValidityDays,
       }
 
-      // 2. Check for validity extension increase
+      const nextScheduled = (scheduledAt ?? existingRow.scheduled_at) as string | null
+
+      let mergedValidityExpires: string | null | undefined = validityExpiresAt
+      if (mergedValidityExpires === undefined && typeof validityDays === "number" && validityDays > 0) {
+        const s = (existingRow.scheduled_at as string) || scheduledAt
+        if (s) {
+          const d = new Date(s)
+          d.setDate(d.getDate() + validityDays)
+          mergedValidityExpires = d.toISOString()
+        }
+      }
+      if (mergedValidityExpires === undefined) {
+        mergedValidityExpires = (existingRow.validity_expires_at as string | null) ?? undefined
+      }
+
+      let nextValidityDays: number | undefined
       if (typeof validityDays === "number" && validityDays > 0) {
-        const { parseValidityExtensionsSetting } = await import("@/lib/validity-extensions")
-        const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
-        const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
-        const tier = settings.extendedTiers.find((t) => t.days === validityDays)
-        if (tier && tier.enabled) {
-          totalNeed += tier.creditCost
-        }
+        nextValidityDays = validityDays
+      } else {
+        nextValidityDays = await inferValidityDaysForBilling(
+          nextScheduled,
+          mergedValidityExpires ?? null,
+          existingRow.created_at as string | null,
+        )
       }
 
-      if (totalNeed > 0) {
-        const creditCol = dbStreamType === "rtmp" ? "rtmp"
-          : dbStreamType === "youtube_api" ? "youtube_api"
-          : dbStreamType === "youtube_embed" ? "youtube_embed"
-          : "third_party"
+      const nextAdditional = Array.isArray(additionalDates)
+        ? (additionalDates as { scheduledAt?: string }[])
+            .filter((d) => d.scheduledAt)
+            .map((d) => ({ scheduledAt: d.scheduledAt as string }))
+        : prevAdditional
 
+      const next: CreditNeedInput = {
+        streamType: dbStreamType,
+        scheduledAt: nextScheduled,
+        additionalDates: nextAdditional,
+        validityDays: nextValidityDays,
+      }
+
+      const incrementalNeed = await computeIncrementalCreditsRequired(previous, next)
+
+      if (incrementalNeed > 0) {
+        const creditCol = getCreditColumn(dbStreamType)
         const deducted = await sql`
           UPDATE user_credits
-          SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
+          SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${incrementalNeed},
               updated_at = NOW()
           WHERE user_id = ${targetUserId}
-            AND ${sql.unsafe(creditCol)} >= ${totalNeed}
+            AND ${sql.unsafe(creditCol)} >= ${incrementalNeed}
           RETURNING *
         `
         if (deducted.length === 0) {
           return NextResponse.json({
-            error: `Insufficient ${dbStreamType} credits for this update. Required: ${totalNeed}.`,
+            error: `Insufficient ${dbStreamType} credits for this update. Required: ${incrementalNeed}.`,
           }, { status: 400 })
         }
       }

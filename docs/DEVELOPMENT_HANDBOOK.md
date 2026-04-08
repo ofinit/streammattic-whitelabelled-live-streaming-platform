@@ -48,8 +48,8 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-07T14:17:32+05:30` |
-| Git revision | `0eacd0a` |
+| Snapshot time (HEAD commit, ISO) | `2026-04-08T10:07:59+05:30` |
+| Git revision | `ba8564f` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies
@@ -79,11 +79,15 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/gst/route.ts` | `/api/admin/gst` |
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
 | `app/api/admin/invoices/zip/route.ts` | `/api/admin/invoices/zip` |
+| `app/api/admin/maintenance/fix-validity/route.ts` | `/api/admin/maintenance/fix-validity` |
 | `app/api/admin/orders/route.ts` | `/api/admin/orders` |
 | `app/api/admin/pricing/route.ts` | `/api/admin/pricing` |
 | `app/api/admin/refunds/[id]/route.ts` | `/api/admin/refunds/[id]` |
 | `app/api/admin/refunds/route.ts` | `/api/admin/refunds` |
 | `app/api/admin/run-migration/route.ts` | `/api/admin/run-migration` |
+| `app/api/admin/system-logs/route.ts` | `/api/admin/system-logs` |
+| `app/api/admin/system-tasks/automation/route.ts` | `/api/admin/system-tasks/automation` |
+| `app/api/admin/system-tasks/run/route.ts` | `/api/admin/system-tasks/run` |
 | `app/api/admin/transactions/route.ts` | `/api/admin/transactions` |
 | `app/api/admin/users/[id]/domains/route.ts` | `/api/admin/users/[id]/domains` |
 | `app/api/admin/users/[id]/route.ts` | `/api/admin/users/[id]` |

@@ -913,7 +913,12 @@ export default function AdminEventsPage() {
         initialDraft={eventDialogInitialDraft}
         youtubeOwnerId={ownerId || undefined}
         youtubeOwnerType="admin"
-        skipCreditsValidation
+        skipCreditsValidation={
+          user?.role === "admin" && (!editingEvent || editingEvent.userId === user?.id)
+        }
+        creditsUserId={
+          editingEvent && editingEvent.userId !== user?.id ? editingEvent.userId : undefined
+        }
         externalSlugError={saveError?.slug ?? undefined}
       />
 

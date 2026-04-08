@@ -1,5 +1,11 @@
 import { getDb, toCamel, toCamelRows } from "@/lib/db"
 import { jsonOk, jsonError, withOptionalAuth, withAuth } from "@/lib/api-helpers"
+import {
+  STREAM_TYPE_MAP,
+  getCreditColumn,
+  calculateTotalCreditsRequired,
+  shouldBypassCredits,
+} from "@/lib/server/credits-logic"
 
 export const GET = withOptionalAuth(async (user, request) => {
   const url = new URL(request.url)
@@ -45,7 +51,7 @@ export const POST = withAuth(async (user, request) => {
   const body = await request.json()
   const { title, description, streamType, scheduledAt, thumbnailUrl, settings } = body
   const sql = getDb()
-  const userId = user.id as string
+  const targetUserId = user.id as string
 
   if (!title || !streamType) {
     return jsonError("Title and stream type are required")
@@ -62,7 +68,7 @@ export const POST = withAuth(async (user, request) => {
   if (user.role === "studio") {
     const domains = await sql`
       SELECT domain FROM domains 
-      WHERE user_id = ${userId} AND verification_status = 'verified' AND is_primary = true
+      WHERE user_id = ${targetUserId} AND verification_status = 'verified' AND is_primary = true
       LIMIT 1
     `
     if (domains.length > 0) {
@@ -74,34 +80,49 @@ export const POST = withAuth(async (user, request) => {
     publicUrl = `${appUrl}/${slug}`
   }
 
-  const creditCol = streamType === "rtmp" ? "rtmp" : streamType === "youtube_api" ? "youtube_api" : streamType === "youtube_embed" ? "youtube_embed" : "third_party"
+  // Determine total credit deduction logic via shared helper
+  const host = request.headers.get("host") || ""
+  const normalizedStreamType = STREAM_TYPE_MAP[streamType] || streamType
+  
+  const totalNeed = await calculateTotalCreditsRequired({
+    streamType: normalizedStreamType,
+    scheduledAt,
+    additionalDates: settings?.additionalDates,
+    validityDays: settings?.validityDays,
+  })
 
-  // Atomically check and deduct credit
-  const updatedCredits = await sql`
-    UPDATE user_credits 
-    SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - 1, updated_at = NOW()
-    WHERE user_id = ${userId} AND ${sql.unsafe(creditCol)} >= 1
-    RETURNING *
-  `
+  const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
 
-  if (updatedCredits.length === 0) {
-    return jsonError(`No ${streamType} credits available. Please purchase credits first.`, 400)
+  if (!shouldBypassCreditsDeduction && normalizedStreamType && totalNeed > 0) {
+    const creditCol = getCreditColumn(normalizedStreamType)
+    const updatedCredits = await sql`
+      UPDATE user_credits
+      SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
+          updated_at = NOW()
+      WHERE user_id = ${targetUserId}
+        AND ${sql.unsafe(creditCol)} >= ${totalNeed}
+      RETURNING *
+    `
+    if (updatedCredits.length === 0) {
+      return jsonError(`Insufficient ${streamType} credits. Required: ${totalNeed}.`, 400)
+    }
   }
 
   // Insert event
   const rows = await sql`
     INSERT INTO events (user_id, title, description, stream_type, scheduled_at, thumbnail_url, settings, slug, public_url)
-    VALUES (${userId}, ${title}, ${description || null}, ${streamType}, ${scheduledAt || null}, ${thumbnailUrl || null}, ${JSON.stringify(settings || {})}, ${slug}, ${publicUrl})
+    VALUES (${targetUserId}, ${title}, ${description || null}, ${streamType}, ${scheduledAt || null}, ${thumbnailUrl || null}, ${JSON.stringify(settings || {})}, ${slug}, ${publicUrl})
     RETURNING *
   `
 
   const event = rows[0] as Record<string, unknown>
 
-  // Create credit deduction record
-  await sql`
-    INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
-    VALUES (${userId}, ${event.id}, ${streamType}, 1, 'Event creation')
-  `
+  if (totalNeed > 0 && !shouldBypassCreditsDeduction) {
+    await sql`
+      INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
+      VALUES (${targetUserId}, ${event.id}, ${streamType}, ${totalNeed}, 'Event creation')
+    `
+  }
 
   return jsonOk({ event: toCamel(event) }, 201)
 })

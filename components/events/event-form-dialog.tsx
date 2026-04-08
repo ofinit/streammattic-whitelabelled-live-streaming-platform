@@ -288,9 +288,9 @@ function streamTypeLabelForSettings(streamType: string): string {
 
 function eventValidityHelpForStreamGroup(group: ValidityStreamGroup): string {
   if (group === "ingest") {
-    return "Durations and extension credit costs are set by your platform admin (Admin → Pricing → Event Validity Extensions). Extra validity uses credits of the same stream type as this event."
+    return "Choosing a stream type requires at least 1 credit, which covers the first 30 days of event validity. Longer durations add tier costs set by your platform admin (Admin → Pricing → Event Validity Extensions). Tier and extension credits use the same stream-type bucket as this event (e.g. RTMP credits for RTMP)."
   }
-  return "Admin-configured validity options apply here too; extension credits match your stream type (e.g. embed credits for embed streams)."
+  return "Choosing a stream type requires at least 1 credit for the first 30 days of validity. Admin-configured tiers apply here too; extension credits match your stream type (e.g. embed credits for embed streams)."
 }
 
 interface EventFormDialogProps {
@@ -309,6 +309,8 @@ interface EventFormDialogProps {
   youtubeOwnerId?: string
   youtubeOwnerType?: "admin" | "studio" | "streamer"
   skipCreditsValidation?: boolean
+  /** When set (e.g. admin editing a tenant event), fetch that user's credit balance via /api/credits?userId= */
+  creditsUserId?: string
   /** When backend returns 409 (duplicate slug), parent sets this so we show inline error and switch to Details tab */
   externalSlugError?: string | null
   /** Studio's verified primary domain for URL preview */
@@ -326,6 +328,7 @@ export function EventFormDialog({
   youtubeOwnerId,
   youtubeOwnerType,
   skipCreditsValidation = false,
+  creditsUserId,
   externalSlugError,
   primaryDomain,
 }: EventFormDialogProps) {
@@ -1170,7 +1173,7 @@ export function EventFormDialog({
 
   const editEventExpKey = useMemo(() => {
     if (!event) return ""
-    const v = (event as Record<string, unknown>).validityExpiresAt
+    const v = (event as unknown as Record<string, unknown>).validityExpiresAt
     return v != null ? String(v) : ""
   }, [event])
 
@@ -1189,7 +1192,7 @@ export function EventFormDialog({
     const inferred = inferValidityChoiceFromEvent(
       {
         scheduledAt: event.scheduledAt,
-        validityExpiresAt: (event as Record<string, unknown>).validityExpiresAt,
+        validityExpiresAt: (event as unknown as Record<string, unknown>).validityExpiresAt,
       },
       validityExtSettings,
     )
@@ -1316,11 +1319,9 @@ export function EventFormDialog({
     const selectedTier = validityExtSettings.extendedTiers.find((t) => t.days === validityDaysCost)
     const extraValidityCost = selectedTier && selectedTier.enabled ? selectedTier.creditCost : 0
 
-    // NEW POLICY: 30 days is NOT included. 1 base credit is required if streamType is selected.
     const baseCost = 1
     const need = baseCost + uniqueExtraDates.length + extraValidityCost
-    console.log("[EventForm] Credit need calculation:", { baseCost, extraDates: uniqueExtraDates.length, extraValidityCost, total: need })
-    
+
     if (need === 0) {
       setCreditStatus("idle")
       setCreditInfo(null)
@@ -1331,7 +1332,11 @@ export function EventFormDialog({
     if (creditCheckRef.current) clearTimeout(creditCheckRef.current)
     creditCheckRef.current = setTimeout(async () => {
       try {
-        const res = await fetch("/api/credits")
+        const creditsUrl =
+          creditsUserId && creditsUserId.trim() !== ""
+            ? `/api/credits?userId=${encodeURIComponent(creditsUserId)}`
+            : "/api/credits"
+        const res = await fetch(creditsUrl)
         if (!res.ok) throw new Error("Failed to fetch credits")
         const data = await res.json()
         const credits = data.credits || data
@@ -1348,7 +1353,7 @@ export function EventFormDialog({
       }
     }, 400)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [additionalDates, formData.scheduledAt, formData.streamType, skipCreditsValidation, validityChoiceKey])
+  }, [additionalDates, formData.scheduledAt, formData.streamType, skipCreditsValidation, validityChoiceKey, creditsUserId])
 
   const generateCredentials = () => {
     const streamKey = `live_${Math.random().toString(36).substring(2, 15)}`
@@ -3236,7 +3241,7 @@ export function EventFormDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="included">
-                        30 days (1 credit)
+                        Default (30 days) (+1 credit)
                       </SelectItem>
                       {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)

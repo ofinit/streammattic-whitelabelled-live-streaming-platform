@@ -8,6 +8,14 @@ export type CanonicalStreamTypeKey = "rtmp" | "youtube_api" | "youtube_embed" | 
 /** `/api/credits` response uses camelCase column names from `toCamel(user_credits row)`. */
 export type CreditsResponseBalanceKey = "rtmp" | "youtubeApi" | "youtubeEmbed" | "thirdParty"
 
+/**
+ * Which stream-type credit bucket to use for live balance preview.
+ * Matches server create when stream type is omitted (`effectiveDbStreamTypeForCreate` → RTMP).
+ */
+export function creditBucketForPreview(formStreamType: string): CanonicalStreamTypeKey {
+  return formStreamTypeToCanonical(formStreamType) ?? "rtmp"
+}
+
 export function formStreamTypeToCanonical(formValue: string): CanonicalStreamTypeKey | null {
   if (!formValue || typeof formValue !== "string") return null
   const map: Record<string, CanonicalStreamTypeKey> = {

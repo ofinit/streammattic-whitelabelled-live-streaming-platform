@@ -81,6 +81,7 @@ import {
   formStreamTypeToCanonical,
   canonicalStreamTypeToCreditsResponseKey,
   streamTypeLabelForCredits,
+  creditBucketForPreview,
 } from "@/lib/stream-type-form"
 import { compressImageFileToWebp } from "@/lib/client-image-webp"
 import { toast } from "@/hooks/use-toast"
@@ -482,7 +483,7 @@ export function EventFormDialog({
       : ""
 
   // Field-level errors for mandatory fields
-  const [fieldErrors, setFieldErrors] = useState<{ slug?: string; scheduledAt?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; slug?: string; scheduledAt?: string }>({})
 
   // Multi-date state
   type ExtraDate = { id: string; label: string; scheduledAt: string; timezone?: string }
@@ -1226,6 +1227,11 @@ export function EventFormDialog({
 
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])
+  const creditPreviewBucket = useMemo(
+    () => creditBucketForPreview(formData.streamType),
+    [formData.streamType],
+  )
+  const creditPreviewBucketLabel = useMemo(() => streamTypeLabelForCredits(creditPreviewBucket), [creditPreviewBucket])
   const eventValidityHelpText = useMemo(
     () => eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays),
     [validityStreamGroup, validityExtSettings.defaultDays],
@@ -1330,13 +1336,6 @@ export function EventFormDialog({
       (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
     )
 
-    // If no stream type selected, bypass credit validation (will default to 30-day auto-delete)
-    if (!formData.streamType) {
-      setCreditStatus("idle")
-      setCreditInfo(null)
-      return
-    }
-
     let validityDaysChosen = validityExtSettings.defaultDays
     if (validityChoiceKey === "included") {
       validityDaysChosen = validityExtSettings.defaultDays
@@ -1377,12 +1376,7 @@ export function EventFormDialog({
         if (!res.ok) throw new Error("Failed to fetch credits")
         const data = await res.json()
         const credits = data.credits || data
-        const canonical = formStreamTypeToCanonical(formData.streamType)
-        if (!canonical) {
-          setCreditStatus("idle")
-          setCreditInfo(null)
-          return
-        }
+        const canonical = creditBucketForPreview(formData.streamType)
         const creditCol = canonicalStreamTypeToCreditsResponseKey(canonical)
         const have = credits[creditCol] ?? 0
         setCreditInfo({ need, have })
@@ -1398,9 +1392,12 @@ export function EventFormDialog({
     skipCreditsValidation,
     validityChoiceKey,
     validityExpiresAt,
-    validityExtSettings.defaultDays,
+    validityExtSettings,
     creditsUserId,
   ])
+
+  const creditsPreventSubmit =
+    !skipCreditsValidation && (creditStatus === "insufficient" || creditStatus === "checking")
 
   // Clear stream type if admin disabled it after this dialog was built with stale pricing
   useEffect(() => {
@@ -1596,7 +1593,8 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { slug?: string; scheduledAt?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string } = {}
+    if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
     if (!formData.scheduledAt) errors.scheduledAt = "Date and time are required"
@@ -1831,11 +1829,21 @@ export function EventFormDialog({
                 <Label htmlFor="title">Event Title <span className="text-destructive">*</span></Label>
                 <Input
                   id="title"
+                  aria-invalid={!!fieldErrors.title}
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value })
+                    setFieldErrors((prev) => ({ ...prev, title: undefined }))
+                  }}
                   placeholder={typedPlaceholder || "Enter event title"}
-                  required
+                  className={fieldErrors.title ? "border-destructive bg-destructive/5" : undefined}
                 />
+                {fieldErrors.title && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {fieldErrors.title}
+                  </p>
+                )}
                 <div className="flex flex-col gap-4 pt-1">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">Title font (watch page)</Label>
@@ -2625,13 +2633,16 @@ export function EventFormDialog({
                 {!skipCreditsValidation && creditStatus === "ok" && creditInfo && (
                   <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3 w-3" />
-                    Credits sufficient — {creditInfo.need} credit{creditInfo.need > 1 ? "s" : ""} will be debited for validity + extra event days ({creditInfo.have} available)
+                    {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
+                    {creditInfo.need > 1 ? "s" : ""} will be debited for validity + extra event days (
+                    {creditInfo.have} available)
                   </p>
                 )}
                 {!skipCreditsValidation && creditStatus === "insufficient" && creditInfo && (
                   <p className="text-xs text-destructive flex items-center gap-1.5">
                     <AlertCircle className="h-3 w-3" />
-                    Insufficient credits — need {creditInfo.need} for validity + extra event days, have {creditInfo.have}.
+                    {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need} for validity + extra event
+                    days, have {creditInfo.have}.
                   </p>
                 )}
               </div>
@@ -2727,26 +2738,24 @@ export function EventFormDialog({
                     No stream type selected. You can add one after creating the event.
                   </p>
                 )}
-                {!skipCreditsValidation && formData.streamType && (
+                {!skipCreditsValidation && (
                   <div className="pt-2 space-y-1">
                     {creditStatus === "checking" && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <Loader2 className="h-3 w-3 animate-spin" /> Checking credits…
                       </p>
                     )}
-                    {creditStatus === "ok" && creditInfo && formStreamTypeToCanonical(formData.streamType) && (
+                    {creditStatus === "ok" && creditInfo && (
                       <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                         <CheckCircle2 className="h-3 w-3" />
-                        {streamTypeLabelForCredits(formStreamTypeToCanonical(formData.streamType)!)} credits: sufficient —{" "}
-                        {creditInfo.need} credit{creditInfo.need > 1 ? "s" : ""} for validity + extra event days (
-                        {creditInfo.have} available)
+                        {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
+                        {creditInfo.need > 1 ? "s" : ""} for validity + extra event days ({creditInfo.have} available)
                       </p>
                     )}
-                    {creditStatus === "insufficient" && creditInfo && formStreamTypeToCanonical(formData.streamType) && (
+                    {creditStatus === "insufficient" && creditInfo && (
                       <p className="text-xs text-destructive flex items-center gap-1.5">
                         <AlertCircle className="h-3 w-3" />
-                        {streamTypeLabelForCredits(formStreamTypeToCanonical(formData.streamType)!)} credits: insufficient — need{" "}
-                        {creditInfo.need}, have {creditInfo.have}.
+                        {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need}, have {creditInfo.have}.
                       </p>
                     )}
                   </div>
@@ -3372,6 +3381,34 @@ export function EventFormDialog({
                         ))}
                     </SelectContent>
                   </Select>
+                  {!skipCreditsValidation && (
+                    <div className="pt-2 space-y-1">
+                      {creditStatus === "checking" && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Checking credits…
+                        </p>
+                      )}
+                      {creditStatus === "ok" && creditInfo && (
+                        <p className="text-xs text-emerald-500 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          {creditPreviewBucketLabel} credits: sufficient — {creditInfo.need} credit
+                          {creditInfo.need > 1 ? "s" : ""} for validity + extra event days ({creditInfo.have} available)
+                        </p>
+                      )}
+                      {creditStatus === "insufficient" && creditInfo && (
+                        <p className="text-xs text-destructive flex items-center gap-1.5">
+                          <AlertCircle className="h-3 w-3" />
+                          {creditPreviewBucketLabel} credits: insufficient — need {creditInfo.need}, have{" "}
+                          {creditInfo.have}.
+                        </p>
+                      )}
+                      {!formData.streamType && creditStatus !== "idle" && creditStatus !== "checking" && creditInfo && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Preview uses RTMP credits until you choose a stream type (same as create).
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg border">
@@ -3421,7 +3458,18 @@ export function EventFormDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={(slugStatus as string) === "checking" || slugStatus === "taken" || slugStatus === "invalid" || (slugTouched && slugStatus === "checking")}
+                disabled={
+                  (slugStatus as string) === "checking" ||
+                  slugStatus === "taken" ||
+                  slugStatus === "invalid" ||
+                  (slugTouched && slugStatus === "checking") ||
+                  creditsPreventSubmit
+                }
+                title={
+                  creditsPreventSubmit
+                    ? "Add credits or change validity or stream type to continue."
+                    : undefined
+                }
                 className="flex-1 sm:flex-none"
               >
                 {slugStatus === "checking" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

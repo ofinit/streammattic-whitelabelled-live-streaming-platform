@@ -80,6 +80,7 @@ import { SimulcastDestinations } from "@/components/simulcast/simulcast-destinat
 import {
   formStreamTypeToCanonical,
   canonicalStreamTypeToCreditsResponseKey,
+  firstEnabledCanonicalStreamType,
   streamTypeLabelForCredits,
   type CanonicalStreamTypeKey,
 } from "@/lib/stream-type-form"
@@ -95,7 +96,8 @@ function computeCreditPreviewNeed(
   validityExtSettings: ParsedValidityExtensions,
   formStreamType: string,
 ): number {
-  if (!String(formStreamType || "").trim()) return 0
+  const noConcreteStreamType = !String(formStreamType || "").trim()
+  if (noConcreteStreamType && validityChoiceKey === "included") return 0
   const primaryDatePart = scheduledAt ? scheduledAt.slice(0, 10) : ""
   const uniqueExtraDates = additionalDates.filter(
     (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
@@ -1269,8 +1271,7 @@ export function EventFormDialog({
     const selected = formStreamTypeToCanonical(formData.streamType)
     if (selected) return selected
     if (!streamTypePricing) return "rtmp"
-    if (streamTypePricing.rtmp?.enabled === false) return null
-    return "rtmp"
+    return firstEnabledCanonicalStreamType(streamTypePricing)
   }, [formData.streamType, streamTypePricing])
   const creditPreviewBucketLabel = useMemo(
     () => (creditPreviewCanonical ? streamTypeLabelForCredits(creditPreviewCanonical) : null),
@@ -1299,10 +1300,12 @@ export function EventFormDialog({
     !skipCreditsValidation && creditPreviewCanonical === null && creditPreviewNeed > 0 && !!streamTypePricing
   const eventValidityHelpText = useMemo(() => {
     if (!hasConcreteStreamType) {
-      return "Draft events are kept 30 days from creation. Choose a stream type on the Stream tab to use paid validity tiers and extended retention."
+      const d = validityExtSettings.defaultDays
+      const bucket = creditPreviewBucketLabel
+      return `Default tier is a free draft (about ${d} days from creation, no credits). When you pick a longer validity option below, we check ${bucket ?? "enabled stream type"} credits for planning only—the saved event still uses the draft window until you choose a stream type on the Stream tab.`
     }
     return eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays)
-  }, [hasConcreteStreamType, validityStreamGroup, validityExtSettings.defaultDays])
+  }, [hasConcreteStreamType, validityStreamGroup, validityExtSettings.defaultDays, creditPreviewBucketLabel])
 
   useEffect(() => {
     if (!isEditing) {
@@ -2699,7 +2702,8 @@ export function EventFormDialog({
                 {/* Credit status */}
                 {!skipCreditsValidation && showCreditPreviewNeedsStreamType && (
                   <p className="text-xs text-muted-foreground leading-snug">
-                    RTMP is disabled for new events. Select an available stream type on the Stream tab to preview credits.
+                    No stream type is enabled in admin pricing. Enable at least one to preview credits for longer validity,
+                    or set a stream type on the Stream tab when available.
                   </p>
                 )}
                 {!skipCreditsValidation && !showCreditPreviewNeedsStreamType && creditStatus === "checking" && (
@@ -2820,8 +2824,8 @@ export function EventFormDialog({
                   <div className="pt-2 space-y-1">
                     {showCreditPreviewNeedsStreamType && (
                       <p className="text-xs text-muted-foreground leading-snug">
-                        RTMP is disabled for new events. Select an available stream type below to preview credits for this
-                        event.
+                        No stream type is enabled in admin pricing. Enable at least one to preview credits, or pick an
+                        available type below when ready.
                       </p>
                     )}
                     {!showCreditPreviewNeedsStreamType && creditStatus === "checking" && (
@@ -3444,18 +3448,19 @@ export function EventFormDialog({
                   </div>
                   <Select
                     value={validityChoiceKey}
-                    disabled={!hasConcreteStreamType}
                     onValueChange={(v) => {
                       setValidityChoiceKey(v)
                       if (v !== "until") setValidityExpiresAt("")
                     }}
                   >
-                    <SelectTrigger className="w-full max-w-md" disabled={!hasConcreteStreamType}>
-                      <SelectValue placeholder={hasConcreteStreamType ? "Choose validity" : "Select a stream type first"} />
+                    <SelectTrigger className="w-full max-w-md">
+                      <SelectValue placeholder="Choose validity" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="included">
-                        Default ({validityExtSettings.defaultDays} days) (1 credit total)
+                        {hasConcreteStreamType
+                          ? `Default (${validityExtSettings.defaultDays} days) (1 credit total)`
+                          : `Default (${validityExtSettings.defaultDays} days) — free draft`}
                       </SelectItem>
                       {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)
@@ -3466,12 +3471,21 @@ export function EventFormDialog({
                         ))}
                     </SelectContent>
                   </Select>
+                  {!hasConcreteStreamType &&
+                    validityChoiceKey !== "included" &&
+                    creditPreviewBucketLabel &&
+                    !skipCreditsValidation && (
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Credits checked against <span className="font-medium text-foreground/90">{creditPreviewBucketLabel}</span>{" "}
+                        until you choose a stream type on the Stream tab.
+                      </p>
+                    )}
                   {!skipCreditsValidation && (
                     <div className="pt-2 space-y-1">
                       {showCreditPreviewNeedsStreamType && (
                         <p className="text-xs text-muted-foreground leading-snug">
-                          RTMP is disabled for new events. Select an available stream type on the Stream tab to preview
-                          credits.
+                          No stream type is enabled in admin pricing. Enable at least one stream type to preview credits for
+                          longer validity, or pick a stream type on the Stream tab once one is available.
                         </p>
                       )}
                       {!showCreditPreviewNeedsStreamType && creditStatus === "checking" && (

@@ -3,7 +3,22 @@
  * Mirrors {@link STREAM_TYPE_MAP} in credits-logic.
  */
 
+import type { StreamTypePricing } from "@/lib/types"
+
 export type CanonicalStreamTypeKey = "rtmp" | "youtube_api" | "youtube_embed" | "third_party"
+
+const CANONICAL_STREAM_ORDER: CanonicalStreamTypeKey[] = ["rtmp", "youtube_api", "youtube_embed", "third_party"]
+
+/** First enabled type for credit preview when the user has not chosen a stream type yet. */
+export function firstEnabledCanonicalStreamType(
+  pricing: StreamTypePricing | undefined | null,
+): CanonicalStreamTypeKey | null {
+  if (!pricing) return null
+  for (const key of CANONICAL_STREAM_ORDER) {
+    if (pricing[key]?.enabled !== false) return key
+  }
+  return null
+}
 
 /** `/api/credits` response uses camelCase column names from `toCamel(user_credits row)`. */
 export type CreditsResponseBalanceKey = "rtmp" | "youtubeApi" | "youtubeEmbed" | "thirdParty"

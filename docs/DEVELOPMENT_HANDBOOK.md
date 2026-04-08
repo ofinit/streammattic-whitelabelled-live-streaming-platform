@@ -48,8 +48,6 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Field | Value |
 | --- | --- |
-| Snapshot time (HEAD commit, ISO) | `2026-04-08T12:13:55+05:30` |
-| Git revision | `fc9ab4b` |
 | Package | `my-v0-project@0.1.0` |
 
 ### Key dependencies

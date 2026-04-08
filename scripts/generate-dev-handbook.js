@@ -6,29 +6,11 @@
 
 const fs = require("fs")
 const path = require("path")
-const { execSync } = require("child_process")
 
 const ROOT = path.join(__dirname, "..")
 const HANDBOOK = path.join(ROOT, "docs", "DEVELOPMENT_HANDBOOK.md")
 const BEGIN = "<!-- AUTO-GENERATED:BEGIN -->"
 const END = "<!-- AUTO-GENERATED:END -->"
-
-function gitShortSha() {
-  try {
-    return execSync("git rev-parse --short HEAD", { cwd: ROOT, encoding: "utf8" }).trim()
-  } catch {
-    return "unknown"
-  }
-}
-
-/** ISO timestamp of HEAD commit — stable for a given checkout (CI-friendly). */
-function gitCommitDateIso() {
-  try {
-    return execSync("git log -1 --format=%cI", { cwd: ROOT, encoding: "utf8" }).trim()
-  } catch {
-    return new Date().toISOString()
-  }
-}
 
 function findApiRoutes() {
   const apiRoot = path.join(ROOT, "app", "api")
@@ -145,8 +127,6 @@ function redactUrlHost(url) {
 function buildGeneratedBlock(dbSection) {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"))
   const routes = findApiRoutes()
-  const generatedAt = gitCommitDateIso()
-  const sha = gitShortSha()
 
   const routeRows = routes
     .map((f) => `| \`${f}\` | \`${routeToUrlPattern(f)}\` |`)
@@ -159,8 +139,6 @@ function buildGeneratedBlock(dbSection) {
     "",
     "| Field | Value |",
     "| --- | --- |",
-    "| Snapshot time (HEAD commit, ISO) | `" + generatedAt + "` |",
-    "| Git revision | `" + sha + "` |",
     "| Package | `" + (pkg.name || "unknown") + "@" + (pkg.version || "0.0.0") + "` |",
     "",
     "### Key dependencies",

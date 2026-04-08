@@ -104,8 +104,9 @@ export async function POST(req: NextRequest) {
     if (!title || !title.trim()) return NextResponse.json({ error: "Event title is required" }, { status: 400 })
     // Stream type is optional during creation. Default to RTMP if not provided;
     // the user can explicitly set/change the stream type later in the UI.
-    const normalizedStreamType = streamType || "rtmp"
-    const dbStreamType = STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType
+    // If streamType is truly missing/falsy, do not default to 'rtmp' for billing
+    const normalizedStreamType = streamType || null
+    const dbStreamType = normalizedStreamType ? (STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType) : null
     const sql = getDb()
 
     // Resolve slug: use provided (validate) or auto-generate unique one
@@ -136,8 +137,8 @@ export async function POST(req: NextRequest) {
       : "third_party"
 
     // Deduct credits for each billable extra date atomically
-    // NOTE: Admin-created events should not consume credits or be blocked by credit balances.
-    if (user.role !== "admin" && billableDates.length > 0) {
+    // NOTE: If no streamType is selected, we skip credit validation and set a 30-day auto-delete expiry.
+    if (user.role !== "admin" && dbStreamType && billableDates.length > 0) {
       const deducted = await sql`
         UPDATE user_credits
         SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${billableDates.length},
@@ -170,12 +171,19 @@ export async function POST(req: NextRequest) {
           })
         : "{}"
 
-    // Validity: explicit date or X days from scheduled_at
+    // Validity: explicit date, tier days, or fallback
     let validityExpiresAtValue: string | null = null
-    if (validityExpiresAt && typeof validityExpiresAt === "string") validityExpiresAtValue = validityExpiresAt
-    else if (typeof validityDays === "number" && validityDays > 0 && scheduledAt) {
-      const d = new Date(scheduledAt)
-      d.setDate(d.getDate() + validityDays)
+    if (validityExpiresAt && typeof validityExpiresAt === "string") {
+      validityExpiresAtValue = validityExpiresAt
+    } else if (typeof validityDays === "number" && validityDays > 0) {
+      // If extension provided, add to scheduledAt (if available) or NOW
+      const base = scheduledAt ? new Date(scheduledAt) : new Date()
+      base.setDate(base.getDate() + validityDays)
+      validityExpiresAtValue = base.toISOString()
+    } else if (!dbStreamType) {
+      // Requirement: Events without stream type MUST auto-delete within 30 days of creation
+      const d = new Date()
+      d.setDate(d.getDate() + 30)
       validityExpiresAtValue = d.toISOString()
     }
 
@@ -209,8 +217,8 @@ export async function POST(req: NextRequest) {
         photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
-        ${dbStreamType}, ${streamKey},
-        ${["rtmp", "youtube_api"].includes(dbStreamType) ? rtmpUrl : null},
+        ${dbStreamType || 'rtmp'}, ${streamKey},
+        ${["rtmp", "youtube_api"].includes(dbStreamType || "") ? rtmpUrl : null},
         ${youtubeUrl || null}, ${embedCode || null},
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},

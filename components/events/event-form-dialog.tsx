@@ -1300,10 +1300,29 @@ export function EventFormDialog({
 
     const primaryDatePart = formData.scheduledAt ? formData.scheduledAt.slice(0, 10) : ""
     const uniqueExtraDates = additionalDates.filter(
-      (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart
+      (d) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart,
     )
-    const need = uniqueExtraDates.length
-    if (need === 0) { setCreditStatus("idle"); setCreditInfo(null); return }
+
+    // If no stream type selected, bypass credit validation (will default to 30-day auto-delete)
+    if (!formData.streamType) {
+      setCreditStatus("idle")
+      setCreditInfo(null)
+      return
+    }
+
+    let validityCost = 0
+    if (validityChoiceKey.startsWith("tier:")) {
+      const days = Number(validityChoiceKey.split(":")[1])
+      const tier = validityExtSettings.extendedTiers.find((t) => t.days === days)
+      if (tier && tier.enabled) validityCost = tier.creditCost
+    }
+
+    const need = uniqueExtraDates.length + validityCost
+    if (need === 0) {
+      setCreditStatus("idle")
+      setCreditInfo(null)
+      return
+    }
 
     setCreditStatus("checking")
     if (creditCheckRef.current) clearTimeout(creditCheckRef.current)
@@ -1577,8 +1596,8 @@ export function EventFormDialog({
       validityExpiresAt:
         validityChoiceKey === "until" && validityExpiresAt ? new Date(validityExpiresAt).toISOString() : undefined,
       validityDays:
-        validityChoiceKey === "until"
-          ? undefined
+        !formData.streamType
+          ? 30
           : validityChoiceKey === "included"
             ? validityExtSettings.defaultDays
             : validityChoiceKey.startsWith("tier:")
@@ -1591,7 +1610,7 @@ export function EventFormDialog({
       useCustomDomain: formData.useCustomDomain,
     }
 
-    const needsCredentials = !isEditing && (formData.streamType === "rtmp" || formData.streamType === "youtube_api") && !crewPin.trim()
+    const needsCredentials = !isEditing && (formData.streamType === "rtmp" || formData.streamType === "youtube_api") && !crewPin.trim() && !!formData.streamType
 
     onSave(payload as unknown as LiveEvent, needsCredentials)
   }
@@ -3224,17 +3243,8 @@ export function EventFormDialog({
                             {t.label ?? `${t.days} days (+${t.creditCost} credit${t.creditCost === 1 ? "" : "s"})`}
                           </SelectItem>
                         ))}
-                      <SelectItem value="until">Custom end date…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {validityChoiceKey === "until" && (
-                    <Input
-                      type="datetime-local"
-                      value={validityExpiresAt}
-                      onChange={(e) => setValidityExpiresAt(e.target.value)}
-                      className="max-w-xs"
-                    />
-                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg border">

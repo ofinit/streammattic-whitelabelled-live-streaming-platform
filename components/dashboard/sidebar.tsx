@@ -73,7 +73,7 @@ const adminNav: NavItem[] = [
   { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },
   { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
   { title: "GST", href: "/admin/settings/gst", icon: Receipt },
-  { title: "Platform Setup", href: "/studio/setup", icon: Zap },
+  { title: "System Tasks", href: "/admin/system-tasks", icon: Radio },
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 

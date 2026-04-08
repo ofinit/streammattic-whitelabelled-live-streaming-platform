@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getEvents, getEventCount } from "@/lib/db-queries"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
+import type { SimulcastConfig } from "@/lib/types"
 import { hashCrewPin } from "@/lib/crew-pin"
 import {
   STREAM_TYPE_MAP,
@@ -13,6 +14,13 @@ import {
   inferValidityDaysForBilling,
   type CreditNeedInput,
 } from "@/lib/server/credits-logic"
+import {
+  loadStreamAndSimulcastPricing,
+  assertStreamTypeEnabled,
+  assertSimulcastAllowed,
+  effectiveDbStreamTypeForCreate,
+  bodyStreamTypeToDb,
+} from "@/lib/server/event-stream-policy"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -112,6 +120,13 @@ export async function POST(req: NextRequest) {
     const dbStreamType = normalizedStreamType ? (STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType) : null
     const sql = getDb()
 
+    const { streamTypePricing, simulcastPricing } = await loadStreamAndSimulcastPricing(sql)
+    const effectiveStreamType = effectiveDbStreamTypeForCreate(dbStreamType)
+    const streamPol = assertStreamTypeEnabled(streamTypePricing, effectiveStreamType)
+    if (streamPol) return NextResponse.json({ error: streamPol.error }, { status: streamPol.status })
+    const simPol = assertSimulcastAllowed(simulcastPricing, simulcastConfig, effectiveStreamType)
+    if (simPol) return NextResponse.json({ error: simPol.error }, { status: simPol.status })
+
     // Resolve slug: use provided (validate) or auto-generate unique one
     let finalSlug: string
     if (rawSlug && rawSlug.trim()) {
@@ -133,7 +148,7 @@ export async function POST(req: NextRequest) {
       : []
 
     const totalNeed = await calculateTotalCreditsRequired({
-      streamType: dbStreamType,
+      streamType: effectiveStreamType,
       scheduledAt,
       additionalDates,
       validityDays,
@@ -143,8 +158,8 @@ export async function POST(req: NextRequest) {
     const targetUserId = user.id as string
     const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
 
-    if (!shouldBypassCreditsDeduction && dbStreamType && totalNeed > 0) {
-      const creditCol = getCreditColumn(dbStreamType)
+    if (!shouldBypassCreditsDeduction && effectiveStreamType && totalNeed > 0) {
+      const creditCol = getCreditColumn(effectiveStreamType)
       const deducted = await sql`
         UPDATE user_credits
         SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
@@ -223,14 +238,14 @@ export async function POST(req: NextRequest) {
         photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
-        ${dbStreamType || 'rtmp'}, ${streamKey},
-        ${["rtmp", "youtube_api"].includes(dbStreamType || "") ? rtmpUrl : null},
+        ${effectiveStreamType}, ${streamKey},
+        ${["rtmp", "youtube_api"].includes(effectiveStreamType || "") ? rtmpUrl : null},
         ${youtubeUrl || null}, ${embedCode || null},
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
         ${isPasswordProtected ? (password || null) : null},
         ${allowChat ?? true}, ${allowReactions ?? true},
-        ${JSON.stringify(simulcastConfig || {})},
+        ${JSON.stringify(effectiveStreamType === "rtmp" ? (simulcastConfig || {}) : {})},
         ${finalSlug},
         ${timezone || "UTC"},
         ${showScheduledPage ?? false},
@@ -246,14 +261,14 @@ export async function POST(req: NextRequest) {
     const event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
 
-    if (totalNeed > 0 && !shouldBypassCreditsDeduction && dbStreamType) {
+    if (totalNeed > 0 && !shouldBypassCreditsDeduction && effectiveStreamType) {
       await sql`
         INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
-        VALUES (${targetUserId}, ${eventId}, ${dbStreamType}, ${totalNeed}, 'Event creation')
+        VALUES (${targetUserId}, ${eventId}, ${effectiveStreamType}, ${totalNeed}, 'Event creation')
       `
     }
 
-    const needsOwnKey = ["rtmp", "youtube_api"].includes(dbStreamType || "")
+    const needsOwnKey = ["rtmp", "youtube_api"].includes(effectiveStreamType || "")
 
     // Insert additional date rows
     for (let i = 0; i < extraDates.length; i++) {
@@ -287,6 +302,7 @@ export async function PUT(req: NextRequest) {
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin,
+      streamType, youtubeUrl, embedCode, simulcastConfig,
     } = body
 
     if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
@@ -304,7 +320,38 @@ export async function PUT(req: NextRequest) {
     }
 
     const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
-    const dbStreamType = (existingRow.stream_type || null) as string | null
+    const prevStreamType = (existingRow.stream_type || null) as string | null
+
+    const { streamTypePricing, simulcastPricing: simulcastPricingPut } = await loadStreamAndSimulcastPricing(sql)
+
+    let streamTypeForUpdate: string | undefined = undefined
+    if (streamType !== undefined) {
+      if (streamType === "" || streamType === null) {
+        streamTypeForUpdate = undefined
+      } else {
+        const mapped = bodyStreamTypeToDb(streamType)
+        streamTypeForUpdate = mapped === null ? undefined : mapped
+      }
+    }
+
+    const resolvedStreamType = (streamTypeForUpdate !== undefined ? streamTypeForUpdate : prevStreamType) || "rtmp"
+
+    const rawExistingSim = existingRow.simulcast_config
+    const existingSim: SimulcastConfig =
+      rawExistingSim && typeof rawExistingSim === "object"
+        ? (rawExistingSim as SimulcastConfig)
+        : { enabled: false, customDestinations: [] }
+    const simulcastForPolicy = simulcastConfig !== undefined ? simulcastConfig : existingSim
+
+    const streamPolPut = assertStreamTypeEnabled(streamTypePricing, resolvedStreamType)
+    if (streamPolPut) return NextResponse.json({ error: streamPolPut.error }, { status: streamPolPut.status })
+    const simPolPut = assertSimulcastAllowed(simulcastPricingPut, simulcastForPolicy, resolvedStreamType)
+    if (simPolPut) return NextResponse.json({ error: simPolPut.error }, { status: simPolPut.status })
+
+    const storedSimulcastJson =
+      resolvedStreamType === "rtmp"
+        ? (simulcastConfig !== undefined ? simulcastConfig : existingSim)
+        : {}
 
     let finalSlug: string | null = null
     if (rawSlug !== undefined && rawSlug !== null) {
@@ -319,7 +366,7 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    if (!shouldBypassCreditsDeduction && dbStreamType) {
+    if (!shouldBypassCreditsDeduction && prevStreamType) {
       const oldDatesRows = await sql`SELECT scheduled_at FROM event_dates WHERE event_id = ${id}`
       const prevAdditional = eventDateRowsToCreditAdditionalDates(
         oldDatesRows as { scheduled_at: unknown }[],
@@ -333,7 +380,7 @@ export async function PUT(req: NextRequest) {
       )
 
       const previous: CreditNeedInput = {
-        streamType: dbStreamType,
+        streamType: prevStreamType,
         scheduledAt: prevScheduled,
         additionalDates: prevAdditional,
         validityDays: prevValidityDays,
@@ -373,7 +420,7 @@ export async function PUT(req: NextRequest) {
         : prevAdditional
 
       const next: CreditNeedInput = {
-        streamType: dbStreamType,
+        streamType: resolvedStreamType,
         scheduledAt: nextScheduled,
         additionalDates: nextAdditional,
         validityDays: nextValidityDays,
@@ -383,7 +430,7 @@ export async function PUT(req: NextRequest) {
       const incrementalNeed = await computeIncrementalCreditsRequired(previous, next)
 
       if (incrementalNeed > 0) {
-        const creditCol = getCreditColumn(dbStreamType)
+        const creditCol = getCreditColumn(resolvedStreamType)
         const deducted = await sql`
           UPDATE user_credits
           SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${incrementalNeed},
@@ -394,7 +441,7 @@ export async function PUT(req: NextRequest) {
         `
         if (deducted.length === 0) {
           return NextResponse.json({
-            error: `Insufficient ${dbStreamType} credits for this update. Required: ${incrementalNeed}.`,
+            error: `Insufficient ${resolvedStreamType} credits for this update. Required: ${incrementalNeed}.`,
           }, { status: 400 })
         }
       }
@@ -469,6 +516,12 @@ export async function PUT(req: NextRequest) {
         : JSON.stringify(typeof prevPhotographer === "object" && prevPhotographer ? prevPhotographer : {})
     const finalCrewPinHash = crewPinHash !== undefined ? crewPinHash : (prev.crew_pin_hash as string | null) ?? null
 
+    const nextSimulcastPersisted =
+      simulcastConfig !== undefined || streamTypeForUpdate !== undefined ? storedSimulcastJson : existingSim
+
+    const youtubeUrlParam = youtubeUrl === undefined ? null : youtubeUrl ?? null
+    const embedCodeParam = embedCode === undefined ? null : embedCode ?? null
+
     const rows = await sql`
       UPDATE events SET
         title = COALESCE(${title ?? null}, title),
@@ -476,6 +529,10 @@ export async function PUT(req: NextRequest) {
         description = COALESCE(${description ?? null}, description),
         status = COALESCE(${status ?? null}, status),
         scheduled_at = COALESCE(${scheduledAt ?? null}, scheduled_at),
+        stream_type = COALESCE(${streamTypeForUpdate ?? null}, stream_type),
+        youtube_url = COALESCE(${youtubeUrlParam}, youtube_url),
+        embed_code = COALESCE(${embedCodeParam}, embed_code),
+        simulcast_config = ${JSON.stringify(nextSimulcastPersisted)}::jsonb,
         is_password_protected = COALESCE(${isPasswordProtected ?? null}, is_password_protected),
         event_password = COALESCE(${password ?? null}, event_password),
         allow_chat = COALESCE(${allowChat ?? null}, allow_chat),
@@ -503,7 +560,7 @@ export async function PUT(req: NextRequest) {
     if (Array.isArray(additionalDates)) {
       await sql`DELETE FROM event_dates WHERE event_id = ${id}`
       const existing = await sql`SELECT stream_type FROM events WHERE id = ${id}`
-      const evStreamType = (existing[0] as Record<string, unknown>)?.stream_type as string || "rtmp"
+      const evStreamType = ((existing[0] as Record<string, unknown>)?.stream_type as string) || resolvedStreamType || "rtmp"
       const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
       const needsOwnKey = ["rtmp", "youtube_api"].includes(evStreamType)
       for (let i = 0; i < additionalDates.length; i++) {

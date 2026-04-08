@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +23,13 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react"
-import type { YouTubeChannel, FacebookPage, CustomRtmpDestination, SimulcastConfig } from "@/lib/types"
+import type {
+  YouTubeChannel,
+  FacebookPage,
+  CustomRtmpDestination,
+  SimulcastConfig,
+  SimulcastPricing,
+} from "@/lib/types"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { ConnectFacebookDialog } from "./connect-facebook-dialog"
 
@@ -34,6 +40,8 @@ interface SimulcastDestinationsProps {
   onConfigChange: (config: SimulcastConfig) => void
   onYouTubeChannelConnected: (channel: YouTubeChannel) => void
   onFacebookPageConnected: (page: FacebookPage) => void
+  /** When set, destinations with `enabled: false` are blocked (admin Packages). Omit to allow all. */
+  simulcastPricing?: SimulcastPricing | null
 }
 
 const getPlatformIcon = (platform: string) => {
@@ -56,7 +64,49 @@ export function SimulcastDestinations({
   onConfigChange,
   onYouTubeChannelConnected,
   onFacebookPageConnected,
+  simulcastPricing: simulcastPricingProp,
 }: SimulcastDestinationsProps) {
+  const ytEnabled = simulcastPricingProp?.youtube.enabled ?? true
+  const fbEnabled = simulcastPricingProp?.facebook.enabled ?? true
+  const customEnabled = simulcastPricingProp?.customRtmp.enabled ?? true
+  const anyDestinationAvailable = ytEnabled || fbEnabled || customEnabled
+
+  const configRef = useRef(config)
+  configRef.current = config
+
+  useEffect(() => {
+    if (!anyDestinationAvailable && configRef.current.enabled) {
+      const c = configRef.current
+      onConfigChange({
+        ...c,
+        enabled: false,
+        youtubeChannelId: undefined,
+        facebookPageId: undefined,
+        customDestinations: [],
+      })
+    }
+  }, [anyDestinationAvailable, onConfigChange])
+
+  useEffect(() => {
+    const c = configRef.current
+    if (ytEnabled && fbEnabled && customEnabled) return
+    const next: SimulcastConfig = { ...c }
+    let touched = false
+    if (!ytEnabled && c.youtubeChannelId) {
+      next.youtubeChannelId = undefined
+      touched = true
+    }
+    if (!fbEnabled && c.facebookPageId) {
+      next.facebookPageId = undefined
+      touched = true
+    }
+    if (!customEnabled && c.customDestinations?.length) {
+      next.customDestinations = []
+      touched = true
+    }
+    if (touched) onConfigChange(next)
+  }, [ytEnabled, fbEnabled, customEnabled, onConfigChange])
+
   const [showConnectYouTube, setShowConnectYouTube] = useState(false)
   const [showConnectFacebook, setShowConnectFacebook] = useState(false)
   const [showAddCustom, setShowAddCustom] = useState(false)
@@ -105,26 +155,41 @@ export function SimulcastDestinations({
 
   return (
     <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h4 className="font-medium">Simulcast Destinations</h4>
           <p className="text-xs text-muted-foreground">Stream to multiple platforms simultaneously (optional)</p>
+          {!anyDestinationAvailable && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Simulcast is disabled by your administrator.
+            </p>
+          )}
         </div>
-        <Switch checked={config.enabled} onCheckedChange={(enabled) => onConfigChange({ ...config, enabled })} />
+        <Switch
+          checked={config.enabled}
+          disabled={!anyDestinationAvailable}
+          onCheckedChange={(enabled) => onConfigChange({ ...config, enabled })}
+        />
       </div>
 
-      {config.enabled && (
+      {config.enabled && anyDestinationAvailable && (
         <div className="space-y-4 pt-2">
           {/* YouTube Destination */}
           <Collapsible>
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+            <div
+              className={`flex items-center gap-3 p-3 rounded-lg border bg-background ${
+                !ytEnabled ? "opacity-60 pointer-events-none" : ""
+              }`}
+            >
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-8 h-8 rounded-full bg-red-600/10 flex items-center justify-center">
                   <Youtube className="h-4 w-4 text-red-600" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">YouTube Live</p>
-                  {selectedYouTubeChannel ? (
+                  {!ytEnabled ? (
+                    <p className="text-xs text-muted-foreground">Unavailable (admin)</p>
+                  ) : selectedYouTubeChannel ? (
                     <p className="text-xs text-muted-foreground">{selectedYouTubeChannel.channelTitle}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">Not connected</p>
@@ -132,7 +197,11 @@ export function SimulcastDestinations({
                 </div>
               </div>
 
-              {selectedYouTubeChannel ? (
+              {!ytEnabled ? (
+                <Badge variant="secondary" className="text-xs">
+                  Off
+                </Badge>
+              ) : selectedYouTubeChannel ? (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-primary border-primary">
                     Connected
@@ -152,7 +221,7 @@ export function SimulcastDestinations({
             </div>
 
             <CollapsibleContent className="pt-2">
-              {youtubeChannels && youtubeChannels.length > 0 && (
+              {ytEnabled && youtubeChannels && youtubeChannels.length > 0 && (
                 <div className="space-y-3 p-3 rounded-lg border bg-background">
                   <div className="space-y-2">
                     <Label className="text-xs">Select Channel</Label>
@@ -241,14 +310,20 @@ export function SimulcastDestinations({
 
           {/* Facebook Destination */}
           <Collapsible>
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-background">
+            <div
+              className={`flex items-center gap-3 p-3 rounded-lg border bg-background ${
+                !fbEnabled ? "opacity-60 pointer-events-none" : ""
+              }`}
+            >
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-8 h-8 rounded-full bg-blue-600/10 flex items-center justify-center">
                   <Facebook className="h-4 w-4 text-blue-600" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">Facebook Live</p>
-                  {selectedFacebookPage ? (
+                  {!fbEnabled ? (
+                    <p className="text-xs text-muted-foreground">Unavailable (admin)</p>
+                  ) : selectedFacebookPage ? (
                     <p className="text-xs text-muted-foreground">{selectedFacebookPage.pageName}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">Not connected</p>
@@ -256,7 +331,11 @@ export function SimulcastDestinations({
                 </div>
               </div>
 
-              {selectedFacebookPage ? (
+              {!fbEnabled ? (
+                <Badge variant="secondary" className="text-xs">
+                  Off
+                </Badge>
+              ) : selectedFacebookPage ? (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-primary border-primary">
                     Connected
@@ -276,7 +355,7 @@ export function SimulcastDestinations({
             </div>
 
             <CollapsibleContent className="pt-2">
-              {facebookPages && facebookPages.length > 0 && (
+              {fbEnabled && facebookPages && facebookPages.length > 0 && (
                 <div className="space-y-3 p-3 rounded-lg border bg-background">
                   <div className="space-y-2">
                     <Label className="text-xs">Select Page</Label>
@@ -340,13 +419,15 @@ export function SimulcastDestinations({
           </Collapsible>
 
           {/* Custom RTMP Destinations */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+          <div className={`space-y-3 ${!customEnabled ? "opacity-60" : ""}`}>
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="font-medium text-sm">Custom RTMP</p>
-                <p className="text-xs text-muted-foreground">Twitch, Twitter/X, LinkedIn, etc.</p>
+                <p className="text-xs text-muted-foreground">
+                  {customEnabled ? "Twitch, Twitter/X, LinkedIn, etc." : "Unavailable (admin)"}
+                </p>
               </div>
-              {!showAddCustom && (
+              {customEnabled && !showAddCustom && (
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowAddCustom(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add

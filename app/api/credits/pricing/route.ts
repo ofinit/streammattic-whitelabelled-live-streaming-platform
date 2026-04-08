@@ -4,7 +4,7 @@ import { jsonOk, withAuth } from "@/lib/api-helpers"
 
 export const GET = withAuth(async () => {
   const sql = getDb()
-  const { streamTypePricing, validityExtensions } = await getPublicStreamCreditPricing()
+  const { streamTypePricing, simulcastPricing, validityExtensions } = await getPublicStreamCreditPricing()
 
   const discountRows = await sql`SELECT value FROM platform_settings WHERE key = 'discount_tiers'`
 
@@ -18,6 +18,7 @@ export const GET = withAuth(async () => {
 
   return jsonOk({
     streamTypePricing,
+    simulcastPricing,
     pricing: legacyFlat,
     discountTiers: discountRows.length > 0 ? (discountRows[0] as Record<string, unknown>).value : [],
     validityExtensions,

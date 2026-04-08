@@ -3,6 +3,7 @@
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +48,8 @@ import type {
   YouTubeChannel,
   FacebookPage,
   SimulcastConfig,
+  SimulcastPricing,
+  StreamTypePricing,
   TemplateData,
 } from "@/lib/types"
 import {
@@ -74,6 +77,11 @@ import { templateUsesCircularHeroCrop } from "@/lib/template-hero-crop"
 import { Slider } from "@/components/ui/slider"
 import { YouTubeChannelSelector } from "@/components/youtube/youtube-channel-selector"
 import { SimulcastDestinations } from "@/components/simulcast/simulcast-destinations"
+import {
+  formStreamTypeToCanonical,
+  canonicalStreamTypeToCreditsResponseKey,
+  streamTypeLabelForCredits,
+} from "@/lib/stream-type-form"
 import { compressImageFileToWebp } from "@/lib/client-image-webp"
 import { toast } from "@/hooks/use-toast"
 
@@ -381,6 +389,20 @@ export function EventFormDialog({
     enabled: false,
     customDestinations: [],
   })
+
+  const { data: creditPricingJson } = useSWR<{
+    streamTypePricing?: StreamTypePricing
+    simulcastPricing?: SimulcastPricing
+  }>(
+    open ? "/api/credits/pricing" : null,
+    (url) =>
+      fetch(url).then((r) => {
+        if (!r.ok) throw new Error("Failed to load pricing")
+        return r.json()
+      }),
+  )
+  const streamTypePricing = creditPricingJson?.streamTypePricing
+  const simulcastPricingFromApi = creditPricingJson?.simulcastPricing
 
   const [timezone, setTimezone] = useState("Asia/Kolkata")
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
@@ -1355,11 +1377,13 @@ export function EventFormDialog({
         if (!res.ok) throw new Error("Failed to fetch credits")
         const data = await res.json()
         const credits = data.credits || data
-        const streamType = formData.streamType || "rtmp"
-        const creditCol = streamType === "rtmp" ? "rtmp"
-          : streamType === "youtube_api" ? "youtubeApi"
-          : streamType === "youtube_embed" ? "youtubeEmbed"
-          : "thirdParty"
+        const canonical = formStreamTypeToCanonical(formData.streamType)
+        if (!canonical) {
+          setCreditStatus("idle")
+          setCreditInfo(null)
+          return
+        }
+        const creditCol = canonicalStreamTypeToCreditsResponseKey(canonical)
         const have = credits[creditCol] ?? 0
         setCreditInfo({ need, have })
         setCreditStatus(have >= need ? "ok" : "insufficient")
@@ -1377,6 +1401,18 @@ export function EventFormDialog({
     validityExtSettings.defaultDays,
     creditsUserId,
   ])
+
+  // Clear stream type if admin disabled it after this dialog was built with stale pricing
+  useEffect(() => {
+    if (!open || !streamTypePricing || !formData.streamType) return
+    const canon = formStreamTypeToCanonical(formData.streamType)
+    if (!canon) return
+    const cfg = streamTypePricing[canon]
+    if (cfg?.enabled === false) {
+      setFormData((prev) => ({ ...prev, streamType: "" as StreamType }))
+      setSimulcastConfig({ enabled: false, customDestinations: [] })
+    }
+  }, [open, streamTypePricing, formData.streamType])
 
   const generateCredentials = () => {
     const streamKey = `live_${Math.random().toString(36).substring(2, 15)}`
@@ -2627,39 +2663,93 @@ export function EventFormDialog({
                     },
                     { value: "youtube", label: "YouTube Embed", icon: Youtube, desc: "Embed existing" },
                     { value: "embedded", label: "Third Party", icon: Globe, desc: "External embed" },
-                  ].map((type) => (
-                    <Card
-                      key={type.value}
-                      className={`cursor-pointer transition-colors ${
-                        formData.streamType === type.value
-                          ? "border-primary bg-primary/5"
-                          : "hover:border-primary/50 opacity-80 hover:opacity-100"
-                      }`}
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          // clicking the already-selected card deselects it
-                          streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
-                        })
-                      }
-                    >
-                      <CardContent className="p-4 text-center relative">
-                        {type.badge && (
-                          <Badge className="absolute top-2 right-2 text-xs bg-red-500">{type.badge}</Badge>
-                        )}
-                        <type.icon
-                          className={`h-8 w-8 mx-auto mb-2 ${type.value === "youtube_api" ? "text-red-500" : "text-primary"}`}
-                        />
-                        <p className="font-medium text-sm">{type.label}</p>
-                        <p className="text-xs text-muted-foreground">{type.desc}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  ].map((type) => {
+                    const canon = formStreamTypeToCanonical(type.value)
+                    const adminOff =
+                      canon && streamTypePricing ? streamTypePricing[canon]?.enabled === false : false
+                    const cardDisabled = !!adminOff
+                    return (
+                      <Card
+                        key={type.value}
+                        role="button"
+                        tabIndex={cardDisabled ? -1 : 0}
+                        aria-disabled={cardDisabled}
+                        className={`transition-colors ${
+                          cardDisabled
+                            ? "cursor-not-allowed opacity-45 border-border/50"
+                            : `cursor-pointer ${
+                                formData.streamType === type.value
+                                  ? "border-primary bg-primary/5"
+                                  : "hover:border-primary/50 opacity-80 hover:opacity-100"
+                              }`
+                        }`}
+                        onClick={() => {
+                          if (cardDisabled) return
+                          setFormData({
+                            ...formData,
+                            streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
+                          })
+                        }}
+                        onKeyDown={(e) => {
+                          if (cardDisabled) return
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            setFormData({
+                              ...formData,
+                              streamType: (formData.streamType === type.value ? "" : type.value) as StreamType,
+                            })
+                          }
+                        }}
+                      >
+                        <CardContent className="p-4 text-center relative">
+                          {type.badge && (
+                            <Badge className="absolute top-2 right-2 text-xs bg-red-500">{type.badge}</Badge>
+                          )}
+                          {adminOff && (
+                            <Badge variant="secondary" className="absolute top-2 left-2 text-[10px]">
+                              Unavailable
+                            </Badge>
+                          )}
+                          <type.icon
+                            className={`h-8 w-8 mx-auto mb-2 ${type.value === "youtube_api" ? "text-red-500" : "text-primary"}`}
+                          />
+                          <p className="font-medium text-sm">{type.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {adminOff ? "Disabled by administrator" : type.desc}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
                 {!formData.streamType && (
                   <p className="text-xs text-muted-foreground pt-1">
                     No stream type selected. You can add one after creating the event.
                   </p>
+                )}
+                {!skipCreditsValidation && formData.streamType && (
+                  <div className="pt-2 space-y-1">
+                    {creditStatus === "checking" && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Checking credits…
+                      </p>
+                    )}
+                    {creditStatus === "ok" && creditInfo && formStreamTypeToCanonical(formData.streamType) && (
+                      <p className="text-xs text-emerald-500 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {streamTypeLabelForCredits(formStreamTypeToCanonical(formData.streamType)!)} credits: sufficient —{" "}
+                        {creditInfo.need} credit{creditInfo.need > 1 ? "s" : ""} for validity + extra event days (
+                        {creditInfo.have} available)
+                      </p>
+                    )}
+                    {creditStatus === "insufficient" && creditInfo && formStreamTypeToCanonical(formData.streamType) && (
+                      <p className="text-xs text-destructive flex items-center gap-1.5">
+                        <AlertCircle className="h-3 w-3" />
+                        {streamTypeLabelForCredits(formStreamTypeToCanonical(formData.streamType)!)} credits: insufficient — need{" "}
+                        {creditInfo.need}, have {creditInfo.have}.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -2763,6 +2853,7 @@ export function EventFormDialog({
                   facebookPages={facebookPages}
                   config={simulcastConfig}
                   onConfigChange={setSimulcastConfig}
+                  simulcastPricing={simulcastPricingFromApi ?? undefined}
                   onYouTubeChannelConnected={(channel) => {
                     setYoutubeChannels([...youtubeChannels, channel])
                   }}

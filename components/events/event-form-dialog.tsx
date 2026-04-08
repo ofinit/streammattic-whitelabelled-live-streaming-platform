@@ -38,6 +38,7 @@ import {
   ImageIcon,
   Upload,
   X,
+  ShieldAlert,
 } from "lucide-react"
 import type {
   LiveEvent,
@@ -709,6 +710,7 @@ export function EventFormDialog({
   const [validityChoiceKey, setValidityChoiceKey] = useState("included")
   const [validityExpiresAt, setValidityExpiresAt] = useState("")
   const [crewPin, setCrewPin] = useState("")
+  const [isCrewPinEnabled, setIsCrewPinEnabled] = useState(false)
   const [standardUploading, setStandardUploading] = useState<string | null>(null)
   /** Photo gallery: compress → WebP → upload; null when idle */
   const [galleryUploadProgress, setGalleryUploadProgress] = useState<{
@@ -1038,6 +1040,7 @@ export function EventFormDialog({
         setPhotographerLogoUrl((ev.photographerLogoUrl as string) || "")
         setPhotographerContact(parsePhotographerContact(ev.photographerContact))
         setCrewPin("") // never load PIN
+        setIsCrewPinEnabled(!!(ev.hasCrewPin ?? ev.crew_pin_hash))
         // Pre-fill slug when editing
         const existingSlug = ((event as any).slug as string) || ""
         setSlug(existingSlug)
@@ -1075,6 +1078,7 @@ export function EventFormDialog({
         setValidityChoiceKey("included")
         setValidityExpiresAt("")
         setCrewPin("")
+        setIsCrewPinEnabled(false)
         setTemplateData({})
         setTemplateFieldErrors({})
         if (initialDraft) {
@@ -3233,19 +3237,41 @@ export function EventFormDialog({
                   )}
                 </div>
 
-                <div className="space-y-2 p-3 rounded-lg border">
-                  <p className="font-medium text-sm">Crew PIN (stream credentials)</p>
-                  <p className="text-xs text-muted-foreground">If set, RTMP URL and stream key are hidden here and only visible after entering the PIN on the crew page.</p>
-                  <Input
-                    type="password"
-                    inputMode="numeric"
-                    value={crewPin}
-                    onChange={(e) => setCrewPin(e.target.value)}
-                    placeholder="Optional 4–8 digit PIN"
-                    maxLength={12}
-                    className="max-w-xs font-mono"
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-sm">Crew PIN (stream credentials)</p>
+                      <p className="text-xs text-muted-foreground">Require PIN to see RTMP details on the crew page</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isCrewPinEnabled}
+                    onCheckedChange={(checked) => {
+                      setIsCrewPinEnabled(checked)
+                      if (!checked) setCrewPin("")
+                    }}
                   />
                 </div>
+
+                {isCrewPinEnabled && (
+                  <div className="space-y-2 pl-8">
+                    <Label htmlFor="crewPin">Enter Crew PIN (stream credentials)</Label>
+                    <Input
+                      id="crewPin"
+                      type="password"
+                      inputMode="numeric"
+                      value={crewPin}
+                      onChange={(e) => setCrewPin(e.target.value)}
+                      placeholder="Enter 4–8 digit PIN"
+                      maxLength={12}
+                      className="max-w-xs font-mono"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      If set, RTMP URL and stream key are hidden on the watch page and only visible after entering this PIN on the crew page.
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
             </Tabs>

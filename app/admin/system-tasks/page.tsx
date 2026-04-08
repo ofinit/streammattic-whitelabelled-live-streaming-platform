@@ -12,8 +12,14 @@ import {
   FileText, 
   Search,
   RefreshCw,
-  Tractor
+  Tractor,
+  Play,
+  Settings2,
+  Copy,
+  Terminal
 } from "lucide-react"
+import { toast } from "sonner"
+import { Switch } from "@/components/ui/switch"
 import { 
   Card, 
   CardContent, 
@@ -37,10 +43,14 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function SystemTasksPage() {
   const { data, error, isLoading, mutate } = useSWR("/api/admin/system-logs", fetcher)
+  const { data: configData, mutate: mutateConfig } = useSWR("/api/admin/system-tasks/automation", fetcher)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isUpdatingConfig, setIsUpdatingConfig] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
   const cronLogs = data?.cronLogs || []
   const deletionLogs = data?.deletionLogs || []
+  const config = configData?.config || { enabled: false, schedule: "0 0 * * *" }
 
   const lastJob = cronLogs[0]
   const totalDeleted = deletionLogs.reduce((acc: number, log: any) => acc + (log.assetsDeleted || 0), 0)
@@ -49,6 +59,49 @@ export default function SystemTasksPage() {
     log.eventTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     log.ownerEmail?.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const handleRunNow = async () => {
+    try {
+      setIsRunning(true)
+      const res = await fetch("/api/admin/system-tasks/run", { method: "POST" })
+      const result = await res.json()
+      if (result.success) {
+        toast.success(`Cleanup complete. Deleted ${result.deletedCount} events.`)
+        mutate()
+      } else {
+        toast.error(result.error || "Failed to run cleanup")
+      }
+    } catch (error) {
+      toast.error("An error occurred while running the cleanup")
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
+  const handleToggleAutoCleanup = async (checked: boolean) => {
+    try {
+      setIsUpdatingConfig(true)
+      const res = await fetch("/api/admin/system-tasks/automation", {
+        method: "POST",
+        body: JSON.stringify({ ...config, enabled: checked }),
+      })
+      if (res.ok) {
+        toast.success(`Auto-cleanup ${checked ? "enabled" : "disabled"}`)
+        mutateConfig()
+      } else {
+        toast.error("Failed to update settings")
+      }
+    } catch (error) {
+      toast.error("An error occurred")
+    } finally {
+      setIsUpdatingConfig(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success("Command copied to clipboard")
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -109,27 +162,81 @@ export default function SystemTasksPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Cron Status</CardTitle>
-            <Activity className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Auto-Cleanup</CardTitle>
+            <Settings2 className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {lastJob?.status === "success" ? (
-              <Badge variant="outline" className="text-emerald-500 border-emerald-500/20 bg-emerald-500/10">
-                <CheckCircle2 className="w-3 h-3 mr-1" /> Healthy
-              </Badge>
-            ) : lastJob?.status === "failure" ? (
-              <Badge variant="outline" className="text-destructive border-destructive/20 bg-destructive/10">
-                <XCircle className="w-3 h-3 mr-1" /> Unhealthy
-              </Badge>
-            ) : (
-              <Badge variant="outline">Unknown</Badge>
-            )}
-            <p className="text-xs text-muted-foreground mt-2">Daily auto-cleanup enabled</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Switch 
+                checked={config.enabled} 
+                onCheckedChange={handleToggleAutoCleanup}
+                disabled={isUpdatingConfig}
+              />
+              <span className="text-sm font-medium">{config.enabled ? "Enabled" : "Disabled"}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Internal scheduler active</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        {/* Automation & Controls */}
+        <Card className="lg:col-span-1 border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Play className="w-5 h-5 text-primary" />
+              Actions & Controls
+            </CardTitle>
+            <CardDescription>Manage your automation settings and manual tasks.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Immediate Cleanup</h4>
+              <p className="text-xs text-muted-foreground">
+                Triggers an immediate scan for expired events and unlinks image assets from the server.
+              </p>
+              <Button 
+                onClick={handleRunNow} 
+                className="w-full" 
+                disabled={isRunning}
+              >
+                {isRunning ? (
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                Run Cleanup Task Now
+              </Button>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-primary" />
+                <h4 className="text-sm font-semibold">Coolify Cron Command</h4>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                For maximum reliability in Ozero/Coolify, you can add this as a System Cron Job in the Coolify dashboard.
+              </p>
+              <div className="relative group">
+                <code className="block p-3 rounded bg-muted text-[10px] break-all pr-10 border leading-relaxed">
+                  node --env-file=.env.local scripts/cron-delete-expired.js
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => copyToClipboard("node --env-file=.env.local scripts/cron-delete-expired.js")}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                * Note: Internal scheduler handles this automatically if enabled above.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Cron Job History */}
         <Card className="lg:col-span-1">
           <CardHeader>

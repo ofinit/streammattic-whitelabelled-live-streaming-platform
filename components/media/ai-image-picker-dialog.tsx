@@ -19,6 +19,12 @@ export type AiImagePickerDialogProps = {
   onImageUrl: (url: string) => void | Promise<void>
   children: ReactNode
   disabled?: boolean
+  /**
+   * Wallet owner used for balance checks and AI debits.
+   * - Default: current user
+   * - Admin creating/editing for a tenant: pass that tenant's user id to debit their wallet
+   */
+  walletUserId?: string
   /** When set, passed to POST /api/upload as `subdir` (e.g. event hero/player assets). */
   uploadSubdir?: string
   /**
@@ -36,6 +42,7 @@ export function AiImagePickerDialog({
   onImageUrl,
   children,
   disabled,
+  walletUserId,
   uploadSubdir,
   circularHeroCrop,
 }: AiImagePickerDialogProps) {
@@ -50,8 +57,15 @@ export function AiImagePickerDialog({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [aiPrice, setAiPrice] = useState<number | null>(null)
 
+  const walletUrl =
+    disabled
+      ? null
+      : walletUserId && walletUserId.trim() !== ""
+        ? `/api/wallets?userId=${encodeURIComponent(walletUserId)}`
+        : "/api/wallets"
+
   const { data: walletJson, mutate: mutateWallet, isLoading: walletLoading } = useSWR(
-    disabled ? null : "/api/wallets",
+    walletUrl,
     fetcher,
     { revalidateOnFocus: true },
   )
@@ -186,7 +200,10 @@ export function AiImagePickerDialog({
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed }),
+        body: JSON.stringify({
+          prompt: trimmed,
+          userId: walletUserId && walletUserId.trim() !== "" ? walletUserId : undefined,
+        }),
       })
       const data = (await res.json()) as { error?: string; imageUrl?: string }
       if (data.error) {

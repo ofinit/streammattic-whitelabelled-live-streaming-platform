@@ -2956,6 +2956,7 @@ export function EventFormDialog({
                           <AiImagePickerDialog
                             dialogTitle="Player image"
                             uploadSubdir="event-player"
+                            walletUserId={creditsUserId}
                             onImageUrl={(url) => setPlayerImageUrl(url)}
                           >
                             <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
@@ -2968,6 +2969,7 @@ export function EventFormDialog({
                           <AiImagePickerDialog
                             dialogTitle="Player image"
                             uploadSubdir="event-player"
+                            walletUserId={creditsUserId}
                             onImageUrl={(url) => setPlayerImageUrl(url)}
                           >
                             <Button type="button" variant="outline" size="sm" className="gap-2">
@@ -2997,6 +2999,7 @@ export function EventFormDialog({
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
+                            walletUserId={creditsUserId}
                             onImageUrl={(url) => setHeroImageUrl(url)}
                           >
                             <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
@@ -3010,6 +3013,7 @@ export function EventFormDialog({
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
+                            walletUserId={creditsUserId}
                             onImageUrl={(url) => setHeroImageUrl(url)}
                           >
                             <Button type="button" variant="outline" size="sm" className="gap-2">

@@ -61,7 +61,7 @@ export const POST = withAuth(async (user, request: Request) => {
     return jsonError("Forbidden", 403)
   }
 
-  let body: { prompt?: unknown; imageSize?: unknown }
+  let body: { prompt?: unknown; imageSize?: unknown; userId?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -82,7 +82,11 @@ export const POST = withAuth(async (user, request: Request) => {
       ? body.imageSize
       : "landscape_16_9"
 
-  const userId = user.id as string
+  const requestedUserId = typeof body.userId === "string" ? body.userId.trim() : ""
+  const userId =
+    role === "admin" && requestedUserId !== ""
+      ? requestedUserId
+      : (user.id as string)
   const sql = getDb()
 
   const pricingRows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`

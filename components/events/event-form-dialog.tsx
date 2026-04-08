@@ -287,11 +287,12 @@ function streamTypeLabelForSettings(streamType: string): string {
   return "Stream"
 }
 
-function eventValidityHelpForStreamGroup(group: ValidityStreamGroup): string {
+function eventValidityHelpForStreamGroup(group: ValidityStreamGroup, defaultDays: number): string {
+  const d = defaultDays > 0 ? defaultDays : 30
   if (group === "ingest") {
-    return "Choosing a stream type requires at least 1 credit, which covers the first 30 days of event validity. Longer durations add tier costs set by your platform admin (Admin → Pricing → Event Validity Extensions). Tier and extension credits use the same stream-type bucket as this event (e.g. RTMP credits for RTMP)."
+    return `Studios and streamers use the same rules: creating an event with a stream type debits credits from your account. Each validity option shows the total credits for that duration (not “extra on top” unless labeled). The default is 1 credit for the first ${d} days; longer tiers come from your admin (Admin → Pricing → Event Validity Extensions). Adding separate calendar days under Event days debits one credit per extra day (same stream type).`
   }
-  return "Choosing a stream type requires at least 1 credit for the first 30 days of validity. Admin-configured tiers apply here too; extension credits match your stream type (e.g. embed credits for embed streams)."
+  return `Studios and streamers use the same rules. Each validity option shows total credits for that length; separate calendar days in Event days add one credit each. Embed streams still use embed-type credits.`
 }
 
 interface EventFormDialogProps {
@@ -1204,8 +1205,8 @@ export function EventFormDialog({
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])
   const eventValidityHelpText = useMemo(
-    () => eventValidityHelpForStreamGroup(validityStreamGroup),
-    [validityStreamGroup],
+    () => eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays),
+    [validityStreamGroup, validityExtSettings.defaultDays],
   )
 
   useEffect(() => {
@@ -1570,7 +1571,7 @@ export function EventFormDialog({
       }
     }
     if (!skipCreditsValidation && creditStatus === "insufficient") {
-      errors.scheduledAt = `Insufficient credits for ${creditInfo?.need} additional date(s). You have ${creditInfo?.have}.`
+      errors.scheduledAt = `Insufficient credits: need ${creditInfo?.need} for this event (validity + extra event days), have ${creditInfo?.have}.`
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
@@ -2586,13 +2587,13 @@ export function EventFormDialog({
                 {!skipCreditsValidation && creditStatus === "ok" && creditInfo && (
                   <p className="text-xs text-emerald-500 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3 w-3" />
-                    Credits sufficient — {creditInfo.need} credit{creditInfo.need > 1 ? "s" : ""} will be used ({creditInfo.have} available)
+                    Credits sufficient — {creditInfo.need} credit{creditInfo.need > 1 ? "s" : ""} will be debited for validity + extra event days ({creditInfo.have} available)
                   </p>
                 )}
                 {!skipCreditsValidation && creditStatus === "insufficient" && creditInfo && (
                   <p className="text-xs text-destructive flex items-center gap-1.5">
                     <AlertCircle className="h-3 w-3" />
-                    Insufficient credits — need {creditInfo.need}, have {creditInfo.have}. Please purchase more credits.
+                    Insufficient credits — need {creditInfo.need} for validity + extra event days, have {creditInfo.have}.
                   </p>
                 )}
               </div>
@@ -3263,7 +3264,7 @@ export function EventFormDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="included">
-                        Default (30 days) (+1 credit)
+                        Default ({validityExtSettings.defaultDays} days) (1 credit total)
                       </SelectItem>
                       {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)

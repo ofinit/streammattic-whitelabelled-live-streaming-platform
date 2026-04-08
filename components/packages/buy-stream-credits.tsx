@@ -28,7 +28,7 @@ import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { getBestPriceForQuantity } from "@/lib/stream-type-pricing"
 import { normalizeUserCreditsRow } from "@/lib/normalize-user-credits"
 import type { ParsedValidityExtensions } from "@/lib/validity-extensions"
-import { validityExtensionCredits } from "@/lib/validity-extensions"
+import { validityCreditsForDuration } from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
 import { toast } from "sonner"
 
@@ -413,12 +413,12 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
             {ve.extendedTiers
               .filter((t: any) => t.enabled)
               .map((tier: any) => {
-                const ext = validityExtensionCredits(tier.days, ve.defaultDays)
+                const total = validityCreditsForDuration(tier.days, ve.defaultDays)
                 return (
                   <div key={tier.days} className="rounded-lg bg-secondary/50 p-3 text-center">
                     <p className="text-lg font-bold">{tier.days} days</p>
                     <p className="text-xs text-muted-foreground">
-                      +{ext} credit{ext !== 1 ? "s" : ""}
+                      {total} credit{total !== 1 ? "s" : ""} total (validity)
                     </p>
                   </div>
                 )

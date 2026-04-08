@@ -64,10 +64,10 @@ export default function AdminPricingPage() {
   })
 
   const [validityTiers, setValidityTiers] = useState<ValidityTier[]>([
-    { days: 60, creditCost: 1, enabled: true, label: "60 Days (+1 credit)" },
-    { days: 90, creditCost: 2, enabled: true, label: "90 Days (+2 credits)" },
-    { days: 180, creditCost: 5, enabled: true, label: "180 Days (+5 credits)" },
-    { days: 365, creditCost: 12, enabled: true, label: "365 Days (+12 credits)" },
+    { days: 60, creditCost: 1, enabled: true, label: "60 Days (2 credits total)" },
+    { days: 90, creditCost: 2, enabled: true, label: "90 Days (3 credits total)" },
+    { days: 180, creditCost: 5, enabled: true, label: "180 Days (6 credits total)" },
+    { days: 365, creditCost: 12, enabled: true, label: "365 Days (13 credits total)" },
   ])
 
   const [validityDefaultDays, setValidityDefaultDays] = useState(30)

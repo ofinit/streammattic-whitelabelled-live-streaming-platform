@@ -17,9 +17,12 @@ export function validityExtensionCredits(totalDays: number, defaultDays: number)
   return Math.max(0, validityCreditsForDuration(totalDays, defaultDays) - 1)
 }
 
-function formatExtensionLabel(days: number, extensionCredits: number): string {
-  const c = extensionCredits
-  return `${days} Days (+${c} credit${c === 1 ? "" : "s"})`
+/**
+ * Tier / dropdown line: total stream-type credits for this validity length (validity only; extra event dates billed separately).
+ */
+export function formatValidityTierSelectLabel(totalDays: number, defaultDays: number): string {
+  const total = validityCreditsForDuration(totalDays, defaultDays)
+  return `${totalDays} Days (${total} credit${total === 1 ? "" : "s"} total)`
 }
 
 function fallbackValidityExtensions(): ParsedValidityExtensions {
@@ -30,7 +33,7 @@ function fallbackValidityExtensions(): ParsedValidityExtensions {
       days,
       creditCost: ext,
       enabled: true,
-      label: formatExtensionLabel(days, ext),
+      label: formatValidityTierSelectLabel(days, defaultDays),
     }
   }
   return {
@@ -64,8 +67,7 @@ export function parseValidityExtensionsSetting(raw: unknown): ParsedValidityExte
       const enabled = t.enabled !== false
       if (days <= 0) return null
       const creditCost = validityExtensionCredits(days, defaultDays)
-      // Always derive label from linear math so UI matches billing (ignore stale DB labels).
-      const label = formatExtensionLabel(days, creditCost)
+      const label = formatValidityTierSelectLabel(days, defaultDays)
       return { days, creditCost, enabled, label }
     })
     .filter((x): x is ValidityTier => x !== null)

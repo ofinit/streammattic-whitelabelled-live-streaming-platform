@@ -538,12 +538,16 @@ export default function AdminEventsPage() {
                                 )}
                             </span>
                         )}
-                        {(event as any).validityExpiresAt && (
-                            <span className="flex items-center gap-1 text-orange-500/80">
-                                <ShieldCheck className="h-2.5 w-2.5" />
-                                {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                            </span>
-                        )}
+                        {(event as any).validityExpiresAt && (() => {
+                            const daysRemaining = Math.ceil((new Date((event as any).validityExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            return (
+                                <span className="flex items-center gap-1 text-orange-500/80">
+                                    <ShieldCheck className="h-2.5 w-2.5" />
+                                    {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                    <span>({daysRemaining > 0 ? `-${daysRemaining}` : daysRemaining})</span>
+                                </span>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>
@@ -619,17 +623,21 @@ export default function AdminEventsPage() {
             </span>
           </span>
         )}
-        {(event as any).validityExpiresAt && (
-          <span
-            className="flex items-center gap-1 text-orange-500/80 shrink-0"
-            title={`Validity expires on: ${new Date((event as any).validityExpiresAt).toLocaleString()}`}
-          >
-            <ShieldCheck className="h-3 w-3" />
-            <span>
-              Exp: {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
-            </span>
-          </span>
-        )}
+        {(event as any).validityExpiresAt && (() => {
+           const daysRemaining = Math.ceil((new Date((event as any).validityExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+           return (
+             <span
+               className="flex items-center gap-1 text-orange-500/80 shrink-0"
+               title={`Validity expires on: ${new Date((event as any).validityExpiresAt).toLocaleString()}`}
+             >
+               <ShieldCheck className="h-3 w-3" />
+               <span>
+                 Exp: {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                 <span className="ml-1">({daysRemaining > 0 ? `-${daysRemaining}` : daysRemaining})</span>
+               </span>
+             </span>
+           );
+         })()}
       </div>
 
 

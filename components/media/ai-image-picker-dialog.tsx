@@ -11,7 +11,20 @@ import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+async function fetchJson(url: string) {
+  const res = await fetch(url)
+  if (!res.ok) {
+    let message = `Request failed (${res.status})`
+    try {
+      const data = (await res.json()) as { error?: string }
+      if (data?.error) message = data.error
+    } catch {
+      // ignore
+    }
+    throw new Error(message)
+  }
+  return res.json()
+}
 
 export type AiImagePickerDialogProps = {
   /** e.g. "Player image" or "Update Hero Background" */
@@ -64,9 +77,14 @@ export function AiImagePickerDialog({
         ? `/api/wallets?userId=${encodeURIComponent(walletUserId)}`
         : "/api/wallets"
 
-  const { data: walletJson, mutate: mutateWallet, isLoading: walletLoading } = useSWR(
+  const {
+    data: walletJson,
+    error: walletError,
+    mutate: mutateWallet,
+    isLoading: walletLoading,
+  } = useSWR(
     walletUrl,
-    fetcher,
+    fetchJson,
     { revalidateOnFocus: true },
   )
   const walletBalance = Number((walletJson?.wallet as { balance?: number } | undefined)?.balance ?? 0)
@@ -79,7 +97,7 @@ export function AiImagePickerDialog({
       .catch(() => setAiPrice(null))
   }, [disabled])
 
-  const canAffordAi = !walletLoading && aiPrice !== null && walletBalance >= aiPrice
+  const canAffordAi = !walletLoading && !walletError && aiPrice !== null && walletBalance >= aiPrice
 
   const refreshWallet = () => mutateWallet()
 
@@ -191,6 +209,10 @@ export function AiImagePickerDialog({
       return
     }
     if (!canAffordAi) {
+      if (walletError) {
+        setError(walletError instanceof Error ? walletError.message : "Failed to load wallet balance.")
+        return
+      }
       setError(`Insufficient balance. You need ₹${aiPrice !== null ? (aiPrice / 100).toFixed(0) : "?"}.`)
       return
     }

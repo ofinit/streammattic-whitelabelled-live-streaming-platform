@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    // Detect if we are on the master domain for admin bypass logic
+    const host = req.headers.get("host") || ""
+    const isMasterDomain = host.includes("streamlivee.com") || host.includes("localhost") || host === "127.0.0.1"
+
     const body = await req.json()
     const {
       title, subtitle, description, streamType, scheduledAt, slug: rawSlug,
@@ -131,25 +135,41 @@ export async function POST(req: NextRequest) {
       ? additionalDates.filter((d: { scheduledAt?: string }) => d.scheduledAt)
       : []
     const billableDates = extraDates.filter((d) => d.scheduledAt.slice(0, 10) !== primaryDatePart)
+    // Identify validity tier cost
+    let validityTierCost = 0
+    if (typeof validityDays === "number" && validityDays > 0) {
+      const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
+      const { parseValidityExtensionsSetting } = await import("@/lib/validity-extensions")
+      const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
+      const tier = settings.extendedTiers.find((t) => t.days === validityDays)
+      if (tier && tier.enabled) validityTierCost = tier.creditCost
+    }
+
+    // Determine total credit deduction
+    // NEW POLICY: 1 base credit + extra dates + validity tier cost
+    const baseCreditNeed = dbStreamType ? 1 : 0
+    const totalNeed = baseCreditNeed + billableDates.length + validityTierCost
     const creditCol = dbStreamType === "rtmp" ? "rtmp"
       : dbStreamType === "youtube_api" ? "youtube_api"
       : dbStreamType === "youtube_embed" ? "youtube_embed"
       : "third_party"
 
-    // Deduct credits for each billable extra date atomically
-    // NOTE: If no streamType is selected, we skip credit validation and set a 30-day auto-delete expiry.
-    if (user.role !== "admin" && dbStreamType && billableDates.length > 0) {
+    // Deduct credits atomically
+    // ADMIN BYPASS: only on master domain
+    const shouldBypassGroup = user.role === "admin" && isMasterDomain
+    
+    if (!shouldBypassGroup && dbStreamType && totalNeed > 0) {
       const deducted = await sql`
         UPDATE user_credits
-        SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${billableDates.length},
+        SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
             updated_at = NOW()
         WHERE user_id = ${user.id as string}
-          AND ${sql.unsafe(creditCol)} >= ${billableDates.length}
+          AND ${sql.unsafe(creditCol)} >= ${totalNeed}
         RETURNING *
       `
       if (deducted.length === 0) {
         return NextResponse.json({
-          error: `Insufficient ${streamType} credits for ${billableDates.length} additional date(s). Please purchase more credits.`,
+          error: `Insufficient ${streamType} credits. Required: ${totalNeed}. Please purchase more credits.`,
         }, { status: 400 })
       }
     }
@@ -264,6 +284,10 @@ export async function PUT(req: NextRequest) {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    // Detect if we are on the master domain for admin bypass logic
+    const host = req.headers.get("host") || ""
+    const isMasterDomain = host.includes("streamlivee.com") || host.includes("localhost") || host === "127.0.0.1"
+
     const body = await req.json()
     const {
       id, title, subtitle, description, scheduledAt, status, slug: rawSlug,
@@ -278,9 +302,17 @@ export async function PUT(req: NextRequest) {
     const sql = getDb()
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
-    if ((existing[0] as Record<string, unknown>).user_id !== user.id && user.role !== "admin") {
+    
+    const existingRow = existing[0] as Record<string, unknown>
+    const targetUserId = existingRow.user_id as string
+    
+    if (targetUserId !== user.id && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
+
+    // Determine if credits should be bypassed
+    const shouldBypassGroup = user.role === "admin" && user.id === targetUserId && isMasterDomain
+    const dbStreamType = (existingRow.stream_type || null) as string | null
 
     let finalSlug: string | null = null
     if (rawSlug !== undefined && rawSlug !== null) {
@@ -295,20 +327,58 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Ensure columns exist (may be missing in older schemas)
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN DEFAULT false`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
+    // Handle Credit Deduction for edits (Incremental costs)
+    if (!shouldBypassGroup && dbStreamType) {
+      let totalNeed = 0
 
+      // 1. Check for additional dates increase
+      if (Array.isArray(additionalDates)) {
+        const primaryDatePart = (scheduledAt || existingRow.scheduled_at as string)?.slice(0, 10)
+        const newBillableCount = additionalDates.filter(
+          (d: any) => d.scheduledAt && d.scheduledAt.slice(0, 10) !== primaryDatePart
+        ).length
+        
+        const oldDates = await sql`SELECT count(*) FROM event_dates WHERE event_id = ${id}`
+        const oldBillableCount = Number(oldDates[0]?.count || 0)
+        
+        if (newBillableCount > oldBillableCount) {
+          totalNeed += (newBillableCount - oldBillableCount)
+        }
+      }
 
-    const existingRow = existing[0] as Record<string, unknown>
+      // 2. Check for validity extension increase
+      if (typeof validityDays === "number" && validityDays > 0) {
+        const { parseValidityExtensionsSetting } = await import("@/lib/validity-extensions")
+        const settingsRow = await sql`SELECT value FROM platform_settings WHERE key = 'validity_extensions'`
+        const settings = parseValidityExtensionsSetting(settingsRow[0]?.value)
+        const tier = settings.extendedTiers.find((t) => t.days === validityDays)
+        if (tier && tier.enabled) {
+          totalNeed += tier.creditCost
+        }
+      }
+
+      if (totalNeed > 0) {
+        const creditCol = dbStreamType === "rtmp" ? "rtmp"
+          : dbStreamType === "youtube_api" ? "youtube_api"
+          : dbStreamType === "youtube_embed" ? "youtube_embed"
+          : "third_party"
+
+        const deducted = await sql`
+          UPDATE user_credits
+          SET ${sql.unsafe(creditCol)} = ${sql.unsafe(creditCol)} - ${totalNeed},
+              updated_at = NOW()
+          WHERE user_id = ${targetUserId}
+            AND ${sql.unsafe(creditCol)} >= ${totalNeed}
+          RETURNING *
+        `
+        if (deducted.length === 0) {
+          return NextResponse.json({
+            error: `Insufficient ${dbStreamType} credits for this update. Required: ${totalNeed}.`,
+          }, { status: 400 })
+        }
+      }
+    }
+
     const existingTemplateData = existingRow.template_data as Record<string, unknown> | null | undefined
     const hasTemplateUpdate = templateId !== undefined || (rawTemplateData !== undefined && rawTemplateData !== null)
     const resolvedTemplateIdPut =

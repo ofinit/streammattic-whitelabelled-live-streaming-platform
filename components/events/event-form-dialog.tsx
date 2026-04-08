@@ -1310,14 +1310,17 @@ export function EventFormDialog({
       return
     }
 
-    let validityCost = 0
-    if (validityChoiceKey.startsWith("tier:")) {
-      const days = Number(validityChoiceKey.split(":")[1])
-      const tier = validityExtSettings.extendedTiers.find((t) => t.days === days)
-      if (tier && tier.enabled) validityCost = tier.creditCost
-    }
+    const validityDaysCost = validityChoiceKey.startsWith("tier:")
+      ? Number(validityChoiceKey.split(":")[1])
+      : 0
+    const selectedTier = validityExtSettings.extendedTiers.find((t) => t.days === validityDaysCost)
+    const extraValidityCost = selectedTier && selectedTier.enabled ? selectedTier.creditCost : 0
 
-    const need = uniqueExtraDates.length + validityCost
+    // NEW POLICY: 30 days is NOT included. 1 base credit is required if streamType is selected.
+    const baseCost = 1
+    const need = baseCost + uniqueExtraDates.length + extraValidityCost
+    console.log("[EventForm] Credit need calculation:", { baseCost, extraDates: uniqueExtraDates.length, extraValidityCost, total: need })
+    
     if (need === 0) {
       setCreditStatus("idle")
       setCreditInfo(null)
@@ -3234,13 +3237,13 @@ export function EventFormDialog({
                     <SelectContent>
                       <SelectItem value="none">No expiry</SelectItem>
                       <SelectItem value="included">
-                        Default ({validityExtSettings.defaultDays} days, included when you create the event)
+                        Default ({validityExtSettings.defaultDays} days, +1 credit)
                       </SelectItem>
                       {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)
                         .map((t) => (
                           <SelectItem key={t.days} value={`tier:${t.days}`}>
-                            {t.label ?? `${t.days} days (+${t.creditCost} credit${t.creditCost === 1 ? "" : "s"})`}
+                            {t.label ?? `${t.days} days (+${t.creditCost + 1} credit${t.creditCost + 1 === 1 ? "" : "s"})`}
                           </SelectItem>
                         ))}
                     </SelectContent>

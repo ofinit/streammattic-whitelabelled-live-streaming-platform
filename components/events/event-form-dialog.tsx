@@ -1137,7 +1137,7 @@ export function EventFormDialog({
       return
     }
     if (prev !== group) {
-      setValidityChoiceKey("none")
+      setValidityChoiceKey("included")
       setValidityExpiresAt("")
       prevValidityStreamGroupRef.current = group
     }
@@ -1348,7 +1348,7 @@ export function EventFormDialog({
       }
     }, 400)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [additionalDates, formData.scheduledAt, formData.streamType, skipCreditsValidation])
+  }, [additionalDates, formData.scheduledAt, formData.streamType, skipCreditsValidation, validityChoiceKey])
 
   const generateCredentials = () => {
     const streamKey = `live_${Math.random().toString(36).substring(2, 15)}`
@@ -3235,15 +3235,14 @@ export function EventFormDialog({
                       <SelectValue placeholder="Choose validity" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No expiry</SelectItem>
                       <SelectItem value="included">
-                        Default ({validityExtSettings.defaultDays} days, +1 credit)
+                        30 days (1 credit)
                       </SelectItem>
                       {validityExtSettings.extendedTiers
                         .filter((t) => t.enabled)
                         .map((t) => (
                           <SelectItem key={t.days} value={`tier:${t.days}`}>
-                            {t.label ?? `${t.days} days (+${t.creditCost + 1} credit${t.creditCost + 1 === 1 ? "" : "s"})`}
+                            {t.label}
                           </SelectItem>
                         ))}
                     </SelectContent>

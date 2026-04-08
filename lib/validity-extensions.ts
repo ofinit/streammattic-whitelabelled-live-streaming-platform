@@ -85,11 +85,11 @@ export function inferValidityChoiceFromEvent(
   event: { scheduledAt?: unknown; validityExpiresAt?: unknown } | null | undefined,
   settings: ParsedValidityExtensions,
 ): { choiceKey: string; expiresAt: string } {
-  if (!event) return { choiceKey: "none", expiresAt: "" }
+  if (!event) return { choiceKey: "included", expiresAt: "" }
 
   const rawValidity = (event as Record<string, unknown>).validityExpiresAt
   const expMs = toTimestamp(rawValidity)
-  if (expMs == null) return { choiceKey: "none", expiresAt: "" }
+  if (expMs == null) return { choiceKey: "included", expiresAt: "" }
 
   const startMs = toTimestamp(event.scheduledAt)
   if (startMs != null) {

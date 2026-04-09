@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { Building2, Globe, Mail } from "lucide-react"
+import { STUDIO_UPGRADE_CALLOUT_FLOW_HINT } from "@/lib/studio-upgrade-copy"
 
 export type StudioUpgradeCalloutProps = {
   /** Parsed from `studio_annual_subscription` setting; omit if unknown */
@@ -77,6 +78,9 @@ export function StudioUpgradeCallout({
             </Button>
           ) : null}
         </div>
+        {showPricing && upgradeAvailable ? (
+          <p className="text-xs text-muted-foreground border-t border-border pt-3">{STUDIO_UPGRADE_CALLOUT_FLOW_HINT}</p>
+        ) : null}
         {!showPricing ? (
           <p className="text-xs text-muted-foreground">
             Studio subscription pricing is not available right now. Use Contact sales or check back later.

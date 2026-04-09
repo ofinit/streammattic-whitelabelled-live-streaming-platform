@@ -20,6 +20,7 @@ import { loadRazorpayScript, type RazorpayConstructor } from "@/lib/razorpay-che
 import { CreditCard, Loader2, Receipt, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
+import { STUDIO_UPGRADE_CHECKOUT_DIALOG_DESCRIPTION } from "@/lib/studio-upgrade-copy"
 
 type GstConfigResponse = {
   gstEnabled?: boolean
@@ -243,10 +244,7 @@ export function StudioUpgradeCheckoutDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upgrade to Studio</DialogTitle>
-          <DialogDescription>
-            Step 1: pay for your annual subscription here (tax follows platform settings). Step 2: after payment succeeds,
-            you are redirected to the Studio setup wizard—company details, branding, domain, and preferences.
-          </DialogDescription>
+          <DialogDescription>{STUDIO_UPGRADE_CHECKOUT_DIALOG_DESCRIPTION}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

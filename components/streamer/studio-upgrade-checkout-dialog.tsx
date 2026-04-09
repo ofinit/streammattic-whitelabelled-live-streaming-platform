@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import {
   Dialog,
@@ -63,6 +63,7 @@ export function StudioUpgradeCheckoutDialog({
 }: StudioUpgradeCheckoutDialogProps) {
   const [busy, setBusy] = useState(false)
   const [gateway, setGateway] = useState<"wallet" | "razorpay" | "instamojo">("wallet")
+  const autoGatewayAppliedRef = useRef(false)
 
   const { data: gstData, error: gstError, isLoading: gstLoading } = useSWR(open ? "/api/gst/config" : null, fetcher)
   const gstConfig = gstData?.gstConfig ?? null
@@ -91,6 +92,18 @@ export function StudioUpgradeCheckoutDialog({
   const totalPaise = Math.round(breakdown.totalPayable * 100)
   const walletShortfall = Math.max(0, totalPaise - walletBalancePaise)
   const walletCoversTotal = walletBalancePaise >= totalPaise && totalPaise > 0
+
+  useEffect(() => {
+    if (!open) {
+      autoGatewayAppliedRef.current = false
+      return
+    }
+    if (gstLoading || totalPaise <= 0 || autoGatewayAppliedRef.current) return
+    if (walletBalancePaise < totalPaise) {
+      setGateway("razorpay")
+      autoGatewayAppliedRef.current = true
+    }
+  }, [open, gstLoading, totalPaise, walletBalancePaise])
 
   const payWithWallet = useCallback(async () => {
     if (!walletCoversTotal || totalPaise <= 0) return
@@ -231,8 +244,8 @@ export function StudioUpgradeCheckoutDialog({
         <DialogHeader>
           <DialogTitle>Upgrade to Studio</DialogTitle>
           <DialogDescription>
-            Pay for your annual studio subscription. You get a Studio dashboard, custom domain setup, and white-label
-            branding. Tax is calculated from platform settings.
+            Step 1: pay for your annual subscription here (tax follows platform settings). Step 2: after payment succeeds,
+            you are redirected to the Studio setup wizard—company details, branding, domain, and preferences.
           </DialogDescription>
         </DialogHeader>
 

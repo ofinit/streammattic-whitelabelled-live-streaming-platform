@@ -2,7 +2,7 @@
 
 /** Full text for the Upgrade to Studio checkout dialog (`StudioUpgradeCheckoutDialog`). */
 export const STUDIO_UPGRADE_CHECKOUT_DIALOG_DESCRIPTION =
-  "Pay for your annual subscription (tax follows platform settings). If you already filled out the setup wizard, your progress is kept—after payment, tap Complete setup on the last step to save branding and domain."
+  "Wallet pays the listed subscription amount only (no GST). Razorpay and Instamojo include GST when your administrator enables it. After payment, return to the wizard and tap Complete setup if prompted."
 
 /** Shown on the streamer upgrade card: wizard runs first; subscription checkout is inside the wizard. */
 export const STUDIO_UPGRADE_CALLOUT_FLOW_HINT =

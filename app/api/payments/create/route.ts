@@ -39,14 +39,27 @@ export const POST = withAuth(async (user, request) => {
     const gstSettings = await getPlatformGSTSettings()
     const gstConfig = toGSTCalculationConfig(gstSettings)
     const breakdown = calculatePriceBreakdown(baseRupees, gstConfig)
-    const totalPaise = Math.round(breakdown.totalPayable * 100)
-    const gstAmountPaise = Math.round(breakdown.gstAmount * 100)
-    amountInPaise = totalPaise
-    orderMetadata = {
-      studioBasePaise,
-      gstAmountPaise,
-      gstPercentage: breakdown.gstPercentage,
-      gstEnabled: breakdown.gstEnabled,
+    const gatewayTotalPaise = Math.round(breakdown.totalPayable * 100)
+    const gatewayGstPaise = Math.round(breakdown.gstAmount * 100)
+    // Wallet pays catalog subscription only (no GST). Card/Instamojo pays platform total incl. GST.
+    if (gateway === "wallet") {
+      amountInPaise = studioBasePaise
+      orderMetadata = {
+        studioBasePaise,
+        gstAmountPaise: 0,
+        gstPercentage: 0,
+        gstEnabled: false,
+        studioUpgradeTaxMode: "wallet_exempt",
+      }
+    } else {
+      amountInPaise = gatewayTotalPaise
+      orderMetadata = {
+        studioBasePaise,
+        gstAmountPaise: gatewayGstPaise,
+        gstPercentage: breakdown.gstPercentage,
+        gstEnabled: breakdown.gstEnabled,
+        studioUpgradeTaxMode: "gateway_includes_gst",
+      }
     }
   } else if (orderType === "wallet_recharge") {
     if (role !== "streamer" && role !== "studio") {

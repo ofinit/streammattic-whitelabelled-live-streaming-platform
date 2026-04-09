@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Upload,
-  ExternalLink,
   Zap,
   Loader2,
   CheckCircle2,
@@ -44,7 +43,7 @@ import {
   validatePaymentStep,
 } from "@/lib/studio-setup-validation"
 import { Switch } from "@/components/ui/switch"
-import { StudioUpgradeCheckoutDialog } from "@/components/streamer/studio-upgrade-checkout-dialog"
+import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 
 export const dynamic = "force-dynamic"
@@ -122,7 +121,6 @@ export default function StudioSetupPage() {
   const { data: dashData } = useSWR(dashSwrKey, settingsFetcher, { refreshInterval: 30_000 })
   const walletBalancePaise = Number((dashData?.stats as { walletBalance?: number } | undefined)?.walletBalance ?? 0)
 
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [draftHydrated, setDraftHydrated] = useState(false)
   const saveDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -159,6 +157,7 @@ export default function StudioSetupPage() {
   const [paymentData, setPaymentData] = useState({
     gateway: "" as "razorpay" | "instamojo" | "cashfree" | "",
     skipPayment: false,
+    studioUpgradePayMethod: "wallet" as "" | "wallet" | "razorpay" | "instamojo",
   })
 
   const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
@@ -172,7 +171,7 @@ export default function StudioSetupPage() {
       case 2:
         return validateDomainStep(domainData)
       case 3:
-        return validatePaymentStep(paymentData)
+        return validatePaymentStep(paymentData, { streamerUpgrade: isStreamerSetup })
       default:
         return null
     }
@@ -286,7 +285,6 @@ export default function StudioSetupPage() {
 
   const handleComplete = async () => {
     if (user?.role === "streamer") {
-      setCheckoutOpen(true)
       return
     }
     setIsSubmitting(true)
@@ -380,7 +378,12 @@ export default function StudioSetupPage() {
       case 2:
         return Boolean(domainData.skipDomain || domainData.customDomain?.trim())
       case 3:
-        return Boolean(paymentData.skipPayment || paymentData.gateway)
+        if (isStreamerSetup) {
+          return Boolean(
+            paymentData.studioUpgradePayMethod && studioUpgradeAvailable && studioSubscription,
+          )
+        }
+        return true
       default:
         return true
     }
@@ -408,13 +411,14 @@ export default function StudioSetupPage() {
             </Button>
           </div>
 
-          {isStreamerSetup && (
+              {isStreamerSetup && (
             <Alert className="mt-4 border-primary/30 bg-primary/5">
               <AlertCircle className="h-4 w-4 text-primary" />
               <AlertDescription>
-                You&apos;re setting up Studio before checkout. Complete each step, then use{" "}
-                <strong>Pay &amp; activate Studio</strong> on the last step—after payment, finish with{" "}
-                <strong>Complete setup</strong> to save branding and domain to your account.
+                Complete each step, then on the last step pay with your <strong>wallet</strong> (subscription price
+                only, no GST) or via <strong>Razorpay / Instamojo</strong> (includes GST when the platform has it
+                enabled). You cannot skip payment. After it succeeds, use <strong>Complete setup</strong> to save your
+                details.
               </AlertDescription>
             </Alert>
           )}
@@ -462,7 +466,9 @@ export default function StudioSetupPage() {
                     >
                       {isCompleted ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                     </div>
-                    <span className="hidden sm:inline font-medium">{step.label}</span>
+                    <span className="hidden sm:inline font-medium">
+                      {step.id === "payment" ? (isStreamerSetup ? "Studio payment" : "Finish") : step.label}
+                    </span>
                   </button>
                 )
               })}
@@ -924,130 +930,51 @@ export default function StudioSetupPage() {
           </Card>
         )}
 
-        {/* Step 4: Payment Gateway */}
+        {/* Step 4: Pay for Studio (streamers) or finish (studio) */}
         {currentStep === 3 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                Payment preference
+                {isStreamerSetup ? "Pay for Studio" : "Finish setup"}
               </CardTitle>
               <CardDescription>
-                Platform billing (subscriptions, wallet top-ups) uses the payment gateways your administrator enables.
-                Choose a default gateway for your studio account—you will add API keys later under Settings if
-                required.
+                {isStreamerSetup
+                  ? "You do not connect your own payment keys here. Pay the annual Studio fee using your platform wallet (no GST on that charge) or the administrator-configured Razorpay / Instamojo checkout (GST applies when enabled). Your account upgrades only after payment succeeds."
+                  : "Viewer billing and payouts use the platform administrator’s configuration. Save your company, branding, and domain details to complete this wizard."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {stepValidationError && currentStep === 3 && (
                 <p className="text-sm text-destructive">{stepValidationError}</p>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  {
-                    id: "razorpay",
-                    name: "Razorpay",
-                    description: "Popular in India",
-                    logo: "₹",
-                  },
-                  {
-                    id: "instamojo",
-                    name: "Instamojo",
-                    description: "Easy setup",
-                    logo: "iM",
-                  },
-                  {
-                    id: "cashfree",
-                    name: "Cashfree",
-                    description: "Low fees",
-                    logo: "CF",
-                  },
-                ].map((gateway) => (
-                  <button
-                    key={gateway.id}
-                    onClick={() =>
-                      setPaymentData({
-                        ...paymentData,
-                        gateway: gateway.id as any,
-                        skipPayment: false,
-                      })
-                    }
-                    disabled={paymentData.skipPayment}
-                    className={`p-4 rounded-lg border-2 text-left transition-all ${
-                      paymentData.gateway === gateway.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    } ${paymentData.skipPayment ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold mb-3">
-                      {gateway.logo}
-                    </div>
-                    <p className="font-medium">{gateway.name}</p>
-                    <p className="text-sm text-muted-foreground">{gateway.description}</p>
-                  </button>
-                ))}
-              </div>
-
-              {paymentData.gateway && !paymentData.skipPayment && (
-                <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
-                  <p className="font-medium text-sm">Configure {paymentData.gateway}</p>
-                  <p className="text-sm text-muted-foreground">
-                    You'll need to add your API keys after completing the setup wizard.
-                  </p>
-                  <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                    <ExternalLink className="h-4 w-4" />
-                    Get {paymentData.gateway.charAt(0).toUpperCase() + paymentData.gateway.slice(1)} API Keys
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 pt-4">
-                <input
-                  type="checkbox"
-                  id="skipPayment"
-                  checked={paymentData.skipPayment}
-                  onChange={(e) => setPaymentData({ ...paymentData, skipPayment: e.target.checked })}
-                  className="rounded"
-                />
-                <Label htmlFor="skipPayment" className="text-sm font-normal cursor-pointer">
-                  Skip for now - I'll configure payment gateway later
-                </Label>
-              </div>
-
-              {paymentData.skipPayment && (
-                <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded">
-                  You can set a preferred gateway later under Studio settings. Platform-wide payments still use the
-                  administrator&apos;s configured gateways.
-                </p>
-              )}
 
               {isStreamerSetup && studioUpgradeAvailable && studioSubscription ? (
-                <div className="rounded-lg border border-primary/40 bg-primary/5 p-4 space-y-3">
-                  <p className="font-medium text-sm">Studio subscription</p>
-                  <p className="text-sm text-muted-foreground">
-                    Pay the annual Studio fee to activate your account. You can use wallet balance (if sufficient),
-                    Razorpay, or Instamojo.
-                  </p>
-                  <Button type="button" className="w-full sm:w-auto" onClick={() => setCheckoutOpen(true)}>
-                    Open checkout
-                  </Button>
-                </div>
-              ) : null}
+                <StudioUpgradePaymentPanel
+                  pricePaisa={studioSubscription.pricePaisa}
+                  walletBalancePaise={walletBalancePaise}
+                  selectedGateway={paymentData.studioUpgradePayMethod || "wallet"}
+                  onSelectedGatewayChange={(g) =>
+                    setPaymentData((p) => ({ ...p, studioUpgradePayMethod: g }))
+                  }
+                  showActions
+                  onPaidSuccess={() => {
+                    window.location.assign("/studio/setup?upgraded=1")
+                  }}
+                />
+              ) : !isStreamerSetup ? (
+                <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 p-3">
+                  When you are ready, click <strong>Complete setup</strong> below to save your profile and branding. You
+                  can change these later in Studio settings.
+                </p>
+              ) : (
+                <p className="text-sm text-destructive">
+                  Studio subscription is not available from the platform right now. Contact your administrator.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
-
-        {isStreamerSetup && studioUpgradeAvailable && studioSubscription ? (
-          <StudioUpgradeCheckoutDialog
-            open={checkoutOpen}
-            onOpenChange={setCheckoutOpen}
-            pricePaisa={studioSubscription.pricePaisa}
-            walletBalancePaise={walletBalancePaise}
-            onPaidSuccess={() => {
-              window.location.assign("/studio/setup?upgraded=1")
-            }}
-          />
-        ) : null}
 
         {/* Navigation */}
         <div className="flex justify-between mt-8">
@@ -1062,14 +989,14 @@ export default function StudioSetupPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : isStreamerSetup ? (
-            <Button type="button" onClick={() => setCheckoutOpen(true)} disabled={!canProceed()} className="gap-2">
-              Pay &amp; activate Studio
-              <CreditCard className="h-4 w-4" />
-            </Button>
+            <span className="text-xs text-muted-foreground sm:text-sm max-w-md text-right">
+              Use the payment actions above to upgrade. After payment, click Complete setup (appears when you are
+              Studio).
+            </span>
           ) : (
             <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="gap-2">
               {isSubmitting ? (
-                <>Completing Setup...</>
+                <>Completing setup…</>
               ) : (
                 <>
                   Complete setup

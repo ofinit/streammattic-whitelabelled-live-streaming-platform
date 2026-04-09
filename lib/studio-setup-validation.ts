@@ -59,11 +59,19 @@ export function validateDomainStep(input: { customDomain: string; skipDomain: bo
   return null
 }
 
-export function validatePaymentStep(input: {
-  gateway: string
-  skipPayment: boolean
-}): string | null {
-  if (input.skipPayment) return null
-  if (!input.gateway) return "Choose a preferred gateway or skip for now."
+export function validatePaymentStep(
+  input: {
+    gateway: string
+    skipPayment: boolean
+    studioUpgradePayMethod?: "" | "wallet" | "razorpay" | "instamojo"
+  },
+  opts?: { streamerUpgrade?: boolean },
+): string | null {
+  if (opts?.streamerUpgrade) {
+    if (!input.studioUpgradePayMethod) {
+      return "Choose Wallet, Razorpay, or Instamojo to pay for your Studio subscription."
+    }
+    return null
+  }
   return null
 }

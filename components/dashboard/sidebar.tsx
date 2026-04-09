@@ -31,8 +31,6 @@ import {
   Youtube,
   Plug,
   Receipt,
-  PanelLeftClose,
-  PanelLeft,
   Menu,
   Zap,
 } from "lucide-react"
@@ -81,8 +79,8 @@ const studioNav: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
   { title: "Control Center", href: "/studio/control-center", icon: Radio },
   { title: "Create Event", href: "/studio/create-events", icon: Calendar },
-  { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Packages", href: "/studio/packages", icon: Package },
+  { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
@@ -94,8 +92,8 @@ const streamerNav: NavItem[] = [
   { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
   { title: "Control Center", href: "/streamer/control-center", icon: Radio },
   { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
-  { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
   { title: "Packages", href: "/streamer/packages", icon: Package },
+  { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
   { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]
@@ -305,18 +303,14 @@ export function Sidebar() {
       case "admin":
         return adminNav
       case "studio": {
+        // YouTube Channels stays visible so users can open settings and see admin messaging when API is disabled.
         if (!youtubeConfigEnabled) {
-          return studioNav.filter(
-            (item) =>
-              item.href !== "/studio/settings/integrations" && item.href !== "/studio/settings/youtube",
-          )
+          return studioNav.filter((item) => item.href !== "/studio/settings/integrations")
         }
         return studioNav
       }
-      case "streamer": {
-        if (!youtubeConfigEnabled) return streamerNav.filter((item) => item.href !== "/streamer/settings/youtube")
+      case "streamer":
         return streamerNav
-      }
       default:
         return []
     }
@@ -415,7 +409,7 @@ export function Sidebar() {
                     isCollapsed && "mx-auto",
                   )}
                 >
-                  {isCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                  <Menu className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>

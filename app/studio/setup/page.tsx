@@ -39,6 +39,7 @@ import {
 import {
   validateBrandingStep,
   validateCompanyStep,
+  companyWebsiteHost,
   validateDomainStep,
   validatePaymentStep,
 } from "@/lib/studio-setup-validation"
@@ -127,12 +128,12 @@ export default function StudioSetupPage() {
   const saveDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Form state
+  // Form state (no account-based prefill—users enter legal / public details here)
   const [companyData, setCompanyData] = useState({
-    companyName: studioUser?.name || "",
+    companyName: "",
     tagline: "",
-    email: studioUser?.email || "",
-    phone: studioUser?.phone || "",
+    email: "",
+    phone: "",
     address: "",
     website: "",
   })
@@ -369,7 +370,11 @@ export default function StudioSetupPage() {
     if (stepValidationError) return false
     switch (currentStep) {
       case 0:
-        return Boolean(companyData.companyName?.trim() && companyData.email?.trim())
+        return Boolean(
+          companyData.companyName?.trim() &&
+            companyData.email?.trim() &&
+            companyWebsiteHost(companyData.website),
+        )
       case 1:
         return Boolean(brandingData.platformName?.trim() && brandingData.primaryColor)
       case 2:
@@ -484,24 +489,32 @@ export default function StudioSetupPage() {
               {stepValidationError && currentStep === 0 && (
                 <p className="text-sm text-destructive">{stepValidationError}</p>
               )}
+              <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
+                Enter the legal and public details that should appear on invoices and emails. Fields marked with a red
+                asterisk are required. Optional fields can be left blank.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name *</Label>
+                  <Label htmlFor="companyName">
+                    Company Name <span className="text-destructive font-semibold">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Registered or trading name shown on invoices.</p>
                   <Input
                     id="companyName"
                     value={companyData.companyName}
                     onChange={(e) => setCompanyData({ ...companyData, companyName: e.target.value })}
-                    placeholder="Your Company Name"
+                    autoComplete="organization"
                     className="bg-secondary border-0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tagline">Tagline</Label>
+                  <p className="text-xs text-muted-foreground">Short line under your platform name (optional).</p>
                   <Input
                     id="tagline"
                     value={companyData.tagline}
                     onChange={(e) => setCompanyData({ ...companyData, tagline: e.target.value })}
-                    placeholder="Your streaming solution"
+                    autoComplete="off"
                     className="bg-secondary border-0"
                   />
                 </div>
@@ -509,24 +522,30 @@ export default function StudioSetupPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Support Email *</Label>
+                  <Label htmlFor="email">
+                    Support Email <span className="text-destructive font-semibold">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Address customers and billing notices are sent to.</p>
                   <Input
                     id="email"
                     type="email"
                     value={companyData.email}
                     onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
-                    placeholder="support@yourcompany.com"
+                    autoComplete="email"
                     className="bg-secondary border-0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Support Phone</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Include country code if applicable (optional). Digits only count validated if you fill this in.
+                  </p>
                   <Input
                     id="phone"
                     type="tel"
                     value={companyData.phone}
                     onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
+                    autoComplete="tel"
                     className="bg-secondary border-0"
                   />
                 </div>
@@ -534,17 +553,27 @@ export default function StudioSetupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="address">Business Address</Label>
+                <p className="text-xs text-muted-foreground">
+                  Full postal address for tax invoices (optional but recommended).
+                </p>
                 <Textarea
                   id="address"
                   value={companyData.address}
                   onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
-                  placeholder="Full business address for invoices..."
+                  autoComplete="street-address"
                   className="bg-secondary border-0 min-h-[100px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="website">Company Website</Label>
+                <Label htmlFor="website">
+                  Company Website <span className="text-destructive font-semibold">*</span>
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Public marketing site for your company. Type the domain only (e.g. yourcompany.com)—we add{" "}
+                  <span className="font-mono">https://</span>. Must be a valid hostname with a real TLD (e.g. .com, .in),
+                  no paths or spaces.
+                </p>
                 <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
                   <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
                     https://
@@ -560,11 +589,11 @@ export default function StudioSetupPage() {
                         website: host ? `https://${host}` : "",
                       })
                     }}
-                    placeholder="yourcompany.com"
+                    autoComplete="url"
+                    inputMode="url"
                     className="border-0 rounded-none bg-transparent focus-visible:ring-0"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">Public site for your company (optional).</p>
               </div>
             </CardContent>
           </Card>

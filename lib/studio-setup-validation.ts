@@ -10,6 +10,18 @@ export function isValidHostname(host: string): boolean {
   return labels.every((lab) => /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(lab) && lab.length <= 63)
 }
 
+/** Hostname only, from stored `https://host` or user-typed host. */
+export function companyWebsiteHost(input: string): string {
+  const w = input.trim()
+  if (!w) return ""
+  try {
+    const u = new URL(w.includes("://") ? w : `https://${w}`)
+    return u.hostname.toLowerCase().replace(/^\[|\]$/g, "")
+  } catch {
+    return ""
+  }
+}
+
 export function validateCompanyStep(input: {
   companyName: string
   email: string
@@ -23,13 +35,12 @@ export function validateCompanyStep(input: {
     const digits = input.phone.replace(/\D/g, "")
     if (digits.length < 10 || digits.length > 15) return "Enter a valid phone number (10–15 digits)."
   }
-  if (input.website.trim()) {
-    try {
-      const u = new URL(input.website.startsWith("http") ? input.website : `https://${input.website}`)
-      if (u.protocol !== "https:" && u.protocol !== "http:") return "Company website must be a valid http(s) URL."
-    } catch {
-      return "Company website must be a valid URL."
-    }
+  const host = companyWebsiteHost(input.website)
+  if (!host) {
+    return "Company website is required. Enter a public domain, e.g. yourcompany.com (no path)."
+  }
+  if (!isValidHostname(host)) {
+    return "Enter a valid domain (e.g. yourcompany.com or www.yourcompany.com). Use a real suffix like .com, .in, or .org; only letters, numbers, and hyphens in each part."
   }
   return null
 }

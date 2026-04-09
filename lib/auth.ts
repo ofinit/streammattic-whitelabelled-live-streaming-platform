@@ -97,7 +97,8 @@ export async function createSession(userId: string, ip?: string, userAgent?: str
 export async function getSessionUser(token: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT u.id, u.email, u.name, u.phone, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared, u.created_at, u.updated_at
+    SELECT u.id, u.email, u.name, u.phone, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared,
+           u.studio_subscription_expires_at, u.created_at, u.updated_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ${token} AND s.expires_at > NOW()
@@ -172,7 +173,8 @@ export async function getCurrentUser() {
 
   const sql = getDb()
   const rows = await sql`
-    SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
+    SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared,
+           studio_subscription_expires_at, created_at, updated_at
     FROM users 
     WHERE id = ${session.user.id}
   `
@@ -223,6 +225,14 @@ export async function createUser(data: {
   await sql`INSERT INTO wallets (user_id) VALUES (${user.id as string})`
   // Create credits record
   await sql`INSERT INTO user_credits (user_id) VALUES (${user.id as string})`
+
+  if (role === "studio") {
+    await sql`
+      UPDATE users
+      SET studio_subscription_expires_at = NOW() + INTERVAL '1 year', updated_at = NOW()
+      WHERE id = ${user.id as string}
+    `
+  }
 
   return user
 }

@@ -14,6 +14,7 @@ export async function GET(req: Request) {
       ? await sql`
           SELECT 
             u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
+            u.studio_subscription_expires_at,
             sb.platform_name, sb.primary_color
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
@@ -22,6 +23,7 @@ export async function GET(req: Request) {
       : await sql`
           SELECT 
             u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
+            u.studio_subscription_expires_at,
             sb.platform_name, sb.primary_color
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
@@ -46,6 +48,9 @@ export async function GET(req: Request) {
       totalRevenue: 0,
       walletBalance: 0,
       customPricing: r.custom_pricing ?? null,
+      studioSubscriptionExpiresAt: r.studio_subscription_expires_at
+        ? new Date(r.studio_subscription_expires_at as string).toISOString()
+        : null,
       branding: {
          platformName: r.platform_name || (r.role === 'studio' ? 'Unnamed Studio' : 'Platform'),
          primaryColor: r.primary_color || '#10b981'

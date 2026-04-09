@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import useSWR from "swr"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,13 +10,37 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle, CreditCard } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
+import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
+import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
+import { calendarDaysUntilSubscriptionEnd, isStudioSubscriptionPastDue } from "@/lib/studio-subscription-shared"
+import { toast } from "sonner"
+
+const settingsFetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export default function StudioSettingsPage() {
-  const { user, changePassword, isLoading } = useAuth()
+  const { user, changePassword, isLoading, refreshUser } = useAuth()
+  const [renewPayMethod, setRenewPayMethod] = useState<"wallet" | "razorpay" | "instamojo">("wallet")
+
+  const { data: settingsData } = useSWR(user?.role === "studio" ? "/api/settings" : null, settingsFetcher, {
+    refreshInterval: 60_000,
+  })
+  const { data: dashData } = useSWR(user?.role === "studio" ? "/api/studio/dashboard" : null, settingsFetcher, {
+    refreshInterval: 30_000,
+  })
+  const settingsRows = (settingsData?.settings ?? []) as { key: string; value: unknown }[]
+  const studioSubRaw = settingsRows.find((s) => s.key === "studio_annual_subscription")?.value
+  const studioSubscription = parseStudioAnnualSubscription(studioSubRaw)
+  const studioRenewalAvailable = Boolean(studioSubscription?.enabled && studioSubscription.pricePaisa > 0)
+  const walletBalancePaise = Number((dashData?.stats as { walletBalance?: number } | undefined)?.walletBalance ?? 0)
+
+  const subExpiresIso = user?.studioSubscriptionExpiresAt ?? null
+  const subExpired = subExpiresIso != null && isStudioSubscriptionPastDue(subExpiresIso)
+  const daysLeft =
+    subExpiresIso && !isStudioSubscriptionPastDue(subExpiresIso) ? calendarDaysUntilSubscriptionEnd(subExpiresIso) : null
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
@@ -86,6 +111,63 @@ export default function StudioSettingsPage() {
       <Header title="Settings" subtitle="Manage your account settings" />
 
       <div className="space-y-6 max-w-2xl">
+        {user?.role === "studio" && (
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Studio subscription</CardTitle>
+                  <CardDescription>Annual white-label plan — renew to keep creating and editing events</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {subExpiresIso ? (
+                <p className="text-sm text-foreground">
+                  <span className="text-muted-foreground">Current period ends: </span>
+                  <strong className="tabular-nums">
+                    {new Date(subExpiresIso).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </strong>
+                  {daysLeft !== null && (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      ({daysLeft === 0 ? "renew today" : `${daysLeft} calendar days left`})
+                    </span>
+                  )}
+                  {subExpired && (
+                    <span className="block text-destructive font-medium mt-1">
+                      Expired — renew below to restore event creation and editing.
+                    </span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">No renewal date on file. Contact support if this looks wrong.</p>
+              )}
+              {studioRenewalAvailable && studioSubscription ? (
+                <StudioUpgradePaymentPanel
+                  pricePaisa={studioSubscription.pricePaisa}
+                  walletBalancePaise={walletBalancePaise}
+                  selectedGateway={renewPayMethod}
+                  onSelectedGatewayChange={setRenewPayMethod}
+                  showActions
+                  onPaidSuccess={async () => {
+                    toast.success("Subscription renewed for one year.")
+                    await refreshUser()
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Renewal checkout is not available right now.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Profile Settings */}
         <Card className="border-border bg-card">
           <CardHeader>

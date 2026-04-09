@@ -47,6 +47,7 @@ export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elega
   walletBalance: number
   credits: StreamTypeCredits
   totalEvents: number
+  studioSubscriptionExpiresAt?: string | null
   }
 
 // Admin extends User

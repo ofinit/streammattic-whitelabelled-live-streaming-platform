@@ -5,6 +5,7 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { calculatePriceBreakdown } from "@/lib/gst-service"
 import { getPlatformGSTSettings, toGSTCalculationConfig } from "@/lib/platform-gst"
+import { applyStudioUpgradeOrRenewalSql } from "@/lib/studio-subscription"
 
 export const POST = withAuth(async (user, request) => {
   const body = await request.json()
@@ -26,8 +27,8 @@ export const POST = withAuth(async (user, request) => {
   let orderMetadata: Record<string, unknown> = {}
 
   if (orderType === "studio_upgrade") {
-    if (role !== "streamer") {
-      return jsonError("Studio upgrade is only available for streamer accounts", 403)
+    if (role !== "streamer" && role !== "studio") {
+      return jsonError("Studio subscription payment is only available for streamer or studio accounts", 403)
     }
     const rawSub = await getPlatformSetting("studio_annual_subscription")
     const sub = parseStudioAnnualSubscription(rawSub)
@@ -164,21 +165,19 @@ export const POST = withAuth(async (user, request) => {
           amountInPaise
         ])
 
-        // E. Upgrade role
+        // E. Studio upgrade or annual renewal (+1 year, streamer→studio role when applicable)
         if (orderType === "studio_upgrade") {
-          await tx.query(`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = $1`, [userId])
-          
-          // F. Initialize branding if not exists
+          await tx.query(applyStudioUpgradeOrRenewalSql(), [userId])
+
           await tx.query(`
             INSERT INTO studio_branding (user_id, platform_name)
             VALUES ($1, 'My Studio')
             ON CONFLICT (user_id) DO NOTHING
           `, [userId])
 
-          // G. Notification
           await tx.query(`
             INSERT INTO notifications (user_id, type, title, message)
-            VALUES ($1, 'payment', 'Welcome to Studio!', 'Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding.')
+            VALUES ($1, 'payment', 'Studio subscription', 'Your Studio plan has been extended for one year. Thank you for staying with us!')
           `, [userId])
         }
       })

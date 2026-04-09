@@ -411,18 +411,6 @@ export default function StudioSetupPage() {
             </Button>
           </div>
 
-              {isStreamerSetup && (
-            <Alert className="mt-4 border-primary/30 bg-primary/5">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <AlertDescription>
-                Complete each step, then on the last step pay with your <strong>wallet</strong> (subscription price
-                only, no GST) or via <strong>Razorpay / Instamojo</strong> (includes GST when the platform has it
-                enabled). You cannot skip payment. After it succeeds, use <strong>Complete setup</strong> to save your
-                details.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {upgraded && (
             <Alert className="mt-4 border-primary/30 bg-primary/5">
               <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -938,11 +926,12 @@ export default function StudioSetupPage() {
                 <CreditCard className="h-5 w-5 text-primary" />
                 {isStreamerSetup ? "Pay for Studio" : "Finish setup"}
               </CardTitle>
-              <CardDescription>
-                {isStreamerSetup
-                  ? "You do not connect your own payment keys here. Pay the annual Studio fee using your platform wallet (no GST on that charge) or the administrator-configured Razorpay / Instamojo checkout (GST applies when enabled). Your account upgrades only after payment succeeds."
-                  : "Viewer billing and payouts use the platform administrator’s configuration. Save your company, branding, and domain details to complete this wizard."}
-              </CardDescription>
+              {!isStreamerSetup ? (
+                <CardDescription>
+                  Viewer billing and payouts use the platform administrator’s configuration. Save your company,
+                  branding, and domain details to complete this wizard.
+                </CardDescription>
+              ) : null}
             </CardHeader>
             <CardContent className="space-y-6">
               {stepValidationError && currentStep === 3 && (

@@ -1,6 +1,7 @@
 import { getDb } from "./db"
 import { splitGST } from "@/lib/gst-service"
 import { getPlatformGSTSettings } from "@/lib/platform-gst"
+import { applyStudioUpgradeOrRenewal } from "@/lib/studio-subscription"
 
 // ============================================================
 // RAZORPAY - Server-side order creation & verification
@@ -321,7 +322,7 @@ export async function processSuccessfulPayment(params: {
   }
 
   if (orderType === "studio_upgrade") {
-    await sql`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = ${params.userId}`
+    await applyStudioUpgradeOrRenewal(params.userId)
     await sql`
       INSERT INTO studio_branding (user_id, platform_name)
       VALUES (${params.userId}, 'My Studio')
@@ -396,7 +397,7 @@ export async function processSuccessfulPayment(params: {
 
   const notifMessage =
     orderType === "studio_upgrade"
-      ? "Welcome to Studio! Complete setup under Studio → Setup Wizard to configure branding and your domain."
+      ? "Your Studio annual subscription is extended by one year. Finish or update setup anytime under Studio."
       : orderType === "wallet_recharge"
         ? `₹${(walletCreditPaise / 100).toFixed(2)} has been added to your wallet.`
         : `Your payment of Rs ${(totalPaise / 100).toFixed(2)} has been processed successfully.`

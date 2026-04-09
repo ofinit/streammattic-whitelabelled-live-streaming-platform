@@ -154,6 +154,20 @@ export default function AdminStudiosPage() {
       render: (item: Studio) => <StatusBadge status={item.status} />,
     },
     {
+      key: "studioSubscriptionExpiresAt",
+      header: "Studio renews",
+      render: (item: Studio) => {
+        const raw = (item as unknown as { studioSubscriptionExpiresAt?: string | null }).studioSubscriptionExpiresAt
+        if (!raw) return <span className="text-muted-foreground text-sm">—</span>
+        const d = new Date(raw)
+        return (
+          <span className="text-sm tabular-nums text-foreground" title={d.toISOString()}>
+            {d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+          </span>
+        )
+      },
+    },
+    {
       key: "walletBalance",
       header: "Balance",
       render: (item: Studio) => (

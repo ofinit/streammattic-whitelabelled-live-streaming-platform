@@ -115,3 +115,45 @@ export async function sendVerificationOTP(toEmail: string, otpCode: string, stud
     studioId
   )
 }
+
+export async function sendStudioSubscriptionRenewalReminder(params: {
+  toEmail: string
+  name: string
+  daysLeft: number
+  renewUrl: string
+}) {
+  const brandName = ((await getPlatformSetting("platform_name")) as string) || "StreamLivee"
+  const { toEmail, name, daysLeft, renewUrl } = params
+  const when =
+    daysLeft === 0
+      ? "today"
+      : daysLeft === 1
+        ? "tomorrow"
+        : `in ${daysLeft} days`
+
+  const subject =
+    daysLeft === 0
+      ? `Your ${brandName} Studio plan renews ${when}`
+      : `Reminder: Studio subscription renews ${when}`
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${name || "there"},</p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        Your <strong>Studio annual subscription</strong> for ${brandName} ends <strong>${when}</strong>
+        (${daysLeft === 0 ? "renew before the end of the period to avoid interruption" : `about ${daysLeft} calendar days remaining`}).
+      </p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        Renew now to keep creating and editing events without interruption.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${renewUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Renew Studio subscription</a>
+      </p>
+      <p style="font-size: 13px; color: #666;">If you already renewed, you can ignore this message.</p>
+    </div>
+  `
+
+  const text = `Hi ${name || "there"}, your Studio annual subscription for ${brandName} renews ${when}. Renew: ${renewUrl}`
+
+  return sendEmail(toEmail, subject, html, text)
+}

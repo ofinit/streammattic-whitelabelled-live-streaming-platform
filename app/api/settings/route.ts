@@ -41,8 +41,8 @@ export const GET = withAuth(async (user, request) => {
     rows = [...rows, { key: "youtube_config_override", value: overrideVal }]
   }
 
-  // Streamers: show admin-configured studio annual subscription (for upgrade CTA / pricing)
-  if (user.role === "streamer") {
+  // Streamers & studios: studio annual subscription catalog price (upgrade / renewal UI)
+  if (user.role === "streamer" || user.role === "studio") {
     const studioSub = await getPlatformSetting("studio_annual_subscription")
     rows = [...rows, { key: "studio_annual_subscription", value: studioSub }]
   }

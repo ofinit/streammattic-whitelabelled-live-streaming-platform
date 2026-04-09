@@ -21,6 +21,7 @@ import {
   assertSimulcastAllowed,
   bodyStreamTypeToDb,
 } from "@/lib/server/event-stream-policy"
+import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -100,6 +101,19 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    const sql = getDb()
+    const subGatePost = await checkStudioSubscriptionActiveForEventManagement(
+      sql,
+      user.id as string,
+      user.role as string,
+    )
+    if (!subGatePost.ok) {
+      return NextResponse.json(
+        { error: subGatePost.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" },
+        { status: 403 },
+      )
+    }
+
     const host = req.headers.get("host") || ""
 
     const body = await req.json()
@@ -115,7 +129,6 @@ export async function POST(req: NextRequest) {
     if (!title || !title.trim()) return NextResponse.json({ error: "Event title is required" }, { status: 400 })
     const normalizedStreamType = streamType || null
     const dbStreamType = normalizedStreamType ? (STREAM_TYPE_MAP[normalizedStreamType] || normalizedStreamType) : null
-    const sql = getDb()
     const isPendingCreate = !dbStreamType
     const insertStreamType = isPendingCreate ? PENDING_STREAM_DB : dbStreamType
 
@@ -323,6 +336,20 @@ export async function PUT(req: NextRequest) {
     
     if (targetUserId !== user.id && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (user.role === "studio" && targetUserId === user.id) {
+      const subGatePut = await checkStudioSubscriptionActiveForEventManagement(
+        sql,
+        user.id as string,
+        user.role as string,
+      )
+      if (!subGatePut.ok) {
+        return NextResponse.json(
+          { error: subGatePut.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" },
+          { status: 403 },
+        )
+      }
     }
 
     const shouldBypassCreditsDeduction = shouldBypassCredits(user, targetUserId, host)
@@ -615,8 +642,23 @@ export async function DELETE(req: NextRequest) {
     const sql = getDb()
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
-    if ((existing[0] as Record<string, unknown>).user_id !== user.id && user.role !== "admin") {
+    const ownerId = (existing[0] as Record<string, unknown>).user_id as string
+    if (ownerId !== user.id && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (user.role === "studio" && ownerId === user.id) {
+      const subGateDel = await checkStudioSubscriptionActiveForEventManagement(
+        sql,
+        user.id as string,
+        user.role as string,
+      )
+      if (!subGateDel.ok) {
+        return NextResponse.json(
+          { error: subGateDel.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" },
+          { status: 403 },
+        )
+      }
     }
 
     await sql`DELETE FROM events WHERE id = ${id}`

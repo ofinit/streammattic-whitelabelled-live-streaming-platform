@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -11,7 +11,6 @@ import type { GSTConfiguration } from "@/lib/types"
 import { loadRazorpayScript, type RazorpayConstructor } from "@/lib/razorpay-checkout"
 import { CreditCard, Loader2, Receipt, Wallet } from "lucide-react"
 import { toast } from "sonner"
-import Link from "next/link"
 
 type GstConfigResponse = {
   gstEnabled?: boolean
@@ -64,7 +63,6 @@ export function StudioUpgradePaymentPanel({
   const [busy, setBusy] = useState(false)
   const gateway = (selectedGateway || "wallet") as StudioUpgradePayGateway
   const setGateway = onSelectedGatewayChange
-  const autoGatewayAppliedRef = useRef(false)
 
   const { data: gstData, error: gstError, isLoading: gstLoading } = useSWR("/api/gst/config", fetcher)
   const gstConfig = gstData?.gstConfig ?? null
@@ -94,16 +92,14 @@ export function StudioUpgradePaymentPanel({
   const gatewayTotalPaise = Math.round(gatewayBreakdown.totalPayable * 100)
   const chargedTotalPaise = gateway === "wallet" ? walletTotalPaise : gatewayTotalPaise
 
-  const walletShortfallWalletMode = Math.max(0, walletTotalPaise - walletBalancePaise)
   const walletCoversWalletMode = walletBalancePaise >= walletTotalPaise && walletTotalPaise > 0
 
   useEffect(() => {
-    if (gstLoading || walletTotalPaise <= 0 || autoGatewayAppliedRef.current) return
-    if (walletBalancePaise < walletTotalPaise) {
+    if (gstLoading || walletTotalPaise <= 0) return
+    if (gateway === "wallet" && walletBalancePaise < walletTotalPaise) {
       setGateway("razorpay")
-      autoGatewayAppliedRef.current = true
     }
-  }, [gstLoading, walletTotalPaise, walletBalancePaise, setGateway])
+  }, [gstLoading, walletTotalPaise, walletBalancePaise, gateway, setGateway])
 
   const payWithWallet = useCallback(async () => {
     if (!walletCoversWalletMode || walletTotalPaise <= 0) return
@@ -252,7 +248,7 @@ export function StudioUpgradePaymentPanel({
           Price breakdown
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Studio subscription (catalog price)</span>
+          <span className="text-muted-foreground">Studio subscription (yearly catalog price)</span>
           <span className="tabular-nums">{formatPaisa(pricePaisa)}</span>
         </div>
         {gateway === "wallet" ? (
@@ -276,9 +272,10 @@ export function StudioUpgradePaymentPanel({
           </>
         )}
         <div className="border-t border-border pt-2 flex justify-between text-sm font-semibold">
-          <span>Total due</span>
+          <span>Total due (this year)</span>
           <span className="text-primary tabular-nums">{formatPaisa(chargedTotalPaise)}</span>
         </div>
+        <p className="text-xs text-muted-foreground">Adds one year to your Studio subscription period after payment succeeds.</p>
         {gateway !== "wallet" && (
           <p className="text-xs text-muted-foreground">
             Razorpay and Instamojo are charged by the platform including GST where configured.
@@ -294,15 +291,17 @@ export function StudioUpgradePaymentPanel({
           className="grid gap-2"
         >
           <label
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-              gateway === "wallet" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+            className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+              walletDisabled
+                ? "cursor-not-allowed border-border bg-muted/20 opacity-60"
+                : `cursor-pointer ${gateway === "wallet" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"}`
             }`}
           >
-            <RadioGroupItem value="wallet" id="sup-wallet" />
+            <RadioGroupItem value="wallet" id="sup-wallet" disabled={walletDisabled} />
             <Wallet className="h-5 w-5 text-emerald-500" />
             <div className="flex-1 text-left">
               <p className="font-medium">Wallet</p>
-              <p className="text-xs text-muted-foreground">Balance: {formatPaisa(walletBalancePaise)} · no GST on this charge</p>
+              <p className="text-xs text-muted-foreground">Balance: {formatPaisa(walletBalancePaise)}</p>
             </div>
           </label>
           <label
@@ -332,13 +331,6 @@ export function StudioUpgradePaymentPanel({
         </RadioGroup>
       </div>
 
-      {gateway === "wallet" && walletShortfallWalletMode > 0 && (
-        <p className="text-xs text-destructive">
-          Add {formatPaisa(walletShortfallWalletMode)} to your wallet for the subscription amount, or choose Razorpay /
-          Instamojo.
-        </p>
-      )}
-
       {showActions && (
         <div className="flex flex-wrap items-center gap-2 justify-end">
           {onCancel ? (
@@ -346,27 +338,18 @@ export function StudioUpgradePaymentPanel({
               Cancel
             </Button>
           ) : null}
-          {gateway === "wallet" && walletShortfallWalletMode > 0 ? (
-            <Button className="bg-primary hover:bg-primary/90" asChild>
-              <Link href="/streamer/wallet">
-                <Wallet className="mr-2 h-4 w-4" />
-                Recharge wallet
-              </Link>
-            </Button>
-          ) : (
-            <Button type="button" onClick={() => void handlePrimaryPay()} disabled={primaryDisabled} className="min-w-[160px]">
-              {busy ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing…
-                </>
-              ) : gateway === "wallet" ? (
-                "Pay via wallet & activate Studio"
-              ) : (
-                "Continue to pay"
-              )}
-            </Button>
-          )}
+          <Button type="button" onClick={() => void handlePrimaryPay()} disabled={primaryDisabled} className="min-w-[160px]">
+            {busy ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing…
+              </>
+            ) : gateway === "wallet" ? (
+              "Pay via wallet & activate Studio"
+            ) : (
+              "Continue to pay"
+            )}
+          </Button>
         </div>
       )}
     </div>

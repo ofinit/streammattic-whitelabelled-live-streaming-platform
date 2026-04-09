@@ -17,6 +17,8 @@ interface AuthUser {
   createdAt?: string
   updatedAt?: string
   mockDataCleared?: boolean
+  /** ISO timestamp; studio role annual plan end */
+  studioSubscriptionExpiresAt?: string | null
 }
 
 interface AuthContextType {

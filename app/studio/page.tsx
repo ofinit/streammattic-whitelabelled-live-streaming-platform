@@ -18,6 +18,10 @@ import type { StreamTypeCredits } from "@/lib/types"
 import { Radio, Wallet, Eye, Calendar, Package, Plus, Play, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import {
+  calendarDaysUntilSubscriptionEnd,
+  shouldShowStudioRenewalDashboardAlert,
+} from "@/lib/studio-subscription-shared"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -48,6 +52,11 @@ export default function StudioDashboard() {
 
   const walletBalancePaise = Number(stats?.walletBalance ?? 0)
   const lowBalanceWarning = walletBalancePaise < LOW_WALLET_THRESHOLD_PAISE
+
+  const subExpires = user?.studioSubscriptionExpiresAt ?? null
+  const renewalAlert =
+    user?.role === "studio" && shouldShowStudioRenewalDashboardAlert(subExpires ?? undefined)
+  const renewalDaysLeft = subExpires && renewalAlert ? calendarDaysUntilSubscriptionEnd(subExpires) : null
 
   const streamCredits = stats?.credits ?? {
     rtmp: 0,
@@ -207,6 +216,22 @@ export default function StudioDashboard() {
       <Header title="Studio Dashboard" subtitle={`Welcome back, ${user?.name}`} />
 
       <div className="space-y-6">
+        {renewalAlert && renewalDaysLeft !== null && (
+          <Alert className="border-amber-500/40 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle>Studio subscription renewal</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-2 text-foreground/90">
+              Your annual Studio plan renews in{" "}
+              <strong>
+                {renewalDaysLeft === 0 ? "less than a day — renew now" : `${renewalDaysLeft} days`}
+              </strong>
+              . Renew to keep creating and editing events without interruption.
+              <Button variant="outline" size="sm" className="bg-transparent" asChild>
+                <Link href="/studio/settings">Renew in Settings</Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         {!isLoading && lowBalanceWarning && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />

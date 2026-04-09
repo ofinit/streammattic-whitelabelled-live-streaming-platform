@@ -58,7 +58,9 @@ import { useAuth } from "@/lib/auth-context"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
 import { formatEventScheduledDisplay } from "@/lib/utils"
+import { studioSubscriptionExpiredForEvents } from "@/lib/studio-subscription-shared"
 import { toast } from "sonner"
+import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
@@ -66,6 +68,8 @@ const EVENTS_PAGE_SIZE = 20
 export default function StudioEventsPage() {
   const { user } = useAuth()
   const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
+  const studioSubExpired =
+    user?.role === "studio" && studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
 
   const [searchQuery, setSearchQuery] = useState("")
   const { data: brandingData } = useSWR(studioId ? "/api/studio/branding" : null, fetcher)
@@ -81,21 +85,24 @@ export default function StudioEventsPage() {
     timezone?: string
   } | undefined>()
 
-  // Open dialog when arriving from /studio/control-center/new
+  // Open dialog when arriving from /studio/control-center/new (after auth user is available)
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (typeof window === "undefined" || !user) return
     const params = new URLSearchParams(window.location.search)
-    if (params.get("openModal") === "1") {
-      const url = new URL(window.location.href)
-      url.searchParams.delete("openModal")
-      window.history.replaceState({}, "", url.toString())
-      setEditingEvent(undefined)
-      setEventDialogInitialTab(undefined)
-      setEventDialogInitialStreamType(undefined)
-      setEventDialogInitialDraft(undefined)
-      setShowEventDialog(true)
+    if (params.get("openModal") !== "1") return
+    const url = new URL(window.location.href)
+    url.searchParams.delete("openModal")
+    window.history.replaceState({}, "", url.toString())
+    if (user.role === "studio" && studioSubscriptionExpiredForEvents(user.studioSubscriptionExpiresAt)) {
+      toast.error("Renew your Studio subscription in Settings to create events.")
+      return
     }
-  }, [])
+    setEditingEvent(undefined)
+    setEventDialogInitialTab(undefined)
+    setEventDialogInitialStreamType(undefined)
+    setEventDialogInitialDraft(undefined)
+    setShowEventDialog(true)
+  }, [user])
 
   // Restore event modal after YouTube OAuth redirect
   useEffect(() => {
@@ -221,6 +228,10 @@ export default function StudioEventsPage() {
   const totalViewers = liveEvents.reduce((acc: number, e: Record<string, unknown>) => acc + (Number(e.currentViewers) || 0), 0)
 
   const handleCreateEvent = () => {
+    if (studioSubExpired) {
+      toast.error("Renew your Studio subscription in Settings to create events.")
+      return
+    }
     setEditingEvent(undefined)
     setEventDialogInitialTab(undefined)
     setEventDialogInitialStreamType(undefined)
@@ -229,6 +240,10 @@ export default function StudioEventsPage() {
   }
 
   const handleEditEvent = (event: Record<string, unknown>) => {
+    if (studioSubExpired) {
+      toast.error("Renew your Studio subscription in Settings to edit events.")
+      return
+    }
     setEditingEvent(event as unknown as LiveEvent)
     setEventDialogInitialTab(undefined)
     setEventDialogInitialStreamType(undefined)
@@ -340,6 +355,11 @@ export default function StudioEventsPage() {
 
   const handleDeleteEvent = async () => {
     if (!deleteEvent) return
+    if (studioSubExpired) {
+      toast.error("Renew your Studio subscription in Settings to delete events.")
+      setDeleteEvent(null)
+      return
+    }
     try {
       const res = await fetch(`/api/studio/events?id=${deleteEvent.id}`, { method: "DELETE" })
       const data = await res.json()
@@ -639,7 +659,10 @@ export default function StudioEventsPage() {
                 <ExternalLink className="h-4 w-4 mr-2" />
                 View Event
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleEditEvent(event)}>
+            <DropdownMenuItem
+              disabled={studioSubExpired}
+              onClick={() => handleEditEvent(event)}
+            >
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Event
             </DropdownMenuItem>
@@ -662,7 +685,11 @@ export default function StudioEventsPage() {
                 </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteEvent(event)}>
+            <DropdownMenuItem
+              className="text-destructive"
+              disabled={studioSubExpired}
+              onClick={() => setDeleteEvent(event)}
+            >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Event
             </DropdownMenuItem>
@@ -674,12 +701,27 @@ export default function StudioEventsPage() {
 
   return (
     <div className="space-y-6">
+      {studioSubExpired && (
+        <Alert variant="destructive">
+          <AlertTitle>Studio subscription expired</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-2">
+            Renew your annual plan to create, edit, or delete events.
+            <Button variant="outline" size="sm" className="bg-transparent border-white/30" asChild>
+              <Link href="/studio/settings">Open Settings</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
-        <Button onClick={handleCreateEvent} className="w-full sm:w-auto">
+        <Button
+          onClick={handleCreateEvent}
+          className="w-full sm:w-auto"
+          disabled={studioSubExpired}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Create Event
         </Button>
@@ -807,7 +849,12 @@ export default function StudioEventsPage() {
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No {tab === "all" ? "" : tab} events found</p>
-                    <Button variant="outline" className="mt-4 bg-transparent" onClick={handleCreateEvent}>
+                    <Button
+                      variant="outline"
+                      className="mt-4 bg-transparent"
+                      onClick={handleCreateEvent}
+                      disabled={studioSubExpired}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Event
                     </Button>

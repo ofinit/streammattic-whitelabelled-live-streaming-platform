@@ -22,6 +22,8 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { studioSubscriptionExpiredForEvents } from "@/lib/studio-subscription-shared"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -62,6 +64,9 @@ export default function StudioCalendarPage() {
     })
   }, [relevantEvents, activeFilters])
 
+  const studioSubExpired =
+    user?.role === "studio" && studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
+
   const toggleFilter = (id: string, checked: boolean) => {
     setActiveFilters(prev => ({ ...prev, [id]: checked }))
   }
@@ -95,15 +100,34 @@ export default function StudioCalendarPage() {
         </div>
       </div>
 
+      {studioSubExpired && (
+        <Alert variant="destructive">
+          <AlertTitle>Studio subscription expired</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-2">
+            Renew your annual plan to create or edit events.
+            <Button variant="outline" size="sm" className="bg-transparent border-white/30" asChild>
+              <Link href="/studio/settings">Renew in Settings</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6 items-start h-full min-h-[700px]">
         {/* Left Sidebar */}
         <div className="w-full lg:w-64 shrink-0 space-y-6">
-          <Button className="w-full shadow-sm" size="lg" asChild>
-            <Link href="/studio/control-center/new">
+          {studioSubExpired ? (
+            <Button className="w-full shadow-sm" size="lg" disabled type="button">
+              <Plus className="mr-2 h-5 w-5" />
+              Create Event
+            </Button>
+          ) : (
+            <Button className="w-full shadow-sm" size="lg" asChild>
+              <Link href="/studio/control-center/new">
                 <Plus className="mr-2 h-5 w-5" />
                 Create Event
-            </Link>
-          </Button>
+              </Link>
+            </Button>
+          )}
 
           <Card className="border-border shadow-sm">
             <CardContent className="p-3">

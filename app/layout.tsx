@@ -24,17 +24,44 @@ import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
 import { Toaster } from "@/components/ui/toaster"
 
 import { getPlatformSetting } from "@/lib/db-queries"
+import { getPlatformFaviconUrl, DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
 
 export async function generateMetadata(): Promise<Metadata> {
   const platformName = (await getPlatformSetting("platform_name")) || "StreamLivee"
-  
+  const brandIcon = (await getPlatformFaviconUrl()) || DEFAULT_FAVICON_PATH
+
+  let metadataBase: URL
+  try {
+    metadataBase = new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000")
+  } catch {
+    metadataBase = new URL("http://localhost:3000")
+  }
+
+  const title = `${platformName} - White-Label Live Streaming Platform`
+  const description = `Multi-tenant live streaming platform for studios and content creators powered by ${platformName}`
+
   return {
-    title: `${platformName} - White-Label Live Streaming Platform`,
-    description: `Multi-tenant live streaming platform for studios and content creators powered by ${platformName}`,
-    generator: "v0.app",
+    title,
+    description,
+    metadataBase,
+    openGraph: {
+      title,
+      description,
+      siteName: platformName,
+      type: "website",
+      images: [{ url: brandIcon }],
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: [brandIcon],
+    },
     icons: {
-      icon: [{ url: "/favicon-live-red.svg", type: "image/svg+xml" }],
-      apple: "/apple-icon.png",
+      icon: brandIcon.endsWith(".svg")
+        ? [{ url: brandIcon, type: "image/svg+xml" }]
+        : [{ url: brandIcon }],
+      apple: [{ url: brandIcon }],
     },
   }
 }

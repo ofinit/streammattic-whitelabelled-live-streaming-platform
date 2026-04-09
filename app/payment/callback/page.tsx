@@ -6,12 +6,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 type PaymentStatus = "processing" | "success" | "failed" | "cancelled"
 
 function PaymentCallbackContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [status, setStatus] = useState<PaymentStatus>("processing")
   const [message, setMessage] = useState("")
   const [transactionId, setTransactionId] = useState("")
@@ -52,7 +54,8 @@ function PaymentCallbackContent() {
           })
           if (res.ok) {
             if (flow === "studio_upgrade") {
-              router.replace("/upgrade/studio/success?upgraded=1")
+              await refreshUser()
+              router.replace("/studio/setup?upgraded=1")
               return
             }
             setStatus("success")
@@ -81,7 +84,7 @@ function PaymentCallbackContent() {
     }
 
     verifyPayment()
-  }, [searchParams, router])
+  }, [searchParams, router, refreshUser])
 
   const statusConfig = {
     processing: {

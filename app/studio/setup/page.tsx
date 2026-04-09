@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import {
   Building2,
@@ -31,7 +33,17 @@ import {
   getRoutingTargetDisplayForDomain,
   getVerificationTxtHostDisplay,
   parseDomainLayout,
+  getPlatformARecordDisplay,
 } from "@/lib/platform-dns"
+import {
+  validateBrandingStep,
+  validateCompanyStep,
+  validateDomainStep,
+  validatePaymentStep,
+} from "@/lib/studio-setup-validation"
+import { Switch } from "@/components/ui/switch"
+
+export const dynamic = "force-dynamic"
 
 const SETUP_STEPS = [
   { id: "company", label: "Company Profile", icon: Building2 },
@@ -40,10 +52,20 @@ const SETUP_STEPS = [
   { id: "payment", label: "Payment Gateway", icon: CreditCard },
 ]
 
+function apexHostForWww(domain: string): string {
+  const parts = domain.trim().toLowerCase().split(".").filter(Boolean)
+  if (parts.length > 2 && parts[0] === "www") {
+    return parts.slice(1).join(".")
+  }
+  return domain.trim().toLowerCase()
+}
+
 function DnsSetupHint({ domain }: { domain: string }) {
   const { isSubdomain, subdomain } = parseDomainLayout(domain)
   const routing = getRoutingTargetDisplayForDomain(domain)
   const txtHost = getVerificationTxtHostDisplay(domain)
+  const aRecordIp = getPlatformARecordDisplay()
+  const apex = apexHostForWww(domain)
   return (
     <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
       <p className="font-medium text-sm">DNS Configuration Required</p>
@@ -56,9 +78,14 @@ function DnsSetupHint({ domain }: { domain: string }) {
             <span className="text-muted-foreground">CNAME:</span> {subdomain} → {routing}
           </p>
         ) : (
-          <p>
-            <span className="text-muted-foreground">A record (@):</span> {domain} → {routing}
-          </p>
+          <>
+            <p>
+              <span className="text-muted-foreground">A record (@):</span> {apex} → {routing}
+            </p>
+            <p>
+              <span className="text-muted-foreground">A record (www):</span> www.{apex} → {aRecordIp}
+            </p>
+          </>
         )}
         <p>
           <span className="text-muted-foreground">TXT:</span> {txtHost} → (verification token from dashboard)
@@ -70,10 +97,14 @@ function DnsSetupHint({ domain }: { domain: string }) {
 
 export default function StudioSetupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const upgraded = searchParams.get("upgraded") === "1"
   const { user } = useAuth()
   const studioUser = user as unknown as Studio
 
   const [currentStep, setCurrentStep] = useState(0)
+  const [draftHydrated, setDraftHydrated] = useState(false)
+  const saveDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -111,7 +142,84 @@ export default function StudioSetupPage() {
 
   const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
 
+  const stepValidationError = (() => {
+    switch (currentStep) {
+      case 0:
+        return validateCompanyStep(companyData)
+      case 1:
+        return validateBrandingStep(brandingData)
+      case 2:
+        return validateDomainStep(domainData)
+      case 3:
+        return validatePaymentStep(paymentData)
+      default:
+        return null
+    }
+  })()
+
+  const saveDraft = useCallback(() => {
+    void fetch("/api/studio/setup", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        currentStep,
+        companyData,
+        brandingData,
+        domainData,
+        paymentData,
+      }),
+    }).catch(() => {})
+  }, [currentStep, companyData, brandingData, domainData, paymentData])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch("/api/studio/setup", { credentials: "include" })
+        if (!res.ok || cancelled) return
+        const data = (await res.json()) as { draft?: Record<string, unknown> | null }
+        const d = data.draft
+        if (!d || cancelled) return
+        if (typeof d.currentStep === "number" && d.currentStep >= 0 && d.currentStep < SETUP_STEPS.length) {
+          setCurrentStep(d.currentStep)
+        }
+        if (d.companyData && typeof d.companyData === "object") {
+          setCompanyData((prev) => ({ ...prev, ...(d.companyData as typeof prev) }))
+        }
+        if (d.brandingData && typeof d.brandingData === "object") {
+          setBrandingData((prev) => ({ ...prev, ...(d.brandingData as typeof prev) }))
+        }
+        if (d.domainData && typeof d.domainData === "object") {
+          setDomainData((prev) => ({ ...prev, ...(d.domainData as typeof prev) }))
+        }
+        if (d.paymentData && typeof d.paymentData === "object") {
+          setPaymentData((prev) => ({ ...prev, ...(d.paymentData as typeof prev) }))
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setDraftHydrated(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!draftHydrated) return
+    if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current)
+    saveDraftTimer.current = setTimeout(() => {
+      saveDraft()
+    }, 500)
+    return () => {
+      if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current)
+    }
+  }, [draftHydrated, saveDraft])
+
   const handleNext = () => {
+    if (stepValidationError) return
     if (currentStep < SETUP_STEPS.length - 1) {
       setCurrentStep(currentStep + 1)
     }
@@ -234,15 +342,16 @@ export default function StudioSetupPage() {
   }
 
   const canProceed = () => {
+    if (stepValidationError) return false
     switch (currentStep) {
       case 0:
-        return companyData.companyName && companyData.email
+        return Boolean(companyData.companyName?.trim() && companyData.email?.trim())
       case 1:
-        return brandingData.platformName && brandingData.primaryColor
+        return Boolean(brandingData.platformName?.trim() && brandingData.primaryColor)
       case 2:
-        return domainData.customDomain || domainData.skipDomain
+        return Boolean(domainData.skipDomain || domainData.customDomain?.trim())
       case 3:
-        return paymentData.gateway || paymentData.skipPayment
+        return Boolean(paymentData.skipPayment || paymentData.gateway)
       default:
         return true
     }
@@ -253,10 +362,27 @@ export default function StudioSetupPage() {
       {/* Header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-4xl mx-auto px-6 py-6">
-          <h1 className="text-2xl font-bold text-foreground">Setup Your Platform</h1>
-          <p className="text-muted-foreground mt-1">
-            Complete these steps to configure your white-label streaming platform
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Setup Your Platform</h1>
+              <p className="text-muted-foreground mt-1">
+                Complete these steps to configure your white-label streaming platform
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="shrink-0 bg-transparent" onClick={() => router.push("/studio")}>
+              Exit setup
+            </Button>
+          </div>
+
+          {upgraded && (
+            <Alert className="mt-4 border-primary/30 bg-primary/5">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              <AlertDescription>
+                Your Studio subscription is active. Finish setup to configure branding and domain—your progress is saved
+                automatically.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Progress */}
           <div className="mt-6">
@@ -315,6 +441,9 @@ export default function StudioSetupPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {stepValidationError && currentStep === 0 && (
+                <p className="text-sm text-destructive">{stepValidationError}</p>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="companyName">Company Name *</Label>
@@ -376,14 +505,26 @@ export default function StudioSetupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="website">Company Website</Label>
-                <Input
-                  id="website"
-                  type="url"
-                  value={companyData.website}
-                  onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
-                  placeholder="https://yourcompany.com"
-                  className="bg-secondary border-0"
-                />
+                <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
+                  <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
+                    https://
+                  </span>
+                  <Input
+                    id="website"
+                    type="text"
+                    value={companyData.website.replace(/^https?:\/\//i, "").replace(/\/.*$/, "")}
+                    onChange={(e) => {
+                      const host = e.target.value.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+                      setCompanyData({
+                        ...companyData,
+                        website: host ? `https://${host}` : "",
+                      })
+                    }}
+                    placeholder="yourcompany.com"
+                    className="border-0 rounded-none bg-transparent focus-visible:ring-0"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Public site for your company (optional).</p>
               </div>
             </CardContent>
           </Card>
@@ -402,6 +543,9 @@ export default function StudioSetupPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {stepValidationError && currentStep === 1 && (
+                <p className="text-sm text-destructive">{stepValidationError}</p>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="platformName">Platform Name *</Label>
                 <Input
@@ -560,46 +704,49 @@ export default function StudioSetupPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {stepValidationError && currentStep === 2 && (
+                <p className="text-sm text-destructive">{stepValidationError}</p>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="customDomain">Your Custom Domain</Label>
-                <Input
-                  id="customDomain"
-                  value={domainData.customDomain}
-                  onChange={(e) =>
-                    setDomainData({
-                      ...domainData,
-                      customDomain: e.target.value,
-                      skipDomain: false,
-                    })
-                  }
-                  placeholder="live.yourcompany.com"
-                  className="bg-secondary border-0"
-                  disabled={domainData.skipDomain}
-                />
+                <Label htmlFor="customDomain">Your site on the web</Label>
+                <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
+                  <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
+                    https://
+                  </span>
+                  <Input
+                    id="customDomain"
+                    value={domainData.customDomain}
+                    onChange={(e) =>
+                      setDomainData({
+                        ...domainData,
+                        customDomain: e.target.value.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, ""),
+                        skipDomain: false,
+                      })
+                    }
+                    placeholder="yourcompany.com"
+                    className="border-0 rounded-none bg-transparent focus-visible:ring-0"
+                    disabled={domainData.skipDomain}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Use a subdomain like live.yourcompany.com or streaming.yourcompany.com
+                  Use your main domain (e.g. yourcompany.com). DNS steps for @ and www are shown below.
                 </p>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div className="space-y-0.5">
                     <Label className="text-base">Cloudflare Auto-Setup</Label>
                     <p className="text-xs text-muted-foreground">
                       Automatically configure DNS records if your domain is on Cloudflare
                     </p>
                   </div>
-                  <button
-                    onClick={() => setDomainData({ ...domainData, useCloudflare: !domainData.useCloudflare })}
-                    disabled={domainData.skipDomain || !domainData.customDomain}
-                    className={`h-6 w-11 rounded-full transition-colors relative ${
-                      domainData.useCloudflare ? "bg-primary" : "bg-secondary"
-                    } ${(domainData.skipDomain || !domainData.customDomain) ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    <div className={`h-4 w-4 rounded-full bg-white absolute top-1 transition-all ${
-                      domainData.useCloudflare ? "left-6" : "left-1"
-                    }`} />
-                  </button>
+                  <Switch
+                    checked={domainData.useCloudflare}
+                    onCheckedChange={(checked) => setDomainData({ ...domainData, useCloudflare: checked })}
+                    disabled={domainData.skipDomain || !domainData.customDomain?.trim()}
+                    className="shrink-0 ring-2 ring-white/80 border border-white/50 data-[state=unchecked]:bg-input/90"
+                  />
                 </div>
 
                 {domainData.useCloudflare && !domainData.skipDomain && (
@@ -607,7 +754,17 @@ export default function StudioSetupPage() {
                     {cfStep === 1 ? (
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label>Cloudflare API Token</Label>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Label>Cloudflare API Token</Label>
+                            <Link
+                              href="https://dash.cloudflare.com/profile/api-tokens"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary underline underline-offset-4"
+                            >
+                              Create / manage API tokens
+                            </Link>
+                          </div>
                           <Input
                             type="password"
                             value={domainData.cfApiToken}
@@ -704,14 +861,18 @@ export default function StudioSetupPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                Payment Gateway
+                Payment preference
               </CardTitle>
               <CardDescription>
-                Connect a payment gateway to collect payments from your users. You'll need API keys from your gateway
-                provider.
+                Platform billing (subscriptions, wallet top-ups) uses the payment gateways your administrator enables.
+                Choose a default gateway for your studio account—you will add API keys later under Settings if
+                required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {stepValidationError && currentStep === 3 && (
+                <p className="text-sm text-destructive">{stepValidationError}</p>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   {
@@ -786,8 +947,8 @@ export default function StudioSetupPage() {
 
               {paymentData.skipPayment && (
                 <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded">
-                  Your users won't be able to make online payments until you configure a gateway. You can add wallet
-                  credits manually instead.
+                  You can set a preferred gateway later under Studio settings. Platform-wide payments still use the
+                  administrator&apos;s configured gateways.
                 </p>
               )}
             </CardContent>

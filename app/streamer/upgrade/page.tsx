@@ -18,7 +18,7 @@ import { getPlatformARecordDisplay, getPlatformCnameDisplay } from "@/lib/platfo
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StreamerUpgradePage() {
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading, refreshUser } = useAuth()
   const router = useRouter()
   const [studioUpgradeOpen, setStudioUpgradeOpen] = useState(false)
   const { data } = useSWR(user?.role === "streamer" ? "/api/settings" : null, fetcher)
@@ -87,7 +87,10 @@ export default function StreamerUpgradePage() {
           onOpenChange={setStudioUpgradeOpen}
           pricePaisa={subscription.pricePaisa}
           walletBalancePaise={walletBalancePaise}
-          onPaidSuccess={() => router.push("/upgrade/studio/success?upgraded=1")}
+          onPaidSuccess={async () => {
+            await refreshUser()
+            router.push("/studio/setup?upgraded=1")
+          }}
         />
       ) : null}
 

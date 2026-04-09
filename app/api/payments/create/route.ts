@@ -34,7 +34,20 @@ export const POST = withAuth(async (user, request) => {
     if (!sub || !sub.enabled || sub.pricePaisa <= 0) {
       return jsonError("Studio annual subscription is not available for purchase right now", 400)
     }
-    amountInPaise = Math.round(sub.pricePaisa)
+    const studioBasePaise = Math.round(sub.pricePaisa)
+    const baseRupees = studioBasePaise / 100
+    const gstSettings = await getPlatformGSTSettings()
+    const gstConfig = toGSTCalculationConfig(gstSettings)
+    const breakdown = calculatePriceBreakdown(baseRupees, gstConfig)
+    const totalPaise = Math.round(breakdown.totalPayable * 100)
+    const gstAmountPaise = Math.round(breakdown.gstAmount * 100)
+    amountInPaise = totalPaise
+    orderMetadata = {
+      studioBasePaise,
+      gstAmountPaise,
+      gstPercentage: breakdown.gstPercentage,
+      gstEnabled: breakdown.gstEnabled,
+    }
   } else if (orderType === "wallet_recharge") {
     if (role !== "streamer" && role !== "studio") {
       return jsonError("Wallet recharge is only available for streamer or studio accounts", 403)

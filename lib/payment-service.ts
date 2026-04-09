@@ -139,6 +139,7 @@ export async function verifyInstamojoPayment(paymentRequestId: string) {
 
 type WalletOrderMetadata = {
   walletCreditPaise?: number
+  studioBasePaise?: number
   gstAmountPaise?: number
   gstPercentage?: number
   gstEnabled?: boolean
@@ -150,6 +151,7 @@ function parseWalletOrderMetadata(raw: unknown): WalletOrderMetadata {
   const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined)
   return {
     walletCreditPaise: n(o.walletCreditPaise),
+    studioBasePaise: n(o.studioBasePaise),
     gstAmountPaise: n(o.gstAmountPaise),
     gstPercentage: n(o.gstPercentage),
     gstEnabled: typeof o.gstEnabled === "boolean" ? o.gstEnabled : undefined,
@@ -198,9 +200,14 @@ export async function processSuccessfulPayment(params: {
   let walletCreditPaise = totalPaise
   let gstAmountPaise = 0
   let gstPercentage = 0
+  let studioBasePaise = 0
   if (orderType === "wallet_recharge") {
     walletCreditPaise = meta.walletCreditPaise ?? totalPaise
     gstAmountPaise = meta.gstAmountPaise ?? Math.max(0, totalPaise - walletCreditPaise)
+    gstPercentage = meta.gstPercentage ?? 0
+  } else if (orderType === "studio_upgrade") {
+    studioBasePaise = meta.studioBasePaise ?? Math.max(0, totalPaise - (meta.gstAmountPaise ?? 0))
+    gstAmountPaise = meta.gstAmountPaise ?? Math.max(0, totalPaise - studioBasePaise)
     gstPercentage = meta.gstPercentage ?? 0
   }
 
@@ -312,11 +319,81 @@ export async function processSuccessfulPayment(params: {
 
   if (orderType === "studio_upgrade") {
     await sql`UPDATE users SET role = 'studio', updated_at = NOW() WHERE id = ${params.userId}`
+    await sql`
+      INSERT INTO studio_branding (user_id, platform_name)
+      VALUES (${params.userId}, 'My Studio')
+      ON CONFLICT (user_id) DO NOTHING
+    `
+
+    if (gstAmountPaise > 0 && studioBasePaise > 0) {
+      const platform = await getPlatformGSTSettings()
+      const userRows = await sql`SELECT name, email, role FROM users WHERE id = ${params.userId} LIMIT 1`
+      const u =
+        userRows.length > 0
+          ? (userRows[0] as { name: string; email: string; role: string })
+          : { name: "User", email: "", role: "streamer" }
+      const { cgstAmount, sgstAmount, igstAmount } = splitGST(gstAmountPaise, false)
+      const issuerAddr = [platform.businessAddress, platform.city, platform.state, platform.pincode]
+        .filter(Boolean)
+        .join(", ")
+      const invNum = invoiceNumberFromOrderId(params.orderId)
+
+      const invRows = await sql`
+        INSERT INTO invoices (
+          invoice_number,
+          invoice_type,
+          issuer_type,
+          issuer_business_name,
+          issuer_gst_number,
+          issuer_address,
+          recipient_id,
+          recipient_type,
+          recipient_name,
+          recipient_email,
+          base_amount,
+          gst_percentage,
+          cgst_amount,
+          sgst_amount,
+          igst_amount,
+          total_gst_amount,
+          total_amount,
+          payment_id,
+          payment_method,
+          payment_date,
+          status
+        )
+        VALUES (
+          ${invNum},
+          'tax_invoice',
+          'platform',
+          ${platform.businessName},
+          ${platform.gstNumber || null},
+          ${issuerAddr || null},
+          ${params.userId},
+          ${u.role},
+          ${u.name},
+          ${u.email},
+          ${studioBasePaise},
+          ${gstPercentage},
+          ${cgstAmount},
+          ${sgstAmount},
+          ${igstAmount},
+          ${gstAmountPaise},
+          ${totalPaise},
+          ${paymentId},
+          ${params.gateway},
+          NOW(),
+          'paid'
+        )
+        RETURNING id
+      `
+      invoiceId = (invRows[0] as Record<string, unknown>).id as string
+    }
   }
 
   const notifMessage =
     orderType === "studio_upgrade"
-      ? "Welcome to Studio! Your account has been upgraded. Open the Studio dashboard to set up your custom domain and branding."
+      ? "Welcome to Studio! Complete setup under Studio → Setup Wizard to configure branding and your domain."
       : orderType === "wallet_recharge"
         ? `₹${(walletCreditPaise / 100).toFixed(2)} has been added to your wallet.`
         : `Your payment of Rs ${(totalPaise / 100).toFixed(2)} has been processed successfully.`

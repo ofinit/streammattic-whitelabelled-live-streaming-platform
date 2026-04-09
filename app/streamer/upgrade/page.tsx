@@ -3,7 +3,6 @@
 import { useState } from "react"
 import useSWR from "swr"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import { StudioUpgradeCallout } from "@/components/streamer/studio-upgrade-callout"
 import { StudioUpgradeCheckoutDialog } from "@/components/streamer/studio-upgrade-checkout-dialog"
@@ -18,8 +17,7 @@ import { getPlatformARecordDisplay, getPlatformCnameDisplay } from "@/lib/platfo
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StreamerUpgradePage() {
-  const { user, isLoading: authLoading, refreshUser } = useAuth()
-  const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
   const [studioUpgradeOpen, setStudioUpgradeOpen] = useState(false)
   const { data } = useSWR(user?.role === "streamer" ? "/api/settings" : null, fetcher)
   const settings = (data?.settings ?? []) as { key: string; value: unknown }[]
@@ -87,9 +85,8 @@ export default function StreamerUpgradePage() {
           onOpenChange={setStudioUpgradeOpen}
           pricePaisa={subscription.pricePaisa}
           walletBalancePaise={walletBalancePaise}
-          onPaidSuccess={async () => {
-            await refreshUser()
-            router.push("/studio/setup?upgraded=1")
+          onPaidSuccess={() => {
+            window.location.assign("/studio/setup?upgraded=1")
           }}
         />
       ) : null}

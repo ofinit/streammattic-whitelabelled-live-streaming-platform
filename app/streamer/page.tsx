@@ -39,7 +39,7 @@ type DashboardStats = {
 }
 
 export default function StreamerDashboard() {
-  const { user, isLoading: authLoading, refreshUser } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [studioUpgradeOpen, setStudioUpgradeOpen] = useState(false)
 
@@ -260,9 +260,8 @@ export default function StreamerDashboard() {
                 onOpenChange={setStudioUpgradeOpen}
                 pricePaisa={studioSubscription.pricePaisa}
                 walletBalancePaise={walletBalancePaise}
-                onPaidSuccess={async () => {
-                  await refreshUser()
-                  router.push("/studio/setup?upgraded=1")
+                onPaidSuccess={() => {
+                  window.location.assign("/studio/setup?upgraded=1")
                 }}
               />
             ) : null}

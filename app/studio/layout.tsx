@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -9,22 +9,48 @@ import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
 import { cn } from "@/lib/utils"
 import type { Studio } from "@/lib/types"
+import { Loader2 } from "lucide-react"
 
 function StudioLayoutInner({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
+  const { user, isAuthenticated, isLoading, isImpersonating, refreshUser } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const { isCollapsed } = useSidebar()
   const [hasCompletedSetup, setHasCompletedSetup] = useState(true)
+  const setupRoleProbeRef = useRef(false)
+
+  useEffect(() => {
+    if (pathname !== "/studio/setup") {
+      setupRoleProbeRef.current = false
+    }
+  }, [pathname])
 
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) {
-      router.push("/")
-    } else if (user?.role !== "studio") {
-      router.push("/")
+      router.replace("/")
+      return
     }
-  }, [isLoading, isAuthenticated, user, router])
+    if (user?.role === "studio") return
+    if (pathname === "/studio/setup") {
+      if (setupRoleProbeRef.current) return
+      setupRoleProbeRef.current = true
+      void fetch("/api/auth/me", { credentials: "include" })
+        .then((r) => r.json())
+        .then((data: { user?: { role?: string } | null }) => {
+          if (data.user?.role === "studio") {
+            void refreshUser()
+          } else {
+            router.replace("/streamer")
+          }
+        })
+        .catch(() => {
+          router.replace("/streamer")
+        })
+      return
+    }
+    router.replace("/")
+  }, [isLoading, isAuthenticated, user?.role, pathname, router, refreshUser])
 
   useEffect(() => {
     if (user?.role === "studio") {
@@ -36,7 +62,19 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
 
   if (isLoading) return null
 
-  if (!isAuthenticated || user?.role !== "studio") {
+  if (!isAuthenticated) {
+    return null
+  }
+
+  if (user?.role !== "studio") {
+    if (pathname === "/studio/setup") {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground text-center">Loading Studio setup…</p>
+        </div>
+      )
+    }
     return null
   }
 

@@ -1,19 +1,16 @@
 "use client"
 
 import { useEffect, useState, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
 
 type PaymentStatus = "processing" | "success" | "failed" | "cancelled"
 
 function PaymentCallbackContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const { refreshUser } = useAuth()
   const [status, setStatus] = useState<PaymentStatus>("processing")
   const [message, setMessage] = useState("")
   const [transactionId, setTransactionId] = useState("")
@@ -54,8 +51,7 @@ function PaymentCallbackContent() {
           })
           if (res.ok) {
             if (flow === "studio_upgrade") {
-              await refreshUser()
-              router.replace("/studio/setup?upgraded=1")
+              window.location.replace("/studio/setup?upgraded=1")
               return
             }
             setStatus("success")
@@ -84,7 +80,7 @@ function PaymentCallbackContent() {
     }
 
     verifyPayment()
-  }, [searchParams, router, refreshUser])
+  }, [searchParams])
 
   const statusConfig = {
     processing: {

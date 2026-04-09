@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -42,8 +43,12 @@ import {
   validatePaymentStep,
 } from "@/lib/studio-setup-validation"
 import { Switch } from "@/components/ui/switch"
+import { StudioUpgradeCheckoutDialog } from "@/components/streamer/studio-upgrade-checkout-dialog"
+import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 
 export const dynamic = "force-dynamic"
+
+const settingsFetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const SETUP_STEPS = [
   { id: "company", label: "Company Profile", icon: Building2 },
@@ -101,7 +106,22 @@ export default function StudioSetupPage() {
   const upgraded = searchParams.get("upgraded") === "1"
   const { user } = useAuth()
   const studioUser = user as unknown as Studio
+  const isStreamerSetup = user?.role === "streamer"
 
+  const settingsSwrKey = isStreamerSetup ? "/api/settings" : null
+  const { data: settingsData } = useSWR(settingsSwrKey, settingsFetcher, { refreshInterval: 60_000 })
+  const settingsRows = (settingsData?.settings ?? []) as { key: string; value: unknown }[]
+  const studioSubRaw = settingsRows.find((s) => s.key === "studio_annual_subscription")?.value
+  const studioSubscription = parseStudioAnnualSubscription(studioSubRaw)
+  const studioUpgradeAvailable = Boolean(
+    studioSubscription?.enabled && studioSubscription.pricePaisa > 0,
+  )
+
+  const dashSwrKey = isStreamerSetup ? "/api/streamer/dashboard" : null
+  const { data: dashData } = useSWR(dashSwrKey, settingsFetcher, { refreshInterval: 30_000 })
+  const walletBalancePaise = Number((dashData?.stats as { walletBalance?: number } | undefined)?.walletBalance ?? 0)
+
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [draftHydrated, setDraftHydrated] = useState(false)
   const saveDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -264,6 +284,10 @@ export default function StudioSetupPage() {
   }
 
   const handleComplete = async () => {
+    if (user?.role === "streamer") {
+      setCheckoutOpen(true)
+      return
+    }
     setIsSubmitting(true)
     try {
       const res = await fetch("/api/studio/setup", {
@@ -369,10 +393,26 @@ export default function StudioSetupPage() {
                 Complete these steps to configure your white-label streaming platform
               </p>
             </div>
-            <Button type="button" variant="outline" className="shrink-0 bg-transparent" onClick={() => router.push("/studio")}>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 bg-transparent"
+              onClick={() => router.push(isStreamerSetup ? "/streamer" : "/studio")}
+            >
               Exit setup
             </Button>
           </div>
+
+          {isStreamerSetup && (
+            <Alert className="mt-4 border-primary/30 bg-primary/5">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription>
+                You&apos;re setting up Studio before checkout. Complete each step, then use{" "}
+                <strong>Pay &amp; activate Studio</strong> on the last step—after payment, finish with{" "}
+                <strong>Complete setup</strong> to save branding and domain to your account.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {upgraded && (
             <Alert className="mt-4 border-primary/30 bg-primary/5">
@@ -951,9 +991,34 @@ export default function StudioSetupPage() {
                   administrator&apos;s configured gateways.
                 </p>
               )}
+
+              {isStreamerSetup && studioUpgradeAvailable && studioSubscription ? (
+                <div className="rounded-lg border border-primary/40 bg-primary/5 p-4 space-y-3">
+                  <p className="font-medium text-sm">Studio subscription</p>
+                  <p className="text-sm text-muted-foreground">
+                    Pay the annual Studio fee to activate your account. You can use wallet balance (if sufficient),
+                    Razorpay, or Instamojo.
+                  </p>
+                  <Button type="button" className="w-full sm:w-auto" onClick={() => setCheckoutOpen(true)}>
+                    Open checkout
+                  </Button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         )}
+
+        {isStreamerSetup && studioUpgradeAvailable && studioSubscription ? (
+          <StudioUpgradeCheckoutDialog
+            open={checkoutOpen}
+            onOpenChange={setCheckoutOpen}
+            pricePaisa={studioSubscription.pricePaisa}
+            walletBalancePaise={walletBalancePaise}
+            onPaidSuccess={() => {
+              window.location.assign("/studio/setup?upgraded=1")
+            }}
+          />
+        ) : null}
 
         {/* Navigation */}
         <div className="flex justify-between mt-8">
@@ -967,13 +1032,18 @@ export default function StudioSetupPage() {
               Next
               <ChevronRight className="h-4 w-4" />
             </Button>
+          ) : isStreamerSetup ? (
+            <Button type="button" onClick={() => setCheckoutOpen(true)} disabled={!canProceed()} className="gap-2">
+              Pay &amp; activate Studio
+              <CreditCard className="h-4 w-4" />
+            </Button>
           ) : (
             <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="gap-2">
               {isSubmitting ? (
                 <>Completing Setup...</>
               ) : (
                 <>
-                  Complete Setup
+                  Complete setup
                   <Check className="h-4 w-4" />
                 </>
               )}

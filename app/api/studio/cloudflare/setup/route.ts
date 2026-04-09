@@ -66,7 +66,7 @@ export const POST = withRole(["studio", "admin"], async (user, request) => {
 })
 
 // Helper to list zones for the UI
-export const GET = withRole(["studio", "admin"], async (user, request) => {
+export const GET = withRole(["studio", "streamer", "admin"], async (user, request) => {
   const url = new URL(request.url)
   const apiToken = url.searchParams.get("apiToken")
 

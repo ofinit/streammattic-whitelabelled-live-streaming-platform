@@ -64,28 +64,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/auth/me")
       if (res.ok) {
         const data = await res.json()
-        if (data.user) {
-          setUser(data.user)
-
-          // Restore impersonation state from sessionStorage
-          if (typeof window !== "undefined") {
-            const stored = sessionStorage.getItem(IMPERSONATE_KEY)
-            if (stored) {
-              try {
-                const imp = JSON.parse(stored)
-                setOriginalUser(imp.originalUser)
-                setIsImpersonating(true)
-                setImpersonatedBy(imp.impersonatedBy)
-                // The "user" is the impersonated user, which we already set
-                // But we need to use the impersonated user from storage
-                if (imp.impersonatedUser) {
-                  setUser(imp.impersonatedUser)
-                }
-              } catch { /* ignore */ }
-            }
-          }
+        if (!data.user) {
+          setUser(null)
+          setOriginalUser(null)
+          setIsImpersonating(false)
+          setImpersonatedBy(null)
           return
         }
+
+        const api = data.user as AuthUser
+
+        if (typeof window !== "undefined") {
+          const stored = sessionStorage.getItem(IMPERSONATE_KEY)
+          if (stored) {
+            try {
+              const imp = JSON.parse(stored) as {
+                originalUser?: AuthUser
+                impersonatedBy?: string
+                impersonatedUser?: AuthUser
+              }
+              const target = imp.impersonatedUser
+
+              // Real session is the impersonated account: always use live API user (fixes stale role after e.g. studio upgrade)
+              if (target?.id === api.id) {
+                setOriginalUser(imp.originalUser ?? null)
+                setIsImpersonating(true)
+                setImpersonatedBy(imp.impersonatedBy ?? null)
+                setUser(api)
+                return
+              }
+
+              // Admin session viewing as another user
+              if (api.role === "admin" && target) {
+                setOriginalUser(imp.originalUser ?? null)
+                setIsImpersonating(true)
+                setImpersonatedBy(imp.impersonatedBy ?? null)
+                setUser(target)
+                return
+              }
+
+              sessionStorage.removeItem(IMPERSONATE_KEY)
+            } catch {
+              sessionStorage.removeItem(IMPERSONATE_KEY)
+            }
+          }
+        }
+
+        setUser(api)
+        setOriginalUser(null)
+        setIsImpersonating(false)
+        setImpersonatedBy(null)
+        return
       }
       setUser(null)
     } catch {

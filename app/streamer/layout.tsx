@@ -22,6 +22,10 @@ function StreamerDashboardLayoutInner({ children }: { children: React.ReactNode 
     if (isDemoPage || isLoading) return
     if (!isAuthenticated) {
       router.push("/")
+    } else if (user?.role === "studio") {
+      router.replace("/studio")
+    } else if (user?.role === "admin") {
+      router.replace("/admin")
     } else if (user?.role !== "streamer") {
       router.push("/")
     }

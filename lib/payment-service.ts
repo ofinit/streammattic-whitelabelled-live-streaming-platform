@@ -186,7 +186,10 @@ export async function processSuccessfulPayment(params: {
   }
 
   const order = updatedOrders[0] as Record<string, unknown>
-  const orderType = order.order_type as string
+  const orderType =
+    (typeof order.order_type === "string" ? order.order_type : null) ??
+    (typeof order.orderType === "string" ? order.orderType : null) ??
+    ""
   const totalPaise = Number(order.amount ?? params.amount)
   const meta = parseWalletOrderMetadata(order.metadata)
 

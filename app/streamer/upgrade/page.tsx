@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import useSWR from "swr"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import { StudioUpgradeCallout } from "@/components/streamer/studio-upgrade-callout"
-import { StudioUpgradeCheckoutDialog } from "@/components/streamer/studio-upgrade-checkout-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -18,14 +17,11 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StreamerUpgradePage() {
   const { user, isLoading: authLoading } = useAuth()
-  const [studioUpgradeOpen, setStudioUpgradeOpen] = useState(false)
+  const router = useRouter()
   const { data } = useSWR(user?.role === "streamer" ? "/api/settings" : null, fetcher)
   const settings = (data?.settings ?? []) as { key: string; value: unknown }[]
   const subRaw = settings.find((s) => s.key === "studio_annual_subscription")?.value
   const subscription = parseStudioAnnualSubscription(subRaw)
-  const { data: dashboardData } = useSWR(user?.role === "streamer" ? "/api/streamer/dashboard" : null, fetcher)
-  const stats = dashboardData?.stats as { walletBalance?: number } | undefined
-  const walletBalancePaise = Number(stats?.walletBalance ?? 0)
   const salesEmail = process.env.NEXT_PUBLIC_STUDIO_SALES_EMAIL
 
   const studioUpgradeAvailable = Boolean(subscription?.enabled && subscription.pricePaisa > 0)
@@ -77,19 +73,8 @@ export default function StreamerUpgradePage() {
         salesEmail={salesEmail}
         variant="page"
         upgradeAvailable={studioUpgradeAvailable}
-        onUpgradeClick={() => setStudioUpgradeOpen(true)}
+        onUpgradeClick={() => router.push("/studio/setup")}
       />
-      {studioUpgradeAvailable && subscription ? (
-        <StudioUpgradeCheckoutDialog
-          open={studioUpgradeOpen}
-          onOpenChange={setStudioUpgradeOpen}
-          pricePaisa={subscription.pricePaisa}
-          walletBalancePaise={walletBalancePaise}
-          onPaidSuccess={() => {
-            window.location.assign("/studio/setup?upgraded=1")
-          }}
-        />
-      ) : null}
 
       <Card className="border-border bg-card">
         <CardHeader>

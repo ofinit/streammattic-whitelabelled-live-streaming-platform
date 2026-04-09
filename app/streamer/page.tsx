@@ -20,7 +20,6 @@ import { Radio, Wallet, Eye, Calendar, Package, Plus, Play, AlertTriangle } from
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { StudioUpgradeCallout } from "@/components/streamer/studio-upgrade-callout"
-import { StudioUpgradeCheckoutDialog } from "@/components/streamer/studio-upgrade-checkout-dialog"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -41,8 +40,6 @@ type DashboardStats = {
 export default function StreamerDashboard() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const [studioUpgradeOpen, setStudioUpgradeOpen] = useState(false)
-
   const swrKey =
     user && (user.role === "streamer" || user.role === "admin") ? "/api/streamer/dashboard" : null
 
@@ -252,19 +249,8 @@ export default function StreamerDashboard() {
               salesEmail={studioSalesEmail}
               variant="dashboard"
               upgradeAvailable={studioUpgradeAvailable}
-              onUpgradeClick={() => setStudioUpgradeOpen(true)}
+              onUpgradeClick={() => router.push("/studio/setup")}
             />
-            {studioUpgradeAvailable && studioSubscription ? (
-              <StudioUpgradeCheckoutDialog
-                open={studioUpgradeOpen}
-                onOpenChange={setStudioUpgradeOpen}
-                pricePaisa={studioSubscription.pricePaisa}
-                walletBalancePaise={walletBalancePaise}
-                onPaidSuccess={() => {
-                  window.location.assign("/studio/setup?upgraded=1")
-                }}
-              />
-            ) : null}
           </>
         )}
 

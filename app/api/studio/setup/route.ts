@@ -20,7 +20,7 @@ function mergeDraft(prev: Record<string, unknown> | null, patch: StudioSetupDraf
   return base
 }
 
-export const GET = withRole(["studio"], async (user) => {
+export const GET = withRole(["studio", "streamer", "admin"], async (user) => {
   try {
     const sql = getDb()
     const userId = user.id as string
@@ -39,7 +39,7 @@ export const GET = withRole(["studio"], async (user) => {
   }
 })
 
-export const PATCH = withRole(["studio"], async (user, request) => {
+export const PATCH = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
     const body = (await request.json()) as StudioSetupDraft
     const sql = getDb()

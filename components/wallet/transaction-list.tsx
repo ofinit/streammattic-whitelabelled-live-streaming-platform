@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, CreditCard, Wand2, Globe, Server } from "lucide-react"
 import { formatWalletTransactionCategory } from "@/lib/wallet-category-labels"
+import {
+  getWalletTransactionPrimaryLabel,
+  getWalletTransactionReasonLine,
+  isAdminManualWalletTransaction,
+} from "@/lib/wallet-transaction-display"
 
 interface TransactionListProps {
   transactions: WalletTransaction[]
@@ -42,6 +47,11 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
       {transactions.map((txn) => {
         const Icon = categoryIcons[txn.category] || Wallet
         const isCredit = txn.type === "credit"
+        const primary = getWalletTransactionPrimaryLabel(txn)
+        const reasonLine = getWalletTransactionReasonLine(txn)
+        const badgeLabel = isAdminManualWalletTransaction(txn)
+          ? "Admin"
+          : formatWalletTransactionCategory(txn.category)
 
         return (
           <div
@@ -59,11 +69,17 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="font-medium text-foreground truncate">{txn.description}</p>
+                <p className="font-medium text-foreground truncate">{primary}</p>
               </div>
+              {reasonLine && (
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                  <span className="font-medium text-foreground/80">Reason: </span>
+                  {reasonLine}
+                </p>
+              )}
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary" className="text-xs">
-                  {formatWalletTransactionCategory(txn.category)}
+                  {badgeLabel}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {format(new Date(txn.createdAt), "MMM d, yyyy 'at' h:mm a")}
@@ -75,7 +91,9 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
               <p className={cn("font-semibold tabular-nums", isCredit ? "text-emerald-500" : "text-red-500")}>
                 {isCredit ? "+" : "-"}₹{(txn.amount / 100).toLocaleString("en-IN")}
               </p>
-              <p className="text-xs text-muted-foreground">Bal: ₹{(txn.balanceAfter / 100).toLocaleString("en-IN")}</p>
+              <p className="text-xs text-muted-foreground">
+                Bal: ₹{((txn.balanceAfter ?? 0) / 100).toLocaleString("en-IN")}
+              </p>
             </div>
           </div>
         )

@@ -47,11 +47,17 @@ export const GET = withAuth(async (user, _request) => {
     },
     transactions: transactionRows.map((t) => ({
       id: t.id,
+      walletId: t.wallet_id,
+      userId: t.user_id,
       type: t.type,
       amount: Number(t.amount),
       currency: t.currency,
       category: t.category,
+      description: t.description ?? "",
+      balanceBefore: Number(t.balance_before ?? 0),
+      balanceAfter: Number(t.balance_after ?? 0),
       reason: t.reason,
+      performedBy: t.performed_by,
       status: t.status,
       createdAt: t.created_at
     }))

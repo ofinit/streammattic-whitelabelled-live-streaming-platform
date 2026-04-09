@@ -5,7 +5,7 @@ export const WALLET_TRANSACTION_CATEGORY_LABELS: Record<string, string> = {
   service_charge: "Service Charge",
   order_refund: "Refund",
   adjustment: "Adjustment",
-  manual_adjustment: "Manual Adjustment",
+  manual_adjustment: "Admin adjustment",
   payment_recovery: "Payment Recovery",
   compensation: "Compensation",
   correction: "Correction",

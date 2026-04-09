@@ -31,6 +31,7 @@ import type { ParsedValidityExtensions } from "@/lib/validity-extensions"
 import { validityCreditsForDuration } from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 const streamTypeInfo = [
   { key: "rtmp" as StreamTypeKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video },
@@ -227,23 +228,49 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
         </CardHeader>
         <CardContent>
           {enabledStreamTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No stream credit types are available right now. Ask your platform admin to enable at least one stream type
-              under Admin → Pricing.
+            <p className="text-sm text-muted-foreground mb-4">
+              No stream credit types are available for purchase right now. Ask your platform admin to enable at least one
+              stream type under Admin → Pricing. Your balances below still reflect any credits on your account.
             </p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {enabledStreamTypes.map(({ key, label, icon: Icon }) => (
-                <div key={key} className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
-                  <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-lg font-bold">{credits[key]}</p>
+          ) : null}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {streamTypeInfo.map(({ key, label, icon: Icon }) => {
+              const enabled = streamTypePricing[key].enabled
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg p-3 transition-colors",
+                    enabled
+                      ? "bg-secondary/50"
+                      : "bg-muted/20 opacity-70 border border-dashed border-border/80 text-muted-foreground",
+                  )}
+                  title={
+                    enabled
+                      ? undefined
+                      : "This stream type is disabled for new events. Balance is shown for your existing credits."
+                  }
+                >
+                  <Icon
+                    className={cn("h-5 w-5 shrink-0", enabled ? "text-muted-foreground" : "text-muted-foreground/70")}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
+                      <span className="truncate">{label}</span>
+                      {!enabled && (
+                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80 shrink-0">
+                          (disabled)
+                        </span>
+                      )}
+                    </p>
+                    <p className={cn("text-lg font-bold tabular-nums", !enabled && "text-muted-foreground")}>
+                      {credits[key]}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 

@@ -47,8 +47,9 @@ export function StudioUpgradeCallout({
             <div>
               <CardTitle className="text-lg sm:text-xl">Run your own white-label studio</CardTitle>
               <CardDescription className="text-sm sm:text-base">
-                Custom domain (e.g. www.yourbrand.com) with SSL and full white-label branding: logo, colors, and
-                platform name for viewers
+                Connect your domain (e.g. www.yourbrand.com) with our software and get full white-label branded website
+                with your logo, colors, contact details and platform name for viewers. We take care of hosting, SSL and
+                website maintenance.
               </CardDescription>
             </div>
           </div>

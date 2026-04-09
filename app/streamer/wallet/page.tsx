@@ -14,6 +14,7 @@ export default function StreamerWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [wallet, setWallet] = useState<any>(null)
+  const [summary, setSummary] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function StreamerWalletPage() {
       .then(res => res.json())
       .then(data => {
         if (data.wallet) setWallet(data.wallet)
+        if (data.summary) setSummary(data.summary)
         if (data.transactions) setTransactions(data.transactions)
       })
       .catch(console.error)
@@ -39,7 +41,10 @@ export default function StreamerWalletPage() {
   const walletSummary = {
     balance: wallet?.balance || 0,
     currency: wallet?.currency || "INR",
-    lastUpdated: wallet?.updatedAt
+    lastUpdated: wallet?.updatedAt,
+    totalCredits: summary?.monthlyCredits ?? 0,
+    totalDebits: summary?.monthlyDebits ?? 0,
+    pendingAmount: 0,
   }
 
   const lowBalance = (wallet?.balance || 0) < 50000

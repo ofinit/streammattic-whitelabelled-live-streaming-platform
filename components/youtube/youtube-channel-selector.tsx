@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Youtube, AlertCircle } from "lucide-react"
 import { ConnectYouTubeDialog } from "./connect-youtube-dialog"
+import { getYoutubeSettingsHref } from "@/lib/youtube-settings-path"
 import useSWR from "swr"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -97,13 +99,23 @@ export function YouTubeChannelSelector({
   const selectedChannel = channels.find((c) => c.id === selectedChannelId)
   const selectedChannelExpired = !!selectedChannel && selectedChannel.tokenStatus === "expired"
 
+  const settingsHref = getYoutubeSettingsHref(ownerType)
+
   if (channels.length === 0) {
     return (
       <div className="space-y-4">
         <Alert className="bg-muted/50 border-border">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No YouTube channels connected. Connect a channel to create broadcasts directly from StreamLivee.
+          <AlertDescription className="space-y-2">
+            <span className="block">
+              No YouTube channels connected. Connect a channel to create broadcasts directly from StreamLivee.
+            </span>
+            <span className="block text-sm">
+              <Link href={settingsHref} className="font-medium text-primary underline underline-offset-4">
+                Open YouTube settings
+              </Link>{" "}
+              to configure channels.
+            </span>
           </AlertDescription>
         </Alert>
 

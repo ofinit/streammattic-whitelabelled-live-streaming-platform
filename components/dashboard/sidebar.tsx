@@ -86,6 +86,7 @@ const studioNav: NavItem[] = [
   { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
+  { title: "YouTube Channels", href: "/studio/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
 
@@ -304,7 +305,12 @@ export function Sidebar() {
       case "admin":
         return adminNav
       case "studio": {
-        if (!youtubeConfigEnabled) return studioNav.filter((item) => item.href !== "/studio/settings/integrations")
+        if (!youtubeConfigEnabled) {
+          return studioNav.filter(
+            (item) =>
+              item.href !== "/studio/settings/integrations" && item.href !== "/studio/settings/youtube",
+          )
+        }
         return studioNav
       }
       case "streamer": {

@@ -160,26 +160,29 @@ export async function clearSessionCookie() {
 import { auth } from "@/auth"
 
 export async function getCurrentUser() {
-  // Check custom sm_session cookie first (set by /api/auth/login)
+  // Prefer NextAuth (JWT) when present — admin/main login uses signIn("credentials").
+  // Legacy sm_session from POST /api/auth/login must NOT override an active NextAuth session,
+  // or users stay "stuck" as the wrong role after signing in as admin.
+  const session = await auth()
+  if (session?.user?.id) {
+    const sql = getDb()
+    const rows = await sql`
+      SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared,
+             studio_subscription_expires_at, created_at, updated_at
+      FROM users
+      WHERE id = ${session.user.id}
+    `
+    if (rows.length === 0) return null
+    return toCamel(rows[0] as Record<string, unknown>)
+  }
+
   const sessionToken = await getSessionCookie()
   if (sessionToken) {
     const user = await getSessionUser(sessionToken)
     if (user) return user
   }
 
-  // Fallback: check NextAuth session
-  const session = await auth()
-  if (!session?.user?.id) return null
-
-  const sql = getDb()
-  const rows = await sql`
-    SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared,
-           studio_subscription_expires_at, created_at, updated_at
-    FROM users 
-    WHERE id = ${session.user.id}
-  `
-  if (rows.length === 0) return null
-  return toCamel(rows[0] as Record<string, unknown>)
+  return null
 }
 
 export async function requireAuth() {

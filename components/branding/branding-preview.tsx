@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import Head from "next/head"
 import type { Branding, BrandingService } from "@/lib/types"
-import { mockBranding } from "@/lib/mock-data"
+import { PLATFORM_LANDING_BRANDING } from "@/lib/platform-landing-defaults"
 import { BRANDING_PREVIEW_SESSION_KEY } from "@/lib/branding-preview-session"
 import { getThemeConfig } from "@/lib/landing-themes"
 
@@ -32,9 +32,9 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
     )
   }
 
-  const services = (branding.services || mockBranding.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
-  const stats = branding.stats || mockBranding.stats || []
-  const testimonial = (branding.testimonials || mockBranding.testimonials || [])[0]
+  const services = (branding.services || PLATFORM_LANDING_BRANDING.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
+  const stats = branding.stats || PLATFORM_LANDING_BRANDING.stats || []
+  const testimonial = (branding.testimonials || PLATFORM_LANDING_BRANDING.testimonials || [])[0]
   const theme = getThemeConfig(branding.selectedTheme)
   const fontName = theme.fontFamily.split(",")[0].replace(/'/g, "")
   const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`

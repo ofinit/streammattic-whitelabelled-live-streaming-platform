@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Radio, Eye, Clock, ExternalLink, StopCircle, RefreshCw } from "lucide-react"
 import { StreamHealthBadge } from "./stream-health-badge"
-import { mockEvents } from "@/lib/mock-data"
-import type { LiveEvent } from "@/lib/types"
+import type { EventStatus, LiveEvent, StreamType } from "@/lib/types"
 
-// Stream status shape matching the old StreamStatus interface (still mock data for now)
+// Stream status shape for admin monitor rows (metrics are approximate until wired to a streaming backend)
 interface StreamStatus {
   isLive: boolean
   viewers: number
@@ -21,7 +21,6 @@ interface StreamStatus {
   fps?: number
   health: "excellent" | "good" | "fair" | "poor"
 }
-import { Radio, Eye, Clock, ExternalLink, StopCircle, RefreshCw } from "lucide-react"
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
@@ -87,7 +86,33 @@ export function LiveStreamsMonitor({ refreshInterval = 5000 }: LiveStreamsMonito
 
   const fetchLiveStreams = async () => {
     try {
-      const liveEvents = mockEvents.filter((e) => e.status === "live")
+      const res = await fetch("/api/admin/events?status=live", { credentials: "include" })
+      if (!res.ok) {
+        setLiveStreams([])
+        return
+      }
+      const data = (await res.json()) as { events?: Record<string, unknown>[] }
+      const rows = data.events ?? []
+      const liveEvents: LiveEvent[] = rows.map((r) => {
+        const streamType = (r.streamType as string) || "rtmp"
+        const viewers = Number(r.viewers ?? r.currentViewers ?? 0)
+        return {
+          id: String(r.id),
+          userId: String(r.userId ?? ""),
+          title: String(r.title ?? ""),
+          streamType: streamType as StreamType,
+          status: (r.status as EventStatus) || "live",
+          maxViewers: Number(r.maxViewers ?? 0),
+          currentViewers: viewers,
+          totalViews: 0,
+          isPasswordProtected: false,
+          allowChat: true,
+          allowReactions: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          slug: r.slug as string | undefined,
+        }
+      })
       const streamsWithStatus = liveEvents.map((event) => {
         const baseViewers = event.currentViewers
         const variance = Math.floor(Math.random() * 10) - 5
@@ -97,8 +122,8 @@ export function LiveStreamsMonitor({ refreshInterval = 5000 }: LiveStreamsMonito
           isLive: true,
           viewers,
           peakViewers: Math.max(viewers, event.maxViewers),
-          startTime: event.startedAt || new Date(),
-          duration: event.startedAt ? Math.floor((Date.now() - event.startedAt.getTime()) / 1000) : 0,
+          startTime: new Date(),
+          duration: 0,
           bitrate: 4500 + Math.floor(Math.random() * 1000),
           resolution: "1920x1080",
           fps: 30,

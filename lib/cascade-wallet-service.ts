@@ -20,12 +20,11 @@ import type {
 } from "./types"
 
 import {
-  masterStreamTypePricing,
-  masterSimulcastPricing,
-  masterValiditySettings,
   getBestPriceForQuantity,
-} from "./mock-data"
-import { validityExtensionCredits } from "./validity-extensions"
+  getDefaultStreamTypePricing,
+  getDefaultSimulcastPricing,
+} from "./stream-type-pricing"
+import { getDefaultEventValiditySettings, validityExtensionCredits } from "./validity-extensions"
 
 // Get price for stream type (single price, no cascade)
 export function getStreamTypePrice(
@@ -33,7 +32,7 @@ export function getStreamTypePrice(
   quantity: number = 1,
   customPricing?: StreamTypePricing,
 ): { pricePerEvent: number; tierLabel?: string; totalPrice: number; savings: number } {
-  const pricing = customPricing || masterStreamTypePricing
+  const pricing = customPricing || getDefaultStreamTypePricing()
   return getBestPriceForQuantity(streamType, quantity, pricing)
 }
 
@@ -42,7 +41,7 @@ export function getStreamTypeBasePrice(
   streamType: StreamTypeKey,
   customPricing?: StreamTypePricing,
 ): number {
-  const pricing = customPricing || masterStreamTypePricing
+  const pricing = customPricing || getDefaultStreamTypePricing()
   return pricing[streamType].basePrice
 }
 
@@ -51,7 +50,7 @@ export function isStreamTypeEnabled(
   streamType: StreamTypeKey,
   customPricing?: StreamTypePricing,
 ): boolean {
-  const pricing = customPricing || masterStreamTypePricing
+  const pricing = customPricing || getDefaultStreamTypePricing()
   return pricing[streamType].enabled
 }
 
@@ -60,7 +59,7 @@ export function getSimulcastPrice(
   destination: "youtube" | "facebook" | "custom_rtmp",
   customPricing?: SimulcastPricing,
 ): number {
-  const pricing = customPricing || masterSimulcastPricing
+  const pricing = customPricing || getDefaultSimulcastPricing()
   const destKey = destination === "custom_rtmp" ? "customRtmp" : destination
   return pricing[destKey].price
 }
@@ -97,9 +96,10 @@ export function getValidityExtensionCost(extensionDays: number): {
   creditCost: number
   label: string
 } | null {
-  const defaultDays = masterValiditySettings.defaultDays
+  const masterValidity = getDefaultEventValiditySettings()
+  const defaultDays = masterValidity.defaultDays
   if (extensionDays <= defaultDays) return null
-  const tier = masterValiditySettings.extendedTiers.find((t) => t.days === extensionDays && t.enabled)
+  const tier = masterValidity.extendedTiers.find((t) => t.days === extensionDays && t.enabled)
   const creditCost = validityExtensionCredits(extensionDays, defaultDays)
   return {
     creditCost,

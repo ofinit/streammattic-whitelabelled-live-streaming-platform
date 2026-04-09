@@ -95,7 +95,6 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/youtube-override/route.ts` | `/api/admin/youtube-override` |
 | `app/api/auth/[...nextauth]/route.ts` | `/api/auth/[...nextauth]` |
 | `app/api/auth/change-password/route.ts` | `/api/auth/change-password` |
-| `app/api/auth/demo-login/route.ts` | `/api/auth/demo-login` |
 | `app/api/auth/email-update/request/route.ts` | `/api/auth/email-update/request` |
 | `app/api/auth/email-update/verify/route.ts` | `/api/auth/email-update/verify` |
 | `app/api/auth/impersonate/route.ts` | `/api/auth/impersonate` |
@@ -121,7 +120,6 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/domains/cloudflare/status/route.ts` | `/api/domains/cloudflare/status` |
 | `app/api/events/[id]/route.ts` | `/api/events/[id]` |
 | `app/api/events/route.ts` | `/api/events` |
-| `app/api/events/seed/route.ts` | `/api/events/seed` |
 | `app/api/favicon/resolve/route.ts` | `/api/favicon/resolve` |
 | `app/api/generate-image/route.ts` | `/api/generate-image` |
 | `app/api/gst/config/route.ts` | `/api/gst/config` |

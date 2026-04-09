@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Video, Youtube, Play, Globe } from "lucide-react"
 import type { StreamTypeKey } from "@/lib/types"
-import { masterStreamTypePricing } from "@/lib/mock-data"
+import { getDefaultStreamTypePricing } from "@/lib/stream-type-pricing"
 import { formatCurrency } from "@/lib/cascade-wallet-service"
 
 interface StreamTypeSelectorProps {
@@ -59,12 +59,13 @@ export function StreamTypeSelector({
   showPricing = true,
   userLevel = "streamer",
 }: StreamTypeSelectorProps) {
+  const platformPricing = getDefaultStreamTypePricing()
   return (
     <div className="space-y-3">
-      {streamTypes.filter((type) => masterStreamTypePricing[type.id].enabled).map((type) => {
+      {streamTypes.filter((type) => platformPricing[type.id].enabled).map((type) => {
         const Icon = type.icon
         const isSelected = value === type.id
-        const pricing = masterStreamTypePricing[type.id]
+        const pricing = platformPricing[type.id]
 
         return (
           <Card

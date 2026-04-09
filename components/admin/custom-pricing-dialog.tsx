@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Video, Youtube, MonitorPlay, Globe, Save, RotateCcw, Gift } from "lucide-react"
-import { masterStreamTypePricing } from "@/lib/mock-data"
+import { getDefaultStreamTypePricing } from "@/lib/stream-type-pricing"
 import { formatCurrency } from "@/lib/cascade-wallet-service"
 import type { StreamTypeKey } from "@/lib/types"
 
@@ -62,7 +62,7 @@ export function CustomPricingDialog({
 
       for (const { key } of streamTypes) {
         const custom = existingCustomPricing?.[key]
-        const master = masterStreamTypePricing[key]
+        const master = getDefaultStreamTypePricing()[key]
         initialPrices[key] = {
           enabled: !!custom,
           basePrice: custom ? custom.basePrice.toString() : master.basePrice.toString(),
@@ -83,7 +83,7 @@ export function CustomPricingDialog({
       [key]: {
         ...prev[key],
         enabled,
-        ...(!enabled ? { basePrice: masterStreamTypePricing[key as StreamTypeKey].basePrice.toString() } : {}),
+        ...(!enabled ? { basePrice: getDefaultStreamTypePricing()[key as StreamTypeKey].basePrice.toString() } : {}),
       },
     }))
   }
@@ -128,7 +128,7 @@ export function CustomPricingDialog({
     for (const { key } of streamTypes) {
       reset[key] = {
         enabled: false,
-        basePrice: masterStreamTypePricing[key].basePrice.toString(),
+        basePrice: getDefaultStreamTypePricing()[key].basePrice.toString(),
       }
       resetBonus[key] = "0"
     }
@@ -167,10 +167,10 @@ export function CustomPricingDialog({
           {/* Credit Price Overrides */}
           <div className="space-y-3">
             <p className="text-sm font-medium">Credit Prices</p>
-            {streamTypes.filter((st) => masterStreamTypePricing[st.key].enabled).map(({ key, label, description, icon: Icon, recommended }) => {
+            {streamTypes.filter((st) => getDefaultStreamTypePricing()[st.key].enabled).map(({ key, label, description, icon: Icon, recommended }) => {
               const override = priceOverrides[key]
               if (!override) return null
-              const master = masterStreamTypePricing[key]
+              const master = getDefaultStreamTypePricing()[key]
               const isOverridden = override.enabled
 
               return (
@@ -247,7 +247,7 @@ export function CustomPricingDialog({
             <p className="text-xs text-muted-foreground">Add free credits to this {targetType}'s balance.</p>
 
             <div className="grid grid-cols-2 gap-3">
-              {streamTypes.filter((st) => masterStreamTypePricing[st.key].enabled).map(({ key, label, icon: Icon }) => (
+              {streamTypes.filter((st) => getDefaultStreamTypePricing()[st.key].enabled).map(({ key, label, icon: Icon }) => (
                 <div key={key} className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Icon className="h-3 w-3" />

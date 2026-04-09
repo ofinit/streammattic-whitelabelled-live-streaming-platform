@@ -31,6 +31,7 @@ const RESERVED_ROOT_SEGMENT = new Set([
   "admin",
   "api",
   "auth",
+  "demo",
   "handler",
   "login",
   "payment",
@@ -60,7 +61,6 @@ export function middleware(request: NextRequest) {
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
     isPublicEventSlugPath(pathname) ||
-    pathname.startsWith("/demo/") ||
     pathname.startsWith("/api/favicon/") ||
     /** Liveness for Coolify/Docker — must bypass auth (no session cookie on probes) */
     pathname.startsWith("/api/health") ||

@@ -147,21 +147,8 @@ async function run() {
   }
   console.log("Triggers done");
 
-  console.log("Seeding admin...");
-  try {
-    const check = await client.query(`SELECT id FROM users WHERE email = 'admin@streamlivee.com'`);
-    const hasAdmin = check?.rows?.length > 0;
-    if (!hasAdmin) {
-      await exec(`INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified) VALUES ('00000000-0000-0000-0000-000000000001', 'admin@streamlivee.com', 'Platform Admin', '+919999999999', crypt('admin123', gen_salt('bf')), 'admin', 'active', true)`);
-      await exec(`INSERT INTO wallets (user_id, balance, currency) VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')`);
-      await exec(`INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001')`);
-      console.log("Admin created");
-    } else {
-      console.log("Admin already exists");
-    }
-  } catch (e) {
-    console.error("Admin seed error:", e?.message?.substring(0, 150));
-  }
+  console.log("Skipping legacy SQL admin seed (password format did not match app login).");
+  console.log("Create admin with: node --env-file=.env.production scripts/seed-production-admin.js");
 
   console.log("Seeding settings...");
   for (const s of seedSettings) {

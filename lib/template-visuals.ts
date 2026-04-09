@@ -176,7 +176,7 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
 }
 
 export function getTemplateCategoryAndName(templateId: string): { category: string; name: string } {
-  // Direct mapping to avoid loading mock-data.ts in visual logic
+  // Direct mapping — keep template visuals independent of the event template registry
   if (templateId.includes("wedding")) return { category: "Wedding", name: "Wedding" }
   if (templateId.includes("corporate")) return { category: "Corporate", name: "Corporate" }
   if (templateId === "tpl-concert") return { category: "Entertainment", name: "Concert" }

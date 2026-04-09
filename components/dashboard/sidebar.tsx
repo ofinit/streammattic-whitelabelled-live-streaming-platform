@@ -8,7 +8,6 @@ import { usePathname } from "next/navigation"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
-import { useBranding } from "@/lib/branding-context"
 import { useSidebar } from "@/lib/sidebar-context"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import {
@@ -194,18 +193,14 @@ function AccountBlock({
   userName,
   userRole,
   initials,
-  isWhiteLabel,
   logout,
-  switchRole,
 }: {
   isCollapsed: boolean
   isMobileSheet: boolean
   userName?: string
   userRole?: string
   initials?: string
-  isWhiteLabel: boolean
   logout: () => void
-  switchRole: (role: "admin" | "studio" | "streamer") => void
 }) {
   const effectiveCollapsed = isCollapsed && !isMobileSheet
 
@@ -250,24 +245,6 @@ function AccountBlock({
             Settings
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {!isWhiteLabel && (
-            <>
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role (Demo)</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => switchRole("admin")}>
-                <Users className="mr-2 h-4 w-4" />
-                Admin View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => switchRole("studio")}>
-                <Building2 className="mr-2 h-4 w-4" />
-                Studio View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => switchRole("streamer")}>
-                <Users className="mr-2 h-4 w-4" />
-                Streamer View
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
           <DropdownMenuItem onClick={logout} className="text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Log out
@@ -280,8 +257,7 @@ function AccountBlock({
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, logout, switchRole, isImpersonating } = useAuth()
-  const { isWhiteLabel } = useBranding()
+  const { user, logout, isImpersonating } = useAuth()
   const { isCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useSidebar()
   const { data: settingsData, isLoading: settingsLoading } = useSWR<
     { settings?: { key: string; value: unknown }[] }
@@ -377,9 +353,7 @@ export function Sidebar() {
               userName={user?.name}
               userRole={user?.role}
               initials={initials}
-              isWhiteLabel={isWhiteLabel}
               logout={logout}
-              switchRole={switchRole}
             />
           </div>
         </SheetContent>
@@ -429,9 +403,7 @@ export function Sidebar() {
             userName={user?.name}
             userRole={user?.role}
             initials={initials}
-            isWhiteLabel={isWhiteLabel}
             logout={logout}
-            switchRole={switchRole}
           />
         </div>
       </aside>

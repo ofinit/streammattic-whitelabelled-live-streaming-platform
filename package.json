@@ -14,7 +14,8 @@
     "db:backup:api": "node --env-file=.env.local scripts/backup-db.js --api",
     "db:restore": "node --env-file=.env.local scripts/restore-local.js",
     "db:setup-local": "node --env-file=.env.local scripts/setup-local-from-backup.js",
-    "docs:generate": "node scripts/generate-dev-handbook.js"
+    "docs:generate": "node scripts/generate-dev-handbook.js",
+    "seed:admin": "node scripts/seed-production-admin.js"
   },
   "dependencies": {
     "@fal-ai/serverless-client": "^0.15.0",

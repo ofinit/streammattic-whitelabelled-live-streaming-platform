@@ -2,7 +2,7 @@ import type { SimulcastPricing, StreamTypeKey, StreamTypePricing, VolumeDiscount
 
 const STREAM_KEYS: StreamTypeKey[] = ["rtmp", "youtube_api", "youtube_embed", "third_party"]
 
-/** Keep in sync with `masterStreamTypePricing` in mock-data (fallback when DB/settings missing). */
+/** Canonical defaults when `platform_settings` rows are missing (see `getDefaultStreamTypePricing`). */
 const INTERNAL_DEFAULT_STREAM_TYPE_PRICING: StreamTypePricing = {
   rtmp: {
     basePrice: 1500,
@@ -198,6 +198,11 @@ export function parseSimulcastPricing(raw: unknown): SimulcastPricing {
   const customRtmp = pick(customBlock, 100, true)
 
   return { youtube, facebook, customRtmp }
+}
+
+/** Defaults used by admin UI and pricing helpers when DB has no `simulcast_pricing` row. */
+export function getDefaultSimulcastPricing(): SimulcastPricing {
+  return parseSimulcastPricing(undefined)
 }
 
 /** Persist simulcast settings; supports both camelCase and legacy snake keys. */

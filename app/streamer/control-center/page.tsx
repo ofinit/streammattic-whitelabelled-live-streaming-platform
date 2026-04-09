@@ -48,7 +48,6 @@ import {
   PlayCircle,
   Loader2,
   Film,
-  Sparkles,
   StopCircle,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -78,9 +77,6 @@ export default function StreamerEventsPage() {
     scheduledAt?: string
     timezone?: string
   } | undefined>()
-
-  const [isSeeding, setIsSeeding] = useState(false)
-  const [isClearing, setIsClearing] = useState(false)
 
   // Open dialog when arriving from /streamer/control-center/new
   useEffect(() => {
@@ -339,51 +335,6 @@ export default function StreamerEventsPage() {
     }
   }
 
-  const handleSeedMockData = async () => {
-    try {
-      setIsSeeding(true)
-      const res = await fetch("/api/events/seed", { method: "POST" })
-      const resData = await res.json()
-      if (!res.ok) {
-        toast.error(resData.error || "Failed to seed mock data")
-        return
-      }
-      toast.success("Mock data seeded successfully!")
-      mutate()
-    } catch (error) {
-      console.error("Seed error:", error)
-      toast.error("An error occurred while seeding mock data")
-    } finally {
-      setIsSeeding(false)
-    }
-  }
-
-  const handleClearMockData = async () => {
-    try {
-      setIsClearing(true)
-      const res = await fetch("/api/events/seed", { method: "DELETE" })
-      const resData = await res.json()
-      if (!res.ok) {
-        toast.error(resData.error || "Failed to clear mock data")
-        return
-      }
-      toast.success(resData.message || "Mock data cleared")
-      if ((user as any)?.refreshUser) {
-        (user as any).refreshUser()
-      } else {
-        // useAuth provides refreshUser directly
-        mutate() // SWR mutate for events
-      }
-      // Re-fetch user data to update mockDataCleared flag
-      mutate("/api/auth/me") 
-    } catch (error) {
-      console.error("Clear error:", error)
-      toast.error("An error occurred while clearing mock data")
-    } finally {
-      setIsClearing(false)
-    }
-  }
-
   const handleForceStop = async (event: Record<string, unknown>) => {
     try {
       const res = await fetch("/api/studio/events", {
@@ -597,11 +548,6 @@ export default function StreamerEventsPage() {
                {event.templateData.category as string}
              </Badge>
            )}
-           {event.isMock && (
-             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0 bg-orange-500/10 text-orange-500 border-orange-500/20">
-               Mock Data
-             </Badge>
-           )}
          </div>
         <div className="flex flex-col gap-0.5 mt-0.5">
           <a
@@ -751,18 +697,6 @@ export default function StreamerEventsPage() {
           <p className="text-muted-foreground">Manage and control your live streaming events</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-          {events.some((e: any) => e.isMock) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearMockData}
-              disabled={isClearing}
-              className="w-full sm:w-auto text-muted-foreground hover:text-destructive"
-            >
-              {isClearing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              Clear Mock Data
-            </Button>
-          )}
           <Button onClick={handleCreateEvent} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Event
@@ -896,22 +830,6 @@ export default function StreamerEventsPage() {
                         <Plus className="h-4 w-4 mr-2" />
                         Create Your First Event
                       </Button>
-                      {tab === "all" && events.length === 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary hover:bg-primary/10"
-                          onClick={handleSeedMockData}
-                          disabled={isSeeding}
-                        >
-                          {isSeeding ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 mr-2" />
-                          )}
-                          Seed Mock Data
-                        </Button>
-                      )}
                     </div>
                   </div>
                 )}

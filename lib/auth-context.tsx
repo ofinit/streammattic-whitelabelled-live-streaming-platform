@@ -34,7 +34,6 @@ interface AuthContextType {
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>
   impersonate: (userId: string) => Promise<string | null>
   stopImpersonating: () => string | null
-  switchRole: (role: UserRole) => void
   updateUserStatus: (userId: string, status: "active" | "suspended") => Promise<boolean>
   refreshUser: () => Promise<void>
 }
@@ -262,11 +261,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   }, [originalUser])
 
-  const switchRole = useCallback((_role: UserRole) => {
-    // In production, role switching is done via impersonation for admin
-    // For non-admin, this is a no-op
-  }, [])
-
   const updateUserStatus = useCallback(async (userId: string, status: "active" | "suspended"): Promise<boolean> => {
     try {
       const res = await fetch(`/api/admin/users/${userId}/status`, {
@@ -295,7 +289,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         changePassword,
         impersonate,
         stopImpersonating,
-        switchRole,
         updateUserStatus,
         refreshUser,
       }}

@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from "react"
 import Link from "next/link"
 import Head from "next/head"
 import { useBranding } from "@/lib/branding-context"
-import { mockBranding } from "@/lib/mock-data"
+import { PLATFORM_LANDING_BRANDING } from "@/lib/platform-landing-defaults"
 import { getThemeConfig } from "@/lib/landing-themes"
 import { Button } from "@/components/ui/button"
 import {
@@ -53,21 +53,21 @@ function getServiceIcon(iconName: string) {
 /** Merge saved/mock defaults with overrides (context or editor draft) for the studio landing page */
 export function mergeStudioLandingBranding(overrides: Partial<Branding>): Branding {
   return {
-    ...mockBranding,
+    ...PLATFORM_LANDING_BRANDING,
     ...overrides,
-    heroImage: overrides.heroImage || mockBranding.heroImage,
-    aboutImage: overrides.aboutImage || mockBranding.aboutImage,
-    services: overrides.services || mockBranding.services,
-    eventTypes: overrides.eventTypes || mockBranding.eventTypes,
-    stats: overrides.stats || mockBranding.stats,
-    testimonials: overrides.testimonials || mockBranding.testimonials,
-    galleryImages: overrides.galleryImages || mockBranding.galleryImages,
+    heroImage: overrides.heroImage || PLATFORM_LANDING_BRANDING.heroImage,
+    aboutImage: overrides.aboutImage || PLATFORM_LANDING_BRANDING.aboutImage,
+    services: overrides.services || PLATFORM_LANDING_BRANDING.services,
+    eventTypes: overrides.eventTypes || PLATFORM_LANDING_BRANDING.eventTypes,
+    stats: overrides.stats || PLATFORM_LANDING_BRANDING.stats,
+    testimonials: overrides.testimonials || PLATFORM_LANDING_BRANDING.testimonials,
+    galleryImages: overrides.galleryImages || PLATFORM_LANDING_BRANDING.galleryImages,
   }
 }
 
 function useLandingBranding(): Branding {
   const { branding } = useBranding()
-  /** On localhost / platform domain, context is platform StreamLivee — do not let it override demo studio `mockBranding` */
+  /** On localhost / platform domain, context is platform StreamLivee — keep neutral platform marketing defaults */
   const isPlatformDefault = branding.id === "platform" || branding.userId === "platform"
   if (isPlatformDefault) {
     return mergeStudioLandingBranding({})

@@ -58,12 +58,7 @@ import {
   validityCreditsForDuration,
   type ParsedValidityExtensions,
 } from "@/lib/validity-extensions"
-import {
-  eventFormSelectableTemplates,
-  mockEventTemplates,
-  mockYouTubeChannels,
-  mockFacebookPages,
-} from "@/lib/mock-data"
+import { EVENT_TEMPLATES, SELECTABLE_EVENT_TEMPLATES } from "@/lib/template-registry"
 import { getCardGradientForCategory } from "@/lib/template-visuals"
 import {
   getTemplateDefaultTitleRem,
@@ -413,7 +408,7 @@ export function EventFormDialog({
   const [broadcastCreateError, setBroadcastCreateError] = useState<string | null>(null)
 
   // YouTube state
-  const [youtubeChannels, setYoutubeChannels] = useState<YouTubeChannel[]>(mockYouTubeChannels)
+  const [youtubeChannels, setYoutubeChannels] = useState<YouTubeChannel[]>([])
   const [selectedYouTubeChannel, setSelectedYouTubeChannel] = useState<string | null>(null)
   const [youtubeBroadcastSettings, setYoutubeBroadcastSettings] = useState({
     privacyStatus: "public" as "public" | "unlisted" | "private",
@@ -423,7 +418,7 @@ export function EventFormDialog({
   })
 
   // Facebook state
-  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>(mockFacebookPages)
+  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([])
 
   const [simulcastConfig, setSimulcastConfig] = useState<SimulcastConfig>({
     enabled: false,
@@ -791,11 +786,11 @@ export function EventFormDialog({
 
   /** Picker list: selectable templates plus current event template if it is legacy/hidden */
   const templatesForPicker = useMemo(() => {
-    const selectable = [...eventFormSelectableTemplates].sort((a, b) => a.sortOrder - b.sortOrder)
+    const selectable = [...SELECTABLE_EVENT_TEMPLATES].sort((a, b) => a.sortOrder - b.sortOrder)
     const id = formData.templateId?.trim()
     if (!id) return selectable
     if (selectable.some((t) => t.id === id)) return selectable
-    const legacy = mockEventTemplates.find((t) => t.id === id)
+    const legacy = EVENT_TEMPLATES.find((t) => t.id === id)
     if (!legacy) return selectable
     return [...selectable, legacy].sort((a, b) => a.sortOrder - b.sortOrder)
   }, [formData.templateId])

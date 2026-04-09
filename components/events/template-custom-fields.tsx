@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Upload, X, ImageIcon } from "lucide-react"
 import { getTemplateFields, type TemplateField, type TemplateFieldGroup } from "@/lib/template-fields"
 import type { TemplateData } from "@/lib/types"
-import { mockEventTemplates } from "@/lib/mock-data"
+import { EVENT_TEMPLATES } from "@/lib/template-registry"
 
 interface TemplateCustomFieldsProps {
   templateId: string
@@ -23,7 +23,7 @@ export function TemplateCustomFields({ templateId, data, onChange, errors = {} }
   const [fieldGroups, setFieldGroups] = useState<TemplateFieldGroup[]>([])
 
   // Get template info
-  const template = mockEventTemplates.find((t) => t.id === templateId)
+  const template = EVENT_TEMPLATES.find((t) => t.id === templateId)
 
   useEffect(() => {
     if (templateId && template) {

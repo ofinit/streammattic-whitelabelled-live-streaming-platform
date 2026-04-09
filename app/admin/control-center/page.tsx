@@ -513,11 +513,6 @@ export default function AdminEventsPage() {
                     >
                         {event.status === "ended" ? "ended" : event.status === "on_break" ? "BRB" : (event.status as string)}
                     </Badge>
-                    {(event as any).isMock && (
-                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 shrink-0 bg-orange-500/10 text-orange-500 border-orange-500/20 font-bold uppercase">
-                            Mock
-                        </Badge>
-                    )}
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-primary/80 font-semibold truncate leading-none">
@@ -567,11 +562,6 @@ export default function AdminEventsPage() {
                 ? "on break"
                 : (event.status as string)}
           </Badge>
-          {(event as any).isMock && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0 bg-orange-500/10 text-orange-500 border-orange-500/20">
-              Mock Data
-            </Badge>
-          )}
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary/80 bg-primary/5 font-medium">
             {(event as any).userRole === 'studio' ? 'Studio' : 'Streamer'}: {(event as any).userName || 'Unknown'}
           </Badge>

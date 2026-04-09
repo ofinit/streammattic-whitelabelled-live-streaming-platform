@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { getDb, toCamel } from "@/lib/db";
-import { verifyPassword, verifyOneTimeToken, getOrCreateUserByOAuth, getDemoPassword, isDemoEmail, getOrCreateDemoUser } from "@/lib/auth";
+import { verifyPassword, verifyOneTimeToken, getOrCreateUserByOAuth } from "@/lib/auth";
 import type { NextAuthConfig } from "next-auth";
 
 declare module "next-auth" {
@@ -55,31 +55,6 @@ export const authConfig: NextAuthConfig = {
                         role: dbUser.role as string,
                         status: dbUser.status as string,
                     };
-                }
-
-                // Demo logins: fixed emails + shared demo password (no DB password check)
-                if (isDemoEmail(email) && password === getDemoPassword()) {
-                    try {
-                        const dbUser = await getOrCreateDemoUser(email);
-                        if (dbUser) {
-                            return {
-                                id: dbUser.id as string,
-                                email: dbUser.email as string,
-                                name: dbUser.name as string,
-                                role: dbUser.role as string,
-                                status: dbUser.status as string,
-                            };
-                        }
-                        throw new Error("Demo user could not be created.");
-                    } catch (err) {
-                        const msg = err instanceof Error ? err.message : String(err);
-                        console.error("Demo login getOrCreateDemoUser error:", err);
-                        throw new Error(
-                            msg.includes("DATABASE_URL") || msg.includes("relation") || msg.includes("does not exist")
-                                ? "Database not set up. Set DATABASE_URL in .env.local and run: npm run db:migrate"
-                                : "Demo login failed. Check DATABASE_URL and run npm run db:migrate to create the database schema."
-                        );
-                    }
                 }
 
                 const emailNorm = email.toLowerCase().trim();

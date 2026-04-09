@@ -9,7 +9,7 @@ flowchart LR
     SharedMedia["Shared event fields: hero_image_url, player_image_url, gallery, etc."]
   end
   subgraph studio [Studio / streamer UI]
-    Picker["mockEventTemplates picker"]
+    Picker["EVENT_TEMPLATES picker"]
     FormFields["getTemplateFields / merged unified fields"]
   end
   subgraph watch [Public watch]
@@ -44,7 +44,7 @@ flowchart LR
 
 ### 1. Template registry and picker
 
-- **[`lib/mock-data.ts`](../lib/mock-data.ts)** — `mockEventTemplates` entry: stable id `tpl-wedding`, display name, **category `Wedding`**, thumbnail (falls back to default hero URL from [`lib/template-default-media.ts`](../lib/template-default-media.ts)).
+- **[`lib/template-registry.ts`](../lib/template-registry.ts)** — `EVENT_TEMPLATES` entry: stable id `tpl-wedding`, display name, **category `Wedding`**, thumbnail (falls back to default hero URL from [`lib/template-default-media.ts`](../lib/template-default-media.ts)).
 - **[`lib/template-visuals.ts`](../lib/template-visuals.ts)** — `TEMPLATE_CATEGORY_CARD_GRADIENTS.Wedding` for the template card in the event form picker.
 
 ### 2. Form fields (schema)
@@ -98,7 +98,7 @@ All in **[`components/watch/watch-event-content.tsx`](../components/watch/watch-
 
 ## What “remaining” templates already have vs Wedding
 
-Most ids in [`lib/mock-data.ts`](../lib/mock-data.ts) already include:
+Most ids in [`lib/template-registry.ts`](../lib/template-registry.ts) already include:
 
 - Picker card + category
 - `TEMPLATE_BANNER_ACCENT_BORDER` + `extractTemplateBannerContent` branch in [`lib/template-visuals.ts`](../lib/template-visuals.ts)
@@ -119,7 +119,7 @@ Use **tiers** so work stays proportional.
 
 ### Tier A — “Listed + editable + watchable” (minimum)
 
-1. **Id** — Add `tpl-<name>` to [`mockEventTemplates`](../lib/mock-data.ts) with correct **category** string (must exist in `TEMPLATE_CATEGORY_*` maps or add it).
+1. **Id** — Add `tpl-<name>` to [`EVENT_TEMPLATES`](../lib/template-registry.ts) with correct **category** string (must exist in `TEMPLATE_CATEGORY_*` maps or add it).
 2. **Picker gradient** — If new category: add [`TEMPLATE_CATEGORY_CARD_GRADIENTS`](../lib/template-visuals.ts) and [`TEMPLATE_CATEGORY_BANNER_THEME`](../lib/template-visuals.ts).
 3. **Banner accent** — Add `TEMPLATE_BANNER_ACCENT_BORDER["tpl-..."]` in [`lib/template-visuals.ts`](../lib/template-visuals.ts).
 4. **Banner copy** — Extend [`extractTemplateBannerContent`](../lib/template-visuals.ts) to map `template_data` keys → `headline` / `accent` / `lines` (follow existing templates).

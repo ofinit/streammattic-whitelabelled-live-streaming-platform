@@ -24,7 +24,6 @@ interface BrandingContextType {
   isWhiteLabel: boolean
   isLoading: boolean
   currentDomain: string | null
-  setDemoStudio: (customBranding: Branding | null) => void
 }
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined)
@@ -115,19 +114,6 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [branding])
 
-   // For demo/preview purposes - allows switching branding context manually
-  const setDemoStudio = (customBranding: Branding | null) => {
-    if (!customBranding) {
-      setStudio(null)
-      // This will trigger the effect to reload from hostname
-      window.location.reload()
-      return
-    }
-
-    setBranding(customBranding)
-    setStudio(null) // We don't have the full studio object here usually, branding is enough for preview
-  }
-
   return (
     <BrandingContext.Provider
       value={{
@@ -136,7 +122,6 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         isWhiteLabel: !!studio,
         isLoading,
         currentDomain,
-        setDemoStudio,
       }}
     >
       {children}

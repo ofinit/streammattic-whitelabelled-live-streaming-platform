@@ -1,4 +1,4 @@
-import type { ValidityTier } from "@/lib/types"
+import type { EventValiditySettings, ValidityTier } from "@/lib/types"
 
 export type ParsedValidityExtensions = {
   defaultDays: number
@@ -23,6 +23,11 @@ export function validityExtensionCredits(totalDays: number, defaultDays: number)
 export function formatValidityTierSelectLabel(totalDays: number, defaultDays: number): string {
   const total = validityCreditsForDuration(totalDays, defaultDays)
   return `${totalDays} Days (${total} credit${total === 1 ? "" : "s"} total)`
+}
+
+export function getDefaultEventValiditySettings(): EventValiditySettings {
+  const f = fallbackValidityExtensions()
+  return { defaultDays: f.defaultDays, extendedTiers: f.extendedTiers }
 }
 
 function fallbackValidityExtensions(): ParsedValidityExtensions {

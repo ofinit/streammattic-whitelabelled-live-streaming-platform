@@ -271,49 +271,6 @@ function LoginPageContent() {
                 </div>
               )}
 
-              <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wide">Demo logins</p>
-                <p className="text-center text-xs text-muted-foreground">Use these to try the platform. Password: Demo@123</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {[
-                    { label: "Admin",    role: "admin",    dest: "/admin"    },
-                    { label: "Studio",   role: "studio",   dest: "/studio"   },
-                    { label: "Streamer", role: "streamer", dest: "/streamer" },
-                  ].map(({ label, role, dest }) => (
-                  <Button
-                    key={role}
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="text-xs"
-                    disabled={credentialsLoading}
-                    onClick={async () => {
-                      setError("")
-                      setCredentialsLoading(true)
-                      try {
-                        const res = await fetch("/api/auth/demo-login", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ role }),
-                        })
-                        const data = await res.json().catch(() => ({}))
-                        if (!res.ok || !data.ok) {
-                          setError(data.error || "Demo login failed. Set DATABASE_URL and run: npm run db:migrate")
-                          return
-                        }
-                        window.location.replace(dest)
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : "Something went wrong.")
-                      } finally {
-                        setCredentialsLoading(false)
-                      }
-                    }}
-                  >
-                    {label}
-                  </Button>
-                  ))}
-                </div>
-              </div>
               <p className="text-center text-sm text-muted-foreground">
                 Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
               </p>

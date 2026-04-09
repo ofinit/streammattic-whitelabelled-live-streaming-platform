@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
@@ -13,13 +13,10 @@ import { cn } from "@/lib/utils"
 function StreamerDashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
   const router = useRouter()
-  const pathname = usePathname()
   const { isCollapsed } = useSidebar()
 
-  const isDemoPage = pathname?.startsWith("/streamer/control-center/new/demo-")
-
   useEffect(() => {
-    if (isDemoPage || isLoading) return
+    if (isLoading) return
     if (!isAuthenticated) {
       router.push("/")
     } else if (user?.role === "studio") {
@@ -29,17 +26,17 @@ function StreamerDashboardLayoutInner({ children }: { children: React.ReactNode 
     } else if (user?.role !== "streamer") {
       router.push("/")
     }
-  }, [isLoading, isAuthenticated, user, router, isDemoPage])
+  }, [isLoading, isAuthenticated, user, router])
 
-  if (isLoading && !isDemoPage) return null
+  if (isLoading) return null
 
-  if (!isDemoPage && (!isAuthenticated || user?.role !== "streamer")) {
+  if (!isAuthenticated || user?.role !== "streamer") {
     return null
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {!isDemoPage && <ImpersonationBanner />}
+      <ImpersonationBanner />
       <Sidebar />
       <main
         className={cn(

@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Youtube, CheckCircle, AlertCircle, Eye, EyeOff, RefreshCw, Trash2 } from "lucide-react"
-import { mockYouTubeChannels } from "@/lib/mock-data"
 import type { Studio, YouTubeChannel } from "@/lib/types"
 
 interface StudioYouTubeDialogProps {
@@ -24,7 +23,7 @@ interface StudioYouTubeDialogProps {
 }
 
 export function StudioYouTubeDialog({ open, onOpenChange, studio }: StudioYouTubeDialogProps) {
-  const existingChannels = mockYouTubeChannels.filter((c) => c.ownerId === studio.id)
+  const existingChannels: YouTubeChannel[] = []
   const [channelId, setChannelId] = useState("")
   const [apiKey, setApiKey] = useState("")
   const [clientId, setClientId] = useState("")

@@ -14,12 +14,20 @@ import {
   ChevronDown, Plus, Trash2, Clock, CreditCard, Loader2, X,
   IndianRupee, AlertCircle
 } from "lucide-react"
-import { masterStreamTypePricing, masterSimulcastPricing, masterValiditySettings } from "@/lib/mock-data"
-import { parseStreamTypePricing, parseSimulcastPricing } from "@/lib/stream-type-pricing"
-import { parseValidityExtensionsSetting } from "@/lib/validity-extensions"
+import {
+  getDefaultStreamTypePricing,
+  parseStreamTypePricing,
+  parseSimulcastPricing,
+  getDefaultSimulcastPricing,
+} from "@/lib/stream-type-pricing"
+import { getDefaultEventValiditySettings, parseValidityExtensionsSetting } from "@/lib/validity-extensions"
 import { formatCurrency } from "@/lib/cascade-wallet-service"
-import type { StreamTypePricing, VolumeDiscountTier, ValidityTier } from "@/lib/types"
+import type { SimulcastPricing, StreamTypePricing, VolumeDiscountTier, ValidityTier } from "@/lib/types"
 import { toast } from "sonner"
+
+const DEFAULT_STREAM_FOR_PRICING_UI = getDefaultStreamTypePricing()
+const DEFAULT_SIMULCAST_FOR_PRICING_UI = getDefaultSimulcastPricing()
+const DEFAULT_VALIDITY_FOR_PRICING_UI = getDefaultEventValiditySettings()
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -76,9 +84,9 @@ export function FullscreenCustomPricingDialog({
   const [bonusCreditsEnabled,        setBonusCreditsEnabled]        = useState(false)
 
   // ── Section state ──────────────────────────────────────────────────────────
-  const [streamPricing,     setStreamPricing]     = useState<StreamTypePricing>(() => cloneDeep(masterStreamTypePricing))
-  const [simulcastPricing,  setSimulcastPricing]  = useState(() => cloneDeep(masterSimulcastPricing))
-  const [validityTiers,     setValidityTiers]     = useState<ValidityTier[]>(() => masterValiditySettings.extendedTiers.map(t => ({ ...t })))
+  const [streamPricing,     setStreamPricing]     = useState<StreamTypePricing>(() => cloneDeep(DEFAULT_STREAM_FOR_PRICING_UI))
+  const [simulcastPricing,  setSimulcastPricing]  = useState(() => cloneDeep(DEFAULT_SIMULCAST_FOR_PRICING_UI))
+  const [validityTiers,     setValidityTiers]     = useState<ValidityTier[]>(() => DEFAULT_VALIDITY_FOR_PRICING_UI.extendedTiers.map(t => ({ ...t })))
   const [validityDefaultDays,setValidityDefaultDays] = useState(30)
   const [studioSubscription,setStudioSubscription]= useState({ price: 1800000, enabled: true })
   const [aiImagePricing,    setAiImagePricing]    = useState({ price: 500, enabled: true })
@@ -90,7 +98,7 @@ export function FullscreenCustomPricingDialog({
   const [saving,      setSaving]       = useState(false)
   const [masterPricing, setMasterPricing] = useState<{
     stream: StreamTypePricing
-    simulcast: typeof masterSimulcastPricing
+    simulcast: SimulcastPricing
     validity: { defaultDays: number; extendedTiers: ValidityTier[] }
   } | null>(null)
 
@@ -125,7 +133,7 @@ export function FullscreenCustomPricingDialog({
         setStreamPricing(parseStreamTypePricing(cp.streamTypePricing as any, null))
       } else {
         setStreamOverrideEnabled(false)
-        setStreamPricing(master ? cloneDeep(master.stream) : cloneDeep(masterStreamTypePricing))
+        setStreamPricing(master ? cloneDeep(master.stream) : cloneDeep(DEFAULT_STREAM_FOR_PRICING_UI))
       }
 
       // Simulcast
@@ -134,7 +142,7 @@ export function FullscreenCustomPricingDialog({
         setSimulcastPricing(parseSimulcastPricing(cp.simulcastPricing as any))
       } else {
         setSimulcastOverrideEnabled(false)
-        setSimulcastPricing(master ? cloneDeep(master.simulcast) : cloneDeep(masterSimulcastPricing))
+        setSimulcastPricing(master ? cloneDeep(master.simulcast) : cloneDeep(DEFAULT_SIMULCAST_FOR_PRICING_UI))
       }
 
       // Validity

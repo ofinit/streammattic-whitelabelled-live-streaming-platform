@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { useBranding } from "@/lib/branding-context"
-import { mockBranding } from "@/lib/mock-data"
+import { PLATFORM_LANDING_BRANDING } from "@/lib/platform-landing-defaults"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,7 +20,7 @@ export default function SiteLoginPage() {
 
   // Merge branding
   const branding = {
-    ...mockBranding,
+    ...PLATFORM_LANDING_BRANDING,
     ...contextBranding,
   }
 

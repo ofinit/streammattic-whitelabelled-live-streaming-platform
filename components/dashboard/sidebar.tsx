@@ -283,10 +283,10 @@ export function Sidebar() {
   const { user, logout, switchRole, isImpersonating } = useAuth()
   const { isWhiteLabel } = useBranding()
   const { isCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useSidebar()
-  const { data: settingsData } = useSWR<{ settings?: { key: string; value: unknown }[] }>(
-    user?.role === "streamer" || user?.role === "studio" ? "/api/settings" : null,
-    settingsFetcher,
-  )
+  const { data: settingsData, isLoading: settingsLoading } = useSWR<
+    { settings?: { key: string; value: unknown }[] }
+  >(user?.role === "streamer" || user?.role === "studio" ? "/api/settings" : null, settingsFetcher)
+  const settingsReady = !settingsLoading && settingsData !== undefined
   const platformYoutubeEnabled =
     settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
     settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
@@ -303,8 +303,8 @@ export function Sidebar() {
       case "admin":
         return adminNav
       case "studio": {
-        // YouTube Channels stays visible so users can open settings and see admin messaging when API is disabled.
-        if (!youtubeConfigEnabled) {
+        // Only hide Integrations after settings load; avoids treating "still loading" as disabled.
+        if (settingsReady && !youtubeConfigEnabled) {
           return studioNav.filter((item) => item.href !== "/studio/settings/integrations")
         }
         return studioNav

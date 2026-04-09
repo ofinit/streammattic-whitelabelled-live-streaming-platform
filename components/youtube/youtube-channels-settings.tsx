@@ -22,7 +22,9 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
   const OWNER_ID = user?.id || ""
   const OWNER_TYPE = (user?.role || "streamer") as "streamer" | "studio" | "admin"
 
-  const { data: settingsData } = useSWR<{ settings?: { key: string; value: unknown }[] }>("/api/settings", fetcher)
+  const { data: settingsData, error: settingsError, isLoading: settingsLoading } = useSWR<
+    { settings?: { key: string; value: unknown }[] }
+  >("/api/settings", fetcher)
   const platformYoutubeEnabled =
     settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
     settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
@@ -112,15 +114,29 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
     })
   }
 
-  const settingsLoaded = settingsData !== undefined
-  const disabled = settingsLoaded && !youtubeConfigEnabled
+  const settingsReady = !settingsLoading && settingsData !== undefined
+  const settingsFetchFailed = !settingsLoading && !!settingsError && settingsData === undefined
+  const disabledByAdmin = settingsReady && !youtubeConfigEnabled
+  const showManagementUi = settingsReady && youtubeConfigEnabled
 
   return (
     <div className="min-h-screen">
       <Header title="YouTube Channels" subtitle="Manage your connected YouTube channels for live streaming" />
 
       <div className="space-y-6 max-w-3xl">
-        {disabled && (
+        {settingsLoading && (
+          <div className="flex min-h-[12rem] items-center justify-center rounded-lg border border-border bg-muted/20">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading settings" />
+          </div>
+        )}
+        {settingsFetchFailed && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Could not load platform settings. Check your connection and refresh the page.
+            </AlertDescription>
+          </Alert>
+        )}
+        {disabledByAdmin && (
           <Alert className="border-amber-500/30 bg-amber-500/10">
             <Lock className="h-4 w-4 text-amber-500" />
             <AlertDescription>
@@ -128,7 +144,7 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
             </AlertDescription>
           </Alert>
         )}
-        {!disabled && (
+        {showManagementUi && (
           <>
             <Alert className="bg-muted/50 border-border">
               <Info className="h-4 w-4" />

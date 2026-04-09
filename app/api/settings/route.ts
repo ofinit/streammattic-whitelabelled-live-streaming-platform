@@ -28,6 +28,8 @@ export const GET = withAuth(async (user, request) => {
     "platform_domain",
     "youtube_config_enabled",
     "ai_image_pricing",
+    /** Enable/disable Razorpay & Instamojo (no secrets) */
+    "payment_gateways",
   ]
   let rows: { key: string; value: unknown }[] =
     user.role === "admin"

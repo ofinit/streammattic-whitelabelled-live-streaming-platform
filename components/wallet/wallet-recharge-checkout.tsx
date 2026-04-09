@@ -10,6 +10,8 @@ type GstConfigResponse = {
   gstPercentage?: number
   minRechargeRupees?: number
   gstConfig?: import("@/lib/types").GSTConfiguration | null
+  razorpayEnabled?: boolean
+  instamojoEnabled?: boolean
 }
 
 const fetcher = async (url: string) => {
@@ -146,6 +148,8 @@ export function WalletRechargeCheckout({
       minRechargeRupees={minRecharge}
       configLoading={isLoading}
       configError={error ? "Could not load tax settings. Refresh and try again." : undefined}
+      razorpayEnabled={data?.razorpayEnabled ?? true}
+      instamojoEnabled={data?.instamojoEnabled ?? true}
     />
   )
 }

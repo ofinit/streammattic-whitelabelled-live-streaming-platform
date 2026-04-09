@@ -16,6 +16,8 @@ type GstConfigResponse = {
   gstEnabled?: boolean
   gstPercentage?: number
   gstConfig?: GSTConfiguration | null
+  razorpayEnabled?: boolean
+  instamojoEnabled?: boolean
 }
 
 const fetcher = async (url: string) => {
@@ -94,12 +96,36 @@ export function StudioUpgradePaymentPanel({
 
   const walletCoversWalletMode = walletBalancePaise >= walletTotalPaise && walletTotalPaise > 0
 
+  const rzOk = gstData?.razorpayEnabled ?? true
+  const imOk = gstData?.instamojoEnabled ?? true
+  const noCardGateway = !rzOk && !imOk
+
   useEffect(() => {
     if (gstLoading || walletTotalPaise <= 0) return
-    if (gateway === "wallet" && walletBalancePaise < walletTotalPaise) {
-      setGateway("razorpay")
+    if (gateway === "razorpay" && !rzOk) {
+      if (imOk) setGateway("instamojo")
+      else if (walletCoversWalletMode) setGateway("wallet")
+      return
     }
-  }, [gstLoading, walletTotalPaise, walletBalancePaise, gateway, setGateway])
+    if (gateway === "instamojo" && !imOk) {
+      if (rzOk) setGateway("razorpay")
+      else if (walletCoversWalletMode) setGateway("wallet")
+      return
+    }
+    if (gateway === "wallet" && walletBalancePaise < walletTotalPaise) {
+      if (rzOk) setGateway("razorpay")
+      else if (imOk) setGateway("instamojo")
+    }
+  }, [
+    gstLoading,
+    walletTotalPaise,
+    walletBalancePaise,
+    gateway,
+    setGateway,
+    rzOk,
+    imOk,
+    walletCoversWalletMode,
+  ])
 
   const payWithWallet = useCallback(async () => {
     if (!walletCoversWalletMode || walletTotalPaise <= 0) return
@@ -226,11 +252,13 @@ export function StudioUpgradePaymentPanel({
   }
 
   const walletDisabled = !walletCoversWalletMode || walletTotalPaise <= 0
+  const cannotPayAnywhere = noCardGateway && !walletCoversWalletMode && walletTotalPaise > 0
   const primaryDisabled =
     busy ||
     chargedTotalPaise <= 0 ||
     gstLoading ||
-    (gateway === "wallet" && walletDisabled)
+    (gateway === "wallet" && walletDisabled) ||
+    cannotPayAnywhere
 
   return (
     <div className="space-y-4">
@@ -276,15 +304,24 @@ export function StudioUpgradePaymentPanel({
           <span className="text-primary tabular-nums">{formatPaisa(chargedTotalPaise)}</span>
         </div>
         <p className="text-xs text-muted-foreground">Adds one year to your Studio subscription period after payment succeeds.</p>
-        {gateway !== "wallet" && (
+        {gateway !== "wallet" && (rzOk || imOk) && (
           <p className="text-xs text-muted-foreground">
-            Razorpay and Instamojo are charged by the platform including GST where configured.
+            {rzOk && imOk
+              ? "Razorpay and Instamojo are charged by the platform including GST where configured."
+              : rzOk
+                ? "Razorpay is charged by the platform including GST where configured."
+                : "Instamojo is charged by the platform including GST where configured."}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
         <Label>Pay with</Label>
+        {cannotPayAnywhere && (
+          <p className="text-sm text-destructive">
+            No card gateway is enabled and your wallet balance is insufficient. Add funds or contact support.
+          </p>
+        )}
         <RadioGroup
           value={gateway}
           onValueChange={(v) => setGateway(v as StudioUpgradePayGateway)}
@@ -304,30 +341,34 @@ export function StudioUpgradePaymentPanel({
               <p className="text-xs text-muted-foreground">Balance: {formatPaisa(walletBalancePaise)}</p>
             </div>
           </label>
-          <label
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-              gateway === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-            }`}
-          >
-            <RadioGroupItem value="razorpay" id="sup-rzp" />
-            <CreditCard className="h-5 w-5 text-blue-500" />
-            <div>
-              <p className="font-medium">Razorpay</p>
-              <p className="text-xs text-muted-foreground">Cards, UPI, netbanking (platform gateway + GST if enabled)</p>
-            </div>
-          </label>
-          <label
-            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-              gateway === "instamojo" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-            }`}
-          >
-            <RadioGroupItem value="instamojo" id="sup-im" />
-            <CreditCard className="h-5 w-5 text-violet-500" />
-            <div>
-              <p className="font-medium">Instamojo</p>
-              <p className="text-xs text-muted-foreground">Redirect checkout (platform gateway + GST if enabled)</p>
-            </div>
-          </label>
+          {rzOk && (
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                gateway === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+              }`}
+            >
+              <RadioGroupItem value="razorpay" id="sup-rzp" />
+              <CreditCard className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="font-medium">Razorpay</p>
+                <p className="text-xs text-muted-foreground">Cards, UPI, netbanking (platform gateway + GST if enabled)</p>
+              </div>
+            </label>
+          )}
+          {imOk && (
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                gateway === "instamojo" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+              }`}
+            >
+              <RadioGroupItem value="instamojo" id="sup-im" />
+              <CreditCard className="h-5 w-5 text-violet-500" />
+              <div>
+                <p className="font-medium">Instamojo</p>
+                <p className="text-xs text-muted-foreground">Redirect checkout (platform gateway + GST if enabled)</p>
+              </div>
+            </label>
+          )}
         </RadioGroup>
       </div>
 

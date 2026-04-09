@@ -29,6 +29,9 @@ interface TopUpDialogProps {
   minRechargeRupees?: number
   configLoading?: boolean
   configError?: string
+  /** From platform_settings.payment_gateways; default true */
+  razorpayEnabled?: boolean
+  instamojoEnabled?: boolean
 }
 
 const quickAmounts = [500, 1000, 2000, 5000, 10000]
@@ -43,10 +46,16 @@ export function TopUpDialog({
   minRechargeRupees = 500,
   configLoading = false,
   configError,
+  razorpayEnabled = true,
+  instamojoEnabled = true,
 }: TopUpDialogProps) {
   const [amount, setAmount] = useState("")
   const [gateway, setGateway] = useState("razorpay")
   const [paying, setPaying] = useState(false)
+
+  const rz = razorpayEnabled
+  const im = instamojoEnabled
+  const anyCardGateway = rz || im
 
   useEffect(() => {
     if (!open) {
@@ -54,6 +63,11 @@ export function TopUpDialog({
       setPaying(false)
     }
   }, [open])
+
+  useEffect(() => {
+    if (gateway === "razorpay" && !rz && im) setGateway("instamojo")
+    else if (gateway === "instamojo" && !im && rz) setGateway("razorpay")
+  }, [rz, im, gateway])
 
   const priceBreakdown = useMemo(() => {
     const numAmount = Number.parseFloat(amount) || 0
@@ -84,6 +98,11 @@ export function TopUpDialog({
       await Promise.resolve(onConfirm(baseAmountInPaise, gateway))
       setAmount("")
       onOpenChange(false)
+      return
+    }
+
+    if (!rz && !im) {
+      toast.error("Card payments are disabled. Contact support.")
       return
     }
 
@@ -148,6 +167,12 @@ export function TopUpDialog({
             <p className="text-xs text-muted-foreground">Enter the amount you want credited to your wallet</p>
           </div>
 
+          {!isAdmin && !anyCardGateway && (
+            <p className="text-sm text-destructive">
+              Card payments are disabled for this platform. Contact support.
+            </p>
+          )}
+
           {!isAdmin && amount && Number.parseFloat(amount) > 0 && (
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
@@ -186,34 +211,38 @@ export function TopUpDialog({
           )}
 
           {/* Payment Gateway Selection */}
-          {!isAdmin && (
+          {!isAdmin && anyCardGateway && (
             <div className="space-y-2">
               <Label>Payment Method</Label>
               <RadioGroup value={gateway} onValueChange={setGateway} className="grid grid-cols-1 gap-2">
-                <label
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                    gateway === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-                  }`}
-                >
-                  <RadioGroupItem value="razorpay" id="razorpay" />
-                  <CreditCard className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <p className="font-medium">Razorpay</p>
-                    <p className="text-xs text-muted-foreground">Cards, UPI, NetBanking</p>
-                  </div>
-                </label>
-                <label
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                    gateway === "instamojo" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
-                  }`}
-                >
-                  <RadioGroupItem value="instamojo" id="instamojo" />
-                  <Wallet className="h-5 w-5 text-purple-500" />
-                  <div>
-                    <p className="font-medium">Instamojo</p>
-                    <p className="text-xs text-muted-foreground">Cards, UPI, Wallets</p>
-                  </div>
-                </label>
+                {rz && (
+                  <label
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                      gateway === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    <RadioGroupItem value="razorpay" id="razorpay" />
+                    <CreditCard className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="font-medium">Razorpay</p>
+                      <p className="text-xs text-muted-foreground">Cards, UPI, NetBanking</p>
+                    </div>
+                  </label>
+                )}
+                {im && (
+                  <label
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                      gateway === "instamojo" ? "border-primary bg-primary/5" : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    <RadioGroupItem value="instamojo" id="instamojo" />
+                    <Wallet className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <p className="font-medium">Instamojo</p>
+                      <p className="text-xs text-muted-foreground">Cards, UPI, Wallets</p>
+                    </div>
+                  </label>
+                )}
               </RadioGroup>
             </div>
           )}
@@ -241,7 +270,8 @@ export function TopUpDialog({
               !!configError ||
               !amount ||
               Number.parseFloat(amount) <= 0 ||
-              (!isAdmin && (Number.parseFloat(amount) || 0) < minRechargeRupees)
+              (!isAdmin && (Number.parseFloat(amount) || 0) < minRechargeRupees) ||
+              (!isAdmin && !anyCardGateway)
             }
           >
             {paying ? (

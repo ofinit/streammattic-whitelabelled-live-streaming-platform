@@ -673,7 +673,7 @@ INSERT INTO platform_settings (key, value) VALUES
   ('simulcast_pricing', '{"youtube":{"price":75,"enabled":true,"label":"YouTube"},"facebook":{"price":75,"enabled":true,"label":"Facebook"},"custom_rtmp":{"price":100,"enabled":true,"label":"Custom RTMP"}}'::jsonb),
   ('studio_subscription', '{"enabled":true,"annualPrice":1800000,"label":"Studio Annual Subscription","description":"White-label platform access and hosting"}'::jsonb),
   ('gst_config', '{"enabled":true,"percentage":18,"gstin":"","companyName":"StreamLivee","companyAddress":""}'::jsonb),
-  ('payment_gateways', '{"razorpay":{"enabled":false,"label":"Razorpay"},"instamojo":{"enabled":false,"label":"Instamojo"}}'::jsonb)
+  ('payment_gateways', '{"razorpay":{"enabled":true,"label":"Razorpay"},"instamojo":{"enabled":true,"label":"Instamojo"}}'::jsonb)
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
 
 -- =============================================================

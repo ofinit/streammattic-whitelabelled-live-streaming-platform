@@ -6,6 +6,7 @@ import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { calculatePriceBreakdown } from "@/lib/gst-service"
 import { getPlatformGSTSettings, toGSTCalculationConfig } from "@/lib/platform-gst"
 import { applyStudioUpgradeOrRenewalSql } from "@/lib/studio-subscription"
+import { getPaymentGatewayFlags } from "@/lib/payment-gateway-settings"
 
 export const POST = withAuth(async (user, request) => {
   const body = await request.json()
@@ -17,6 +18,14 @@ export const POST = withAuth(async (user, request) => {
 
   if (!["razorpay", "instamojo", "wallet"].includes(gateway)) {
     return jsonError("Gateway must be 'razorpay', 'instamojo', or 'wallet'")
+  }
+
+  const pgFlags = await getPaymentGatewayFlags()
+  if (gateway === "razorpay" && !pgFlags.razorpay) {
+    return jsonError("Razorpay is disabled for this platform", 400)
+  }
+  if (gateway === "instamojo" && !pgFlags.instamojo) {
+    return jsonError("Instamojo is disabled for this platform", 400)
   }
 
   const role = user.role as string

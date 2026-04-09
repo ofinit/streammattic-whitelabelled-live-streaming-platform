@@ -11,14 +11,27 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield, Users } from "lucide-react"
+import { Loader2, Youtube, Key, Eye, EyeOff, ExternalLink, CheckCircle2, AlertTriangle, Shield, Users, CreditCard } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+const settingsFetcher = async (url: string) => {
+  const r = await fetch(url, { credentials: "include" })
+  if (!r.ok) throw new Error("Failed to load settings")
+  return r.json() as Promise<{ settings?: { key: string; value: unknown }[] }>
+}
 
 export default function IntegrationsSettingsPage() {
   const { toast } = useToast()
   const { data, mutate, isLoading } = useSWR("/api/admin/integrations", fetcher)
+  const { data: settingsData, mutate: mutateSettings, isLoading: settingsLoading } = useSWR(
+    "/api/settings",
+    settingsFetcher,
+  )
   const [isSaving, setIsSaving] = useState(false)
+  const [pgRazorpay, setPgRazorpay] = useState(true)
+  const [pgInstamojo, setPgInstamojo] = useState(true)
+  const [pgSaving, setPgSaving] = useState(false)
   const [showClientSecret, setShowClientSecret] = useState(false)
   const [showEncryptionKey, setShowEncryptionKey] = useState(false)
 
@@ -40,6 +53,14 @@ export default function IntegrationsSettingsPage() {
     if (data && !hasEdited)
       setFormData((prev) => ({ ...prev, youtube_config_enabled: Boolean(data?.youtube_config_enabled) }))
   }, [data?.youtube_config_enabled, hasEdited])
+
+  useEffect(() => {
+    const row = settingsData?.settings?.find((s) => s.key === "payment_gateways")
+    if (!row?.value || typeof row.value !== "object") return
+    const v = row.value as { razorpay?: { enabled?: boolean }; instamojo?: { enabled?: boolean } }
+    setPgRazorpay(v?.razorpay?.enabled !== false)
+    setPgInstamojo(v?.instamojo?.enabled !== false)
+  }, [settingsData])
 
   const handleFieldChange = (field: string, value: string) => {
     if (!hasEdited) {
@@ -95,6 +116,31 @@ export default function IntegrationsSettingsPage() {
 
   const isConfigured = data?.has_google_client_id && data?.has_google_client_secret
 
+  const handleSavePaymentGateways = async () => {
+    setPgSaving(true)
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "payment_gateways",
+          value: {
+            razorpay: { enabled: pgRazorpay, label: "Razorpay" },
+            instamojo: { enabled: pgInstamojo, label: "Instamojo" },
+          },
+        }),
+      })
+      if (!res.ok) throw new Error("save failed")
+      toast({ title: "Payment gateways updated", description: "Checkout will show only enabled options." })
+      void mutateSettings()
+    } catch {
+      toast({ title: "Failed to save payment gateways", variant: "destructive" })
+    } finally {
+      setPgSaving(false)
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Header title="Integrations" subtitle="Configure third-party service credentials" />
@@ -128,6 +174,50 @@ export default function IntegrationsSettingsPage() {
             <p className="text-sm text-muted-foreground">
               Default: OFF. When OFF, only admins see and manage YouTube API Configuration; streamers and studios use the platform credentials. When ON, they can open the configuration page in their dashboard and configure by themselves.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Payment gateways (Razorpay / Instamojo) */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/20">
+                  <CreditCard className="h-5 w-5 text-violet-500" />
+                </div>
+                <div>
+                  <CardTitle>Payment gateways</CardTitle>
+                  <CardDescription>
+                    Control which card/UPI checkout options appear for wallet top-up and Studio subscription. API keys stay in server environment variables (
+                    <code className="text-xs">RAZORPAY_*</code>, <code className="text-xs">INSTAMOJO_*</code>).
+                  </CardDescription>
+                </div>
+              </div>
+              {settingsLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <p className="font-medium">Razorpay</p>
+                <p className="text-xs text-muted-foreground">Razorpay Checkout (cards, UPI, netbanking)</p>
+              </div>
+              <Switch checked={pgRazorpay} onCheckedChange={setPgRazorpay} id="pg-razorpay" />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <p className="font-medium">Instamojo</p>
+                <p className="text-xs text-muted-foreground">Instamojo payment links (redirect)</p>
+              </div>
+              <Switch checked={pgInstamojo} onCheckedChange={setPgInstamojo} id="pg-instamojo" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              If both are off, users cannot pay by card until at least one is enabled (wallet-only Studio upgrade still works when balance is sufficient).
+            </p>
+            <Button type="button" onClick={() => void handleSavePaymentGateways()} disabled={pgSaving}>
+              {pgSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save payment gateways
+            </Button>
           </CardContent>
         </Card>
 

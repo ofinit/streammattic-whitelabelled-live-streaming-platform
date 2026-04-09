@@ -3,10 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/login",
-  "/login/callback",
   "/signup",
   "/admin/login",
-  "/handler",
   "/auth",
   "/site",
   "/site/login",
@@ -32,7 +30,6 @@ const RESERVED_ROOT_SEGMENT = new Set([
   "api",
   "auth",
   "demo",
-  "handler",
   "login",
   "payment",
   "signup",
@@ -57,7 +54,7 @@ function isPublicEventSlugPath(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow public paths, NextAuth routes, static assets, and API routes that handle their own auth
+  // Allow public paths, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
     isPublicEventSlugPath(pathname) ||
@@ -66,8 +63,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/health") ||
     /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
     pathname.startsWith("/api/watch/") ||
-    pathname.startsWith("/api/auth") || // NextAuth (signin, callback, error, etc.)
-    /** Admin APIs enforce role in route handlers; cookie names vary (Auth.js / sm_session / legacy) */
+    pathname.startsWith("/api/auth") ||
+    /** Admin APIs enforce role in route handlers */
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
@@ -77,14 +74,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check session cookie exists (support both dev and prod secure cookies)
-  const sessionToken =
-    request.cookies.get("authjs.session-token")?.value ||
-    request.cookies.get("__Secure-authjs.session-token")?.value ||
-    request.cookies.get("__Host-authjs.session-token")?.value ||
-    request.cookies.get("next-auth.session-token")?.value ||
-    request.cookies.get("__Secure-next-auth.session-token")?.value ||
-    request.cookies.get("sm_session")?.value; // fallback for current active sessions
+  const sessionToken = request.cookies.get("sm_session")?.value
 
   if (!sessionToken) {
     // Redirect to login for protected pages, return 401 for API

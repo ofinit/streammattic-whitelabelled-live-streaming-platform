@@ -1,9 +1,6 @@
-import { createHmac, timingSafeEqual } from "crypto"
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 
-const JWT_SECRET = process.env.JWT_SECRET || "streamlivee-default-secret-change-in-production"
-const AUTH_SECRET = process.env.AUTH_SECRET || JWT_SECRET
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
 
@@ -45,31 +42,6 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   )
   const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("")
   return hashHex === expectedHash
-}
-
-// ============================================================
-// ONE-TIME TOKEN (Stack Auth exchange)
-// ============================================================
-
-export function createOneTimeToken(userId: string): string {
-  const payload = JSON.stringify({ userId, exp: Date.now() + 60 * 1000 })
-  const payloadB64 = Buffer.from(payload, "utf8").toString("base64url")
-  const sig = createHmac("sha256", AUTH_SECRET).update(payloadB64).digest("base64url")
-  return `${payloadB64}.${sig}`
-}
-
-export function verifyOneTimeToken(token: string): { userId: string } | null {
-  try {
-    const [payloadB64, sig] = token.split(".")
-    if (!payloadB64 || !sig) return null
-    const expected = createHmac("sha256", AUTH_SECRET).update(payloadB64).digest("base64url")
-    if (expected.length !== sig.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(sig))) return null
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"))
-    if (!payload.userId || !payload.exp || Date.now() > payload.exp) return null
-    return { userId: payload.userId }
-  } catch {
-    return null
-  }
 }
 
 // ============================================================
@@ -157,31 +129,13 @@ export async function clearSessionCookie() {
 // AUTH HELPERS (get current user from request)
 // ============================================================
 
-import { auth } from "@/auth"
-
+/** Resolve user from HTTP-only `sm_session` (set by POST /api/auth/login). */
 export async function getCurrentUser() {
-  // Prefer NextAuth (JWT) when present — admin/main login uses signIn("credentials").
-  // Legacy sm_session from POST /api/auth/login must NOT override an active NextAuth session,
-  // or users stay "stuck" as the wrong role after signing in as admin.
-  const session = await auth()
-  if (session?.user?.id) {
-    const sql = getDb()
-    const rows = await sql`
-      SELECT id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared,
-             studio_subscription_expires_at, created_at, updated_at
-      FROM users
-      WHERE id = ${session.user.id}
-    `
-    if (rows.length === 0) return null
-    return toCamel(rows[0] as Record<string, unknown>)
-  }
-
   const sessionToken = await getSessionCookie()
   if (sessionToken) {
     const user = await getSessionUser(sessionToken)
     if (user) return user
   }
-
   return null
 }
 
@@ -238,26 +192,6 @@ export async function createUser(data: {
   }
 
   return user
-}
-
-/** Get existing user by email, or create one (e.g. for OAuth). Uses a random password so login is only via OAuth. */
-export async function getOrCreateUserByOAuth(profile: { email: string; name?: string | null }) {
-  const sql = getDb()
-  const email = profile.email?.toLowerCase().trim()
-  if (!email) return null
-  let rows = await sql`SELECT id, email, name, role, status, mock_data_cleared FROM users WHERE email = ${email}`
-  if (rows.length > 0) {
-    const u = rows[0] as Record<string, unknown>
-    if (u.status === "suspended" || u.status === "deactivated") return null
-    return toCamel(u)
-  }
-  const newUser = await createUser({
-    email,
-    password: crypto.randomUUID(),
-    name: (profile.name || email.split("@")[0]).trim() || "User",
-    role: "streamer",
-  })
-  return newUser as Record<string, unknown>
 }
 
 export async function updateLastLogin(userId: string) {

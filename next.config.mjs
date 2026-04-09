@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      { source: "/login/callback", destination: "/login", permanent: false },
+    ]
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

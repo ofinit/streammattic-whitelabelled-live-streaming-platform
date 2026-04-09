@@ -17,10 +17,10 @@ Event watch-page templates (`tpl-*`) are documented in **[docs/TEMPLATE_IMPLEMEN
 ## Deploy (generic)
 
 - **Local:** Set `DATABASE_URL` to your local Postgres, then `npm run dev`.
-- **VPS / production:** Run `npm run build` then `npm start`. Set `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL` (or `NEXT_PUBLIC_APP_URL`), and optionally `UPLOAD_DIR` for file uploads. See `.env.example` for all options.
+- **VPS / production:** Run `npm run build` then `npm start`. Set `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, and optionally `UPLOAD_DIR` for file uploads. See `.env.example` for all options.
 - **Coolify (e.g. [ozero.cloud](https://ozero.cloud)):** See [docs/deploy-coolify-ozero.md](docs/deploy-coolify-ozero.md) — Postgres + app on Coolify, `Dockerfile`, env vars, volume on `/app/uploads`, migrations.
 - **CloudJiffy (Jelastic):** Use [docs/deploy-cloudjiffy.md](docs/deploy-cloudjiffy.md), `.env.production.example`, `docker-compose.cloudjiffy.yml`, and [deploy/nginx/streamlivee.conf.example](deploy/nginx/streamlivee.conf.example). On the server: `npm run db:migrate:production` (after copying env to `.env.production`), then build/run Docker as in the doc.
-- **Docker (local stack):** From project root run `docker compose up --build`. The app will use the `postgres` service; set `AUTH_SECRET` and optionally `NEXTAUTH_URL`/`NEXT_PUBLIC_APP_URL` via `.env` or environment. Uploads are stored in a named volume; for backups see `scripts/README-BACKUP-RESTORE.md`.
+- **Docker (local stack):** From project root run `docker compose up --build`. The app will use the `postgres` service; set `NEXT_PUBLIC_APP_URL` via `.env` or environment. Uploads are stored in a named volume; for backups see `scripts/README-BACKUP-RESTORE.md`.
 
 ## Optional: Streamer → Studio upgrade CTA
 

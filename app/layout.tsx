@@ -21,7 +21,6 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { BrandingProvider } from "@/lib/branding-context"
 import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
-import { StackProvider } from "@/components/stack-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 import { getPlatformSetting } from "@/lib/db-queries"
@@ -168,15 +167,13 @@ export default async function RootLayout({
       className={`dark ${inter.variable} ${playfair.variable} ${lato.variable} ${cormorantGarden.variable} ${montserratGarden.variable} ${greatVibesChristianRose.variable} ${italianaMidnight.variable} ${rajdhaniMidnight.variable} ${pacificoCoastal.variable} ${quicksandCoastal.variable} ${spaceGroteskCorporate.variable} ${amiriNikah.variable} ${ralewayNikah.variable} ${fredokaBirthday.variable} ${poppinsBirthday.variable}`}
     >
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
-        <StackProvider>
-          <BrandingProvider>
-            <AuthProvider>
-              <DynamicFavicon />
-              {children}
-              <Toaster />
-            </AuthProvider>
-          </BrandingProvider>
-        </StackProvider>
+        <BrandingProvider>
+          <AuthProvider>
+            <DynamicFavicon />
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </BrandingProvider>
       </body>
     </html>
   )

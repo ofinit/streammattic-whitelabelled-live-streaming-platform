@@ -20,7 +20,7 @@ This guide matches a typical topology: **Ubuntu VPS** for the app and **PostgreS
 ## 3. Configure the application server
 
 1. Copy [`.env.production.example`](../.env.production.example) to `.env.production` on the VPS (same directory you build from, or pass vars another way).
-2. Fill in `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, and optional `NEXT_PUBLIC_PLATFORM_*` for customer DNS instructions.
+2. Fill in `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, and optional `NEXT_PUBLIC_PLATFORM_*` for customer DNS instructions.
 
 ## 4. Run database migrations (once per environment)
 
@@ -62,7 +62,7 @@ docker compose -f docker-compose.cloudjiffy.yml --env-file .env.production up -d
 
 ## 6. Nginx + HTTPS (custom domain)
 
-See [`deploy/nginx/streamlivee.conf.example`](../deploy/nginx/streamlivee.conf.example). Point your domain to the VPS, install a certificate (e.g. Let’s Encrypt), and proxy to `127.0.0.1:3000`. Ensure `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` use the same public `https://` origin.
+See [`deploy/nginx/streamlivee.conf.example`](../deploy/nginx/streamlivee.conf.example). Point your domain to the VPS, install a certificate (e.g. Let’s Encrypt), and proxy to `127.0.0.1:3000`. Ensure `NEXT_PUBLIC_APP_URL` matches the public `https://` origin.
 
 ## 7. Smoke test
 

@@ -57,9 +57,7 @@ Set these in Coolify’s **environment** for the app (never commit real values):
 | Variable | Notes |
 | --- | --- |
 | `DATABASE_URL` | **Internal** URL from the DB dashboard when app and Postgres are on the same server ([see above](#internal-vs-external-urls)) |
-| `AUTH_SECRET` | Long random string (≥32 chars) |
-| `NEXTAUTH_URL` | Public `https://` origin users open in the browser |
-| `NEXT_PUBLIC_APP_URL` | Same origin as `NEXTAUTH_URL` for callbacks and links |
+| `NEXT_PUBLIC_APP_URL` | Public `https://` origin users open in the browser (links, uploads, redirects) |
 | `NEXT_PUBLIC_PLATFORM_A_RECORD_IP` | Public IPv4 for apex **A** records shown to customers (your Coolify / proxy host) |
 | `NEXT_PUBLIC_PLATFORM_CNAME_TARGET` | Hostname for **CNAME** records (subdomains / `www`) in customer DNS instructions |
 | `NEXT_PUBLIC_DOMAIN_VERIFICATION_TXT_PREFIX` | Optional; default `_verify` for ownership TXT records ([`lib/platform-dns.ts`](../lib/platform-dns.ts)) |
@@ -102,7 +100,7 @@ Use this when you have data in **local** Postgres and want it on **ozero.cloud**
 
 ## 5. Domains and SSL
 
-In Coolify, attach your domain to the application resource and enable HTTPS. Ensure **`NEXTAUTH_URL`** and **`NEXT_PUBLIC_APP_URL`** use that exact **`https://`** URL.
+In Coolify, attach your domain to the application resource and enable HTTPS. Ensure **`NEXT_PUBLIC_APP_URL`** uses that exact **`https://`** origin.
 
 > [!NOTE]
 > **Important:** If no domain is defined under the Application's Configuration tab, Coolify's UI list for Traefik routing might show the container as **"Unhealthy"**, even if the Dockerfile health check is actually passing internally. Adding a domain immediately resolves Traefik routing and the badge will turn green.
@@ -112,15 +110,9 @@ In Coolify, attach your domain to the application resource and enable HTTPS. Ens
 - Open the site over HTTPS, sign in, confirm sessions.
 - Upload an asset and confirm it still loads after **redeploy** (volume on `/app/uploads`).
 
-### Admin Account Lockouts on First Run
-Due to subtleties between Node's native WebCrypto APIs and Next.js Edge runtime, manually copying/pasting password hashes (via SQL) for initial users can sometimes result in invalid credentials during direct login.
+### First admin login
 
-**The safest way to login as admin for the first time:**
-1. Go to the login page and use **"OR EMAIL A MAGIC LINK"**.
-2. Enter your seeded admin email.
-3. If you have not yet configured SMTP (`RESEND_API_KEY`), the magic link verification URL will be securely printed to `stdout`.
-4. Go to **Coolify → Application → Logs**, copy the printed `https://.../auth/verify-magic...` link, and paste it into your browser.
-5. Once authenticated, use the Dashboard UI to update your user profile's password natively.
+Use the admin user seeded by migrations (see handbook security notes for the default dev email), or run `npm run seed:admin` if your deployment process uses that script. Sign in at **`/admin/login`** with email and password. If a copied SQL password hash fails to verify, reset the password using the app’s change-password flow after a successful login, or update the hash via a controlled migration/script.
 
 ## Related docs
 

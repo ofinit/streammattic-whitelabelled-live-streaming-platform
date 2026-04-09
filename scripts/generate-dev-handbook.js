@@ -36,7 +36,7 @@ function routeToUrlPattern(filePath) {
 }
 
 function pickDeps(pkg) {
-  const keys = ["next", "react", "react-dom", "next-auth", "pg", "@upstash/redis", "zod", "@stackframe/stack"]
+  const keys = ["next", "react", "react-dom", "pg", "@upstash/redis", "zod"]
   const d = pkg.dependencies || {}
   const lines = []
   for (const k of keys) {

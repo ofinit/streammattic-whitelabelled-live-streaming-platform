@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import { useBranding } from "@/lib/branding-context"
 import { Button } from "@/components/ui/button"
@@ -55,18 +54,23 @@ export default function SignupPage() {
         setLoading(false)
         return
       }
-      const signInResult = await signIn("credentials", {
-        email: email.trim(),
-        password,
-        redirect: false,
+      const loginRes = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       })
-      if (signInResult?.error) {
+      const loginData = await loginRes.json().catch(() => ({}))
+      if (!loginRes.ok) {
         setError("Account created. Please sign in.")
         setLoading(false)
         router.push("/login")
         return
       }
-      router.push(signInResult?.url || DEFAULT_CALLBACK)
+      const role = (loginData as { user?: { role?: string } }).user?.role
+      if (role === "studio") router.push("/studio")
+      else if (role === "admin") router.push("/admin")
+      else router.push(DEFAULT_CALLBACK)
     } catch {
       setError("Something went wrong")
       setLoading(false)

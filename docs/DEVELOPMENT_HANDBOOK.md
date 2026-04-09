@@ -6,7 +6,7 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 
 - **Framework:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
 - **Data:** PostgreSQL via `pg` ([`lib/db.ts`](../lib/db.ts)); connection string **`DATABASE_URL`**
-- **Auth:** NextAuth v5 ([`app/api/auth/[...nextauth]/route.ts`](../app/api/auth/[...nextauth]/route.ts)), session gates in [`middleware.ts`](../middleware.ts)
+- **Auth:** Email/password via [`POST /api/auth/login`](../app/api/auth/login/route.ts) (HTTP-only `sm_session` cookie), [`GET /api/auth/me`](../app/api/auth/me/route.ts); session gates in [`middleware.ts`](../middleware.ts)
 - **Optional cache:** Upstash Redis ([`lib/redis.ts`](../lib/redis.ts)) — `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`. If unset, cached code paths fall back to the database.
 
 ## Database: local vs production
@@ -57,11 +57,9 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 | `next` | 16.0.10 |
 | `react` | 19.2.0 |
 | `react-dom` | 19.2.0 |
-| `next-auth` | ^5.0.0-beta.30 |
 | `pg` | ^8.13.0 |
 | `@upstash/redis` | ^1.36.3 |
 | `zod` | 3.25.76 |
-| `@stackframe/stack` | ^2.8.71 |
 
 ### App Router API modules (`route.ts`)
 
@@ -93,20 +91,15 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
 | `app/api/admin/wallets/route.ts` | `/api/admin/wallets` |
 | `app/api/admin/youtube-override/route.ts` | `/api/admin/youtube-override` |
-| `app/api/auth/[...nextauth]/route.ts` | `/api/auth/[...nextauth]` |
 | `app/api/auth/change-password/route.ts` | `/api/auth/change-password` |
 | `app/api/auth/email-update/request/route.ts` | `/api/auth/email-update/request` |
 | `app/api/auth/email-update/verify/route.ts` | `/api/auth/email-update/verify` |
 | `app/api/auth/impersonate/route.ts` | `/api/auth/impersonate` |
 | `app/api/auth/login/route.ts` | `/api/auth/login` |
 | `app/api/auth/logout/route.ts` | `/api/auth/logout` |
-| `app/api/auth/magic-link/request/route.ts` | `/api/auth/magic-link/request` |
-| `app/api/auth/magic-link/session/route.ts` | `/api/auth/magic-link/session` |
 | `app/api/auth/me/route.ts` | `/api/auth/me` |
 | `app/api/auth/profile/route.ts` | `/api/auth/profile` |
-| `app/api/auth/providers/route.ts` | `/api/auth/providers` |
 | `app/api/auth/register/route.ts` | `/api/auth/register` |
-| `app/api/auth/stack-exchange/route.ts` | `/api/auth/stack-exchange` |
 | `app/api/auth/youtube/callback/route.ts` | `/api/auth/youtube/callback` |
 | `app/api/auth/youtube/route.ts` | `/api/auth/youtube` |
 | `app/api/branding/lookup/route.ts` | `/api/branding/lookup` |

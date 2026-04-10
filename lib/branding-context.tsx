@@ -45,13 +45,24 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`/api/branding/lookup?hostname=${hostname}`)
         if (response.ok) {
           const result = await response.json()
-          if (result.success) {
-            setBranding(result.data.branding)
-            // Fetch the actual studio user if whiteLabeled
-            if (result.data.isWhiteLabel && result.data.userId) {
-               // Optional: Fetch specific studio details if needed for context
-               // For now just branding is enough
-            }
+          const payload =
+            result && typeof result === "object" && "success" in result && result.success && "data" in result && result.data
+              ? (result as { data: { branding?: Record<string, unknown>; isWhiteLabel?: boolean; userId?: string } }).data
+              : (result as { branding?: Record<string, unknown>; isWhiteLabel?: boolean; userId?: string })
+          const b = payload?.branding
+          if (b && typeof b === "object") {
+            const brandName = (b.brandName || b.platformName || defaultBranding.brandName) as string
+            const themeColor = (b.themeColor || b.primaryColor || defaultBranding.themeColor) as string
+            const accentColor = (b.accentColor || b.secondaryColor || defaultBranding.accentColor) as string
+            setBranding({
+              ...defaultBranding,
+              brandName,
+              themeColor,
+              accentColor,
+              email: (b.email || b.supportEmail || defaultBranding.email) as string,
+              metaTitle: (b.metaTitle as string) || defaultBranding.metaTitle,
+              metaDescription: (b.metaDescription as string) || defaultBranding.metaDescription,
+            })
           }
         }
       } catch (error) {

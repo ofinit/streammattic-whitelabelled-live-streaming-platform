@@ -8,60 +8,64 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const role = searchParams.get("role") || "streamer"
     
-    // Default search parameters, can be expanded as needed.
+    // Use u.* so optional columns (e.g. custom_pricing, studio_subscription_expires_at) missing on older DBs do not break the query.
     const sql = getDb()
-    const rows = (role === "all") 
-      ? await sql`
-          SELECT 
-            u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
-            u.studio_subscription_expires_at,
-            sb.platform_name, sb.primary_color
+    const rows =
+      role === "all"
+        ? await sql(`
+          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
           ORDER BY u.created_at DESC
-        `
-      : await sql`
-          SELECT 
-            u.id, u.name, u.email, u.phone, u.role, u.status, u.avatar, u.email_verified, u.last_login_at, u.created_at, u.custom_pricing,
-            u.studio_subscription_expires_at,
-            sb.platform_name, sb.primary_color
+        `)
+        : await sql(
+            `
+          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
-          WHERE u.role = ${role}
+          WHERE u.role = $1
           ORDER BY u.created_at DESC
-        `
+        `,
+            [role],
+          )
 
     // Mock data compatibility wrapper
-    const users = rows.map(r => ({
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      phone: r.phone || "",
-      role: r.role,
-      status: r.status,
-      avatar: r.avatar,
-      emailVerified: r.email_verified,
-      lastLogin: r.last_login_at || r.created_at,
-      joinedAt: r.created_at,
-      isVerified: r.email_verified,
-      totalEvents: 0,
-      totalRevenue: 0,
-      walletBalance: 0,
-      customPricing: r.custom_pricing ?? null,
-      studioSubscriptionExpiresAt: r.studio_subscription_expires_at
-        ? new Date(r.studio_subscription_expires_at as string).toISOString()
-        : null,
-      branding: {
-         platformName: r.platform_name || (r.role === 'studio' ? 'Unnamed Studio' : 'Platform'),
-         primaryColor: r.primary_color || '#10b981'
+    const users = rows.map((r) => {
+      const row = r as Record<string, unknown>
+      const roleVal = String(row.role ?? "")
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone || "",
+        role: row.role,
+        status: row.status,
+        avatar: row.avatar,
+        emailVerified: row.email_verified,
+        lastLogin: row.last_login_at || row.created_at,
+        joinedAt: row.created_at,
+        createdAt: row.created_at,
+        isVerified: row.email_verified,
+        totalEvents: 0,
+        totalRevenue: 0,
+        walletBalance: 0,
+        customPricing: row.custom_pricing ?? null,
+        studioSubscriptionExpiresAt: row.studio_subscription_expires_at
+          ? new Date(String(row.studio_subscription_expires_at)).toISOString()
+          : null,
+        branding: {
+          platformName:
+            (row.branding_platform_name as string) || (roleVal === "studio" ? "Unnamed Studio" : "Platform"),
+          primaryColor: (row.branding_primary_color as string) || "#10b981",
+        },
       }
-    }))
+    })
 
     // Provide some basic stats counting to meet UI needs
     // In production, you would run a JOIN against wallets and events
     for (const u of users) {
-       const balanceQuery = await sql`SELECT balance FROM wallets WHERE user_id=${u.id}`
-       if (balanceQuery.length > 0) u.walletBalance = Number(balanceQuery[0].balance) || 0
+      const balanceQuery = await sql`SELECT balance FROM wallets WHERE user_id=${u.id}`
+      if (balanceQuery.length > 0) u.walletBalance = Number((balanceQuery[0] as Record<string, unknown>).balance) || 0
     }
 
     return NextResponse.json({ success: true, users })
@@ -77,6 +81,30 @@ export async function POST(req: Request) {
   try {
     await requireRole(["admin"])
     const body = await req.json()
+
+    /** Admin → Create streamer (UserFormDialog on /admin/streamers) */
+    if (body.role === "streamer") {
+      const { email, password, firstName, lastName, mobile } = body as {
+        email?: string
+        password?: string
+        firstName?: string
+        lastName?: string
+        mobile?: string
+      }
+      if (!email || !password || !firstName || !lastName) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
+      const name = `${firstName} ${lastName}`.trim()
+      const user = await createUser({
+        email: email.trim().toLowerCase(),
+        password,
+        name,
+        phone: mobile?.trim() || undefined,
+        role: "streamer",
+      })
+      return NextResponse.json({ success: true, user })
+    }
+
     const { companyName, email, password, phone, platformName, primaryColor, secondaryColor } = body
 
     if (!companyName || !email || !password || !platformName) {

@@ -40,7 +40,7 @@ export default function AdminStudiosPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/admin/users?role=studio")
+    fetch("/api/admin/users?role=studio", { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.users) setStudios(data.users)
@@ -62,6 +62,7 @@ export default function AdminStudiosPage() {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       })
       const result = await res.json()
@@ -69,7 +70,9 @@ export default function AdminStudiosPage() {
       
       toast.success("Studio created successfully")
       // Refresh list
-      const updated = await fetch("/api/admin/users?role=studio").then(r => r.json())
+      const updated = await fetch("/api/admin/users?role=studio", { credentials: "include" }).then((r) =>
+        r.json(),
+      )
       if (updated.users) setStudios(updated.users)
       setIsCreateOpen(false)
     } catch (err: any) {
@@ -84,6 +87,7 @@ export default function AdminStudiosPage() {
       const res = await fetch(`/api/admin/users/${editingStudio.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: data.companyName,
           phone: data.phone,
@@ -100,7 +104,9 @@ export default function AdminStudiosPage() {
 
       toast.success("Studio updated successfully")
       // Refresh list
-      const updated = await fetch("/api/admin/users?role=studio").then(r => r.json())
+      const updated = await fetch("/api/admin/users?role=studio", { credentials: "include" }).then((r) =>
+        r.json(),
+      )
       if (updated.users) setStudios(updated.users)
       setEditingStudio(null)
     } catch (err: any) {
@@ -114,6 +120,7 @@ export default function AdminStudiosPage() {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: newStatus }),
       })
       if (res.ok) {
@@ -317,7 +324,7 @@ export default function AdminStudiosPage() {
           existingCustomPricing={(pricingStudio as any).customPricing ?? null}
           onSaved={() => {
             // Refresh list in background
-            fetch("/api/admin/users?role=studio")
+            fetch("/api/admin/users?role=studio", { credentials: "include" })
               .then(r => r.json())
               .then(data => { if (data.users) setStudios(data.users) })
               .catch(console.error)

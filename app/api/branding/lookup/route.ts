@@ -6,18 +6,20 @@ export const dynamic = "force-dynamic"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const hostname = searchParams.get("hostname")
-  
+  const hostname =
+    searchParams.get("hostname") || searchParams.get("w") || searchParams.get("host")
+
   if (!hostname) {
     return jsonError("Hostname required")
   }
 
   const sql = getDb()
+  const hostNorm = hostname.trim().toLowerCase()
 
-  // 1. Try to find by domain
+  // 1. Try to find by custom domain (table is `domains`, not studio_domains)
   const domains = await sql`
-    SELECT * FROM studio_domains 
-    WHERE domain = ${hostname} AND status = 'active'
+    SELECT * FROM domains 
+    WHERE LOWER(domain) = ${hostNorm} AND verification_status = 'verified'
   `
   
   if (domains.length > 0) {
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. Try to find by subdomain {slug}.streamlivee.com
-  const subdomainMatch = hostname.match(/^([^.]+)\.streamlivee\.com$/)
+  const subdomainMatch = hostNorm.match(/^([^.]+)\.streamlivee\.com$/)
   if (subdomainMatch) {
     const slug = subdomainMatch[1]
     // In our simplified model, the slug is stored in platform_name (slugified) or we might need a slug field.

@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
 import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
@@ -46,9 +47,9 @@ export default function AdminStreamersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/admin/users?role=streamer")
-      .then(res => res.json())
-      .then(data => {
+    fetch("/api/admin/users?role=streamer", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
         if (data.users) setStreamers(data.users)
       })
       .catch(console.error)
@@ -63,8 +64,38 @@ export default function AdminStreamersPage() {
     return matchesSearch && matchesStatus
   })
 
-  const handleCreate = async (data: any) => {
-    console.log("[create API] Creating streamer:", data)
+  const handleCreate = async (data: {
+    email: string
+    password: string
+    firstName: string
+    lastName: string
+    mobile?: string
+  }) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          role: "streamer",
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          mobile: data.mobile,
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Failed to create streamer")
+      toast.success("Streamer created successfully")
+      const updated = await fetch("/api/admin/users?role=streamer", { credentials: "include" }).then((r) => r.json())
+      if (updated.users) setStreamers(updated.users)
+      setIsCreateOpen(false)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create streamer")
+      console.error(err)
+      throw err instanceof Error ? err : new Error("Failed to create streamer")
+    }
   }
 
   const handleEdit = async (data: any) => {
@@ -78,6 +109,7 @@ export default function AdminStreamersPage() {
       const res = await fetch(`/api/admin/users/${statusChangeTarget.user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: statusChangeTarget.targetStatus }),
       })
       if (res.ok) {
@@ -283,9 +315,11 @@ export default function AdminStreamersPage() {
           targetType="streamer"
           existingCustomPricing={(pricingStreamer as any).customPricing ?? null}
           onSaved={() => {
-            fetch("/api/admin/users?role=streamer")
-              .then(r => r.json())
-              .then(data => { if (data.users) setStreamers(data.users) })
+            fetch("/api/admin/users?role=streamer", { credentials: "include" })
+              .then((r) => r.json())
+              .then((data) => {
+                if (data.users) setStreamers(data.users)
+              })
               .catch(console.error)
             setPricingStreamer(null)
           }}

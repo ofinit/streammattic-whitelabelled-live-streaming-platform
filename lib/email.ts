@@ -2,16 +2,38 @@ import nodemailer from "nodemailer"
 import { getPlatformSetting, getStudioBranding } from "@/lib/db-queries"
 import type { StudioBranding } from "@/lib/types"
 
-// Create reusable transporter object using the default SMTP transport
-export const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+/** Default app SMTP (Coolify / VPS). Port 587 = STARTTLS; 465 = implicit TLS. */
+function createDefaultSmtpTransport(): nodemailer.Transporter {
+  const port = Number(process.env.SMTP_PORT) || 587
+  const secure =
+    process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "1" || port === 465
+
+  const options = {
+    host: process.env.SMTP_HOST,
+    port,
+    secure,
+    auth:
+      process.env.SMTP_USER && process.env.SMTP_PASS
+        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        : undefined,
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 20000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 45000),
+    // 587: upgrade with STARTTLS. 465: already TLS (secure: true).
+    requireTLS: !secure && process.env.SMTP_REQUIRE_TLS !== "false",
+    tls: {
+      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false",
+      minVersion: "TLSv1.2" as const,
+    },
+    debug: process.env.SMTP_DEBUG === "1" || process.env.SMTP_DEBUG === "true",
+    logger: process.env.SMTP_DEBUG === "1" || process.env.SMTP_DEBUG === "true",
+  }
+
+  return nodemailer.createTransport(options)
+}
+
+// Reusable transporter for the default platform SMTP
+export const mailer = createDefaultSmtpTransport()
 
 /**
  * Sends a generic email using Nodemailer
@@ -26,14 +48,20 @@ export async function sendEmail(to: string, subject: string, html: string, text?
     const branding = await getStudioBranding(studioId) as StudioBranding | null
     if (branding && branding.smtpHost && branding.smtpUser && branding.smtpPassword) {
       console.log(`[SMTP] Using custom SMTP for studio ${studioId}: ${branding.smtpHost}`)
+      const sPort = Number(branding.smtpPort) || 587
+      const sSecure = branding.smtpSecure ?? sPort === 465
       finalMailer = nodemailer.createTransport({
         host: branding.smtpHost,
-        port: Number(branding.smtpPort) || 587,
-        secure: branding.smtpSecure ?? (Number(branding.smtpPort) === 465),
+        port: sPort,
+        secure: sSecure,
         auth: {
           user: branding.smtpUser,
           pass: branding.smtpPassword,
         },
+        connectionTimeout: 20000,
+        socketTimeout: 45000,
+        requireTLS: !sSecure,
+        tls: { minVersion: "TLSv1.2" as const },
       })
       brandName = branding.platformName || brandName
       from = branding.smtpFromEmail 
@@ -63,7 +91,18 @@ export async function sendEmail(to: string, subject: string, html: string, text?
     })
     console.log("Message sent: %s", info.messageId)
     return true
-  } catch (err) {
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string; command?: string; response?: string; stack?: string }
+    console.error(
+      "[SMTP] sendMail failed:",
+      e?.message,
+      "| code:",
+      e?.code,
+      "| command:",
+      e?.command,
+      "| response:",
+      typeof e?.response === "string" ? e.response.slice(0, 200) : e?.response,
+    )
     console.error("Nodemailer Email Error:", err)
     return false
   }

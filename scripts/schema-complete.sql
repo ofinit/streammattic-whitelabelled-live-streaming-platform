@@ -656,6 +656,31 @@ CREATE TABLE IF NOT EXISTS admin_password_reset_rate (
 CREATE INDEX IF NOT EXISTS idx_admin_pwd_rate_ip_created ON admin_password_reset_rate(ip, created_at DESC);
 
 -- =============================================================
+-- Event cleanup / instrumentation (cleanup-service, instrumentation.ts)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS cron_job_logs (
+  id UUID PRIMARY KEY,
+  status TEXT NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at TIMESTAMPTZ,
+  deleted_count INT DEFAULT 0,
+  error_message TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_cron_job_logs_started ON cron_job_logs(started_at DESC);
+
+CREATE TABLE IF NOT EXISTS deleted_events_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID,
+  event_title TEXT,
+  owner_email TEXT,
+  reason TEXT,
+  assets_found INT DEFAULT 0,
+  assets_deleted INT DEFAULT 0,
+  deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_deleted_events_log_at ON deleted_events_log(deleted_at DESC);
+
+-- =============================================================
 -- SEED: Admin user  (password = admin123)
 -- =============================================================
 INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified)

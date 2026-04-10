@@ -1,6 +1,11 @@
 import nodemailer from "nodemailer"
+import { Resend } from "resend"
 import { getPlatformSetting, getStudioBranding } from "@/lib/db-queries"
 import type { StudioBranding } from "@/lib/types"
+
+function hasPlatformEmailProvider(): boolean {
+  return Boolean(process.env.RESEND_API_KEY?.trim() || process.env.SMTP_HOST?.trim())
+}
 
 /** Default app SMTP (Coolify / VPS). Port 587 = STARTTLS; 465 = implicit TLS. */
 function createDefaultSmtpTransport(): nodemailer.Transporter {
@@ -36,11 +41,15 @@ function createDefaultSmtpTransport(): nodemailer.Transporter {
 export const mailer = createDefaultSmtpTransport()
 
 /**
- * Sends a generic email using Nodemailer
+ * Sends a generic email: Resend (HTTPS) when `RESEND_API_KEY` is set for platform mail,
+ * else Nodemailer SMTP. Studio custom SMTP always uses Nodemailer.
  */
 export async function sendEmail(to: string, subject: string, html: string, text?: string, studioId?: string) {
   let finalMailer = mailer
-  let from = process.env.SMTP_FROM || `"StreamLivee" <noreply@streamlivee.com>`
+  let from =
+    process.env.RESEND_FROM ||
+    process.env.SMTP_FROM ||
+    `"StreamLivee" <noreply@streamlivee.com>`
   let brandName = (await getPlatformSetting("platform_name")) as string || "StreamLivee"
 
   // Check if studio has custom SMTP
@@ -70,15 +79,32 @@ export async function sendEmail(to: string, subject: string, html: string, text?
     }
   }
 
-  if (!process.env.SMTP_HOST && finalMailer === mailer) {
+  if (finalMailer === mailer && process.env.RESEND_API_KEY?.trim()) {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    const { data, error } = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      text: text || "Please enable HTML to view this message.",
+    })
+    if (error) {
+      console.error("[Resend] emails.send failed:", error)
+      return false
+    }
+    console.log("[Resend] Message sent:", data?.id)
+    return true
+  }
+
+  if (finalMailer === mailer && !hasPlatformEmailProvider()) {
     console.log(`\n======================================================`)
-    console.log(`[SMTP MOCK] Email to: ${to}`)
-    console.log(`[SMTP MOCK] Subject: ${subject}`)
-    console.log(`[SMTP MOCK] Brand: ${brandName}`)
-    console.log(`[SMTP MOCK] From: ${from}`)
-    console.log(`[SMTP MOCK] Ensure SMTP_HOST is set in .env to send real emails!`)
+    console.log(`[EMAIL MOCK] Email to: ${to}`)
+    console.log(`[EMAIL MOCK] Subject: ${subject}`)
+    console.log(`[EMAIL MOCK] Brand: ${brandName}`)
+    console.log(`[EMAIL MOCK] From: ${from}`)
+    console.log(`[EMAIL MOCK] Set RESEND_API_KEY or SMTP_HOST to send real emails.`)
     console.log(`======================================================\n`)
-    return true // Assume success for local development if SMTP is missing
+    return true
   }
 
   try {
@@ -114,12 +140,12 @@ export async function sendEmail(to: string, subject: string, html: string, text?
 export async function sendVerificationOTP(toEmail: string, otpCode: string, studioId?: string) {
   const brandName = (await getPlatformSetting("platform_name")) as string || "StreamLivee"
 
-  if (!process.env.SMTP_HOST && !studioId) {
+  if (!hasPlatformEmailProvider() && !studioId) {
     console.log(`\n======================================================`)
     console.log(`[EMAIL VERIFICATION OTP] To: ${toEmail}`)
     console.log(`[EMAIL VERIFICATION OTP] Brand: ${brandName}`)
     console.log(`[EMAIL VERIFICATION OTP] Code: ${otpCode}`)
-    console.log(`[EMAIL VERIFICATION OTP] Ensure SMTP_HOST is set to send via Nodemailer.`)
+    console.log(`[EMAIL VERIFICATION OTP] Set RESEND_API_KEY or SMTP_HOST to send real email.`)
     console.log(`======================================================\n`)
     return true
   }
@@ -203,12 +229,12 @@ export async function sendStudioSubscriptionRenewalReminder(params: {
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
   const brandName = ((await getPlatformSetting("platform_name")) as string) || "StreamLivee"
 
-  if (!process.env.SMTP_HOST) {
+  if (!hasPlatformEmailProvider()) {
     console.log(`\n======================================================`)
     console.log(`[PASSWORD RESET] To: ${toEmail}`)
     console.log(`[PASSWORD RESET] Brand: ${brandName}`)
     console.log(`[PASSWORD RESET] Link: ${resetUrl}`)
-    console.log(`[PASSWORD RESET] Set SMTP_HOST to send real email.`)
+    console.log(`[PASSWORD RESET] Set RESEND_API_KEY or SMTP_HOST to send real email.`)
     console.log(`======================================================\n`)
     return true
   }

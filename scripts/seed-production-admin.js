@@ -19,6 +19,8 @@ const DEMO_EMAILS = [
   "admin@streamlivee.com",
   "alice@example.com",
   "john@livestream.pro",
+  /** Legacy seed admin email (same row as fixed UUID …0001 in some DBs) */
+  "johnson@ofinit.com",
 ]
 
 const DEFAULT_ADMIN_EMAIL = "ofinitsolutions@gmail.com"

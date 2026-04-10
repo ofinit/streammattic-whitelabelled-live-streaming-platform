@@ -22,6 +22,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import { BrandingProvider } from "@/lib/branding-context"
 import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
 import { getPlatformSetting } from "@/lib/db-queries"
 import { getPlatformFaviconUrl, DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
@@ -199,6 +200,7 @@ export default async function RootLayout({
             <DynamicFavicon />
             {children}
             <Toaster />
+            <SonnerToaster richColors closeButton position="top-center" />
           </AuthProvider>
         </BrandingProvider>
       </body>

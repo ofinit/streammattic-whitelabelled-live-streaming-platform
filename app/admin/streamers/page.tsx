@@ -85,8 +85,11 @@ export default function AdminStreamersPage() {
           mobile: data.mobile,
         }),
       })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || "Failed to create streamer")
+      const result = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+      if (!res.ok) {
+        const msg = result.error || result.message || "Failed to create streamer"
+        throw new Error(msg)
+      }
       toast.success("Streamer created successfully")
       const updated = await fetch("/api/admin/users?role=streamer", { credentials: "include" }).then((r) => r.json())
       if (updated.users) setStreamers(updated.users)

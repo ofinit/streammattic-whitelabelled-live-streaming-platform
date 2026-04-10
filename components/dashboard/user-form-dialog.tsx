@@ -50,6 +50,8 @@ export function UserFormDialog({ open, onOpenChange, mode, userType, initialData
     try {
       await onSubmit(formData)
       onOpenChange(false)
+    } catch {
+      // Parent handler typically shows toast; swallow so the dialog stays open without an uncaught rejection
     } finally {
       setIsLoading(false)
     }

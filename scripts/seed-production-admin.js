@@ -3,9 +3,13 @@
  * - Deletes legacy demo accounts and template-seeded mock events
  * - Upserts platform admin with pbkdf2 password hash (matches lib/auth.ts verifyPassword)
  *
- * Usage:
+ * Usage (needs Node — run on your PC or the **app** container, not the Postgres container):
  *   DATABASE_URL=... node scripts/seed-production-admin.js
  *   node --env-file=.env.production scripts/seed-production-admin.js
+ *
+ * If `node` is not installed (e.g. only `psql` in the DB shell), generate a hash with:
+ *   node scripts/print-password-hash.js "YourPassword"
+ *   then run the printed UPDATE in psql.
  *
  * Optional overrides:
  *   SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD

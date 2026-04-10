@@ -15,7 +15,8 @@
     "db:restore": "node --env-file=.env.local scripts/restore-local.js",
     "db:setup-local": "node --env-file=.env.local scripts/setup-local-from-backup.js",
     "docs:generate": "node scripts/generate-dev-handbook.js",
-    "seed:admin": "node scripts/seed-production-admin.js"
+    "seed:admin": "node scripts/seed-production-admin.js",
+    "hash:password": "node scripts/print-password-hash.js"
   },
   "dependencies": {
     "@fal-ai/serverless-client": "^0.15.0",

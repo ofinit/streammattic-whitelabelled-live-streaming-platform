@@ -15,18 +15,21 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
   const router = useRouter()
   const { isCollapsed } = useSidebar()
-  const isLoginPage = pathname === "/admin/login"
+  const isPublicAdminAuthPage =
+    pathname === "/admin/login" ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password"
 
   useEffect(() => {
-    if (isLoginPage || isLoading) return  // wait until auth check completes
+    if (isPublicAdminAuthPage || isLoading) return  // wait until auth check completes
     if (!isAuthenticated) {
       router.push("/admin/login")
     } else if (user?.role !== "admin") {
       router.push("/login")
     }
-  }, [isLoginPage, isLoading, isAuthenticated, user, router])
+  }, [isPublicAdminAuthPage, isLoading, isAuthenticated, user, router])
 
-  if (isLoginPage) {
+  if (isPublicAdminAuthPage) {
     return <>{children}</>
   }
 

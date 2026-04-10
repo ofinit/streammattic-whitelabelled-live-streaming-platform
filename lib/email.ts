@@ -159,17 +159,17 @@ export async function sendStudioSubscriptionRenewalReminder(params: {
 }
 
 /**
- * Platform admin password reset link (see /api/auth/admin/forgot-password).
+ * Password reset link (see /api/auth/forgot-password).
  */
-export async function sendAdminPasswordResetEmail(toEmail: string, resetUrl: string) {
+export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
   const brandName = ((await getPlatformSetting("platform_name")) as string) || "StreamLivee"
 
   if (!process.env.SMTP_HOST) {
     console.log(`\n======================================================`)
-    console.log(`[ADMIN PASSWORD RESET] To: ${toEmail}`)
-    console.log(`[ADMIN PASSWORD RESET] Brand: ${brandName}`)
-    console.log(`[ADMIN PASSWORD RESET] Link: ${resetUrl}`)
-    console.log(`[ADMIN PASSWORD RESET] Set SMTP_HOST to send real email.`)
+    console.log(`[PASSWORD RESET] To: ${toEmail}`)
+    console.log(`[PASSWORD RESET] Brand: ${brandName}`)
+    console.log(`[PASSWORD RESET] Link: ${resetUrl}`)
+    console.log(`[PASSWORD RESET] Set SMTP_HOST to send real email.`)
     console.log(`======================================================\n`)
     return true
   }
@@ -181,7 +181,7 @@ export async function sendAdminPasswordResetEmail(toEmail: string, resetUrl: str
       </div>
       <div style="padding: 32px 24px;">
         <p style="font-size: 16px; color: #333; margin-top: 0;">Hello,</p>
-        <p style="font-size: 16px; color: #333; line-height: 1.5;">We received a request to reset the password for your <strong>platform administrator</strong> account.</p>
+        <p style="font-size: 16px; color: #333; line-height: 1.5;">We received a request to reset the password for your <strong>${brandName}</strong> account.</p>
         <p style="margin: 24px 0;">
           <a href="${resetUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Reset password</a>
         </p>
@@ -193,7 +193,7 @@ export async function sendAdminPasswordResetEmail(toEmail: string, resetUrl: str
     </div>
   `
 
-  const text = `Reset your ${brandName} admin password: ${resetUrl}`
+  const text = `Reset your ${brandName} password: ${resetUrl}`
 
-  return sendEmail(toEmail, `${brandName} — Admin password reset`, html, text)
+  return sendEmail(toEmail, `${brandName} — Password reset`, html, text)
 }

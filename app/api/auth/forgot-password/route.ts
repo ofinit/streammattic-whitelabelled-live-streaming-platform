@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { sendAdminPasswordResetEmail } from "@/lib/email"
+import { sendPasswordResetEmail } from "@/lib/email"
 import { findUserByEmailForLogin } from "@/lib/db-queries"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
 
@@ -22,7 +22,7 @@ function generateToken(): string {
 
 const GENERIC_OK = {
   success: true as const,
-  message: "If an admin account exists for that email, we sent password reset instructions.",
+  message: "If an account exists for that email, we sent password reset instructions.",
 }
 
 export async function POST(req: Request) {
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     }
 
     const user = await findUserByEmailForLogin(raw)
-    if (!user || String(user.role) !== "admin") {
+    if (!user) {
       return NextResponse.json(GENERIC_OK)
     }
 
@@ -86,9 +86,11 @@ export async function POST(req: Request) {
     `
 
     const base = getPublicBaseUrl(req)
-    const resetUrl = `${base}/admin/reset-password?token=${encodeURIComponent(token)}`
+    const isAdmin = String(user.role) === "admin"
+    const resetPath = isAdmin ? "/admin/reset-password" : "/reset-password"
+    const resetUrl = `${base}${resetPath}?token=${encodeURIComponent(token)}`
 
-    const sent = await sendAdminPasswordResetEmail(canonicalEmail, resetUrl)
+    const sent = await sendPasswordResetEmail(canonicalEmail, resetUrl)
     if (!sent) {
       await sql`DELETE FROM admin_password_reset_tokens WHERE token = ${token}`
       return NextResponse.json({ error: "Could not send email. Check SMTP configuration." }, { status: 500 })
@@ -96,7 +98,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(GENERIC_OK)
   } catch (e) {
-    console.error("admin forgot-password:", e)
+    console.error("forgot-password:", e)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

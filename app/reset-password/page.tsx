@@ -4,14 +4,15 @@ import type React from "react"
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { BrandedLogo } from "@/components/branding/branded-logo"
+import { useBranding } from "@/lib/branding-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
-import { useBranding } from "@/lib/branding-context"
 
-function AdminResetPasswordContent() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token") ?? ""
@@ -48,7 +49,7 @@ function AdminResetPasswordContent() {
         setError(typeof data.error === "string" ? data.error : "Reset failed.")
         return
       }
-      router.push("/admin/login?reset=ok")
+      router.push("/login?reset=ok")
     } catch {
       setError("Something went wrong.")
     } finally {
@@ -60,16 +61,16 @@ function AdminResetPasswordContent() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <Link href="/" className="text-lg font-semibold text-primary">
-            {branding.brandName}
+          <Link href="/" className="inline-flex justify-center">
+            <BrandedLogo size="lg" />
           </Link>
-          <p className="mt-1 text-sm text-muted-foreground">Platform Admin</p>
+          <p className="mt-3 text-sm text-muted-foreground">{branding.brandName}</p>
         </div>
 
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle>Set a new password</CardTitle>
-            <CardDescription>Choose a strong password for your administrator account.</CardDescription>
+            <CardDescription>Choose a strong password for your account.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -106,8 +107,8 @@ function AdminResetPasswordContent() {
               </Button>
             </form>
             <p className="mt-4 text-center text-sm">
-              <Link href="/admin/login" className="text-primary hover:underline">
-                Back to admin sign in
+              <Link href="/login" className="text-primary hover:underline">
+                Back to sign in
               </Link>
             </p>
           </CardContent>
@@ -117,7 +118,7 @@ function AdminResetPasswordContent() {
   )
 }
 
-export default function AdminResetPasswordPage() {
+export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
@@ -126,7 +127,7 @@ export default function AdminResetPasswordPage() {
         </div>
       }
     >
-      <AdminResetPasswordContent />
+      <ResetPasswordContent />
     </Suspense>
   )
 }

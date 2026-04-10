@@ -3,14 +3,15 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
+import { BrandedLogo } from "@/components/branding/branded-logo"
+import { useBranding } from "@/lib/branding-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
-import { useBranding } from "@/lib/branding-context"
 
-export default function AdminForgotPasswordPage() {
+export default function ForgotPasswordPage() {
   const { branding } = useBranding()
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
@@ -44,17 +45,18 @@ export default function AdminForgotPasswordPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <Link href="/" className="text-lg font-semibold text-primary">
-            {branding.brandName}
+          <Link href="/" className="inline-flex justify-center">
+            <BrandedLogo size="lg" />
           </Link>
-          <p className="mt-1 text-sm text-muted-foreground">Platform Admin</p>
+          <p className="mt-3 text-sm text-muted-foreground">{branding.brandName}</p>
         </div>
 
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle>Reset admin password</CardTitle>
+            <CardTitle>Reset your password</CardTitle>
             <CardDescription>
-              Enter the email address for your administrator account. If it matches, we will send a reset link.
+              Enter the email for your account. If it matches, we will send a reset link. Admins can use this too—we will
+              send the correct link for your role.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,8 +86,8 @@ export default function AdminForgotPasswordPage() {
               </form>
             )}
             <p className="mt-4 text-center text-sm">
-              <Link href="/admin/login" className="text-primary hover:underline">
-                Back to admin sign in
+              <Link href="/login" className="text-primary hover:underline">
+                Back to sign in
               </Link>
             </p>
           </CardContent>

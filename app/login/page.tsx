@@ -33,6 +33,7 @@ function LoginPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [credentialsLoading, setCredentialsLoading] = useState(false)
+  const resetOk = searchParams.get("reset") === "ok"
 
   useEffect(() => {
     const authError = searchParams.get("error")
@@ -107,6 +108,11 @@ function LoginPageContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {resetOk && (
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  Password updated. Sign in with your new password.
+                </p>
+              )}
 
               <form onSubmit={handleCredentialsSubmit} className="space-y-3">
                 <Label htmlFor="login-email">Email</Label>
@@ -119,7 +125,15 @@ function LoginPageContent() {
                   className="bg-secondary border-border"
                   required
                 />
-                <Label htmlFor="login-password">Password</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="login-password"
                   type="password"

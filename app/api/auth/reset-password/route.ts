@@ -34,9 +34,9 @@ export async function POST(req: Request) {
     const userIdRaw = String((tokenRows[0] as { user_id: unknown }).user_id)
 
     const rows = await sql`
-      SELECT id, role FROM users WHERE id = ${userIdRaw} LIMIT 1
+      SELECT id FROM users WHERE id = ${userIdRaw} LIMIT 1
     `
-    if (rows.length === 0 || String((rows[0] as { role?: string }).role) !== "admin") {
+    if (rows.length === 0) {
       await sql`DELETE FROM admin_password_reset_tokens WHERE token = ${token}`
       return NextResponse.json({ error: "Invalid or expired reset link." }, { status: 400 })
     }
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Password updated. Sign in with your new password." })
   } catch (e) {
-    console.error("admin reset-password:", e)
+    console.error("reset-password:", e)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

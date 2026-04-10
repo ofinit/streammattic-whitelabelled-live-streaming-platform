@@ -20,6 +20,7 @@ function AdminLoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const resetOk = searchParams.get("reset") === "ok"
   useEffect(() => {
     const authError = searchParams.get("error")
     if (authError) {
@@ -64,6 +65,11 @@ function AdminLoginContent() {
             <CardDescription>Use your admin credentials. This page is for platform administrators only.</CardDescription>
           </CardHeader>
           <CardContent>
+            {resetOk && (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 mb-4">
+                Password updated. Sign in with your new password.
+              </p>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="admin-email">Email</Label>
@@ -78,7 +84,15 @@ function AdminLoginContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="admin-password">Password</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="admin-password">Password</Label>
+                  <Link
+                    href="/admin/forgot-password"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="admin-password"
                   type="password"

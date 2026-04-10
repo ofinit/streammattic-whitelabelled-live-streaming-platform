@@ -95,6 +95,12 @@ const statements = [
   `CREATE INDEX idx_packages_type ON packages(type)`,
   // Draft events (no stream selected): add enum value (idempotent on PG 10+)
   `ALTER TYPE stream_type_key ADD VALUE IF NOT EXISTS 'pending'`,
+  // Admin forgot-password (PostgreSQL only; no Redis)
+  `CREATE TABLE IF NOT EXISTS admin_password_reset_tokens (token TEXT PRIMARY KEY, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_pwd_reset_user ON admin_password_reset_tokens(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_pwd_reset_expires ON admin_password_reset_tokens(expires_at)`,
+  `CREATE TABLE IF NOT EXISTS admin_password_reset_rate (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ip TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_pwd_rate_ip_created ON admin_password_reset_rate(ip, created_at DESC)`,
 ];
 
 const seedSettings = [

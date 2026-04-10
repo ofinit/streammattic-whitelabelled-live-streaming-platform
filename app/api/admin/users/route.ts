@@ -2,6 +2,28 @@ import { NextResponse } from "next/server"
 import { requireRole, createUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 
+/** Emails are unique for all users; lists filter by role — explain where the account appears. */
+async function messageForDuplicateEmail(emailFromBody: string | undefined): Promise<string> {
+  const normalized = (emailFromBody ?? "").trim().toLowerCase()
+  if (!normalized) return "A user with this email already exists"
+  const sql = getDb()
+  const rows = await sql`
+    SELECT role::text AS role FROM users WHERE LOWER(TRIM(email)) = ${normalized} LIMIT 1
+  `
+  const row = rows[0] as { role?: string } | undefined
+  const role = row?.role ?? "unknown"
+  if (role === "streamer") {
+    return "This email is already a streamer account. Use Streamers to find them, or try refreshing the page."
+  }
+  if (role === "studio") {
+    return "This email is already a studio account. Open Admin → Studios to manage it; streamers and studios are separate lists."
+  }
+  if (role === "admin") {
+    return "This email is already an admin account. Admins do not appear under Streamers or Studios."
+  }
+  return `This email is already registered (${role}). One login email cannot be reused for another role; use a different address or change the user’s role in the database.`
+}
+
 export async function GET(req: Request) {
   try {
     await requireRole(["admin"])
@@ -78,9 +100,10 @@ export async function GET(req: Request) {
   }
 }
 export async function POST(req: Request) {
+  let body: Record<string, unknown> = {}
   try {
     await requireRole(["admin"])
-    const body = await req.json()
+    body = (await req.json()) as Record<string, unknown>
 
     /** Admin → Create streamer (UserFormDialog on /admin/streamers) */
     if (body.role === "streamer") {
@@ -115,7 +138,7 @@ export async function POST(req: Request) {
     
     // 1. Create the user (this also creates wallet & credits)
     const user: any = await createUser({
-      email,
+      email: typeof email === "string" ? email.trim().toLowerCase() : email,
       password,
       name: companyName,
       phone,
@@ -143,13 +166,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, user })
   } catch (error: any) {
-    console.error("Admin Create Studio error:", error)
+    console.error("Admin create user error:", error)
     if (error.message === "Forbidden" || error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    // Check for unique constraint violation (email)
-    if (error.code === '23505') {
-       return NextResponse.json({ error: "A user with this email already exists" }, { status: 400 })
+    // Unique email is global; streamer/studio lists only show matching role
+    if (error.code === "23505") {
+      const emailHint = typeof body.email === "string" ? body.email : undefined
+      const errorText = await messageForDuplicateEmail(emailHint)
+      return NextResponse.json({ error: errorText }, { status: 400 })
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb, toCamel } from "@/lib/db"
-import { verifyPassword, createSession, setSessionCookie, updateLastLogin } from "@/lib/auth"
+import {
+  verifyPassword,
+  createSession,
+  setSessionCookie,
+  updateLastLogin,
+  hashPassword,
+  isLegacyPasswordHash,
+} from "@/lib/auth"
+import { findUserByEmailForLogin } from "@/lib/db-queries"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,14 +18,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
-    const sql = getDb()
-    const rows = await sql`SELECT * FROM users WHERE email = ${email.toLowerCase().trim()}`
+    const dbUser = await findUserByEmailForLogin(email)
 
-    if (rows.length === 0) {
+    if (!dbUser) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
-
-    const dbUser = rows[0] as Record<string, unknown>
 
     // Check if user is suspended or deactivated
     if (dbUser.status === "suspended") {
@@ -27,9 +32,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Your account has been deactivated." }, { status: 403 })
     }
 
-    const passwordValid = await verifyPassword(password, dbUser.password_hash as string)
+    const storedHash = dbUser.password_hash as string
+    const passwordValid = await verifyPassword(password, storedHash)
     if (!passwordValid) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
+    }
+
+    // Migrate legacy bcrypt (e.g. Postgres crypt()) to app PBKDF2 on successful login
+    if (isLegacyPasswordHash(storedHash)) {
+      const sql = getDb()
+      const newHash = await hashPassword(password)
+      await sql`UPDATE users SET password_hash = ${newHash}, updated_at = NOW() WHERE id = ${dbUser.id as string}`
     }
 
     // Create session

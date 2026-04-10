@@ -56,6 +56,41 @@ export async function getUserByEmail(email: string) {
   return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
+/**
+ * Resolve a user for login: exact email match first, then Gmail/GoogleMail
+ * dot-insensitive local part (matches how Google delivers mail).
+ */
+export async function findUserByEmailForLogin(emailInput: string): Promise<Record<string, unknown> | null> {
+  const sql = getDb()
+  const trimmed = emailInput.toLowerCase().trim()
+
+  const exact = await sql`SELECT * FROM users WHERE LOWER(TRIM(email)) = ${trimmed}`
+  if (exact.length > 0) return exact[0] as Record<string, unknown>
+
+  const at = trimmed.lastIndexOf("@")
+  if (at <= 0) return null
+  const domain = trimmed.slice(at + 1)
+  if (domain !== "gmail.com" && domain !== "googlemail.com") return null
+
+  const localPart = trimmed.slice(0, at)
+  const localCanon = localPart.split("+")[0]!.replace(/\./g, "")
+
+  const gmailRows = await sql`
+    SELECT * FROM users
+    WHERE LOWER(TRIM(SPLIT_PART(email, '@', 2))) IN ('gmail.com', 'googlemail.com')
+      AND REPLACE(LOWER(TRIM(SPLIT_PART(email, '@', 1))), '.', '') = ${localCanon}
+    LIMIT 3
+  `
+  if (gmailRows.length === 0) return null
+  if (gmailRows.length === 1) return gmailRows[0] as Record<string, unknown>
+
+  const preferred = gmailRows.filter((r) => {
+    const e = String((r as Record<string, unknown>).email ?? "").toLowerCase().trim()
+    return e.endsWith(`@${domain}`)
+  })
+  return (preferred[0] ?? gmailRows[0]) as Record<string, unknown>
+}
+
 export async function getUserCount(filters?: { role?: string; status?: string }) {
   const sql = getDb()
   const conditions: string[] = []

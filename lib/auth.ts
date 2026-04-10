@@ -1,3 +1,4 @@
+import { compare as bcryptCompare } from "bcryptjs"
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 
@@ -5,7 +6,7 @@ const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
 
 // ============================================================
-// PASSWORD HASHING (using Web Crypto API - no bcrypt dependency needed)
+// PASSWORD HASHING (PBKDF2 via Web Crypto; bcrypt for legacy DB hashes)
 // ============================================================
 
 export async function hashPassword(password: string): Promise<string> {
@@ -25,23 +26,44 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-  const parts = storedHash.split(":")
-  if (parts.length !== 4 || parts[0] !== "pbkdf2") return false
+  if (!storedHash) return false
 
-  const [, iterStr, saltHex, expectedHash] = parts
-  const iterations = parseInt(iterStr, 10)
-  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(h => parseInt(h, 16)))
+  // App-native PBKDF2 (see hashPassword)
+  if (storedHash.startsWith("pbkdf2:")) {
+    const parts = storedHash.split(":")
+    if (parts.length !== 4) return false
 
-  const encoder = new TextEncoder()
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]
+    const [, iterStr, saltHex, expectedHash] = parts
+    const iterations = parseInt(iterStr, 10)
+    const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(h => parseInt(h, 16)))
+
+    const encoder = new TextEncoder()
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]
+    )
+    const derivedBits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+      keyMaterial, 256
+    )
+    const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("")
+    return hashHex === expectedHash
+  }
+
+  // Legacy: Postgres crypt()/bcrypt seeds and old imports ($2a$, $2b$, $2y$)
+  if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
+    return bcryptCompare(password, storedHash)
+  }
+
+  return false
+}
+
+/** True if password_hash should be migrated to PBKDF2 on next successful login. */
+export function isLegacyPasswordHash(storedHash: string): boolean {
+  return (
+    storedHash.startsWith("$2a$") ||
+    storedHash.startsWith("$2b$") ||
+    storedHash.startsWith("$2y$")
   )
-  const derivedBits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
-    keyMaterial, 256
-  )
-  const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("")
-  return hashHex === expectedHash
 }
 
 // ============================================================

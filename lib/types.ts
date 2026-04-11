@@ -246,6 +246,8 @@ export interface LiveEvent {
   /** The verified primary domain of the studio owning this event */
   primaryDomain?: string | null
   isMock?: boolean
+  /** When true, public watch URL shows only the suspended notice (streamer/studio). */
+  isSuspended?: boolean
   slug?: string
   publicUrl?: string
   crewPinHash?: string

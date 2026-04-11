@@ -11,6 +11,7 @@ export async function GET(
 
   try {
     const sql = getDb()
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     console.log(`[api/watch/[eventId]] Fetching event for ID/Slug: ${eventId}`)
 
     // Query for the event by ID or Slug

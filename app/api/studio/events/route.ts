@@ -79,6 +79,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const sql = getDb()
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+
     const [events, totalCount, liveCount, scheduledCount, completedCount] = await Promise.all([
       getEvents({ studioId, search, status, limit, offset }),
       getEventCount({ studioId }),
@@ -322,11 +325,13 @@ export async function PUT(req: NextRequest) {
       heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin,
       streamType, youtubeUrl, embedCode, simulcastConfig,
+      isSuspended,
     } = body
 
     if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
 
     const sql = getDb()
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     
@@ -570,6 +575,9 @@ export async function PUT(req: NextRequest) {
     const youtubeUrlParam = youtubeUrl === undefined ? null : youtubeUrl ?? null
     const embedCodeParam = embedCode === undefined ? null : embedCode ?? null
 
+    const prevSuspended = Boolean(existingRow.is_suspended ?? false)
+    const nextSuspended = isSuspended !== undefined ? Boolean(isSuspended) : prevSuspended
+
     const rows = await sql`
       UPDATE events SET
         title = COALESCE(${title ?? null}, title),
@@ -597,6 +605,7 @@ export async function PUT(req: NextRequest) {
         photographer_logo_url = ${finalPhotographerLogoUrl},
         photographer_contact = ${finalPhotographerContact}::jsonb,
         crew_pin_hash = ${finalCrewPinHash},
+        is_suspended = ${nextSuspended},
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
@@ -635,6 +644,17 @@ export async function DELETE(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    if (user.role === "streamer" || user.role === "studio") {
+      return NextResponse.json(
+        {
+          error:
+            "Event deletion is not available for your account. Suspend the event from the menu to hide its public page.",
+          code: "USE_SUSPEND",
+        },
+        { status: 403 },
+      )
+    }
 
     const id = req.nextUrl.searchParams.get("id")
     if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })

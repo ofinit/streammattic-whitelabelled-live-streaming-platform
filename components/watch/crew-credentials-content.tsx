@@ -1,19 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Lock, Copy, Check, Loader2 } from "lucide-react"
+import { DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE } from "@/lib/event-suspended"
 
 /** eventId may be numeric id or public slug — same as /api/watch/[eventId]/... */
 export function CrewCredentialsContent({ eventId }: { eventId: string }) {
+  const [suspended, setSuspended] = useState<boolean | null>(null)
   const [pin, setPin] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [credentials, setCredentials] = useState<{ rtmpUrl: string; streamKey: string } | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void fetch(`/api/watch/${encodeURIComponent(eventId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { event?: { isSuspended?: boolean } } | null) => {
+        if (cancelled) return
+        if (!data?.event) {
+          setSuspended(false)
+          return
+        }
+        setSuspended(data.event.isSuspended === true)
+      })
+      .catch(() => {
+        if (!cancelled) setSuspended(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [eventId])
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text)
@@ -48,6 +70,24 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (suspended === true) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <p className="max-w-lg text-center text-base leading-relaxed text-foreground">
+          {DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE}
+        </p>
+      </div>
+    )
+  }
+
+  if (suspended === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (

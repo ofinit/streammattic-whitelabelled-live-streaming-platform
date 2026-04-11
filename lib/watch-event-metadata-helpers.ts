@@ -13,6 +13,7 @@ export type WatchEventMetaPayload = {
   templateId?: string
   templateData?: unknown
   studioName?: string
+  isSuspended?: boolean
   eventDates?: Array<{
     scheduledAt?: string
     timezone?: string

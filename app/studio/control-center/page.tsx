@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -51,6 +50,8 @@ import {
   Film,
   Loader2,
   Sparkles,
+  Ban,
+  CheckCircle2,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -168,7 +169,6 @@ export default function StudioEventsPage() {
   const [seedMockLoading, setSeedMockLoading] = useState(false)
   const [clearMockLoading, setClearMockLoading] = useState(false)
   const [clearMockOpen, setClearMockOpen] = useState(false)
-  const [deleteEvent, setDeleteEvent] = useState<Record<string, unknown> | null>(null)
   const [copiedField, setCopiedField] = useState<"rtmp" | "key" | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
   const [eventsLimit, setEventsLimit] = useState(EVENTS_PAGE_SIZE)
@@ -422,22 +422,30 @@ export default function StudioEventsPage() {
     }
   }
 
-  const handleDeleteEvent = async () => {
-    if (!deleteEvent) return
+  const handleToggleSuspend = async (ev: Record<string, unknown>, suspended: boolean) => {
     if (studioSubExpired) {
-      toast.error("Renew your Studio subscription in Settings to delete events.")
-      setDeleteEvent(null)
+      toast.error("Renew your Studio subscription in Settings to manage events.")
       return
     }
     try {
-      const res = await fetch(`/api/studio/events?id=${deleteEvent.id}`, { method: "DELETE" })
-      const data = await res.json()
-      if (!res.ok) { toast.error(data.error || "Failed to delete event"); return }
-      toast.success("Event deleted")
-      setDeleteEvent(null)
+      const res = await fetch("/api/studio/events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: ev.id, isSuspended: suspended }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(data.error || "Failed to update event")
+        return
+      }
+      toast.success(
+        suspended
+          ? "Event suspended — visitors only see an unavailable message on the public page."
+          : "Event unsuspended — the public page is available again.",
+      )
       mutate()
     } catch {
-      toast.error("Failed to delete event")
+      toast.error("Failed to update event")
     }
   }
 
@@ -560,6 +568,7 @@ export default function StudioEventsPage() {
 
   const renderEventCard = (event: any) => {
     const sample = isSampleEvent(event as { isMock?: boolean; title?: string })
+    const isSuspended = event.isSuspended === true
     return (
     <div
       key={event.id as string}
@@ -605,6 +614,14 @@ export default function StudioEventsPage() {
                         Sample
                       </Badge>
                     )}
+                    {isSuspended && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 h-3.5 shrink-0 border-muted-foreground/50 text-muted-foreground"
+                      >
+                        Suspended
+                      </Badge>
+                    )}
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
                     <span className="flex items-center gap-1">
@@ -643,6 +660,14 @@ export default function StudioEventsPage() {
               className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-amber-500/60 text-amber-800 dark:text-amber-200 bg-amber-500/10"
             >
               Sample
+            </Badge>
+          )}
+          {isSuspended && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-muted-foreground/50 text-muted-foreground"
+            >
+              Suspended
             </Badge>
           )}
         </div>
@@ -772,14 +797,17 @@ export default function StudioEventsPage() {
                 </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive"
-              disabled={studioSubExpired}
-              onClick={() => setDeleteEvent(event)}
-            >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Event
-            </DropdownMenuItem>
+            {event.isSuspended === true ? (
+              <DropdownMenuItem disabled={studioSubExpired} onClick={() => void handleToggleSuspend(event, false)}>
+                <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500" />
+                Unsuspend event
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem disabled={studioSubExpired} onClick={() => void handleToggleSuspend(event, true)}>
+                <Ban className="h-4 w-4 mr-2 text-amber-600" />
+                Suspend event
+              </DropdownMenuItem>
+            )}
             </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -1036,23 +1064,6 @@ export default function StudioEventsPage() {
             >
               {clearMockLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remove sample events"}
             </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Event</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deleteEvent?.title as string}&quot;? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteEvent} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

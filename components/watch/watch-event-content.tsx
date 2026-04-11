@@ -3,6 +3,7 @@
 import type { FormEvent } from "react"
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import type { LiveEvent } from "@/lib/types"
+import { DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE } from "@/lib/event-suspended"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -985,6 +986,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           <h1 className="text-xl font-semibold text-foreground">Event Not Found</h1>
           <p className="text-muted-foreground">This event may have ended or doesn&apos;t exist.</p>
         </div>
+      </div>
+    )
+  }
+
+  if ((event as unknown as Record<string, unknown>).isSuspended === true) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <p className="max-w-lg text-center text-base leading-relaxed text-foreground">
+          {DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE}
+        </p>
       </div>
     )
   }

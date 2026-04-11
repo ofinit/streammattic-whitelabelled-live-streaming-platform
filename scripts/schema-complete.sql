@@ -271,6 +271,7 @@ CREATE TABLE IF NOT EXISTS events (
   metadata                JSONB           DEFAULT '{}',
   use_custom_domain       BOOLEAN         NOT NULL DEFAULT false,
   is_mock                 BOOLEAN         NOT NULL DEFAULT false,
+  is_suspended            BOOLEAN         NOT NULL DEFAULT false,
   created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );

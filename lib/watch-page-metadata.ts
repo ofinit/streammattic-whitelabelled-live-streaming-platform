@@ -9,6 +9,7 @@ import {
   resolveWatchOgImageUrl,
   toAbsolutePublicAssetUrl,
 } from "@/lib/watch-event-metadata-helpers"
+import { DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE } from "@/lib/event-suspended"
 
 export type BuildWatchMetadataOptions = {
   /** e.g. `/watch/abc` or `/my-event-slug` for og:url + canonical */
@@ -55,25 +56,30 @@ export async function buildWatchEventMetadata(
     const event = data.event
     if (!event) return { title: "Event" }
 
+    const suspended = (event as { isSuspended?: boolean }).isSuspended === true
+
     const faviconRaw =
       (typeof data.favicon === "string" && data.favicon.trim()) ||
       (typeof event.faviconHref === "string" && event.faviconHref.trim()) ||
       ""
 
     const scheduleLine = formatWatchScheduleForMeta(event)
-    const title = buildWatchDocumentTitle(event)
-    const description = buildWatchShareDescription(event, scheduleLine)
+    const title = suspended ? "Event unavailable" : buildWatchDocumentTitle(event)
+    const description = suspended ? DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE : buildWatchShareDescription(event, scheduleLine)
     const ogImageUrl = resolveWatchOgImageUrl(base, event, faviconRaw || null)
     const iconHref = faviconRaw ? toAbsolutePublicAssetUrl(base, faviconRaw) : undefined
 
     const publishedTime =
-      event.scheduledAt && !Number.isNaN(new Date(event.scheduledAt).getTime())
+      !suspended &&
+      event.scheduledAt &&
+      !Number.isNaN(new Date(event.scheduledAt).getTime())
         ? new Date(event.scheduledAt).toISOString()
         : undefined
 
     return {
       title,
       description,
+      ...(suspended ? { robots: { index: false, follow: false } } : {}),
       alternates: { canonical: canonicalUrl },
       ...(iconHref && {
         icons: {

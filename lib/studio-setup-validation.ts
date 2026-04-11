@@ -26,7 +26,8 @@ export function validateCompanyStep(input: {
   companyName: string
   email: string
   phone: string
-  website: string
+  /** Same hostname rules as Custom Domain step (no https://). */
+  customDomain: string
 }): string | null {
   if (!input.companyName.trim()) return "Company name is required."
   if (!input.email.trim()) return "Support email is required."
@@ -35,12 +36,10 @@ export function validateCompanyStep(input: {
     const digits = input.phone.replace(/\D/g, "")
     if (digits.length < 10 || digits.length > 15) return "Enter a valid phone number (10–15 digits)."
   }
-  const host = companyWebsiteHost(input.website)
-  if (!host) {
-    return "Company website is required. Enter a public domain, e.g. yourcompany.com (no path)."
-  }
-  if (!isValidHostname(host)) {
-    return "Enter a valid domain (e.g. yourcompany.com or www.yourcompany.com). Use a real suffix like .com, .in, or .org; only letters, numbers, and hyphens in each part."
+  const d = input.customDomain.trim().toLowerCase()
+  if (!d) return "Enter your custom domain (e.g. live.yourcompany.com or yourcompany.com)."
+  if (!isValidHostname(d)) {
+    return "Enter a valid domain (e.g. yourcompany.com) without https://. Use a real suffix like .com or .in."
   }
   return null
 }

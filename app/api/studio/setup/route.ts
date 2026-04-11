@@ -108,7 +108,7 @@ export const POST = withRole(["studio"], async (user, request) => {
         ${companyData.tagline || null}, 
         ${companyData.email || null}, 
         ${companyData.phone || null}, 
-        ${companyData.address || null},
+        ${(companyData as { address?: string | null }).address ?? null},
         ${paymentData.gateway || null},
         NOW()
       )

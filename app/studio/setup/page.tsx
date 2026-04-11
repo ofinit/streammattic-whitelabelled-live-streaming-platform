@@ -7,7 +7,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
@@ -39,6 +38,7 @@ import {
   validateBrandingStep,
   validateCompanyStep,
   companyWebsiteHost,
+  isValidHostname,
   validateDomainStep,
   validatePaymentStep,
 } from "@/lib/studio-setup-validation"
@@ -132,8 +132,6 @@ export default function StudioSetupPage() {
     tagline: "",
     email: "",
     phone: "",
-    address: "",
-    website: "",
   })
 
   const [brandingData, setBrandingData] = useState({
@@ -165,7 +163,10 @@ export default function StudioSetupPage() {
   const stepValidationError = (() => {
     switch (currentStep) {
       case 0:
-        return validateCompanyStep(companyData)
+        return validateCompanyStep({
+          ...companyData,
+          customDomain: domainData.customDomain,
+        })
       case 1:
         return validateBrandingStep(brandingData)
       case 2:
@@ -204,14 +205,29 @@ export default function StudioSetupPage() {
         if (typeof d.currentStep === "number" && d.currentStep >= 0 && d.currentStep < SETUP_STEPS.length) {
           setCurrentStep(d.currentStep)
         }
+        if (d.domainData && typeof d.domainData === "object") {
+          setDomainData((prev) => ({ ...prev, ...(d.domainData as typeof prev) }))
+        }
         if (d.companyData && typeof d.companyData === "object") {
-          setCompanyData((prev) => ({ ...prev, ...(d.companyData as typeof prev) }))
+          const raw = d.companyData as Record<string, unknown>
+          setCompanyData((prev) => ({
+            ...prev,
+            companyName: typeof raw.companyName === "string" ? raw.companyName : prev.companyName,
+            tagline: typeof raw.tagline === "string" ? raw.tagline : prev.tagline,
+            email: typeof raw.email === "string" ? raw.email : prev.email,
+            phone: typeof raw.phone === "string" ? raw.phone : prev.phone,
+          }))
+          const legacyWebsite = typeof raw.website === "string" ? raw.website : ""
+          if (legacyWebsite) {
+            const host = companyWebsiteHost(legacyWebsite)
+            setDomainData((prev) => {
+              if (prev.customDomain?.trim() || !host || !isValidHostname(host)) return prev
+              return { ...prev, customDomain: host, skipDomain: false }
+            })
+          }
         }
         if (d.brandingData && typeof d.brandingData === "object") {
           setBrandingData((prev) => ({ ...prev, ...(d.brandingData as typeof prev) }))
-        }
-        if (d.domainData && typeof d.domainData === "object") {
-          setDomainData((prev) => ({ ...prev, ...(d.domainData as typeof prev) }))
         }
         if (d.paymentData && typeof d.paymentData === "object") {
           setPaymentData((prev) => ({ ...prev, ...(d.paymentData as typeof prev) }))
@@ -368,10 +384,13 @@ export default function StudioSetupPage() {
     if (stepValidationError) return false
     switch (currentStep) {
       case 0:
-        return Boolean(
-          companyData.companyName?.trim() &&
-            companyData.email?.trim() &&
-            companyWebsiteHost(companyData.website),
+        return (
+          validateCompanyStep({
+            companyName: companyData.companyName,
+            email: companyData.email,
+            phone: companyData.phone,
+            customDomain: domainData.customDomain,
+          }) === null
         )
       case 1:
         return Boolean(brandingData.platformName?.trim() && brandingData.primaryColor)
@@ -483,10 +502,6 @@ export default function StudioSetupPage() {
               {stepValidationError && currentStep === 0 && (
                 <p className="text-sm text-destructive">{stepValidationError}</p>
               )}
-              <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2">
-                Enter the legal and public details that should appear on invoices and emails. Fields marked with a red
-                asterisk are required. Optional fields can be left blank.
-              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="companyName">
@@ -546,45 +561,31 @@ export default function StudioSetupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Business Address</Label>
-                <p className="text-xs text-muted-foreground">
-                  Full postal address for tax invoices (optional but recommended).
-                </p>
-                <Textarea
-                  id="address"
-                  value={companyData.address}
-                  onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
-                  autoComplete="street-address"
-                  className="bg-secondary border-0 min-h-[100px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="website">
-                  Company Website <span className="text-destructive font-semibold">*</span>
+                <Label htmlFor="company-custom-domain">
+                  Custom domain <span className="text-destructive font-semibold">*</span>
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Public marketing site for your company. Type the domain only (e.g. yourcompany.com)—we add{" "}
-                  <span className="font-mono">https://</span>. Must be a valid hostname with a real TLD (e.g. .com, .in),
-                  no paths or spaces.
+                  The hostname where your white-label studio will live—same value you&apos;ll confirm on the Custom
+                  Domain step (DNS is configured later). Type the domain only (e.g. live.yourcompany.com)—we add{" "}
+                  <span className="font-mono">https://</span>.
                 </p>
                 <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
                   <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
                     https://
                   </span>
                   <Input
-                    id="website"
+                    id="company-custom-domain"
                     type="text"
-                    value={companyData.website.replace(/^https?:\/\//i, "").replace(/\/.*$/, "")}
-                    onChange={(e) => {
-                      const host = e.target.value.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
-                      setCompanyData({
-                        ...companyData,
-                        website: host ? `https://${host}` : "",
+                    value={domainData.customDomain}
+                    onChange={(e) =>
+                      setDomainData({
+                        ...domainData,
+                        customDomain: e.target.value.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, ""),
+                        skipDomain: false,
                       })
-                    }}
-                    autoComplete="url"
-                    inputMode="url"
+                    }
+                    placeholder="yourcompany.com"
+                    autoComplete="off"
                     className="border-0 rounded-none bg-transparent focus-visible:ring-0"
                   />
                 </div>

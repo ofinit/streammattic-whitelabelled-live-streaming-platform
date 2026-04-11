@@ -80,35 +80,87 @@ export async function initiateRazorpayRefund(paymentId: string, amount: number) 
 // ============================================================
 // INSTAMOJO - Payment request creation & verification
 // ============================================================
-// API v2: OAuth2 client_credentials → Bearer token; form-urlencoded bodies.
-// https://docs.instamojo.com/reference/generate-access-token-application-based-authentication
-// https://docs.instamojo.com/reference/create-a-payment-request
+// Two supported integrations (do not mix credentials):
+// 1) API v2 — OAuth2 client_credentials + Bearer on /v2/payment_requests/
+//    https://docs.instamojo.com/reference/create-a-payment-request
+// 2) API v1.1 (legacy) — X-Api-Key + X-Auth-Token on /api/1.1/payment-requests/
+//    https://docs.instamojo.com/v1.1/reference/create-a-request
 //
-// Use INSTAMOJO_CLIENT_ID + INSTAMOJO_CLIENT_SECRET (from Instamojo developer / OAuth).
-// For backward compatibility, INSTAMOJO_API_KEY / INSTAMOJO_AUTH_TOKEN are used as
-// client_id / client_secret if the CLIENT_* vars are unset.
+// "Private API Key" + "Private Auth Token" from the dashboard are v1.1 — not OAuth client_id/secret.
+// INSTAMOJO_AUTH_MODE: auto (default) | oauth | legacy
+// auto: OAuth if INSTAMOJO_CLIENT_ID and INSTAMOJO_CLIENT_SECRET are set; else legacy keys.
 
 type InstamojoTokenCache = { accessToken: string; expiresAtMs: number }
 let instamojoTokenCache: InstamojoTokenCache | null = null
 
-function instamojoRoots(): { v2Base: string; apiRoot: string } {
+function instamojoAuthMode(): "oauth" | "legacy" {
+  const m = (process.env.INSTAMOJO_AUTH_MODE || "auto").trim().toLowerCase()
+  if (m === "oauth") return "oauth"
+  if (m === "legacy") return "legacy"
+  const cid = (process.env.INSTAMOJO_CLIENT_ID || "").trim()
+  const csec = (process.env.INSTAMOJO_CLIENT_SECRET || "").trim()
+  if (cid && csec) return "oauth"
+  return "legacy"
+}
+
+function instamojoV2Roots(): { v2Base: string; apiRoot: string } {
   const raw = (process.env.INSTAMOJO_BASE_URL || "https://api.instamojo.com/v2").replace(/\/$/, "")
   const v2Base = raw.includes("/v2") ? raw : `${raw}/v2`
   const apiRoot = raw.replace(/\/v2$/, "") || "https://api.instamojo.com"
   return { v2Base, apiRoot }
 }
 
-function instamojoClientCredentials(): { clientId: string; clientSecret: string } {
-  const clientId = process.env.INSTAMOJO_CLIENT_ID || process.env.INSTAMOJO_API_KEY || ""
-  const clientSecret = process.env.INSTAMOJO_CLIENT_SECRET || process.env.INSTAMOJO_AUTH_TOKEN || ""
-  return { clientId, clientSecret }
+/** API v1.1 base (Private API Key auth). Sandbox: https://test.instamojo.com/api/1.1 */
+function instamojoLegacyApiBase(): string {
+  return (process.env.INSTAMOJO_LEGACY_BASE_URL || "https://www.instamojo.com/api/1.1").replace(/\/$/, "")
+}
+
+function instamojoLegacyHeaders(): Record<string, string> {
+  const apiKey = (process.env.INSTAMOJO_API_KEY || "").trim()
+  const authToken = (process.env.INSTAMOJO_AUTH_TOKEN || "").trim()
+  if (!apiKey || !authToken) {
+    throw new Error(
+      "Instamojo legacy: set INSTAMOJO_API_KEY and INSTAMOJO_AUTH_TOKEN (Private API Key + Private Auth Token). For OAuth2 v2 instead, set INSTAMOJO_CLIENT_ID, INSTAMOJO_CLIENT_SECRET, and INSTAMOJO_AUTH_MODE=oauth.",
+    )
+  }
+  return {
+    "X-Api-Key": apiKey,
+    "X-Auth-Token": authToken,
+  }
+}
+
+function buildInstamojoPaymentRequestForm(params: {
+  amount: number
+  purpose: string
+  buyerName: string
+  email: string
+  phone?: string
+  redirectUrl: string
+  webhookUrl?: string
+}): URLSearchParams {
+  const form = new URLSearchParams({
+    amount: params.amount.toFixed(2),
+    purpose: params.purpose,
+    buyer_name: params.buyerName,
+    email: params.email,
+    phone: params.phone || "",
+    redirect_url: params.redirectUrl,
+    send_email: "false",
+    send_sms: "false",
+    allow_repeated_payments: "false",
+  })
+  if (params.webhookUrl) {
+    form.set("webhook", params.webhookUrl)
+  }
+  return form
 }
 
 async function getInstamojoAccessToken(): Promise<string> {
-  const { clientId, clientSecret } = instamojoClientCredentials()
+  const clientId = (process.env.INSTAMOJO_CLIENT_ID || "").trim()
+  const clientSecret = (process.env.INSTAMOJO_CLIENT_SECRET || "").trim()
   if (!clientId || !clientSecret) {
     throw new Error(
-      "Instamojo: set INSTAMOJO_CLIENT_ID and INSTAMOJO_CLIENT_SECRET (OAuth), or legacy INSTAMOJO_API_KEY + INSTAMOJO_AUTH_TOKEN as id/secret per Instamojo dashboard.",
+      "Instamojo OAuth: set INSTAMOJO_CLIENT_ID and INSTAMOJO_CLIENT_SECRET (not the Private API Key — those are for v1.1 / legacy mode).",
     )
   }
 
@@ -118,7 +170,7 @@ async function getInstamojoAccessToken(): Promise<string> {
     return instamojoTokenCache.accessToken
   }
 
-  const { apiRoot } = instamojoRoots()
+  const { apiRoot } = instamojoV2Roots()
   const tokenUrl = `${apiRoot.replace(/\/$/, "")}/oauth2/token/`
   const res = await fetch(tokenUrl, {
     method: "POST",
@@ -162,23 +214,38 @@ export async function createInstamojoPayment(params: {
   redirectUrl: string
   webhookUrl?: string
 }) {
-  const { v2Base } = instamojoRoots()
-  const auth = await instamojoBearerHeaders()
-  const form = new URLSearchParams({
-    amount: params.amount.toFixed(2),
-    purpose: params.purpose,
-    buyer_name: params.buyerName,
-    email: params.email,
-    phone: params.phone || "",
-    redirect_url: params.redirectUrl,
-    send_email: "false",
-    send_sms: "false",
-    allow_repeated_payments: "false",
-  })
-  if (params.webhookUrl) {
-    form.set("webhook", params.webhookUrl)
+  const mode = instamojoAuthMode()
+  const form = buildInstamojoPaymentRequestForm(params)
+
+  if (mode === "legacy") {
+    const base = instamojoLegacyApiBase()
+    const res = await fetch(`${base}/payment-requests/`, {
+      method: "POST",
+      headers: {
+        ...instamojoLegacyHeaders(),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form.toString(),
+    })
+    const text = await res.text()
+    let data: unknown
+    try {
+      data = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      throw new Error(`Instamojo payment creation failed: ${text}`)
+    }
+    const o = data as { success?: boolean; message?: unknown }
+    if (o.success === false) {
+      throw new Error(`Instamojo payment creation failed: ${JSON.stringify(o.message ?? data)}`)
+    }
+    if (!res.ok) {
+      throw new Error(`Instamojo payment creation failed: ${text}`)
+    }
+    return data
   }
 
+  const { v2Base } = instamojoV2Roots()
+  const auth = await instamojoBearerHeaders()
   const res = await fetch(`${v2Base}/payment_requests/`, {
     method: "POST",
     headers: {
@@ -197,7 +264,20 @@ export async function createInstamojoPayment(params: {
 }
 
 export async function verifyInstamojoPayment(paymentRequestId: string) {
-  const { v2Base } = instamojoRoots()
+  const mode = instamojoAuthMode()
+  if (mode === "legacy") {
+    const base = instamojoLegacyApiBase()
+    const res = await fetch(`${base}/payment-requests/${paymentRequestId}/`, {
+      headers: {
+        ...instamojoLegacyHeaders(),
+        Accept: "application/json",
+      },
+    })
+    if (!res.ok) throw new Error("Failed to fetch Instamojo payment status")
+    return res.json()
+  }
+
+  const { v2Base } = instamojoV2Roots()
   const auth = await instamojoBearerHeaders()
   const res = await fetch(`${v2Base}/payment_requests/${paymentRequestId}/`, {
     headers: {

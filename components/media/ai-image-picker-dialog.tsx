@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, Wand2, Upload, Wallet } from "lucide-react"
 import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
+import { useAuth } from "@/lib/auth-context"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
 
@@ -59,6 +60,7 @@ export function AiImagePickerDialog({
   uploadSubdir,
   circularHeroCrop,
 }: AiImagePickerDialogProps) {
+  const { user } = useAuth()
   const [generating, setGenerating] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
@@ -89,6 +91,12 @@ export function AiImagePickerDialog({
   )
   const walletBalance = Number((walletJson?.wallet as { balance?: number } | undefined)?.balance ?? 0)
 
+  /** Billable wallet owner matches session user — platform admin on own events/branding pays nothing. */
+  const effectiveWalletUserId =
+    walletUserId && walletUserId.trim() !== "" ? walletUserId.trim() : (user?.id ?? "")
+  const isPlatformAdminFreeAi =
+    user?.role === "admin" && !!user?.id && effectiveWalletUserId === user.id
+
   useEffect(() => {
     if (disabled) return
     fetch("/api/generate-image")
@@ -97,7 +105,9 @@ export function AiImagePickerDialog({
       .catch(() => setAiPrice(null))
   }, [disabled])
 
-  const canAffordAi = !walletLoading && !walletError && aiPrice !== null && walletBalance >= aiPrice
+  const canAffordAi =
+    isPlatformAdminFreeAi ||
+    (!walletLoading && !walletError && aiPrice !== null && walletBalance >= aiPrice)
 
   const refreshWallet = () => mutateWallet()
 
@@ -338,11 +348,15 @@ export function AiImagePickerDialog({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Generate with AI</Label>
-              {aiPrice !== null && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Wallet className="h-3 w-3" />
-                  Cost: ₹{(aiPrice / 100).toFixed(0)} per image
-                </span>
+              {isPlatformAdminFreeAi ? (
+                <span className="text-xs text-muted-foreground">Free for platform admin</span>
+              ) : (
+                aiPrice !== null && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Wallet className="h-3 w-3" />
+                    Cost: ₹{(aiPrice / 100).toFixed(0)} per image
+                  </span>
+                )
               )}
             </div>
             <Textarea
@@ -356,7 +370,7 @@ export function AiImagePickerDialog({
             <p className="text-xs text-muted-foreground">
               {prompt.length} / {AI_IMAGE_PROMPT_MAX_LENGTH} characters
             </p>
-            {!canAffordAi && aiPrice !== null && !walletLoading && (
+            {!canAffordAi && aiPrice !== null && !walletLoading && !isPlatformAdminFreeAi && (
               <p className="text-xs text-destructive">
                 Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹
                 {(aiPrice / 100).toFixed(0)} to use AI generation.
@@ -365,7 +379,13 @@ export function AiImagePickerDialog({
             <Button
               type="button"
               onClick={() => void handleGenerate()}
-              disabled={generating || walletLoading || !prompt.trim() || !canAffordAi}
+              disabled={
+                generating ||
+                walletLoading ||
+                !prompt.trim() ||
+                !canAffordAi ||
+                (!isPlatformAdminFreeAi && aiPrice === null)
+              }
               className="w-full"
               style={{ backgroundColor: "hsl(152 76% 46%)" }}
             >
@@ -377,7 +397,8 @@ export function AiImagePickerDialog({
               ) : (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Image{aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
+                  Generate Image
+                  {isPlatformAdminFreeAi ? "" : aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
                 </>
               )}
             </Button>

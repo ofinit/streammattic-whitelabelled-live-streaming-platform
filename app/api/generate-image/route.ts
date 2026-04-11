@@ -87,6 +87,8 @@ export const POST = withAuth(async (user, request: Request) => {
     role === "admin" && requestedUserId !== ""
       ? requestedUserId
       : (user.id as string)
+  /** Platform admin creating assets for their own account — no wallet debit (still uses platform FAL quota). */
+  const isPlatformAdminSelfService = role === "admin" && userId === (user.id as string)
   const sql = getDb()
 
   const pricingRows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
@@ -98,32 +100,38 @@ export const POST = withAuth(async (user, request: Request) => {
 
   const price = aiConfig.price
 
-  const updatedWallets = await sql`
-    UPDATE wallets
-    SET balance = balance - ${price}, updated_at = NOW()
-    WHERE user_id = ${userId} AND balance >= ${price}
-    RETURNING id, balance as new_balance, balance + ${price} as old_balance
-  `
+  let walletId: string | null = null
+  let newBalanceAfterDebit = 0
+  let debitTxn: Record<string, unknown> | null = null
 
-  if (updatedWallets.length === 0) {
-    return jsonError(
-      `Insufficient wallet balance or wallet not found. AI image generation costs ₹${(price / 100).toFixed(0)}.`,
-      400,
-    )
+  if (!isPlatformAdminSelfService) {
+    const updatedWallets = await sql`
+      UPDATE wallets
+      SET balance = balance - ${price}, updated_at = NOW()
+      WHERE user_id = ${userId} AND balance >= ${price}
+      RETURNING id, balance as new_balance, balance + ${price} as old_balance
+    `
+
+    if (updatedWallets.length === 0) {
+      return jsonError(
+        `Insufficient wallet balance or wallet not found. AI image generation costs ₹${(price / 100).toFixed(0)}.`,
+        400,
+      )
+    }
+
+    const wallet = updatedWallets[0] as Record<string, unknown>
+    walletId = wallet.id as string
+    newBalanceAfterDebit = wallet.new_balance as number
+    const oldBalance = wallet.old_balance as number
+
+    const debitTxnRows = await sql`
+      INSERT INTO wallet_transactions (wallet_id, user_id, type, category, amount, balance_before, balance_after, description)
+      VALUES (${walletId}, ${userId}, 'debit', 'ai_image_generation', ${price}, ${oldBalance}, ${newBalanceAfterDebit}, ${"AI image generation"})
+      RETURNING *
+    `
+
+    debitTxn = debitTxnRows[0] as Record<string, unknown>
   }
-
-  const wallet = updatedWallets[0] as Record<string, unknown>
-  const walletId = wallet.id as string
-  const newBalanceAfterDebit = wallet.new_balance as number
-  const oldBalance = wallet.old_balance as number
-
-  const debitTxnRows = await sql`
-    INSERT INTO wallet_transactions (wallet_id, user_id, type, category, amount, balance_before, balance_after, description)
-    VALUES (${walletId}, ${userId}, 'debit', 'ai_image_generation', ${price}, ${oldBalance}, ${newBalanceAfterDebit}, ${"AI image generation"})
-    RETURNING *
-  `
-
-  const debitTxn = debitTxnRows[0] as Record<string, unknown>
 
   try {
     const result = (await fal.subscribe("fal-ai/flux/schnell", {
@@ -165,13 +173,16 @@ export const POST = withAuth(async (user, request: Request) => {
 
     return jsonOk({
       imageUrl,
-      transaction: toCamel(debitTxn),
-      newBalance: newBalanceAfterDebit,
+      transaction: debitTxn ? toCamel(debitTxn) : null,
+      newBalance: isPlatformAdminSelfService ? null : newBalanceAfterDebit,
+      freeForPlatformAdmin: isPlatformAdminSelfService,
     })
   } catch (error) {
     console.error("[generate-image] Error:", error)
 
-    await refundAiGenerationWallet(sql, walletId, userId, price, "Refund: AI image generation failed")
+    if (walletId) {
+      await refundAiGenerationWallet(sql, walletId, userId, price, "Refund: AI image generation failed")
+    }
 
     return jsonError("Failed to generate image", 500)
   }

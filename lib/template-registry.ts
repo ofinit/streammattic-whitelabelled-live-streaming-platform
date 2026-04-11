@@ -335,14 +335,6 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     sortOrder: 32,
   },
   {
-    id: "tpl-yoga",
-    name: "Yoga",
-    thumbnail: "/templates/yoga-template.jpg",
-    category: "Health",
-    isActive: true,
-    sortOrder: 33,
-  },
-  {
     id: "tpl-charity",
     name: "Charity",
     thumbnail: "/templates/charity-template.jpg",

@@ -54,7 +54,6 @@ import { ThanksgivingTemplate } from "@/components/templates/thanksgiving-templa
 import { HalloweenTemplate } from "@/components/templates/halloween-template"
 
 import { FitnessTemplate } from "@/components/templates/fitness-template"
-import { YogaTemplate } from "@/components/templates/yoga-template"
 import { CharityTemplate } from "@/components/templates/charity-template"
 
 const templateContent: Record<
@@ -245,10 +244,6 @@ const templateContent: Record<
     title: "HIIT Workout Live",
     description: "Get fit with our trainers",
   },
-  "tpl-yoga": {
-    title: "Morning Yoga Flow",
-    description: "Find your inner peace",
-  },
   "tpl-charity": {
     title: "Hope Foundation Fundraiser",
     description: "Together we make a difference",
@@ -396,8 +391,6 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
     // Health & Wellness templates
     case "tpl-fitness":
       return <FitnessTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-yoga":
-      return <YogaTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-charity":
       return <CharityTemplate eventTitle={content.title} eventDescription={content.description} />
     default:

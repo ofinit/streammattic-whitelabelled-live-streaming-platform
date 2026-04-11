@@ -49,7 +49,6 @@ export function getTemplateDefaultTitleRem(templateId: string): number {
     case "tpl-political":
     case "tpl-school":
     case "tpl-fitness":
-    case "tpl-yoga":
     case "tpl-podcast":
       return 2.25
     case "tpl-christian":

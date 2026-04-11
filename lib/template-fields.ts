@@ -821,50 +821,6 @@ export const templateFieldDefinitions: Record<string, TemplateFieldGroup[]> = {
     },
   ],
 
-  // Yoga Template
-  yoga: [
-    {
-      title: "Instructor Details",
-      fields: [
-        { key: "instructorName", label: "Instructor Name", type: "text", required: true },
-        { key: "instructorPhoto", label: "Instructor Photo", type: "image" },
-      ],
-    },
-    {
-      title: "Session Details",
-      fields: [
-        {
-          key: "sessionType",
-          label: "Session Type",
-          type: "select",
-          options: [
-            { value: "hatha", label: "Hatha Yoga" },
-            { value: "vinyasa", label: "Vinyasa Flow" },
-            { value: "ashtanga", label: "Ashtanga" },
-            { value: "kundalini", label: "Kundalini" },
-            { value: "yin", label: "Yin Yoga" },
-            { value: "meditation", label: "Meditation" },
-            { value: "pranayama", label: "Pranayama" },
-            { value: "other", label: "Other" },
-          ],
-        },
-        { key: "studioName", label: "Studio Name", type: "text" },
-        { key: "sessionDuration", label: "Duration", type: "text", placeholder: "60 minutes" },
-        {
-          key: "level",
-          label: "Level",
-          type: "select",
-          options: [
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "advanced", label: "Advanced" },
-            { value: "all", label: "All Levels" },
-          ],
-        },
-      ],
-    },
-  ],
-
   // Charity Template
   charity: [
     {

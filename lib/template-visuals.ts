@@ -171,7 +171,6 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-thanksgiving": "border-l-4 border-l-amber-600",
   "tpl-halloween": "border-l-4 border-l-orange-500",
   "tpl-fitness": "border-l-4 border-l-lime-500",
-  "tpl-yoga": "border-l-4 border-l-teal-300",
   "tpl-charity": "border-l-4 border-l-violet-300",
 }
 
@@ -499,16 +498,6 @@ export function extractTemplateBannerContent(
     pushUnique(lines, d.classType ? `Class: ${d.classType}` : undefined)
     pushUnique(lines, d.studioName)
     pushUnique(lines, [d.classDuration, d.difficultyLevel].filter(Boolean).join(" · "))
-    pushUnique(lines, eventDescription)
-    return { headline: eventTitle, accent: d.instructorName || null, lines }
-  }
-
-  if (templateId === "tpl-yoga") {
-    const lines: string[] = []
-    pushUnique(lines, d.instructorName)
-    pushUnique(lines, d.sessionType ? `Session: ${d.sessionType}` : undefined)
-    pushUnique(lines, d.studioName)
-    pushUnique(lines, [d.sessionDuration, d.level].filter(Boolean).join(" · "))
     pushUnique(lines, eventDescription)
     return { headline: eventTitle, accent: d.instructorName || null, lines }
   }

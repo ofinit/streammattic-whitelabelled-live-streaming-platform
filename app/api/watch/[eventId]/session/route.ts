@@ -92,7 +92,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isLoggedIn = !!userId
 
   const referer = req.headers.get("referer")?.slice(0, 2000) ?? null
-  const attr = resolveAttribution(req.nextUrl, referer, null)
+  // Use the watch page URL from the client for UTM params — req.nextUrl is the /api/.../session URL and has no ?utm_*.
+  let urlForAttribution = req.nextUrl
+  if (landingPageUrl) {
+    try {
+      urlForAttribution = new URL(landingPageUrl)
+    } catch {
+      /* keep req.nextUrl */
+    }
+  }
+  const attr = resolveAttribution(urlForAttribution, referer, null)
   const userAgent = req.headers.get("user-agent")?.slice(0, 2000) ?? null
   const acceptLanguage = req.headers.get("accept-language")?.slice(0, 500) ?? null
   const countryCode = lookupCountryCodeFromIp(ip)

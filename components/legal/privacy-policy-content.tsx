@@ -34,6 +34,13 @@ export function PrivacyPolicyContent() {
           with technical data such as IP address and browser information, and make these available to
           the hosting streamer or studio and to platform administrators as described in this policy.
         </li>
+        <li>
+          <strong>Anonymous watch analytics:</strong> on public event pages we may set a first-party
+          cookie (for example <code className="text-xs">sl_vid</code>) and use a per-tab session
+          identifier to measure visits, approximate location (from IP), traffic sources (including UTM
+          parameters where present), and related platform metrics. This supports aggregated analytics
+          and is separate from optional visitor registration above.
+        </li>
       </ul>
 
       <h2 className="mt-6 text-base font-semibold text-foreground">2. How we use information</h2>

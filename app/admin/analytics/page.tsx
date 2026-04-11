@@ -31,6 +31,10 @@ export default function AdminAnalyticsPage() {
     `/api/admin/analytics/visitors?days=${visitorDays}`,
     fetcher,
   )
+  const { data: revenueAttrData, isLoading: isRevenueAttrLoading } = useSWR(
+    `/api/admin/analytics/revenue-attribution?days=${visitorDays}`,
+    fetcher,
+  )
 
   const overview = overviewData?.overview
   const revenueTrend = revenueData?.revenueTrend ?? []
@@ -364,6 +368,53 @@ export default function AdminAnalyticsPage() {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+                <span>Revenue by first-touch source</span>
+                {!isRevenueAttrLoading && revenueAttrData?.totalRevenueRupees != null && (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    Total in window: ₹{Number(revenueAttrData.totalRevenueRupees).toLocaleString(undefined, { maximumFractionDigits: 2 })} ({revenueAttrData.totalOrders ?? 0} orders)
+                  </span>
+                )}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground font-normal">
+                {(revenueAttrData?.description as string) ||
+                  "Completed orders attributed to the earliest watch session UTM source per user."}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {isRevenueAttrLoading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : !(revenueAttrData?.bySource as { source: string }[] | undefined)?.length ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  No completed orders in this window, or no session link for buyers yet.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {(
+                    revenueAttrData.bySource as {
+                      source: string
+                      orderCount: number
+                      revenueRupees: number
+                    }[]
+                  ).map((row) => (
+                    <li
+                      key={row.source}
+                      className="flex flex-wrap items-center justify-between gap-2 text-sm border-b border-border/60 pb-2 last:border-0"
+                    >
+                      <span className="font-medium">{row.source}</span>
+                      <span className="text-muted-foreground">
+                        ₹{Number(row.revenueRupees).toLocaleString(undefined, { maximumFractionDigits: 2 })} ·{" "}
+                        {row.orderCount} order{row.orderCount === 1 ? "" : "s"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

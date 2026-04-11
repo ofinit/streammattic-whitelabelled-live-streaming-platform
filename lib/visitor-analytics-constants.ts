@@ -8,3 +8,5 @@ export type FunnelEventType =
   | "SIGNUP_COMPLETED"
   | "CREDIT_PURCHASED"
   | "EVENT_CREATED"
+  /** Client/server custom events; name lives in payload.clientEvent */
+  | "ANALYTICS_CUSTOM"

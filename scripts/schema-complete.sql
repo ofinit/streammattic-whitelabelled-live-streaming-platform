@@ -816,7 +816,8 @@ INSERT INTO platform_settings (key, value) VALUES
   ('studio_subscription', '{"enabled":true,"annualPrice":1800000,"label":"Studio Annual Subscription","description":"White-label platform access and hosting"}'::jsonb),
   ('gst_config', '{"enabled":true,"percentage":18,"gstin":"","companyName":"StreamLivee","companyAddress":""}'::jsonb),
   ('payment_gateways', '{"razorpay":{"enabled":true,"label":"Razorpay"},"instamojo":{"enabled":true,"label":"Instamojo"}}'::jsonb)
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+-- Do not overwrite existing keys: same behavior as scripts/run-migration.js (preserve admin pricing/GST/gateways).
+ON CONFLICT (key) DO NOTHING;
 
 -- =============================================================
 -- SEED: Event templates

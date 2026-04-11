@@ -68,6 +68,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | File | Approx. URL prefix |
 | --- | --- |
 | `app/api/admin/analytics/overview/route.ts` | `/api/admin/analytics/overview` |
+| `app/api/admin/analytics/revenue-attribution/route.ts` | `/api/admin/analytics/revenue-attribution` |
 | `app/api/admin/analytics/revenue/route.ts` | `/api/admin/analytics/revenue` |
 | `app/api/admin/analytics/visitors/route.ts` | `/api/admin/analytics/visitors` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
@@ -93,6 +94,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
 | `app/api/admin/wallets/route.ts` | `/api/admin/wallets` |
 | `app/api/admin/youtube-override/route.ts` | `/api/admin/youtube-override` |
+| `app/api/analytics/track/route.ts` | `/api/analytics/track` |
 | `app/api/auth/change-password/route.ts` | `/api/auth/change-password` |
 | `app/api/auth/email-update/request/route.ts` | `/api/auth/email-update/request` |
 | `app/api/auth/email-update/verify/route.ts` | `/api/auth/email-update/verify` |

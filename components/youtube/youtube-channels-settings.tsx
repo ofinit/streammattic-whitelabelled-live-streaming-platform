@@ -156,22 +156,16 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
 
             <Card className="border-border bg-card">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/20">
-                      <Youtube className="h-5 w-5 text-red-500" />
-                    </div>
-                    <div>
-                      <CardTitle>Connected Channels</CardTitle>
-                      <CardDescription>
-                        {channels.length} channel{channels.length !== 1 ? "s" : ""} connected
-                      </CardDescription>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600/20">
+                    <Youtube className="h-5 w-5 text-red-500" />
                   </div>
-                  <Button onClick={() => setShowConnectDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Connect Channel
-                  </Button>
+                  <div>
+                    <CardTitle>Connected Channels</CardTitle>
+                    <CardDescription>
+                      {channels.length} channel{channels.length !== 1 ? "s" : ""} connected
+                    </CardDescription>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -192,14 +186,22 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                     </Button>
                   </div>
                 ) : (
-                  channels.map((channel: Record<string, string>) => (
-                    <YouTubeChannelCard
-                      key={channel.id}
-                      channel={channel}
-                      onRefresh={handleRefreshToken}
-                      onDisconnect={handleDisconnect}
-                    />
-                  ))
+                  <>
+                    {channels.map((channel: Record<string, string>) => (
+                      <YouTubeChannelCard
+                        key={channel.id}
+                        channel={channel}
+                        onRefresh={handleRefreshToken}
+                        onDisconnect={handleDisconnect}
+                      />
+                    ))}
+                    <div className="pt-2">
+                      <Button variant="outline" onClick={() => setShowConnectDialog(true)} className="w-full sm:w-auto">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Connect another channel
+                      </Button>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -214,7 +216,7 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">
                       1
                     </span>
-                    <span>{"Click \"Connect Channel\" and sign in with your Google account"}</span>
+                    <span>Use the connect button above and sign in with your Google account</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-medium">

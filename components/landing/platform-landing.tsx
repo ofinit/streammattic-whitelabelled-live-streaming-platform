@@ -335,8 +335,8 @@ export function PlatformLandingPage() {
                             Join the modern era of scalable, white-labeled live streaming arrays.
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
-                            <Link href="/login">
-                                <Button size="lg" className="h-14 px-8 text-lg">Create Admin Account</Button>
+                            <Link href="/signup">
+                                <Button size="lg" className="h-14 px-8 text-lg">Create Account</Button>
                             </Link>
                         </div>
                     </div>
@@ -347,6 +347,17 @@ export function PlatformLandingPage() {
             <footer className="border-t border-border/40 py-12 text-center text-sm text-muted-foreground">
                 <div className="container mx-auto px-6">
                     <BrandedLogo size="sm" className="mx-auto mb-4 opacity-50 grayscale" />
+                    <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-4" aria-label="Legal">
+                        <Link href="/terms" className="text-foreground/80 hover:text-primary hover:underline">
+                            Terms
+                        </Link>
+                        <span className="text-border" aria-hidden>
+                            ·
+                        </span>
+                        <Link href="/privacy-policy" className="text-foreground/80 hover:text-primary hover:underline">
+                            Privacy Policy
+                        </Link>
+                    </nav>
                     <p>© {new Date().getFullYear()} {branding.brandName} Software. All rights reserved.</p>
                     <p className="mt-2">
                         Powered by{" "}

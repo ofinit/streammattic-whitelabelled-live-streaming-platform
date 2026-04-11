@@ -33,6 +33,7 @@ const ROLE_PREFIXES: Record<string, string[]> = {
  */
 const RESERVED_ROOT_SEGMENT = new Set([
   "admin",
+  "analytics",
   "api",
   "auth",
   "demo",

@@ -53,11 +53,13 @@ import {
   Ban,
   CheckCircle2,
   ClipboardList,
+  BarChart3,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
+import { toastEventAnalyticsUrl } from "@/lib/toast-event-analytics-url"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
 import { formatEventScheduledDisplay } from "@/lib/utils"
@@ -369,6 +371,9 @@ export default function StreamerEventsPage() {
         }
         mutate()
         setShowEventDialog(false)
+        const createdEv = resData.event as { slug?: string | null; id?: string } | undefined
+        const slugOrId = createdEv?.slug?.trim() || createdEv?.id
+        if (slugOrId) toastEventAnalyticsUrl(String(slugOrId))
         if (showCredentials && eventData.streamType === "youtube_api") {
           const channelId = (eventData as Record<string, unknown>).youtubeChannelId as string | undefined
           const bSettings = (eventData as Record<string, unknown>).youtubeBroadcastSettings as Record<string, unknown> | undefined
@@ -416,8 +421,6 @@ export default function StreamerEventsPage() {
             streamKey: resData.event.streamKey,
             eventTitle: resData.event.title,
           })
-        } else {
-          toast.success("Event created successfully!")
         }
       }
     } catch {
@@ -823,6 +826,16 @@ export default function StreamerEventsPage() {
             >
               <ClipboardList className="h-4 w-4 mr-2" />
               Visitor registrations
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/${encodeURIComponent(String((event.slug as string) || event.id))}/analytics`,
+                )
+              }
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
             </DropdownMenuItem>
             {event.status === "live" && (
                 <DropdownMenuItem onClick={() => handleBreak(event)}>

@@ -2,6 +2,8 @@
  * Common dial codes for support-phone UI (studio setup, etc.).
  * Sorted by dial length descending in {@link parseStoredPhone} for prefix matching.
  */
+import { normalizeIndianMobile } from "./indian-states"
+
 export type PhoneDialOption = { iso: string; name: string; dial: string }
 
 /** Unicode regional-indicator flag emoji from ISO 3166-1 alpha-2 (e.g. IN → 🇮🇳). */
@@ -38,6 +40,21 @@ export function composeInternationalPhone(dialCode: string, local: string): stri
   const digits = local.replace(/\D/g, "")
   if (!digits) return ""
   return `${dial} ${digits}`
+}
+
+/**
+ * Signup / profile: India → 10-digit national (matches legacy DB). Other countries → "+CC digits".
+ */
+export function normalizeSignupPhoneStorage(dial: string, local: string): string | null {
+  const d = dial.trim().startsWith("+") ? dial.trim() : `+${dial.trim()}`
+  const digits = local.replace(/\D/g, "")
+  if (!digits) return null
+  if (d === "+91") {
+    const compact = `${d}${digits}`
+    return normalizeIndianMobile(compact)
+  }
+  if (digits.length < 8 || digits.length > 15) return null
+  return `${d} ${digits}`
 }
 
 /** Split a stored phone into dial + local digits; defaults India (+91). */

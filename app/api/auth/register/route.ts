@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { getDb } from "@/lib/db"
 import { createUser, createSession, setSessionCookie } from "@/lib/auth"
 import { isValidIndianStateCode, normalizeIndianMobile } from "@/lib/indian-states"
+import { normalizeSignupPhoneStorage } from "@/lib/phone-country-codes"
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor-analytics-constants"
 import { insertFunnelEvent } from "@/lib/analytics-funnel"
 
@@ -14,6 +15,8 @@ export async function POST(request: NextRequest) {
       password,
       fullName,
       phone,
+      phoneDial,
+      phoneLocal,
       billingState,
       firstName,
       lastName,
@@ -30,15 +33,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Full name, email, and password are required" }, { status: 400 })
     }
 
-    if (!phone || typeof phone !== "string") {
+    let mobileNorm: string | null = null
+    if (
+      typeof phoneDial === "string" &&
+      phoneDial.trim() &&
+      typeof phoneLocal === "string"
+    ) {
+      mobileNorm = normalizeSignupPhoneStorage(phoneDial, phoneLocal)
+      if (!mobileNorm) {
+        return NextResponse.json(
+          { error: "Enter a valid mobile number for the selected country" },
+          { status: 400 },
+        )
+      }
+    } else if (phone && typeof phone === "string") {
+      mobileNorm = normalizeIndianMobile(phone)
+      if (!mobileNorm) {
+        return NextResponse.json(
+          { error: "Enter a valid 10-digit Indian mobile number" },
+          { status: 400 },
+        )
+      }
+    } else {
       return NextResponse.json({ error: "Mobile number is required" }, { status: 400 })
-    }
-    const mobileNorm = normalizeIndianMobile(phone)
-    if (!mobileNorm) {
-      return NextResponse.json(
-        { error: "Enter a valid 10-digit Indian mobile number" },
-        { status: 400 },
-      )
     }
 
     if (!billingState || typeof billingState !== "string" || !isValidIndianStateCode(billingState)) {

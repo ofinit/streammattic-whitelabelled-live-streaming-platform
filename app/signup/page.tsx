@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import { useBranding } from "@/lib/branding-context"
@@ -8,17 +8,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Menu, X, Loader2 } from "lucide-react"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Menu, X, Loader2, ChevronsUpDown } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { INDIAN_STATES_AND_UT } from "@/lib/indian-states"
+import { IndianStateCombobox } from "@/components/auth/indian-state-combobox"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  PHONE_DIAL_OPTIONS,
+  flagEmojiFromIso,
+} from "@/lib/phone-country-codes"
+import { cn } from "@/lib/utils"
 
 const DEFAULT_CALLBACK = "/streamer"
 
@@ -40,12 +47,19 @@ export default function SignupPage() {
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [fullName, setFullName] = useState("")
-  const [phone, setPhone] = useState("")
+  const [phoneDial, setPhoneDial] = useState("+91")
+  const [phoneLocal, setPhoneLocal] = useState("")
+  const [dialOpen, setDialOpen] = useState(false)
   const [billingState, setBillingState] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [loading, setLoading] = useState(false)
+
+  const selectedDial = useMemo(
+    () => PHONE_DIAL_OPTIONS.find((o) => o.dial === phoneDial) ?? PHONE_DIAL_OPTIONS[0],
+    [phoneDial],
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,7 +85,8 @@ export default function SignupPage() {
           email: email.trim(),
           password,
           fullName: fullName.trim(),
-          phone: phone.trim(),
+          phoneDial,
+          phoneLocal,
           billingState,
         }),
       })
@@ -144,33 +159,78 @@ export default function SignupPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-phone">Mobile number</Label>
-                    <Input
-                      id="signup-phone"
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="10-digit mobile (e.g. 9876543210)"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="bg-secondary border-border"
-                      required
-                      autoComplete="tel"
-                    />
+                    <Label>Mobile number</Label>
+                    <div className="flex gap-2">
+                      <Popover open={dialOpen} onOpenChange={setDialOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={dialOpen}
+                            className={cn(
+                              "h-10 w-[118px] shrink-0 justify-between px-2 font-mono tabular-nums bg-secondary border-border",
+                            )}
+                          >
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <span className="text-lg leading-none" aria-hidden>
+                                {flagEmojiFromIso(selectedDial.iso)}
+                              </span>
+                              <span>{phoneDial}</span>
+                            </span>
+                            <ChevronsUpDown className="ml-0.5 h-4 w-4 shrink-0 opacity-60" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[min(100vw-2rem,280px)] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search code or country…" className="h-9" />
+                            <CommandList className="max-h-[280px]">
+                              <CommandEmpty>No match.</CommandEmpty>
+                              <CommandGroup>
+                                {PHONE_DIAL_OPTIONS.map((o) => (
+                                  <CommandItem
+                                    key={`${o.iso}-${o.dial}`}
+                                    value={`${o.dial} ${o.iso} ${o.name}`}
+                                    onSelect={() => {
+                                      setPhoneDial(o.dial)
+                                      setDialOpen(false)
+                                    }}
+                                  >
+                                    <span className="mr-2 text-lg leading-none" aria-hidden>
+                                      {flagEmojiFromIso(o.iso)}
+                                    </span>
+                                    <span className="font-mono tabular-nums">{o.dial}</span>
+                                    <span className="ml-2 truncate text-muted-foreground text-xs">{o.name}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        id="signup-phone-local"
+                        type="tel"
+                        inputMode="tel"
+                        placeholder={phoneDial === "+91" ? "10-digit number" : "Number"}
+                        value={phoneLocal}
+                        onChange={(e) => setPhoneLocal(e.target.value)}
+                        className="min-w-0 flex-1 bg-secondary border-border"
+                        required
+                        autoComplete="tel-national"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      India: 10 digits starting with 6–9. Other countries: local number without country code.
+                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>State (for GST billing)</Label>
-                    <Select value={billingState} onValueChange={setBillingState} required>
-                      <SelectTrigger className="bg-secondary border-border w-full">
-                        <SelectValue placeholder="Select state / UT" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {INDIAN_STATES_AND_UT.map((s) => (
-                          <SelectItem key={s.code} value={s.code}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label id="signup-state-label">State (for GST billing)</Label>
+                    <IndianStateCombobox
+                      value={billingState}
+                      onValueChange={setBillingState}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>

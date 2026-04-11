@@ -51,6 +51,7 @@ import {
 } from "@/lib/event-title-typography"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
 import { getWatchPageSkin } from "@/lib/watch-template-skin"
+import { VisitorGateForm, readVisitorGateComplete } from "@/components/watch/visitor-gate-form"
 
 function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
   if (raw == null || raw === "") return {}
@@ -463,6 +464,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [isPasswordProtected, setIsPasswordProtected] = useState(false)
   const [password, setPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [visitorGateComplete, setVisitorGateComplete] = useState(false)
   const [passwordError, setPasswordError] = useState("")
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -493,6 +495,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const birthdayFloaterIdRef = useRef(0)
   const [birthdayConfetti, setBirthdayConfetti] = useState<BirthdayConfettiPiece[]>([])
   const birthdayConfettiIdRef = useRef(0)
+
+  useEffect(() => {
+    setVisitorGateComplete(readVisitorGateComplete(eventId))
+  }, [eventId])
 
   const fetchWatchEvent = useCallback(async (): Promise<LiveEvent | null> => {
     try {
@@ -997,6 +1003,20 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           {DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE}
         </p>
       </div>
+    )
+  }
+
+  const evGate = event as unknown as Record<string, unknown>
+  const captureVisitorData =
+    evGate.captureVisitorData !== false && evGate.capture_visitor_data !== false
+
+  if (captureVisitorData && !visitorGateComplete) {
+    return (
+      <VisitorGateForm
+        eventId={eventId}
+        eventTitle={event.title}
+        onComplete={() => setVisitorGateComplete(true)}
+      />
     )
   }
 

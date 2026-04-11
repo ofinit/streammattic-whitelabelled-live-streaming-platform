@@ -71,6 +71,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/analytics/revenue/route.ts` | `/api/admin/analytics/revenue` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
 | `app/api/admin/email-templates/route.ts` | `/api/admin/email-templates` |
+| `app/api/admin/event-visitors/route.ts` | `/api/admin/event-visitors` |
 | `app/api/admin/events/route.ts` | `/api/admin/events` |
 | `app/api/admin/gst/route.ts` | `/api/admin/gst` |
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
@@ -147,6 +148,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/studio/dashboard/route.ts` | `/api/studio/dashboard` |
 | `app/api/studio/domains/route.ts` | `/api/studio/domains` |
 | `app/api/studio/domains/verify/route.ts` | `/api/studio/domains/verify` |
+| `app/api/studio/events/[eventId]/visitors/route.ts` | `/api/studio/events/[eventId]/visitors` |
 | `app/api/studio/events/check-slug/route.ts` | `/api/studio/events/check-slug` |
 | `app/api/studio/events/route.ts` | `/api/studio/events` |
 | `app/api/studio/events/seed-mock/route.ts` | `/api/studio/events/seed-mock` |
@@ -165,6 +167,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/watch/[eventId]/crew-credentials/route.ts` | `/api/watch/[eventId]/crew-credentials` |
 | `app/api/watch/[eventId]/presence/route.ts` | `/api/watch/[eventId]/presence` |
 | `app/api/watch/[eventId]/route.ts` | `/api/watch/[eventId]` |
+| `app/api/watch/[eventId]/visitor/route.ts` | `/api/watch/[eventId]/visitor` |
 | `app/api/webhooks/instamojo/route.ts` | `/api/webhooks/instamojo` |
 | `app/api/webhooks/razorpay/route.ts` | `/api/webhooks/razorpay` |
 | `app/api/youtube/channels/route.ts` | `/api/youtube/channels` |

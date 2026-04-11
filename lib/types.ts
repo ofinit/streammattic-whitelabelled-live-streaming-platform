@@ -236,6 +236,8 @@ export interface LiveEvent {
   totalViews: number
   isPasswordProtected: boolean
   password?: string
+  /** When true (default), watch page collects name/email/phone before stream. */
+  captureVisitorData?: boolean
   allowChat: boolean
   allowReactions: boolean
   createdAt: Date

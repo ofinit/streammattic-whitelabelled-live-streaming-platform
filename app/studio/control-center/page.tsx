@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -52,6 +53,7 @@ import {
   Sparkles,
   Ban,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -69,6 +71,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
 
 export default function StudioEventsPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
   const studioSubExpired =
@@ -830,6 +833,16 @@ export default function StudioEventsPage() {
             >
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Event
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/studio/event-visitors?eventId=${encodeURIComponent(String(event.id))}`,
+                )
+              }
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Visitor registrations
             </DropdownMenuItem>
             {event.status === "live" && (
                 <DropdownMenuItem onClick={() => handleBreak(event)}>

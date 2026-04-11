@@ -117,6 +117,10 @@ const statements = [
   `ALTER TABLE gst_configurations ADD COLUMN IF NOT EXISTS gst_type TEXT NOT NULL DEFAULT 'individual'`,
   `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_gst_number TEXT`,
   `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`,
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`,
+  `CREATE TABLE IF NOT EXISTS event_visitor_registrations (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE, full_name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL, ip_address TEXT, user_agent TEXT, accept_language TEXT, referer TEXT, utm_source TEXT, utm_medium TEXT, utm_campaign TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
+  `CREATE INDEX IF NOT EXISTS idx_evr_event_created ON event_visitor_registrations(event_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_evr_created ON event_visitor_registrations(created_at DESC)`,
 ];
 
 const seedSettings = [

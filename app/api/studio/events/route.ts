@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       title, subtitle, description, streamType, scheduledAt, slug: rawSlug,
-      isPasswordProtected, password, allowChat, allowReactions,
+      isPasswordProtected, password, allowChat, allowReactions, captureVisitorData,
       youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
@@ -239,7 +239,9 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
 
+    const captureVisitorDataValue = captureVisitorData !== false
 
     const subtitleValue =
       subtitle !== undefined && subtitle !== null ? (String(subtitle).trim() || null) : null
@@ -248,7 +250,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO events (
         user_id, title, subtitle, description, stream_type, stream_key, rtmp_url,
         youtube_url, embed_code, status, scheduled_at,
-        is_password_protected, event_password, allow_chat, allow_reactions,
+        is_password_protected, event_password, allow_chat, allow_reactions, capture_visitor_data,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
         validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
         photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
@@ -260,7 +262,7 @@ export async function POST(req: NextRequest) {
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
         ${isPasswordProtected ? (password || null) : null},
-        ${allowChat ?? true}, ${allowReactions ?? true},
+        ${allowChat ?? true}, ${allowReactions ?? true}, ${captureVisitorDataValue},
         ${JSON.stringify(insertStreamType === "rtmp" ? (simulcastConfig || {}) : {})},
         ${finalSlug},
         ${timezone || "UTC"},
@@ -314,7 +316,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const {
       id, title, subtitle, description, scheduledAt, status, slug: rawSlug,
-      isPasswordProtected, password, allowChat, allowReactions, timezone, showScheduledPage, showRecording,
+      isPasswordProtected, password, allowChat, allowReactions, captureVisitorData, timezone, showScheduledPage, showRecording,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin,
@@ -327,6 +329,7 @@ export async function PUT(req: NextRequest) {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     
@@ -625,6 +628,7 @@ export async function PUT(req: NextRequest) {
         event_password = COALESCE(${password ?? null}, event_password),
         allow_chat = COALESCE(${allowChat ?? null}, allow_chat),
         allow_reactions = COALESCE(${allowReactions ?? null}, allow_reactions),
+        capture_visitor_data = COALESCE(${captureVisitorData ?? null}, capture_visitor_data),
         slug = COALESCE(${finalSlug}, slug),
         timezone = COALESCE(${timezone ?? null}, timezone),
         show_scheduled_page = COALESCE(${showScheduledPage ?? null}, show_scheduled_page),

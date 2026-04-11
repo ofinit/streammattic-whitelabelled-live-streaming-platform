@@ -31,6 +31,12 @@ export default function PrivacyPolicyPage() {
           <strong>Content you upload:</strong> images, stream metadata, event details, and other materials
           you choose to submit through the platform.
         </li>
+        <li>
+          <strong>Event visitor details (when enabled by the event host):</strong> if an event requires
+          registration before viewing, we collect the name, email, and phone number you submit, along
+          with technical data such as IP address and browser information, and make these available to
+          the hosting streamer or studio and to platform administrators as described in this policy.
+        </li>
       </ul>
 
       <h2>2. How we use information</h2>

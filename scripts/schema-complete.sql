@@ -275,6 +275,7 @@ CREATE TABLE IF NOT EXISTS events (
   is_mock                 BOOLEAN         NOT NULL DEFAULT false,
   is_suspended            BOOLEAN         NOT NULL DEFAULT false,
   show_recording          BOOLEAN         NOT NULL DEFAULT false,
+  capture_visitor_data    BOOLEAN         NOT NULL DEFAULT true,
   created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
@@ -284,6 +285,27 @@ CREATE INDEX IF NOT EXISTS idx_events_status      ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_scheduled_at ON events(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_events_stream_type ON events(stream_type);
 CREATE INDEX IF NOT EXISTS idx_events_slug        ON events(slug);
+
+-- =============================================================
+-- TABLE: event_visitor_registrations (watch gate leads)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS event_visitor_registrations (
+  id               UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id         UUID            NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  full_name        TEXT            NOT NULL,
+  email            TEXT            NOT NULL,
+  phone            TEXT            NOT NULL,
+  ip_address       TEXT,
+  user_agent       TEXT,
+  accept_language  TEXT,
+  referer          TEXT,
+  utm_source       TEXT,
+  utm_medium       TEXT,
+  utm_campaign     TEXT,
+  created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_evr_event_created ON event_visitor_registrations(event_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_evr_created ON event_visitor_registrations(created_at DESC);
 
 -- =============================================================
 -- TABLE: orders

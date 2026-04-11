@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -51,6 +52,7 @@ import {
   Sparkles,
   Ban,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -66,6 +68,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
 
 export default function StreamerEventsPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const ownerId = user?.id || ""
 
@@ -810,6 +813,16 @@ export default function StreamerEventsPage() {
             <DropdownMenuItem onClick={() => handleEditEvent(event)}>
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Event
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/streamer/event-visitors?eventId=${encodeURIComponent(String(event.id))}`,
+                )
+              }
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Visitor registrations
             </DropdownMenuItem>
             {event.status === "live" && (
                 <DropdownMenuItem onClick={() => handleBreak(event)}>

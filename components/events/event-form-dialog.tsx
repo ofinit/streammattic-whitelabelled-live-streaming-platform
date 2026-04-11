@@ -40,6 +40,7 @@ import {
   Upload,
   X,
   ShieldAlert,
+  ClipboardList,
 } from "lucide-react"
 import type {
   LiveEvent,
@@ -486,6 +487,7 @@ export function EventFormDialog({
     scheduledAt: "",
     isPasswordProtected: false,
     password: "",
+    captureVisitorData: true,
     allowChat: true,
     allowReactions: true,
     templateId: "tpl-default",
@@ -1083,6 +1085,9 @@ export function EventFormDialog({
           scheduledAt: event.scheduledAt ? String(event.scheduledAt).slice(0, 16) : "",
           isPasswordProtected: event.isPasswordProtected,
           password: event.password || "",
+          captureVisitorData:
+            (event as unknown as Record<string, unknown>).captureVisitorData !== false &&
+            (event as unknown as Record<string, unknown>).capture_visitor_data !== false,
           allowChat: event.allowChat,
           allowReactions: event.allowReactions,
           showScheduledPage: (event as any).show_scheduled_page === true || (event as any).showScheduledPage === true,
@@ -1124,6 +1129,7 @@ export function EventFormDialog({
           scheduledAt: "",
           isPasswordProtected: false,
           password: "",
+          captureVisitorData: true,
           allowChat: true,
           allowReactions: true,
           templateId: "tpl-default",
@@ -1709,6 +1715,7 @@ export function EventFormDialog({
       embedCode: formData.streamType === "third_party" ? formData.embedCode : undefined,
       isPasswordProtected: formData.isPasswordProtected,
       password: formData.isPasswordProtected ? formData.password : undefined,
+      captureVisitorData: formData.captureVisitorData,
       allowChat: formData.allowChat,
       allowReactions: formData.allowReactions,
       showScheduledPage: formData.showScheduledPage,
@@ -3416,6 +3423,20 @@ export function EventFormDialog({
                     />
                   </div>
                 )}
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium text-sm">Capture visitor details</p>
+                      <p className="text-xs text-muted-foreground">Name, email, and phone before watch</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={formData.captureVisitorData}
+                    onCheckedChange={(checked) => setFormData({ ...formData, captureVisitorData: checked })}
+                  />
+                </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-3">

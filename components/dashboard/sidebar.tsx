@@ -32,6 +32,7 @@ import {
   Receipt,
   Menu,
   Zap,
+  ClipboardList,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -66,6 +67,7 @@ const adminNav: NavItem[] = [
   { title: "GST invoices", href: "/admin/invoices", icon: Receipt },
   { title: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: 8 },
   { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { title: "Visitor leads", href: "/admin/visitor-registrations", icon: ClipboardList },
   { title: "Payment Gateways", href: "/admin/payments", icon: CreditCard },
   { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },
   { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
@@ -77,6 +79,7 @@ const adminNav: NavItem[] = [
 const studioNav: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
   { title: "Control Center", href: "/studio/control-center", icon: Radio },
+  { title: "Visitor leads", href: "/studio/event-visitors", icon: ClipboardList },
   { title: "Create Event", href: "/studio/create-events", icon: Calendar },
   { title: "Packages", href: "/studio/packages", icon: Package },
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
@@ -90,6 +93,7 @@ const studioNav: NavItem[] = [
 const streamerNav: NavItem[] = [
   { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
   { title: "Control Center", href: "/streamer/control-center", icon: Radio },
+  { title: "Visitor leads", href: "/streamer/event-visitors", icon: ClipboardList },
   { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
   { title: "Packages", href: "/streamer/packages", icon: Package },
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },

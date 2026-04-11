@@ -7,7 +7,7 @@ const ALLOWED_DAYS = new Set([7, 30, 90])
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ eventId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getCurrentUser()
@@ -17,9 +17,9 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { eventId: rawId } = await params
+    const { id: rawId } = await params
     if (!rawId?.trim()) {
-      return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+      return NextResponse.json({ error: "Missing event id" }, { status: 400 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -257,7 +257,7 @@ export async function GET(
       })),
     })
   } catch (error: unknown) {
-    console.error("[api/events/[eventId]/analytics]", error)
+    console.error("[api/events/[id]/analytics]", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

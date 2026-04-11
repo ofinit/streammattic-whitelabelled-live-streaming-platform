@@ -71,6 +71,7 @@ export async function GET(req: NextRequest) {
   try {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
     const [events, totalCount, liveCount, scheduledCount, completedCount] = await Promise.all([
       getEvents({ studioId, search, status, limit, offset }),
@@ -235,6 +236,7 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
 
     const subtitleValue =
@@ -322,6 +324,7 @@ export async function PUT(req: NextRequest) {
 
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     

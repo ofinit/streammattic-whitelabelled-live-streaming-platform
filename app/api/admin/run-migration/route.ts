@@ -141,6 +141,7 @@ export async function POST(req: Request) {
     ["ALTER invoices recipient_gst_number", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_gst_number TEXT`],
     ["ALTER invoices recipient_address", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`],
     ["ALTER events capture_visitor_data", `ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`],
+    ["ALTER event_visitor_registrations ip_country", `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`],
   ]
   for (const [label, stmt] of columnAlters) {
     await tryExec(label, stmt)

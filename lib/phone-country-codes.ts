@@ -4,6 +4,15 @@
  */
 export type PhoneDialOption = { iso: string; name: string; dial: string }
 
+/** Unicode regional-indicator flag emoji from ISO 3166-1 alpha-2 (e.g. IN → 🇮🇳). */
+export function flagEmojiFromIso(iso: string): string {
+  const code = iso.trim().toUpperCase()
+  if (code.length !== 2 || !/^[A-Z]{2}$/.test(code)) return ""
+  const base = 0x1f1e6
+  const a = "A".charCodeAt(0)
+  return String.fromCodePoint(base + (code.charCodeAt(0) - a), base + (code.charCodeAt(1) - a))
+}
+
 export const PHONE_DIAL_OPTIONS: PhoneDialOption[] = [
   { iso: "IN", name: "India", dial: "+91" },
   { iso: "US", name: "United States / Canada", dial: "+1" },

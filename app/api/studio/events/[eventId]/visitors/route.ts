@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 import { userCanViewEventVisitors } from "@/lib/event-visitor-access"
+import { escapeSqlLikePattern } from "@/lib/search-like"
 
 function csvEscape(s: string): string {
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
@@ -39,9 +40,11 @@ export async function GET(
         utm_source TEXT,
         utm_medium TEXT,
         utm_campaign TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        ip_country TEXT
       )
     `.catch(() => {})
+    await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`.catch(() => {})
 
     const eventRows = await sql`
       SELECT id, user_id, studio_id FROM events
@@ -58,64 +61,101 @@ export async function GET(
     }
 
     const url = req.nextUrl
+    const searchRaw = url.searchParams.get("q")?.trim() || ""
     const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit")) || 50))
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0)
     const format = url.searchParams.get("format")?.toLowerCase() === "csv" ? "csv" : "json"
 
     const eventUuid = event.id
 
-    const countRows = await sql`
-      SELECT COUNT(*)::bigint AS c FROM event_visitor_registrations
-      WHERE event_id = ${eventUuid}
-    `
+    const conditions: string[] = ["r.event_id = $1"]
+    const params: unknown[] = [eventUuid]
+    let i = 2
+
+    if (searchRaw.length > 0) {
+      const pattern = `%${escapeSqlLikePattern(searchRaw)}%`
+      const p = i
+      conditions.push(`(
+        r.full_name ILIKE $${p} ESCAPE '\\' OR
+        r.email ILIKE $${p} ESCAPE '\\' OR
+        r.phone ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.ip_address, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.user_agent, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.referer, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.ip_country, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.utm_source, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.utm_medium, '') ILIKE $${p} ESCAPE '\\' OR
+        COALESCE(r.utm_campaign, '') ILIKE $${p} ESCAPE '\\' OR
+        to_char(r.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS') ILIKE $${p} ESCAPE '\\'
+      )`)
+      params.push(pattern)
+      i++
+    }
+
+    const where = conditions.join(" AND ")
+    const limitIdx = i
+    const offsetIdx = i + 1
+    const listParams = [...params, limit, offset]
+
+    const countRows = await sql(
+      `SELECT COUNT(*)::bigint AS c FROM event_visitor_registrations r WHERE ${where}`,
+      params,
+    )
     const total = Number((countRows[0] as { c: string }).c) || 0
 
-    const rows = await sql`
-      SELECT
+    const rows = await sql(
+      `SELECT
         r.id,
         r.event_id AS event_id,
         r.full_name AS full_name,
         r.email AS email,
         r.phone AS phone,
         r.ip_address AS ip_address,
+        r.ip_country AS ip_country,
         r.user_agent AS user_agent,
         r.accept_language AS accept_language,
         r.referer AS referer,
         r.utm_source AS utm_source,
         r.utm_medium AS utm_medium,
         r.utm_campaign AS utm_campaign,
-        r.created_at AS created_at
+        r.created_at AS created_at,
+        to_char(r.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS') AS time_ist
       FROM event_visitor_registrations r
-      WHERE r.event_id = ${eventUuid}
+      WHERE ${where}
       ORDER BY r.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `
+      LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+      listParams,
+    )
 
     if (format === "csv") {
       const header = [
-        "created_at",
-        "full_name",
-        "email",
-        "phone",
-        "ip_address",
-        "user_agent",
+        "time_ist",
+        "visitor_full_name",
+        "visitor_email",
+        "visitor_phone",
+        "visitor_ip",
+        "visitor_ip_country",
+        "visitor_user_agent",
         "referer",
         "utm_source",
         "utm_medium",
         "utm_campaign",
+        "created_at_utc",
       ].join(",")
       const lines = (rows as Record<string, unknown>[]).map((row) =>
         [
-          csvEscape(String(row.created_at ?? "")),
+          csvEscape(String(row.time_ist ?? "")),
           csvEscape(String(row.full_name ?? "")),
           csvEscape(String(row.email ?? "")),
           csvEscape(String(row.phone ?? "")),
           csvEscape(String(row.ip_address ?? "")),
+          csvEscape(String(row.ip_country ?? "")),
           csvEscape(String(row.user_agent ?? "")),
           csvEscape(String(row.referer ?? "")),
           csvEscape(String(row.utm_source ?? "")),
           csvEscape(String(row.utm_medium ?? "")),
           csvEscape(String(row.utm_campaign ?? "")),
+          csvEscape(String(row.created_at ?? "")),
         ].join(","),
       )
       const csv = [header, ...lines].join("\r\n")

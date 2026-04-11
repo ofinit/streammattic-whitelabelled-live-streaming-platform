@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowLeft, Download, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, Loader2, Search } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r) => {
@@ -27,12 +27,16 @@ type AdminRow = {
   id: string
   createdAt?: string
   created_at?: string
+  timeIst?: string
+  time_ist?: string
   fullName?: string
   full_name?: string
   email?: string
   phone?: string
   ipAddress?: string
   ip_address?: string
+  ipCountry?: string
+  ip_country?: string
   userAgent?: string
   user_agent?: string
   referer?: string
@@ -48,11 +52,13 @@ type AdminRow = {
   ownerName?: string
 }
 
-function formatRowTime(r: AdminRow): string {
+function formatRowTimeIst(r: AdminRow): string {
+  const ist = r.timeIst ?? r.time_ist
+  if (ist) return String(ist)
   const raw = r.createdAt ?? r.created_at
   if (!raw) return "—"
   const d = new Date(String(raw))
-  return Number.isNaN(d.getTime()) ? String(raw) : d.toLocaleString()
+  return Number.isNaN(d.getTime()) ? String(raw) : d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
 }
 
 function truncate(s: string, n: number): string {
@@ -72,25 +78,35 @@ export function EventVisitorsPage({
   const eventIdFromQuery = searchParams.get("eventId")?.trim() || ""
 
   const [eventFilter, setEventFilter] = useState(eventIdFromQuery)
+  const [searchInput, setSearchInput] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
   useEffect(() => {
     setEventFilter(eventIdFromQuery)
   }, [eventIdFromQuery])
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(t)
+  }, [searchInput])
+
   const adminListUrl = useMemo(() => {
     const q = new URLSearchParams()
     if (eventFilter) q.set("eventId", eventFilter)
+    if (debouncedSearch) q.set("q", debouncedSearch)
     q.set("limit", "100")
     q.set("offset", "0")
     return `/api/admin/event-visitors?${q.toString()}`
-  }, [eventFilter])
+  }, [eventFilter, debouncedSearch])
 
   const studioListUrl = useMemo(() => {
     if (!eventFilter) return null
     const q = new URLSearchParams()
+    if (debouncedSearch) q.set("q", debouncedSearch)
     q.set("limit", "100")
     q.set("offset", "0")
     return `/api/studio/events/${encodeURIComponent(eventFilter)}/visitors?${q.toString()}`
-  }, [eventFilter])
+  }, [eventFilter, debouncedSearch])
 
   const swrKey = mode === "admin" ? adminListUrl : studioListUrl
   const { data, error, isLoading, mutate } = useSWR(swrKey, fetcher)
@@ -105,17 +121,19 @@ export function EventVisitorsPage({
     if (mode === "admin") {
       const q = new URLSearchParams()
       if (eventFilter) q.set("eventId", eventFilter)
+      if (debouncedSearch) q.set("q", debouncedSearch)
       q.set("format", "csv")
       window.open(`/api/admin/event-visitors?${q.toString()}`, "_blank")
     } else if (eventFilter) {
       const q = new URLSearchParams()
+      if (debouncedSearch) q.set("q", debouncedSearch)
       q.set("format", "csv")
       window.open(`/api/studio/events/${encodeURIComponent(eventFilter)}/visitors?${q.toString()}`, "_blank")
     }
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6">
+    <div className="space-y-6 w-full max-w-none px-4 md:px-6 py-4 md:py-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" className="mb-2 -ml-2" asChild>
@@ -145,22 +163,57 @@ export function EventVisitorsPage({
       {mode === "admin" && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Filter by event</CardTitle>
+            <CardTitle className="text-base">Filters</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-2">
-              <Label htmlFor="ev-id">Event ID or slug</Label>
+          <CardContent className="flex flex-col gap-4">
+            <div className="space-y-2 w-full">
+              <Label htmlFor="visitor-search">Search</Label>
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="visitor-search"
+                  placeholder="Search name, email, phone, event, streamer, IP, country, time (IST), UTM…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="ev-id">Event ID or slug</Label>
+                <Input
+                  id="ev-id"
+                  placeholder="Optional — leave empty for all events"
+                  value={eventFilter}
+                  onChange={(e) => setEventFilter(e.target.value.trim())}
+                  className="w-full min-w-[min(100%,280px)] max-w-md"
+                />
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => void mutate()}>
+                Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {mode === "studio" && eventFilter && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Search</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                id="ev-id"
-                placeholder="Optional — leave empty for all events"
-                value={eventFilter}
-                onChange={(e) => setEventFilter(e.target.value.trim())}
-                className="max-w-md"
+                id="studio-visitor-search"
+                placeholder="Search all registration fields…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9"
               />
             </div>
-            <Button variant="secondary" size="sm" onClick={() => void mutate()}>
-              Refresh
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -205,31 +258,32 @@ export function EventVisitorsPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Time</TableHead>
+                  <TableHead>Time (IST)</TableHead>
                   {mode === "admin" && (
                     <>
                       <TableHead>Event</TableHead>
-                      <TableHead>Owner</TableHead>
+                      <TableHead>Streamer/Studio</TableHead>
                     </>
                   )}
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>IP</TableHead>
-                  <TableHead>User agent</TableHead>
+                  <TableHead>Visitor name</TableHead>
+                  <TableHead>Visitor email</TableHead>
+                  <TableHead>Visitor phone</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Visitor IP</TableHead>
+                  <TableHead>Visitor user agent</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={mode === "admin" ? 8 : 6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={mode === "admin" ? 9 : 7} className="text-center text-muted-foreground py-8">
                       No registrations yet.
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap text-xs">{formatRowTime(r)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">{formatRowTimeIst(r)}</TableCell>
                       {mode === "admin" && (
                         <>
                           <TableCell className="max-w-[140px] text-xs">
@@ -243,6 +297,9 @@ export function EventVisitorsPage({
                       <TableCell className="text-xs">{r.fullName ?? r.full_name ?? "—"}</TableCell>
                       <TableCell className="text-xs">{r.email ?? "—"}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{r.phone ?? "—"}</TableCell>
+                      <TableCell className="text-xs max-w-[120px]">
+                        {r.ipCountry ?? r.ip_country ?? "—"}
+                      </TableCell>
                       <TableCell className="text-xs font-mono">{r.ipAddress ?? r.ip_address ?? "—"}</TableCell>
                       <TableCell className="text-xs max-w-[240px]" title={String(r.userAgent ?? r.user_agent ?? "")}>
                         {truncate(String(r.userAgent ?? r.user_agent ?? "") || "—", 80)}

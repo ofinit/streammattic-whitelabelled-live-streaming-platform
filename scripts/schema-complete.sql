@@ -302,6 +302,7 @@ CREATE TABLE IF NOT EXISTS event_visitor_registrations (
   utm_source       TEXT,
   utm_medium       TEXT,
   utm_campaign     TEXT,
+  ip_country       TEXT,
   created_at       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_evr_event_created ON event_visitor_registrations(event_id, created_at DESC);

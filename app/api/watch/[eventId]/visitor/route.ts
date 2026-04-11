@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { getRequestClientIp } from "@/lib/client-ip"
+import { lookupCountryNameFromIp } from "@/lib/ip-country"
 import { composeInternationalPhone } from "@/lib/phone-country-codes"
 
 const RATE_LIMIT_PER_HOUR = 30
@@ -70,10 +71,12 @@ export async function POST(
       referer TEXT,
       utm_source TEXT,
       utm_medium TEXT,
-      utm_campaign TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `.catch(() => {})
+        utm_campaign TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        ip_country TEXT
+      )
+    `.catch(() => {})
+    await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`.catch(() => {})
 
   const eventRows = await sql`
     SELECT id, is_suspended, capture_visitor_data
@@ -114,11 +117,12 @@ export async function POST(
   const userAgent = req.headers.get("user-agent")?.slice(0, 2000) ?? null
   const acceptLanguage = req.headers.get("accept-language")?.slice(0, 500) ?? null
   const referer = req.headers.get("referer")?.slice(0, 2000) ?? null
+  const ipCountry = lookupCountryNameFromIp(ip)
 
   await sql`
     INSERT INTO event_visitor_registrations (
       event_id, full_name, email, phone,
-      ip_address, user_agent, accept_language, referer,
+      ip_address, ip_country, user_agent, accept_language, referer,
       utm_source, utm_medium, utm_campaign
     ) VALUES (
       ${eventUuid},
@@ -126,6 +130,7 @@ export async function POST(
       ${email},
       ${phone},
       ${ip},
+      ${ipCountry},
       ${userAgent},
       ${acceptLanguage},
       ${referer},

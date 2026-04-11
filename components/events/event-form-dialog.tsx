@@ -1262,9 +1262,16 @@ export function EventFormDialog({
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])
   const hasConcreteStreamType = Boolean(String(formData.streamType || "").trim())
+  /** True when admin has at least one stream type enabled (distinct from “user has not picked a type yet”). */
+  const hasAnyEnabledStreamType = useMemo(
+    () => Boolean(streamTypePricing && firstEnabledCanonicalStreamType(streamTypePricing) !== null),
+    [streamTypePricing],
+  )
   const creditPreviewCanonical = useMemo((): CanonicalStreamTypeKey | null => {
     const selected = formStreamTypeToCanonical(formData.streamType)
     if (selected) return selected
+    // No stream type chosen yet — do not guess a credit bucket (avoids YouTube/RTMP insufficient warnings on draft events).
+    if (!String(formData.streamType || "").trim()) return null
     if (!streamTypePricing) return "rtmp"
     return firstEnabledCanonicalStreamType(streamTypePricing)
   }, [formData.streamType, streamTypePricing])
@@ -1291,8 +1298,13 @@ export function EventFormDialog({
       formData.streamType,
     ],
   )
+  /** Only when admin disabled every stream type — not when the user simply has not selected one yet. */
   const showCreditPreviewNeedsStreamType =
-    !skipCreditsValidation && creditPreviewCanonical === null && creditPreviewNeed > 0 && !!streamTypePricing
+    !skipCreditsValidation &&
+    creditPreviewCanonical === null &&
+    creditPreviewNeed > 0 &&
+    !!streamTypePricing &&
+    !hasAnyEnabledStreamType
   const eventValidityHelpText = useMemo(() => {
     if (!hasConcreteStreamType) {
       const d = validityExtSettings.defaultDays

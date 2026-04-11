@@ -41,12 +41,12 @@ async function run() {
   const hash = await hashPassword(password);
 
   await client.query(
-    `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email IN ($2, $3)`,
-    [hash, "admin@streamlivee.com", "admin@streammattic.com"]
+    `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2`,
+    [hash, "admin@streammattic.com"]
   );
 
   console.log("Done. You can now login with:");
-  console.log("  Email: admin@streamlivee.com");
+  console.log("  Email: admin@streammattic.com");
   console.log("  Password: Admin@123");
   await client.end();
 }

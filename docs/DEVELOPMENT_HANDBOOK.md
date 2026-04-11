@@ -19,7 +19,7 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 
 **Where production `DATABASE_URL` lives:** Only in the deployment environment (e.g. Coolify env vars, server `.env.production` — never committed). On **ozero.cloud / Coolify**, use the database dashboard **internal** URL for the app; see [Internal vs external URLs](./deploy-coolify-ozero.md#internal-vs-external-urls).
 
-**Schema source of truth:** [`scripts/run-migration.js`](../scripts/run-migration.js) — idempotent `CREATE` statements; re-runs skip objects that already exist. It seeds a default admin user and `platform_settings`. For new environments, use the npm scripts above rather than older `scripts/migrate-*.js` helpers unless you are repairing a legacy database.
+**Schema source of truth:** [`scripts/run-migration.js`](../scripts/run-migration.js) — idempotent `CREATE` statements; re-runs skip objects that already exist. It seeds `platform_settings` (no built-in admin account). For a first admin, run [`scripts/seed-production-admin.js`](../scripts/seed-production-admin.js). For new environments, use the npm scripts above rather than older `scripts/migrate-*.js` helpers unless you are repairing a legacy database.
 
 **Backups and cloning prod to local:** [`scripts/README-BACKUP-RESTORE.md`](../scripts/README-BACKUP-RESTORE.md) (`PRODUCTION_DATABASE_URL`, `db:backup`, `db:setup-local`).
 
@@ -28,7 +28,7 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 ## Security notes
 
 - Do not commit `.env.local`, `.env.production`, or real credentials.
-- The migration seeds `admin@streamlivee.com` with a default password for development; change it before any real deployment.
+- Do not rely on a template admin email in production; create or promote admins deliberately (e.g. `scripts/seed-production-admin.js` or database role update).
 
 ## Regenerating the snapshot below
 

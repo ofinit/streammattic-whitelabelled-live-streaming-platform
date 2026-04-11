@@ -263,16 +263,6 @@ export async function POST(req: Request) {
     `)
   }
 
-  // Seed admin
-  await tryExec("SEED admin user", `
-    INSERT INTO users (id,email,name,phone,password_hash,role,status,email_verified)
-    VALUES ('00000000-0000-0000-0000-000000000001','admin@streamlivee.com','Platform Admin','+919999999999',crypt('admin123',gen_salt('bf')),'admin','active',true)
-    ON CONFLICT (email) DO NOTHING
-  `)
-  await tryExec("SEED admin wallet", `INSERT INTO wallets (user_id,balance,currency) VALUES ('00000000-0000-0000-0000-000000000001',0,'INR') ON CONFLICT (user_id) DO NOTHING`)
-  await tryExec("SEED admin credits", `INSERT INTO user_credits (user_id) VALUES ('00000000-0000-0000-0000-000000000001') ON CONFLICT (user_id) DO NOTHING`)
-  await tryExec("SEED admin branding", `INSERT INTO studio_branding (user_id,platform_name) VALUES ('00000000-0000-0000-0000-000000000001','StreamLivee') ON CONFLICT (user_id) DO NOTHING`)
-
   // Seed settings
   const settings = [
     ["stream_type_pricing", { rtmp:{enabled:true,basePrice:1500,label:"RTMP Server",description:"Use OBS/Wirecast",volumeDiscountTiers:[{minQty:5,pricePerCredit:1350,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:1200,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:1050,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:900,label:"50-Pack (40% off)",enabled:true}]},youtube_api:{enabled:true,basePrice:1000,label:"YouTube API",recommended:true,description:"Direct broadcast",volumeDiscountTiers:[{minQty:5,pricePerCredit:900,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:800,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:700,label:"25-Pack (30% off)",enabled:true},{minQty:50,pricePerCredit:600,label:"50-Pack (40% off)",enabled:true}]},youtube_embed:{enabled:true,basePrice:500,label:"YouTube Embed",description:"Embed existing",volumeDiscountTiers:[{minQty:5,pricePerCredit:450,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:400,label:"10-Pack (20% off)",enabled:true},{minQty:25,pricePerCredit:350,label:"25-Pack (30% off)",enabled:true}]},third_party:{enabled:true,basePrice:400,label:"Third Party",description:"External embed",volumeDiscountTiers:[{minQty:5,pricePerCredit:360,label:"5-Pack (10% off)",enabled:true},{minQty:10,pricePerCredit:320,label:"10-Pack (20% off)",enabled:true}]} }],
@@ -311,6 +301,5 @@ export async function POST(req: Request) {
     success: fail === 0,
     summary: { ok, skip, fail, totalTables: tableRows[0]?.c, adminUsers: adminRows[0]?.c },
     results,
-    adminLogin: { email: "admin@streamlivee.com", password: "admin123" },
   })
 }

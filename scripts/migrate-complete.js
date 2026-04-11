@@ -696,48 +696,9 @@ async function step11_triggers(c) {
   }
 }
 
-async function step12_seed_admin(c) {
+async function step12_seed_admin(_c) {
   console.log("\n── Seed: Admin user ────────────────────────────────────");
-
-  const check = await c.query(`SELECT id FROM users WHERE email = 'admin@streamlivee.com'`);
-  if (check.rows.length > 0) {
-    console.log("  ~  Admin user already exists");
-    return;
-  }
-
-  // Insert admin using pgcrypto crypt() so password = "admin123"
-  await tryExec(c, "INSERT admin user", `
-    INSERT INTO users (id, email, name, phone, password_hash, role, status, email_verified)
-    VALUES (
-      '00000000-0000-0000-0000-000000000001',
-      'admin@streamlivee.com',
-      'Platform Admin',
-      '+919999999999',
-      crypt('admin123', gen_salt('bf')),
-      'admin',
-      'active',
-      true
-    )
-    ON CONFLICT (email) DO NOTHING
-  `);
-
-  await tryExec(c, "Admin wallet", `
-    INSERT INTO wallets (user_id, balance, currency)
-    VALUES ('00000000-0000-0000-0000-000000000001', 0, 'INR')
-    ON CONFLICT (user_id) DO NOTHING
-  `);
-
-  await tryExec(c, "Admin credits", `
-    INSERT INTO user_credits (user_id)
-    VALUES ('00000000-0000-0000-0000-000000000001')
-    ON CONFLICT (user_id) DO NOTHING
-  `);
-
-  await tryExec(c, "Admin branding", `
-    INSERT INTO studio_branding (user_id, platform_name)
-    VALUES ('00000000-0000-0000-0000-000000000001', 'StreamLivee')
-    ON CONFLICT (user_id) DO NOTHING
-  `);
+  console.log("  ~  Skipped (no default admin). Create one with: node scripts/seed-production-admin.js");
 }
 
 async function step13_seed_settings(c) {
@@ -909,7 +870,7 @@ async function main() {
 
     console.log("\n=============================================================");
     console.log("  ✅  MIGRATION COMPLETE");
-    console.log("  Admin login: admin@streamlivee.com / admin123");
+    console.log("  Create admin: node scripts/seed-production-admin.js");
     console.log("=============================================================\n");
   } catch (e) {
     console.error("\n❌ Fatal error:", e.message);

@@ -27,18 +27,22 @@ async function main() {
   const hash = await hashPassword(adminPassword);
   console.log("Generated hash for admin:", hash.substring(0, 30) + "...");
 
-  // Update admin user (parameterized to avoid injection)
+  // Update legacy seed admin (002-seed.sql uses admin@streammattic.com)
   await client.query(
-    "UPDATE users SET password_hash = $1 WHERE email IN ('admin@streamlivee.com', 'admin@streammattic.com')",
+    "UPDATE users SET password_hash = $1 WHERE email = 'admin@streammattic.com'",
     [hash]
   );
   console.log("Admin password updated successfully");
 
   // Verify
-  const result = await client.query("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streamlivee.com'");
+  const result = await client.query("SELECT id, email, name, role, status, password_hash FROM users WHERE email = 'admin@streammattic.com'");
   const admin = result.rows[0];
-  console.log("Admin user:", admin.email, admin.role, admin.status);
-  console.log("Password hash starts with:", admin.password_hash.substring(0, 20));
+  if (admin) {
+    console.log("Admin user:", admin.email, admin.role, admin.status);
+    console.log("Password hash starts with:", admin.password_hash.substring(0, 20));
+  } else {
+    console.log("No user with email admin@streammattic.com found.");
+  }
   await client.end();
 }
 

@@ -79,13 +79,13 @@ const adminNav: NavItem[] = [
 const studioNav: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
   { title: "Control Center", href: "/studio/control-center", icon: Radio },
-  { title: "Visitor leads", href: "/studio/event-visitors", icon: ClipboardList },
   { title: "Create Event", href: "/studio/create-events", icon: Calendar },
   { title: "Packages", href: "/studio/packages", icon: Package },
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
+  { title: "Visitor leads", href: "/studio/event-visitors", icon: ClipboardList },
   { title: "YouTube Channels", href: "/studio/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
@@ -93,10 +93,10 @@ const studioNav: NavItem[] = [
 const streamerNav: NavItem[] = [
   { title: "Dashboard", href: "/streamer", icon: LayoutDashboard },
   { title: "Control Center", href: "/streamer/control-center", icon: Radio },
-  { title: "Visitor leads", href: "/streamer/event-visitors", icon: ClipboardList },
   { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
   { title: "Packages", href: "/streamer/packages", icon: Package },
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
+  { title: "Visitor leads", href: "/streamer/event-visitors", icon: ClipboardList },
   { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]

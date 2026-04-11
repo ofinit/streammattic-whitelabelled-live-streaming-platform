@@ -112,20 +112,6 @@ export function EventVisitorsPage({
 
   const total = typeof data?.total === "number" ? data.total : 0
 
-  const downloadCsv = async () => {
-    if (mode === "admin") {
-      const q = new URLSearchParams()
-      if (debouncedSearch) q.set("q", debouncedSearch)
-      q.set("format", "csv")
-      window.open(`/api/admin/event-visitors?${q.toString()}`, "_blank")
-    } else if (studioEventId) {
-      const q = new URLSearchParams()
-      if (debouncedSearch) q.set("q", debouncedSearch)
-      q.set("format", "csv")
-      window.open(`/api/studio/events/${encodeURIComponent(studioEventId)}/visitors?${q.toString()}`, "_blank")
-    }
-  }
-
   return (
     <div className="space-y-6 w-full max-w-none px-4 md:px-6 py-4 md:py-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -143,15 +129,21 @@ export function EventVisitorsPage({
               : "Leads captured before viewers access your event page."}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void downloadCsv()}
-          disabled={mode === "studio" && !studioEventId}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
+        {mode === "admin" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const q = new URLSearchParams()
+              if (debouncedSearch) q.set("q", debouncedSearch)
+              q.set("format", "csv")
+              window.open(`/api/admin/event-visitors?${q.toString()}`, "_blank")
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        )}
       </div>
 
       {mode === "admin" && (
@@ -203,12 +195,16 @@ export function EventVisitorsPage({
       {mode === "studio" && !studioEventId && (
         <Card>
           <CardContent className="flex flex-col gap-4 py-8 items-center text-center">
-            <p className="text-muted-foreground text-sm max-w-md">
-              Open this page from an event’s menu (Visitor registrations) or append{" "}
-              <code className="text-xs bg-muted px-1 rounded">?eventId=YOUR_EVENT_ID</code> to the URL.
-            </p>
-            <Button variant="outline" asChild>
-              <Link href={`${basePath}/control-center`}>Go to events</Link>
+            <div className="space-y-2 max-w-md">
+              <p className="text-foreground text-sm font-medium">Choose an event first</p>
+              <p className="text-muted-foreground text-sm">
+                Visitor leads are loaded per event. Open <strong>Control Center</strong>, open an event’s menu
+                (⋮), and select <strong>Visitor registrations</strong> — or add{" "}
+                <code className="text-xs bg-muted px-1 rounded">?eventId=…</code> to this page’s URL.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href={`${basePath}/control-center`}>Open control center</Link>
             </Button>
           </CardContent>
         </Card>

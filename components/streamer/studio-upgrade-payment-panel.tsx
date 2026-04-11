@@ -9,8 +9,10 @@ import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { calculatePriceBreakdown } from "@/lib/gst-service"
 import type { GSTConfiguration } from "@/lib/types"
 import { loadRazorpayScript, type RazorpayConstructor } from "@/lib/razorpay-checkout"
-import { CreditCard, Loader2, Receipt, Wallet } from "lucide-react"
+import { AlertTriangle, CreditCard, Loader2, Receipt, Wallet } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 type GstConfigResponse = {
   gstEnabled?: boolean
@@ -53,6 +55,18 @@ export type StudioUpgradePaymentPanelProps = {
   onCancel?: () => void
 }
 
+/** Shown when API rejects role (e.g. admin session while UI shows another user via impersonation). */
+function clarifyStudioPaymentError(message: string | undefined): string {
+  const base = message?.trim() || "Could not start payment"
+  if (
+    base.includes("only available for streamer or studio") ||
+    base.includes("streamer or studio accounts")
+  ) {
+    return `${base} If you are viewing as another user (admin impersonation), stop impersonating and sign in as that account to pay.`
+  }
+  return base
+}
+
 export function StudioUpgradePaymentPanel({
   pricePaisa,
   walletBalancePaise,
@@ -62,6 +76,7 @@ export function StudioUpgradePaymentPanel({
   showActions = true,
   onCancel,
 }: StudioUpgradePaymentPanelProps) {
+  const { isImpersonating } = useAuth()
   const [busy, setBusy] = useState(false)
   const gateway = (selectedGateway || "wallet") as StudioUpgradePayGateway
   const setGateway = onSelectedGatewayChange
@@ -128,6 +143,12 @@ export function StudioUpgradePaymentPanel({
   ])
 
   const payWithWallet = useCallback(async () => {
+    if (isImpersonating) {
+      toast.error(
+        "Payments use your signed-in account. Stop impersonating, then sign in as this user to pay for Studio.",
+      )
+      return
+    }
     if (!walletCoversWalletMode || walletTotalPaise <= 0) return
     setBusy(true)
     try {
@@ -143,7 +164,7 @@ export function StudioUpgradePaymentPanel({
       })
       const data = (await res.json()) as { success?: boolean; error?: string }
       if (!res.ok) {
-        toast.error(data.error || "Could not process wallet payment")
+        toast.error(clarifyStudioPaymentError(data.error) || "Could not process wallet payment")
         return
       }
       toast.success("Upgrade successful! Welcome to Studio.")
@@ -153,9 +174,15 @@ export function StudioUpgradePaymentPanel({
     } finally {
       setBusy(false)
     }
-  }, [walletCoversWalletMode, walletTotalPaise, onPaidSuccess])
+  }, [isImpersonating, walletCoversWalletMode, walletTotalPaise, onPaidSuccess])
 
   const startGatewayCheckout = useCallback(async () => {
+    if (isImpersonating) {
+      toast.error(
+        "Payments use your signed-in account. Stop impersonating, then sign in as this user to pay for Studio.",
+      )
+      return
+    }
     if (gatewayTotalPaise <= 0) return
     setBusy(true)
     try {
@@ -171,7 +198,7 @@ export function StudioUpgradePaymentPanel({
       })
       const payload = (await res.json().catch(() => ({}))) as CreatePaymentResponse & { error?: string }
       if (!res.ok) {
-        toast.error(payload.error || "Could not start payment")
+        toast.error(clarifyStudioPaymentError(payload.error) || "Could not start payment")
         return
       }
 
@@ -244,7 +271,7 @@ export function StudioUpgradePaymentPanel({
     } finally {
       setBusy(false)
     }
-  }, [gateway, gatewayTotalPaise, onPaidSuccess])
+  }, [isImpersonating, gateway, gatewayTotalPaise, onPaidSuccess])
 
   const handlePrimaryPay = () => {
     if (gateway === "wallet") void payWithWallet()
@@ -255,6 +282,7 @@ export function StudioUpgradePaymentPanel({
   const cannotPayAnywhere = noCardGateway && !walletCoversWalletMode && walletTotalPaise > 0
   const primaryDisabled =
     busy ||
+    isImpersonating ||
     chargedTotalPaise <= 0 ||
     gstLoading ||
     (gateway === "wallet" && walletDisabled) ||
@@ -262,6 +290,15 @@ export function StudioUpgradePaymentPanel({
 
   return (
     <div className="space-y-4">
+      {isImpersonating && (
+        <Alert variant="destructive" className="border-amber-600/50 bg-amber-500/10 text-amber-950 dark:text-amber-100">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Studio payments are tied to your <strong>signed-in</strong> account, not the profile you are viewing.
+            Click <strong>Stop impersonating</strong> in the banner, then sign in as this streamer to complete payment.
+          </AlertDescription>
+        </Alert>
+      )}
       {gstLoading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -326,6 +363,7 @@ export function StudioUpgradePaymentPanel({
           value={gateway}
           onValueChange={(v) => setGateway(v as StudioUpgradePayGateway)}
           className="grid gap-2"
+          disabled={isImpersonating}
         >
           <label
             className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${

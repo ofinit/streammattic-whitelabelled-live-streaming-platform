@@ -42,12 +42,17 @@ export default function IntegrationsSettingsPage() {
     youtube_config_enabled: false,
   })
   const [hasEdited, setHasEdited] = useState(false)
+  const [youtubeToggleSaving, setYoutubeToggleSaving] = useState(false)
+  /** Optimistic value while POST is in flight */
+  const [youtubeTogglePending, setYoutubeTogglePending] = useState<boolean | null>(null)
 
   // Sync from server data on first load
   const displayClientId = hasEdited ? formData.google_client_id : (data?.google_client_id ?? "")
   const displayClientSecret = hasEdited ? formData.google_client_secret : (data?.google_client_secret ?? "")
   const displayEncryptionKey = hasEdited ? formData.encryption_key : (data?.encryption_key ?? "")
   const effectiveYoutubeConfigEnabled = hasEdited ? formData.youtube_config_enabled : (data?.youtube_config_enabled ?? false)
+  const youtubeSwitchChecked =
+    youtubeTogglePending !== null ? youtubeTogglePending : effectiveYoutubeConfigEnabled
 
   useEffect(() => {
     if (data && !hasEdited)
@@ -68,10 +73,39 @@ export default function IntegrationsSettingsPage() {
         google_client_id: data?.google_client_id ?? "",
         google_client_secret: data?.google_client_secret ?? "",
         encryption_key: data?.encryption_key ?? "",
+        youtube_config_enabled: data?.youtube_config_enabled ?? false,
       })
       setHasEdited(true)
     }
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const saveYoutubeDashboardToggle = async (checked: boolean) => {
+    setYoutubeTogglePending(checked)
+    setYoutubeToggleSaving(true)
+    try {
+      const res = await fetch("/api/admin/integrations", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ youtube_config_enabled: checked }),
+      })
+      if (!res.ok) throw new Error("Failed to save")
+      toast({
+        title: "Saved",
+        description: checked
+          ? "Streamers and studios can open YouTube API settings in their dashboard."
+          : "Only admins can manage YouTube API settings; streamers and studios use platform credentials.",
+      })
+      setFormData((prev) => ({ ...prev, youtube_config_enabled: checked }))
+      await mutate()
+      await mutateSettings()
+    } catch {
+      toast({ title: "Could not save this setting", variant: "destructive" })
+    } finally {
+      setYoutubeToggleSaving(false)
+      setYoutubeTogglePending(null)
+    }
   }
 
   const handleSave = async () => {
@@ -162,11 +196,9 @@ export default function IntegrationsSettingsPage() {
                 </div>
               </div>
               <Switch
-                checked={effectiveYoutubeConfigEnabled}
-                onCheckedChange={(checked) => {
-                  setHasEdited(true)
-                  setFormData((prev) => ({ ...prev, youtube_config_enabled: checked }))
-                }}
+                checked={youtubeSwitchChecked}
+                disabled={youtubeToggleSaving || isLoading}
+                onCheckedChange={(checked) => void saveYoutubeDashboardToggle(checked)}
               />
             </div>
           </CardHeader>

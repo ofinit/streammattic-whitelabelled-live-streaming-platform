@@ -173,6 +173,7 @@ export default function StudioEventsPage() {
   const [showStreamKey, setShowStreamKey] = useState(false)
   const [eventsLimit, setEventsLimit] = useState(EVENTS_PAGE_SIZE)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const eventDeepLinkHandledRef = useRef<string | null>(null)
 
   const copyToClipboard = (text: string, field: "rtmp" | "key") => {
     navigator.clipboard.writeText(text)
@@ -319,6 +320,52 @@ export default function StudioEventsPage() {
     setEventDialogInitialDraft(undefined)
     setShowEventDialog(true)
   }
+
+  // Open edit dialog from ?event=<id> or /studio/control-center/<id>
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (!user) return
+    const params = new URLSearchParams(window.location.search)
+    const eventId = params.get("event")
+    if (!eventId) {
+      eventDeepLinkHandledRef.current = null
+      return
+    }
+    if (eventDeepLinkHandledRef.current === eventId) return
+    if (isLoading) return
+
+    const found = events.find((e: Record<string, unknown>) => e.id === eventId)
+    if (found) {
+      eventDeepLinkHandledRef.current = eventId
+      if (studioSubExpired) {
+        toast.error("Renew your Studio subscription in Settings to edit events.")
+        const url = new URL(window.location.href)
+        url.searchParams.delete("event")
+        window.history.replaceState({}, "", url.toString())
+        return
+      }
+      setEditingEvent(found as unknown as LiveEvent)
+      setEventDialogInitialTab(undefined)
+      setEventDialogInitialStreamType(undefined)
+      setEventDialogInitialDraft(undefined)
+      setShowEventDialog(true)
+      const url = new URL(window.location.href)
+      url.searchParams.delete("event")
+      window.history.replaceState({}, "", url.toString())
+      return
+    }
+
+    if (totalCount > events.length && eventsLimit < totalCount) {
+      setEventsLimit(totalCount)
+      return
+    }
+
+    eventDeepLinkHandledRef.current = eventId
+    toast.error("Event not found.")
+    const url = new URL(window.location.href)
+    url.searchParams.delete("event")
+    window.history.replaceState({}, "", url.toString())
+  }, [isLoading, events, user, studioSubExpired, totalCount, eventsLimit])
 
   const [streamCredentials, setStreamCredentials] = useState<{
     rtmpUrl: string; streamKey: string; eventTitle: string; isYoutubeApi?: boolean

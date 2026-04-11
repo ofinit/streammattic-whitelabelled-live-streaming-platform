@@ -159,7 +159,9 @@ export default function StreamerEventsPage() {
   }
 
   const { data, isLoading, mutate } = useSWR(
-    ownerId ? `/api/studio/events?studioId=${ownerId}${searchQuery ? `&search=${searchQuery}` : ""}&limit=${eventsLimit}&offset=0` : null,
+    ownerId
+      ? `/api/studio/events?studioId=${ownerId}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}&limit=${eventsLimit}&offset=0`
+      : null,
     fetcher,
     { refreshInterval: 15000 }
   )

@@ -182,7 +182,7 @@ export default function StudioEventsPage() {
   }
 
   const { data, isLoading, mutate } = useSWR(
-    `/api/studio/events?studioId=${studioId}${searchQuery ? `&search=${searchQuery}` : ""}&limit=${eventsLimit}&offset=0`,
+    `/api/studio/events?studioId=${studioId}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ""}&limit=${eventsLimit}&offset=0`,
     fetcher,
     { refreshInterval: 15000 }
   )

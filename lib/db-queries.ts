@@ -1,4 +1,5 @@
 import { getDb, toCamelRows, toCamel } from "./db"
+import { normalizeEventSearchInput } from "./event-search"
 import { withRedisCache, invalidateCache } from "./redis"
 
 // ============================================================
@@ -309,9 +310,14 @@ export async function getEvents(filters?: {
     params.push(filters.status)
   }
   if (filters?.search) {
-    conditions.push(`(e.title ILIKE $${paramIdx})`)
-    params.push(`%${filters.search}%`)
-    paramIdx++
+    const term = normalizeEventSearchInput(filters.search)
+    if (term) {
+      conditions.push(
+        `(e.title ILIKE $${paramIdx} OR e.slug ILIKE $${paramIdx} OR COALESCE(e.description, '') ILIKE $${paramIdx})`,
+      )
+      params.push(`%${term}%`)
+      paramIdx++
+    }
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
@@ -342,7 +348,12 @@ export async function getEventById(id: string) {
   return rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : null
 }
 
-export async function getEventCount(filters?: { userId?: string; studioId?: string; status?: string }) {
+export async function getEventCount(filters?: {
+  userId?: string
+  studioId?: string
+  status?: string
+  search?: string
+}) {
   const sql = getDb()
   const conditions: string[] = []
   const params: unknown[] = []
@@ -359,6 +370,16 @@ export async function getEventCount(filters?: { userId?: string; studioId?: stri
   if (filters?.status) {
     conditions.push(`status = $${paramIdx++}`)
     params.push(filters.status)
+  }
+  if (filters?.search) {
+    const term = normalizeEventSearchInput(filters.search)
+    if (term) {
+      conditions.push(
+        `(title ILIKE $${paramIdx} OR slug ILIKE $${paramIdx} OR COALESCE(description, '') ILIKE $${paramIdx})`,
+      )
+      params.push(`%${term}%`)
+      paramIdx++
+    }
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""

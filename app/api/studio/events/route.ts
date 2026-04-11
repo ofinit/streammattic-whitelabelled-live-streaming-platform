@@ -73,12 +73,13 @@ export async function GET(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
+    const countBase = { studioId, ...(search ? { search } : {}) }
     const [events, totalCount, liveCount, scheduledCount, completedCount] = await Promise.all([
       getEvents({ studioId, search, status, limit, offset }),
-      getEventCount({ studioId }),
-      getEventCount({ studioId, status: "live" }),
-      getEventCount({ studioId, status: "scheduled" }),
-      getEventCount({ studioId, status: "ended" }),
+      getEventCount(countBase),
+      getEventCount({ ...countBase, status: "live" }),
+      getEventCount({ ...countBase, status: "scheduled" }),
+      getEventCount({ ...countBase, status: "ended" }),
     ])
 
     const eventsList = Array.isArray(events) ? events : []

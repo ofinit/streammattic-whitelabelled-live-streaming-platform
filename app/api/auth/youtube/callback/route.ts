@@ -42,9 +42,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Exchange code for tokens (use studio credentials when owner is a studio)
-    const studioId = stateData.ownerType === "studio" ? stateData.ownerId : undefined
-    const tokens = await exchangeCodeForTokens(code, studioId)
+    // 1. Exchange code for tokens (use per-owner credentials when owner is studio or streamer)
+    const credentialOwnerId =
+      stateData.ownerType === "studio" || stateData.ownerType === "streamer" ? stateData.ownerId : undefined
+    const tokens = await exchangeCodeForTokens(code, credentialOwnerId)
 
     if (!tokens.refreshToken) {
       const errorUrl = new URL(returnUrl, url.origin)

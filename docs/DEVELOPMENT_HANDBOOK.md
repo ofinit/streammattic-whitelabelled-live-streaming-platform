@@ -138,6 +138,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/stream/youtube/route.ts` | `/api/stream/youtube` |
 | `app/api/streamer/analytics/route.ts` | `/api/streamer/analytics` |
 | `app/api/streamer/dashboard/route.ts` | `/api/streamer/dashboard` |
+| `app/api/streamer/integrations/route.ts` | `/api/streamer/integrations` |
 | `app/api/streaming/backend-info/route.ts` | `/api/streaming/backend-info` |
 | `app/api/streaming/stats/route.ts` | `/api/streaming/stats` |
 | `app/api/studio/analytics/route.ts` | `/api/studio/analytics` |
@@ -149,6 +150,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/studio/events/check-slug/route.ts` | `/api/studio/events/check-slug` |
 | `app/api/studio/events/route.ts` | `/api/studio/events` |
 | `app/api/studio/events/seed-mock/route.ts` | `/api/studio/events/seed-mock` |
+| `app/api/studio/events/suspend/route.ts` | `/api/studio/events/suspend` |
 | `app/api/studio/integrations/route.ts` | `/api/studio/integrations` |
 | `app/api/studio/setup/route.ts` | `/api/studio/setup` |
 | `app/api/upload/route.ts` | `/api/upload` |

@@ -4,8 +4,12 @@ import { useState } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Youtube, Plus, Info, Loader2, Lock } from "lucide-react"
+import { Youtube, Plus, Info, Loader2, Lock, Key, Eye, EyeOff, CheckCircle2, Trash2, AlertTriangle } from "lucide-react"
 import { YouTubeChannelCard } from "@/components/youtube/youtube-channel-card"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -14,13 +18,29 @@ import { useAuth } from "@/lib/auth-context"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
+const integrationFetcher = (url: string) =>
+  fetch(url, { credentials: "include" }).then((r) => r.json())
+
+type OwnerIntegrationData = {
+  google_client_id?: string
+  google_client_secret?: string
+  has_override?: boolean
+  has_platform_defaults?: boolean
+}
+
 export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
+  const [credSaving, setCredSaving] = useState(false)
+  const [credRemoving, setCredRemoving] = useState(false)
+  const [showCredSecret, setShowCredSecret] = useState(false)
+  const [credForm, setCredForm] = useState({ google_client_id: "", google_client_secret: "" })
+  const [credEdited, setCredEdited] = useState(false)
   const { toast } = useToast()
   const { user } = useAuth()
 
   const OWNER_ID = user?.id || ""
   const OWNER_TYPE = (user?.role || "streamer") as "streamer" | "studio" | "admin"
+  const showOwnerCredentialsUi = OWNER_TYPE === "streamer" || OWNER_TYPE === "studio"
 
   const { data: settingsData, error: settingsError, isLoading: settingsLoading } = useSWR<
     { settings?: { key: string; value: unknown }[] }
@@ -41,7 +61,102 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
     fetcher
   )
 
+  const integrationsKey =
+    youtubeConfigEnabled && OWNER_ID && showOwnerCredentialsUi
+      ? OWNER_TYPE === "streamer"
+        ? "/api/streamer/integrations"
+        : `/api/studio/integrations?studioId=${encodeURIComponent(OWNER_ID)}`
+      : null
+
+  const { data: integrationData, mutate: mutateIntegrations, isLoading: integrationLoading } = useSWR<OwnerIntegrationData>(
+    integrationsKey,
+    integrationFetcher,
+  )
+
   const channels = data?.channels ?? []
+
+  const displayCredClientId = credEdited ? credForm.google_client_id : (integrationData?.google_client_id ?? "")
+  const displayCredSecret = credEdited ? credForm.google_client_secret : (integrationData?.google_client_secret ?? "")
+
+  const handleCredFieldChange = (field: "google_client_id" | "google_client_secret", value: string) => {
+    if (!credEdited) {
+      setCredForm({
+        google_client_id: integrationData?.google_client_id ?? "",
+        google_client_secret: integrationData?.google_client_secret ?? "",
+      })
+      setCredEdited(true)
+    }
+    setCredForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSaveCredentials = async () => {
+    setCredSaving(true)
+    try {
+      if (OWNER_TYPE === "streamer") {
+        const res = await fetch("/api/streamer/integrations", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            google_client_id: credForm.google_client_id,
+            google_client_secret: credForm.google_client_secret,
+          }),
+        })
+        if (!res.ok) throw new Error("save failed")
+      } else {
+        const res = await fetch("/api/studio/integrations", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studioId: OWNER_ID,
+            google_client_id: credForm.google_client_id,
+            google_client_secret: credForm.google_client_secret,
+          }),
+        })
+        if (!res.ok) throw new Error("save failed")
+      }
+      toast({ title: "Saved", description: "Your Google OAuth credentials have been saved." })
+      setCredEdited(false)
+      await mutateIntegrations()
+    } catch {
+      toast({ title: "Error", description: "Failed to save credentials.", variant: "destructive" })
+    } finally {
+      setCredSaving(false)
+    }
+  }
+
+  const handleRemoveCredentialOverride = async () => {
+    setCredRemoving(true)
+    try {
+      if (OWNER_TYPE === "streamer") {
+        const res = await fetch("/api/streamer/integrations", {
+          method: "DELETE",
+          credentials: "include",
+        })
+        if (!res.ok) throw new Error("remove failed")
+      } else {
+        const res = await fetch("/api/studio/integrations", {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studioId: OWNER_ID }),
+        })
+        if (!res.ok) throw new Error("remove failed")
+      }
+      toast({
+        title: "Removed",
+        description: "Your custom credentials were removed. Platform defaults apply when available.",
+      })
+      setCredEdited(false)
+      setCredForm({ google_client_id: "", google_client_secret: "" })
+      await mutateIntegrations()
+    } catch {
+      toast({ title: "Error", description: "Failed to remove credentials.", variant: "destructive" })
+    } finally {
+      setCredRemoving(false)
+    }
+  }
 
   const handleRefreshToken = async (channelDbId: string) => {
     toast({
@@ -146,6 +261,153 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
         )}
         {showManagementUi && (
           <>
+            {showOwnerCredentialsUi && (
+              <>
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10">
+                          <Key className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">Your Google OAuth credentials</CardTitle>
+                          <CardDescription>
+                            Required if the platform has not set global credentials. Use the same redirect URI as in
+                            Google Cloud Console:{" "}
+                            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                              …/api/auth/youtube/callback
+                            </code>
+                          </CardDescription>
+                        </div>
+                      </div>
+                      {integrationLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : integrationData?.has_override ? (
+                        <Badge variant="outline" className="border-primary/30 text-primary w-fit">
+                          Custom
+                        </Badge>
+                      ) : integrationData?.has_platform_defaults ? (
+                        <Badge variant="outline" className="w-fit border-emerald-500/30 text-emerald-400">
+                          Using platform defaults
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="w-fit border-amber-500/30 text-amber-400">
+                          Not configured
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Alert className="border-blue-500/20 bg-blue-500/5">
+                      <Info className="h-4 w-4 text-blue-400" />
+                      <AlertDescription className="text-muted-foreground text-sm">
+                        {integrationData?.has_platform_defaults ? (
+                          <>
+                            Admin credentials are available for OAuth. Add your own Client ID and Secret below only if
+                            you want your brand on Google&apos;s consent screen, or if the platform has no credentials
+                            yet.
+                          </>
+                        ) : (
+                          <>
+                            Enter a <strong>Web application</strong> OAuth client from Google Cloud Console with the
+                            redirect URI above. Without these, you cannot connect a channel until an admin configures
+                            platform credentials.
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="yt-oauth-client-id">Google Client ID</Label>
+                      <Input
+                        id="yt-oauth-client-id"
+                        placeholder="123456789-abc.apps.googleusercontent.com"
+                        value={displayCredClientId}
+                        onChange={(e) => handleCredFieldChange("google_client_id", e.target.value)}
+                        className="bg-secondary font-mono text-sm"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="yt-oauth-client-secret">Google Client Secret</Label>
+                      <div className="relative">
+                        <Input
+                          id="yt-oauth-client-secret"
+                          type={showCredSecret ? "text" : "password"}
+                          placeholder="GOCSPX-xxxxxxxxxxxx"
+                          value={displayCredSecret}
+                          onChange={(e) => handleCredFieldChange("google_client_secret", e.target.value)}
+                          className="bg-secondary pr-10 font-mono text-sm"
+                          autoComplete="off"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowCredSecret(!showCredSecret)}
+                          aria-label={showCredSecret ? "Hide secret" : "Show secret"}
+                        >
+                          {showCredSecret ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        onClick={() => void handleSaveCredentials()}
+                        disabled={credSaving || integrationLoading || !credEdited}
+                      >
+                        {credSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving…
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Save credentials
+                          </>
+                        )}
+                      </Button>
+                      {integrationData?.has_override && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void handleRemoveCredentialOverride()}
+                          disabled={credRemoving}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          {credRemoving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4" />
+                          )}
+                          Remove my credentials
+                        </Button>
+                      )}
+                    </div>
+
+                    <Alert className="border-yellow-500/20 bg-yellow-500/5">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      <AlertDescription className="text-xs text-muted-foreground">
+                        Create OAuth credentials in Google Cloud Console → APIs & Services → Credentials, and add the
+                        authorized redirect URI that matches your app&apos;s callback URL.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
             <Alert className="bg-muted/50 border-border">
               <Info className="h-4 w-4" />
               <AlertDescription>

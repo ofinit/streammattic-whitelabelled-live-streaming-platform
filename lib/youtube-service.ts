@@ -13,25 +13,25 @@ const YOUTUBE_SCOPES = [
 
 /**
  * Get Google OAuth credentials.
- * Resolution chain: Studio override (if studioId provided) > Admin platform_settings > Env vars.
+ * Resolution chain: Per-owner override (studio or streamer user id) > Admin platform_settings > Env vars.
  */
-export async function getGoogleCredentials(studioId?: string): Promise<{ clientId: string; clientSecret: string }> {
+export async function getGoogleCredentials(credentialOwnerId?: string): Promise<{ clientId: string; clientSecret: string }> {
   const sql = getDb()
 
-  // 1. Try studio-specific override first
-  if (studioId) {
-    const studioRows = await sql`
+  // 1. Try owner-specific override (keys google_client_id:<userId> — studio or streamer)
+  if (credentialOwnerId) {
+    const ownerRows = await sql`
       SELECT key, value FROM platform_settings
-      WHERE key IN (${`google_client_id:${studioId}`}, ${`google_client_secret:${studioId}`})
+      WHERE key IN (${`google_client_id:${credentialOwnerId}`}, ${`google_client_secret:${credentialOwnerId}`})
     `
-    const studioSettings: Record<string, string> = {}
-    for (const row of studioRows as { key: string; value: string }[]) {
+    const ownerSettings: Record<string, string> = {}
+    for (const row of ownerRows as { key: string; value: string }[]) {
       const baseKey = (row.key as string).split(":")[0]
       const val = typeof row.value === "string" ? row.value : JSON.stringify(row.value)
-      studioSettings[baseKey] = val.replace(/^"|"$/g, "")
+      ownerSettings[baseKey] = val.replace(/^"|"$/g, "")
     }
-    if (studioSettings.google_client_id && studioSettings.google_client_secret) {
-      return { clientId: studioSettings.google_client_id, clientSecret: studioSettings.google_client_secret }
+    if (ownerSettings.google_client_id && ownerSettings.google_client_secret) {
+      return { clientId: ownerSettings.google_client_id, clientSecret: ownerSettings.google_client_secret }
     }
   }
 
@@ -50,8 +50,16 @@ export async function getGoogleCredentials(studioId?: string): Promise<{ clientI
   const clientId = dbSettings.google_client_id || process.env.GOOGLE_CLIENT_ID
   const clientSecret = dbSettings.google_client_secret || process.env.GOOGLE_CLIENT_SECRET
 
-  if (!clientId) throw new Error("Google Client ID is not configured. Set it in Admin > Settings > Integrations or via GOOGLE_CLIENT_ID environment variable.")
-  if (!clientSecret) throw new Error("Google Client Secret is not configured. Set it in Admin > Settings > Integrations or via GOOGLE_CLIENT_SECRET environment variable.")
+  if (!clientId) {
+    throw new Error(
+      "Google Client ID is not configured. Add your own Client ID and Secret on this page (YouTube Channels), or ask an admin to set platform credentials under Admin > Settings > Integrations, or set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET on the server.",
+    )
+  }
+  if (!clientSecret) {
+    throw new Error(
+      "Google Client Secret is not configured. Add it next to your Client ID on this page, or use admin platform credentials / GOOGLE_CLIENT_SECRET on the server.",
+    )
+  }
 
   return { clientId, clientSecret }
 }
@@ -76,9 +84,9 @@ function getRedirectUri(): string {
 // OAuth
 // ──────────────────────────────────────
 
-/** Build the Google OAuth consent screen URL. Pass studioId when owner is a studio so studio overrides are used. */
-export async function getYouTubeOAuthUrl(redirectUri: string, state: string, studioId?: string): Promise<string> {
-  const { clientId } = await getGoogleCredentials(studioId)
+/** Build the Google OAuth consent screen URL. Pass credentialOwnerId for studio/streamer per-user overrides. */
+export async function getYouTubeOAuthUrl(redirectUri: string, state: string, credentialOwnerId?: string): Promise<string> {
+  const { clientId } = await getGoogleCredentials(credentialOwnerId)
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -91,13 +99,13 @@ export async function getYouTubeOAuthUrl(redirectUri: string, state: string, stu
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 }
 
-/** Exchange authorization code for access + refresh tokens. Pass studioId when owner is a studio. */
-export async function exchangeCodeForTokens(code: string, studioId?: string): Promise<{
+/** Exchange authorization code for access + refresh tokens. Pass credentialOwnerId for studio/streamer overrides. */
+export async function exchangeCodeForTokens(code: string, credentialOwnerId?: string): Promise<{
   accessToken: string
   refreshToken: string
   expiresIn: number
 }> {
-  const { clientId, clientSecret } = await getGoogleCredentials(studioId)
+  const { clientId, clientSecret } = await getGoogleCredentials(credentialOwnerId)
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -123,13 +131,13 @@ export async function exchangeCodeForTokens(code: string, studioId?: string): Pr
   }
 }
 
-/** Refresh an expired access token. Pass studioId when the channel belongs to a studio. */
-export async function refreshAccessToken(encryptedRefreshToken: string, studioId?: string): Promise<{
+/** Refresh an expired access token. Pass credentialOwnerId when the channel belongs to a studio or streamer with own credentials. */
+export async function refreshAccessToken(encryptedRefreshToken: string, credentialOwnerId?: string): Promise<{
   accessToken: string
   expiresIn: number
 }> {
   const refreshToken = decrypt(encryptedRefreshToken)
-  const { clientId, clientSecret } = await getGoogleCredentials(studioId)
+  const { clientId, clientSecret } = await getGoogleCredentials(credentialOwnerId)
 
   const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: "POST",
@@ -178,11 +186,12 @@ export async function getValidAccessToken(channelDbId: string): Promise<string> 
 
   const channel = rows[0] as { access_token_encrypted: string; refresh_token_encrypted: string; token_expires_at: string; owner_id: string; owner_type: string }
   const expiresAt = new Date(channel.token_expires_at)
-  const studioId = channel.owner_type === "studio" ? channel.owner_id : undefined
+  const credentialOwnerId =
+    channel.owner_type === "studio" || channel.owner_type === "streamer" ? channel.owner_id : undefined
 
   // If token expires in less than 5 minutes, refresh it (use same credentials as when token was created)
   if (expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
-    const { accessToken, expiresIn } = await refreshAccessToken(channel.refresh_token_encrypted, studioId)
+    const { accessToken, expiresIn } = await refreshAccessToken(channel.refresh_token_encrypted, credentialOwnerId)
     const newEncrypted = encrypt(accessToken)
     const newExpiresAt = new Date(Date.now() + expiresIn * 1000)
 

@@ -20,8 +20,9 @@ export const POST = withAuth(async (user, request) => {
 
   // Get order amount and process payment
   const sql = getDb()
-  const orderRows = await sql`SELECT amount FROM orders WHERE id = ${orderId}`
-  const amount = orderRows.length > 0 ? (orderRows[0] as Record<string, unknown>).amount as number : 0
+  const orderRows = await sql`SELECT total_price FROM orders WHERE id = ${orderId}`
+  const amount =
+    orderRows.length > 0 ? ((orderRows[0] as Record<string, unknown>).total_price as number) : 0
 
   const { invoiceId } = await processSuccessfulPayment({
     orderId,

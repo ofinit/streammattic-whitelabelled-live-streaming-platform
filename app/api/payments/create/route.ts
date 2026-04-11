@@ -7,6 +7,11 @@ import { calculatePriceBreakdown } from "@/lib/gst-service"
 import { getPlatformGSTSettings, toGSTCalculationConfig } from "@/lib/platform-gst"
 import { applyStudioUpgradeOrRenewalSql } from "@/lib/studio-subscription"
 import { getPaymentGatewayFlags } from "@/lib/payment-gateway-settings"
+import { randomUUID } from "crypto"
+
+function newOrderNumber(): string {
+  return `SL-${randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`
+}
 
 export const POST = withAuth(async (user, request) => {
   const body = await request.json()
@@ -104,11 +109,13 @@ export const POST = withAuth(async (user, request) => {
   }
 
   const metaJson = JSON.stringify(orderMetadata)
+  const orderNumber = newOrderNumber()
+  const desc = description || `${orderType} payment`
 
   // Create order in DB (metadata holds wallet credit vs GST for wallet_recharge)
   const orderRows = await sql`
-    INSERT INTO orders (user_id, order_type, amount, description, gateway, status, metadata)
-    VALUES (${userId}, ${orderType}, ${amountInPaise}, ${description || `${orderType} payment`}, ${gateway}, 'pending', ${metaJson}::jsonb)
+    INSERT INTO orders (order_number, user_id, order_type, total_price, description, payment_gateway, status, metadata)
+    VALUES (${orderNumber}, ${userId}, ${orderType}, ${amountInPaise}, ${desc}, ${gateway}, 'pending', ${metaJson}::jsonb)
     RETURNING *
   `
   const order = toCamel(orderRows[0] as Record<string, unknown>)
@@ -129,18 +136,20 @@ export const POST = withAuth(async (user, request) => {
       // 2. Atomic update: Deduct, Create Order (completed), Create Payment, Create Transaction, Upgrade User
       const { withTransaction } = await import("@/lib/db")
       await withTransaction(async (tx) => {
+        const wOrderNumber = newOrderNumber()
+        const wDesc = description || `${orderType} payment`
         // A. Insert order (completed)
         const orderRows = await tx.query(`
-          INSERT INTO orders (user_id, order_type, amount, description, gateway, status, metadata, completed_at)
-          VALUES ($1, $2, $3, $4, 'wallet', 'completed', $5::jsonb, NOW())
+          INSERT INTO orders (order_number, user_id, order_type, total_price, description, payment_gateway, status, metadata, completed_at)
+          VALUES ($1, $2, $3, $4, $5, 'wallet', 'completed', $6::jsonb, NOW())
           RETURNING id
-        `, [userId, orderType, amountInPaise, description || `${orderType} payment`, metaJson])
+        `, [wOrderNumber, userId, orderType, amountInPaise, wDesc, metaJson])
         const orderId = (orderRows.rows[0] as Record<string, unknown>).id as string
 
         // B. Insert payment (completed)
         await tx.query(`
-          INSERT INTO payments (order_id, user_id, gateway, amount, status, paid_at)
-          VALUES ($1, $2, 'wallet', $3, 'completed', NOW())
+          INSERT INTO payments (order_id, user_id, gateway, amount, total_amount, status, paid_at)
+          VALUES ($1, $2, 'wallet', $3, $3, 'completed', NOW())
         `, [orderId, userId, amountInPaise])
 
         // C. Deduct balance
@@ -165,13 +174,12 @@ export const POST = withAuth(async (user, request) => {
         `, [
           wallet.id,
           userId,
-          'debit',
           amountInPaise,
           currentBalance,
           wallet.new_balance,
           description || "Studio annual subscription upgrade",
           orderId,
-          amountInPaise
+          amountInPaise,
         ])
 
         // E. Studio upgrade or annual renewal (+1 year, streamer→studio role when applicable)

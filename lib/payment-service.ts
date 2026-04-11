@@ -169,7 +169,7 @@ export async function processSuccessfulPayment(params: {
   gateway: "razorpay" | "instamojo"
   gatewayPaymentId: string
   gatewayOrderId?: string
-  /** Total charged in paise; should match orders.amount */
+  /** Total charged in paise; should match orders.total_price */
   amount: number
 }): Promise<{ invoiceId: string | null }> {
   const sql = getDb()
@@ -191,12 +191,14 @@ export async function processSuccessfulPayment(params: {
     (typeof order.order_type === "string" ? order.order_type : null) ??
     (typeof order.orderType === "string" ? order.orderType : null) ??
     ""
-  const totalPaise = Number(order.amount ?? params.amount)
+  const totalPaise = Number(
+    order.total_price ?? order.totalPrice ?? order.amount ?? params.amount,
+  )
   const meta = parseWalletOrderMetadata(order.metadata)
 
   const paymentRows = await sql`
-    INSERT INTO payments (order_id, user_id, gateway, gateway_payment_id, gateway_order_id, amount, status)
-    VALUES (${params.orderId}, ${params.userId}, ${params.gateway}, ${params.gatewayPaymentId}, ${params.gatewayOrderId || null}, ${totalPaise}, 'completed')
+    INSERT INTO payments (order_id, user_id, gateway, gateway_payment_id, gateway_order_id, amount, total_amount, status, paid_at)
+    VALUES (${params.orderId}, ${params.userId}, ${params.gateway}, ${params.gatewayPaymentId}, ${params.gatewayOrderId || null}, ${totalPaise}, ${totalPaise}, 'completed', NOW())
     RETURNING id
   `
   const paymentId = (paymentRows[0] as Record<string, unknown>).id as string

@@ -45,6 +45,18 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
+import {
+  PHONE_DIAL_OPTIONS,
+  composeInternationalPhone,
+  parseStoredPhone,
+} from "@/lib/phone-country-codes"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const dynamic = "force-dynamic"
 
@@ -131,7 +143,8 @@ export default function StudioSetupPage() {
     companyName: "",
     tagline: "",
     email: "",
-    phone: "",
+    phoneDialCode: "+91",
+    phoneLocal: "",
   })
 
   const [brandingData, setBrandingData] = useState({
@@ -185,7 +198,10 @@ export default function StudioSetupPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         currentStep,
-        companyData,
+        companyData: {
+          ...companyData,
+          phone: composeInternationalPhone(companyData.phoneDialCode, companyData.phoneLocal),
+        },
         brandingData,
         domainData,
         paymentData,
@@ -210,13 +226,23 @@ export default function StudioSetupPage() {
         }
         if (d.companyData && typeof d.companyData === "object") {
           const raw = d.companyData as Record<string, unknown>
-          setCompanyData((prev) => ({
-            ...prev,
-            companyName: typeof raw.companyName === "string" ? raw.companyName : prev.companyName,
-            tagline: typeof raw.tagline === "string" ? raw.tagline : prev.tagline,
-            email: typeof raw.email === "string" ? raw.email : prev.email,
-            phone: typeof raw.phone === "string" ? raw.phone : prev.phone,
-          }))
+          setCompanyData((prev) => {
+            const next = {
+              ...prev,
+              companyName: typeof raw.companyName === "string" ? raw.companyName : prev.companyName,
+              tagline: typeof raw.tagline === "string" ? raw.tagline : prev.tagline,
+              email: typeof raw.email === "string" ? raw.email : prev.email,
+              phoneDialCode:
+                typeof raw.phoneDialCode === "string" ? raw.phoneDialCode : prev.phoneDialCode,
+              phoneLocal: typeof raw.phoneLocal === "string" ? raw.phoneLocal : prev.phoneLocal,
+            }
+            const legacy = typeof raw.phone === "string" ? raw.phone.trim() : ""
+            if (legacy && typeof raw.phoneLocal !== "string" && !next.phoneLocal) {
+              const parsed = parseStoredPhone(legacy)
+              return { ...next, phoneDialCode: parsed.dial, phoneLocal: parsed.local }
+            }
+            return next
+          })
           const legacyWebsite = typeof raw.website === "string" ? raw.website : ""
           if (legacyWebsite) {
             const host = companyWebsiteHost(legacyWebsite)
@@ -309,7 +335,10 @@ export default function StudioSetupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          companyData,
+          companyData: {
+            ...companyData,
+            phone: composeInternationalPhone(companyData.phoneDialCode, companyData.phoneLocal),
+          },
           brandingData,
           domainData,
           paymentData,
@@ -388,7 +417,8 @@ export default function StudioSetupPage() {
           validateCompanyStep({
             companyName: companyData.companyName,
             email: companyData.email,
-            phone: companyData.phone,
+            phoneDialCode: companyData.phoneDialCode,
+            phoneLocal: companyData.phoneLocal,
             customDomain: domainData.customDomain,
           }) === null
         )
@@ -544,19 +574,43 @@ export default function StudioSetupPage() {
                     className="bg-secondary border-0"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Support Phone</Label>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="phone-local">Support Phone</Label>
                   <p className="text-xs text-muted-foreground">
-                    Include country code if applicable (optional). Digits only count validated if you fill this in.
+                    Optional. Choose country, then enter your number without the leading zero.
                   </p>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={companyData.phone}
-                    onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
-                    autoComplete="tel"
-                    className="bg-secondary border-0"
-                  />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                    <Select
+                      value={companyData.phoneDialCode}
+                      onValueChange={(v) => setCompanyData({ ...companyData, phoneDialCode: v })}
+                    >
+                      <SelectTrigger className="w-full sm:w-[200px] bg-secondary border-border shrink-0">
+                        <SelectValue placeholder="Country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PHONE_DIAL_OPTIONS.map((o) => (
+                          <SelectItem key={`${o.iso}-${o.dial}`} value={o.dial}>
+                            {o.name} ({o.dial})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="phone-local"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      placeholder="8322772776"
+                      value={companyData.phoneLocal}
+                      onChange={(e) =>
+                        setCompanyData({
+                          ...companyData,
+                          phoneLocal: e.target.value.replace(/[^\d\s-]/g, ""),
+                        })
+                      }
+                      className="bg-secondary border-0 min-w-0 flex-1"
+                    />
+                  </div>
                 </div>
               </div>
 

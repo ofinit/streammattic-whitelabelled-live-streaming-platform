@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import { getDb, toCamelRows, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 
@@ -55,9 +56,10 @@ export const POST = withAuth(async (user, request) => {
 
   if (!orderType || !amount) return jsonError("orderType and amount are required")
 
+  const orderNumber = `SL-${randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`
   const rows = await sql`
-    INSERT INTO orders (user_id, order_type, amount, description, gateway)
-    VALUES (${userId}, ${orderType}, ${Math.round(amount * 100)}, ${description || null}, ${gateway || 'razorpay'})
+    INSERT INTO orders (order_number, user_id, order_type, total_price, description, payment_gateway)
+    VALUES (${orderNumber}, ${userId}, ${orderType}, ${Math.round(amount * 100)}, ${description || null}, ${gateway || "razorpay"})
     RETURNING *
   `
 

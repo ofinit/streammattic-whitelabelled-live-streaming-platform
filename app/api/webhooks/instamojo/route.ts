@@ -36,7 +36,7 @@ export async function POST(req: Request) {
             const sql = getDb()
             const paymentRequestId = payload.payment_request_id
 
-            const orders = await sql`SELECT id, user_id, amount FROM orders WHERE gateway_order_id = ${paymentRequestId}`
+            const orders = await sql`SELECT id, user_id, total_price FROM orders WHERE gateway_order_id = ${paymentRequestId}`
 
             if (orders.length > 0) {
                 const order = orders[0] as any
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
                     gateway: "instamojo",
                     gatewayPaymentId: payload.payment_id,
                     gatewayOrderId: paymentRequestId,
-                    amount: order.amount
+                    amount: order.total_price,
                 })
                 return NextResponse.json({ status: "ok" })
             } else {

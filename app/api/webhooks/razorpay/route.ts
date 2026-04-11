@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             }
 
             // Check if order exists and user
-            const orders = await sql`SELECT user_id, amount FROM orders WHERE id = ${internalOrderId}`
+            const orders = await sql`SELECT user_id, total_price FROM orders WHERE id = ${internalOrderId}`
             if (orders.length === 0) {
                 return NextResponse.json({ error: "Order not found" }, { status: 404 })
             }

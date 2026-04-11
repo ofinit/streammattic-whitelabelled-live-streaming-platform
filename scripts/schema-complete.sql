@@ -301,6 +301,8 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_gateway      payment_gateway,
   payment_id           UUID,
   failure_reason       TEXT,
+  description          TEXT,
+  gateway_order_id     TEXT,
   metadata             JSONB           DEFAULT '{}',
   created_at           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),

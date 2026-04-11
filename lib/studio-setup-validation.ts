@@ -25,16 +25,20 @@ export function companyWebsiteHost(input: string): string {
 export function validateCompanyStep(input: {
   companyName: string
   email: string
-  phone: string
+  phoneDialCode: string
+  /** National number only (no country code). */
+  phoneLocal: string
   /** Same hostname rules as Custom Domain step (no https://). */
   customDomain: string
 }): string | null {
   if (!input.companyName.trim()) return "Company name is required."
   if (!input.email.trim()) return "Support email is required."
   if (!EMAIL_RE.test(input.email.trim())) return "Enter a valid support email."
-  if (input.phone.trim()) {
-    const digits = input.phone.replace(/\D/g, "")
-    if (digits.length < 10 || digits.length > 15) return "Enter a valid phone number (10–15 digits)."
+  const localDigits = input.phoneLocal.replace(/\D/g, "")
+  if (localDigits.length > 0) {
+    if (localDigits.length < 6 || localDigits.length > 15) {
+      return "Enter a valid national phone number (6–15 digits), or leave blank."
+    }
   }
   const d = input.customDomain.trim().toLowerCase()
   if (!d) return "Enter your custom domain (e.g. live.yourcompany.com or yourcompany.com)."

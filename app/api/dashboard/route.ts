@@ -10,7 +10,7 @@ export const GET = withAuth(async (user) => {
     const [users, events, orders, revenue] = await Promise.all([
       sql`SELECT count(*)::int as total, count(*) FILTER (WHERE role = 'studio')::int as studios, count(*) FILTER (WHERE role = 'streamer')::int as streamers FROM users`,
       sql`SELECT count(*)::int as total, count(*) FILTER (WHERE status = 'live')::int as live, count(*) FILTER (WHERE status = 'scheduled')::int as scheduled FROM events`,
-      sql`SELECT count(*)::int as total, COALESCE(sum(amount) FILTER (WHERE status = 'completed'), 0)::bigint as total_revenue FROM orders`,
+      sql`SELECT count(*)::int as total, COALESCE(sum(total_price) FILTER (WHERE status = 'completed'), 0)::bigint as total_revenue FROM orders`,
       sql`SELECT COALESCE(sum(balance), 0)::bigint as total_wallet_balance FROM wallets`,
     ])
 

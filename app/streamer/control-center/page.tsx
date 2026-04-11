@@ -49,6 +49,7 @@ import {
   Loader2,
   Film,
   StopCircle,
+  Sparkles,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -205,6 +206,31 @@ export default function StreamerEventsPage() {
     setShowEventDialog(true)
   }
 
+  const handleSeedMockTemplates = async () => {
+    setSeedMockLoading(true)
+    try {
+      const res = await fetch("/api/studio/events/seed-mock", {
+        method: "POST",
+        credentials: "include",
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; count?: number }
+      if (!res.ok) {
+        toast.error(data.error || "Could not create sample events")
+        return
+      }
+      toast.success(
+        data.count != null
+          ? `Created ${data.count} sample events — one per template. Edit any event to add a stream type.`
+          : "Sample events created.",
+      )
+      await mutate()
+    } catch {
+      toast.error("Could not create sample events")
+    } finally {
+      setSeedMockLoading(false)
+    }
+  }
+
   const handleEditEvent = (event: Record<string, unknown>) => {
     setEditingEvent(event as unknown as LiveEvent)
     setEventDialogInitialTab(undefined)
@@ -219,6 +245,7 @@ export default function StreamerEventsPage() {
     eventTitle: string
     isYoutubeApi?: boolean
   } | null>(null)
+  const [seedMockLoading, setSeedMockLoading] = useState(false)
   const [isBroadcastCreating, setIsBroadcastCreating] = useState(false)
   const [saveError, setSaveError] = useState<{ slug?: string } | null>(null)
 
@@ -825,7 +852,28 @@ export default function StreamerEventsPage() {
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No {tab === "all" ? "" : tab} events found</p>
-                    <div className="flex flex-col items-center gap-3 mt-6">
+                    <div className="flex flex-col items-center gap-3 mt-6 max-w-md mx-auto">
+                      {totalCount === 0 && (
+                        <Button
+                          variant="secondary"
+                          className="w-full sm:w-auto"
+                          onClick={() => void handleSeedMockTemplates()}
+                          disabled={seedMockLoading}
+                        >
+                          {seedMockLoading ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 mr-2" />
+                          )}
+                          Generate sample events (all templates)
+                        </Button>
+                      )}
+                      {totalCount === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Adds one scheduled sample per template so you can preview layouts. No stream credits used until you
+                          pick a stream type.
+                        </p>
+                      )}
                       <Button variant="outline" className="bg-transparent" onClick={handleCreateEvent}>
                         <Plus className="h-4 w-4 mr-2" />
                         Create Your First Event

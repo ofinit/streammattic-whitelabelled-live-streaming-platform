@@ -50,6 +50,7 @@ import {
   PlayCircle,
   Film,
   Loader2,
+  Sparkles,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -163,6 +164,7 @@ export default function StudioEventsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const [seedMockLoading, setSeedMockLoading] = useState(false)
   const [deleteEvent, setDeleteEvent] = useState<Record<string, unknown> | null>(null)
   const [copiedField, setCopiedField] = useState<"rtmp" | "key" | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
@@ -237,6 +239,35 @@ export default function StudioEventsPage() {
     setEventDialogInitialStreamType(undefined)
     setEventDialogInitialDraft(undefined)
     setShowEventDialog(true)
+  }
+
+  const handleSeedMockTemplates = async () => {
+    if (studioSubExpired) {
+      toast.error("Renew your Studio subscription in Settings to create events.")
+      return
+    }
+    setSeedMockLoading(true)
+    try {
+      const res = await fetch("/api/studio/events/seed-mock", {
+        method: "POST",
+        credentials: "include",
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; count?: number }
+      if (!res.ok) {
+        toast.error(data.error || "Could not create sample events")
+        return
+      }
+      toast.success(
+        data.count != null
+          ? `Created ${data.count} sample events — one per template. Edit any event to add a stream type.`
+          : "Sample events created.",
+      )
+      await mutate()
+    } catch {
+      toast.error("Could not create sample events")
+    } finally {
+      setSeedMockLoading(false)
+    }
   }
 
   const handleEditEvent = (event: Record<string, unknown>) => {
@@ -849,15 +880,38 @@ export default function StudioEventsPage() {
                   <div className="text-center py-12 text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No {tab === "all" ? "" : tab} events found</p>
-                    <Button
-                      variant="outline"
-                      className="mt-4 bg-transparent"
-                      onClick={handleCreateEvent}
-                      disabled={studioSubExpired}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Your First Event
-                    </Button>
+                    <div className="flex flex-col items-center gap-3 mt-6 max-w-md mx-auto">
+                      {totalCount === 0 && (
+                        <>
+                          <Button
+                            variant="secondary"
+                            className="w-full sm:w-auto"
+                            onClick={() => void handleSeedMockTemplates()}
+                            disabled={studioSubExpired || seedMockLoading}
+                          >
+                            {seedMockLoading ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4 mr-2" />
+                            )}
+                            Generate sample events (all templates)
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            One scheduled sample per template to preview layouts. No stream credits until you pick a stream
+                            type.
+                          </p>
+                        </>
+                      )}
+                      <Button
+                        variant="outline"
+                        className="bg-transparent"
+                        onClick={handleCreateEvent}
+                        disabled={studioSubExpired}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Event
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -148,6 +148,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/studio/domains/verify/route.ts` | `/api/studio/domains/verify` |
 | `app/api/studio/events/check-slug/route.ts` | `/api/studio/events/check-slug` |
 | `app/api/studio/events/route.ts` | `/api/studio/events` |
+| `app/api/studio/events/seed-mock/route.ts` | `/api/studio/events/seed-mock` |
 | `app/api/studio/integrations/route.ts` | `/api/studio/integrations` |
 | `app/api/studio/setup/route.ts` | `/api/studio/setup` |
 | `app/api/upload/route.ts` | `/api/upload` |

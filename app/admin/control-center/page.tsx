@@ -79,6 +79,21 @@ export default function AdminEventsPage() {
     timezone?: string
   } | undefined>()
 
+  // Open dialog when arriving from /admin/control-center/new
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("openModal") !== "1") return
+    const url = new URL(window.location.href)
+    url.searchParams.delete("openModal")
+    window.history.replaceState({}, "", url.toString())
+    setEditingEvent(undefined)
+    setEventDialogInitialTab(undefined)
+    setEventDialogInitialStreamType(undefined)
+    setEventDialogInitialDraft(undefined)
+    setShowEventDialog(true)
+  }, [])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const ytConnected = params.get("yt_connected")
@@ -229,6 +244,20 @@ export default function AdminEventsPage() {
     }
     if (eventDeepLinkHandledRef.current === eventId) return
     if (isLoading) return
+
+    // Legacy / mistaken ?event=new (from old [id] route) — open create, not "not found"
+    if (eventId === "new" || eventId === "create") {
+      eventDeepLinkHandledRef.current = eventId
+      const url = new URL(window.location.href)
+      url.searchParams.delete("event")
+      window.history.replaceState({}, "", url.toString())
+      setEditingEvent(undefined)
+      setEventDialogInitialTab(undefined)
+      setEventDialogInitialStreamType(undefined)
+      setEventDialogInitialDraft(undefined)
+      setShowEventDialog(true)
+      return
+    }
 
     const found = events.find((e: Record<string, unknown>) => e.id === eventId)
     if (found) {

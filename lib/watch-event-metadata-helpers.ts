@@ -1,4 +1,4 @@
-import { getDefaultTemplateHeroBackdropUrl } from "@/lib/template-default-media"
+import { DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
 
 /** Shape returned by GET /api/watch (after JSON); keeps metadata logic in sync with watch UI. */
 export type WatchEventMetaPayload = {
@@ -40,7 +40,8 @@ function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
   return {}
 }
 
-function toAbsoluteAssetUrl(base: string, url: string): string {
+/** Turn a site-relative or absolute asset URL into an absolute URL for OG / metadata. */
+export function toAbsolutePublicAssetUrl(base: string, url: string): string {
   const b = base.replace(/\/$/, "")
   const u = url.trim()
   if (!u) return b
@@ -139,16 +140,22 @@ export function buildWatchShareDescription(ev: WatchEventMetaPayload, scheduleLi
 }
 
 /**
- * Same priority as watch hero backdrop: uploaded hero → wedding couple photo → template default → thumbnail.
+ * OG image: event hero (or wedding couple photo) when set; otherwise the domain favicon
+ * (`defaultFaviconPathOrUrl` from GET /api/watch `favicon`, else platform default path).
  */
-export function resolveWatchOgImageUrl(baseUrl: string, ev: WatchEventMetaPayload): string | undefined {
+export function resolveWatchOgImageUrl(
+  baseUrl: string,
+  ev: WatchEventMetaPayload,
+  defaultFaviconPathOrUrl?: string | null
+): string {
   const td = parseWatchTemplateData(ev.templateData)
   const couplePhoto = typeof td.couplePhoto === "string" ? td.couplePhoto.trim() : ""
   const hero = typeof ev.heroImageUrl === "string" ? ev.heroImageUrl.trim() : ""
-  const thumb = typeof ev.thumbnail === "string" ? ev.thumbnail.trim() : ""
-  const tmpl = (ev.templateId?.trim() || "tpl-default") || "tpl-default"
 
-  const raw = hero || couplePhoto || getDefaultTemplateHeroBackdropUrl(tmpl) || thumb || ""
-  if (!raw) return undefined
-  return toAbsoluteAssetUrl(baseUrl, raw)
+  if (hero) return toAbsolutePublicAssetUrl(baseUrl, hero)
+  if (couplePhoto) return toAbsolutePublicAssetUrl(baseUrl, couplePhoto)
+
+  const fav =
+    (typeof defaultFaviconPathOrUrl === "string" && defaultFaviconPathOrUrl.trim()) || DEFAULT_FAVICON_PATH
+  return toAbsolutePublicAssetUrl(baseUrl, fav)
 }

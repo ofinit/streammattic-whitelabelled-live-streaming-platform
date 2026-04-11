@@ -1267,7 +1267,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         ? photographerWebsiteRaw
         : `https://${photographerWebsiteRaw}`
       : ""
-  const validityExpiresAt = evRawTop.validityExpiresAt as string | undefined
   const tzForDate = (evRawTop.timezone as string) || "UTC"
   const primaryDateFormatted = event.scheduledAt
     ? (() => {
@@ -2067,11 +2066,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               )}
             </>
           ) : null}
-          {validityExpiresAt && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Event valid until {new Date(validityExpiresAt).toLocaleDateString("en-US", { dateStyle: "medium" })}
-            </p>
-          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button variant="outline" className={shareBtn} onClick={handleShare}>

@@ -7,6 +7,7 @@ import {
   buildWatchShareDescription,
   formatWatchScheduleForMeta,
   resolveWatchOgImageUrl,
+  toAbsolutePublicAssetUrl,
 } from "@/lib/watch-event-metadata-helpers"
 
 export type BuildWatchMetadataOptions = {
@@ -47,15 +48,23 @@ export async function buildWatchEventMetadata(
   try {
     const res = await fetch(`${base}/api/watch/${encodeURIComponent(eventIdOrSlug)}`, { cache: "no-store" })
     if (!res.ok) return { title: "Event" }
-    const data = await res.json()
-    const event = data.event as WatchEventMetaPayload & { faviconHref?: string } | undefined
+    const data = (await res.json()) as {
+      event?: WatchEventMetaPayload & { faviconHref?: string }
+      favicon?: string
+    }
+    const event = data.event
     if (!event) return { title: "Event" }
+
+    const faviconRaw =
+      (typeof data.favicon === "string" && data.favicon.trim()) ||
+      (typeof event.faviconHref === "string" && event.faviconHref.trim()) ||
+      ""
 
     const scheduleLine = formatWatchScheduleForMeta(event)
     const title = buildWatchDocumentTitle(event)
     const description = buildWatchShareDescription(event, scheduleLine)
-    const ogImageUrl = resolveWatchOgImageUrl(base, event)
-    const iconHref = event.faviconHref
+    const ogImageUrl = resolveWatchOgImageUrl(base, event, faviconRaw || null)
+    const iconHref = faviconRaw ? toAbsolutePublicAssetUrl(base, faviconRaw) : undefined
 
     const publishedTime =
       event.scheduledAt && !Number.isNaN(new Date(event.scheduledAt).getTime())
@@ -84,20 +93,18 @@ export async function buildWatchEventMetadata(
         description,
         locale: "en_US",
         ...(publishedTime && { publishedTime }),
-        ...(ogImageUrl && {
-          images: [
-            {
-              url: ogImageUrl,
-              alt: `${buildWatchDisplayName(event)} — event`,
-            },
-          ],
-        }),
+        images: [
+          {
+            url: ogImageUrl,
+            alt: `${buildWatchDisplayName(event)} — event`,
+          },
+        ],
       },
       twitter: {
         card: "summary_large_image" as const,
         title,
         description,
-        ...(ogImageUrl && { images: [ogImageUrl] }),
+        images: [ogImageUrl],
       },
     }
   } catch {

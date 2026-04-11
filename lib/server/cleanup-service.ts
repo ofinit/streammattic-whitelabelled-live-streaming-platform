@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import crypto from "crypto"
 import { getDb } from "@/lib/db"
+import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 
@@ -31,9 +32,9 @@ export async function runEventCleanupTask() {
   try {
     // 1. Find expired events
     const expiredEvents = await sql`
-      SELECT e.id, e.title, u.email as "ownerEmail", 
-             e.hero_image_url as "heroImageUrl", e.player_image_url as "playerImageUrl", 
-             e.photo_gallery_urls as "photoGalleryUrls", e.photographer_logo_url as "photographerLogoUrl", 
+      SELECT e.id, e.title, e.user_id as "userId", e.studio_id as "studioId", u.email as "ownerEmail",
+             e.hero_image_url as "heroImageUrl", e.player_image_url as "playerImageUrl",
+             e.photo_gallery_urls as "photoGalleryUrls", e.photographer_logo_url as "photographerLogoUrl",
              e.thumbnail
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
@@ -89,18 +90,16 @@ export async function runEventCleanupTask() {
       await sql`DELETE FROM events WHERE id = ${event.id as string}`
       deletedCount++
 
-      // 6. Log per-event deletion
-      await sql`
-        INSERT INTO deleted_events_log (event_id, event_title, owner_email, reason, assets_found, assets_deleted)
-        VALUES (
-          ${event.id as string}, 
-          ${event.title as string}, 
-          ${event.ownerEmail as string | null}, 
-          'expired', 
-          ${pathsToDelete.size}, 
-          ${assetsDeleted}
-        )
-      `
+      await insertDeletedEventLog(sql, {
+        eventId: event.id as string,
+        eventTitle: (event.title as string) ?? null,
+        ownerEmail: (event.ownerEmail as string | null) ?? null,
+        ownerUserId: (event.userId as string | null) ?? null,
+        studioId: (event.studioId as string | null) ?? null,
+        reason: "expired",
+        assetsFound: pathsToDelete.size,
+        assetsDeleted,
+      })
     }
 
     // 7. Finalize job log

@@ -106,6 +106,13 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_cron_job_logs_started ON cron_job_logs(started_at DESC)`,
   `CREATE TABLE IF NOT EXISTS deleted_events_log (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), event_id UUID, event_title TEXT, owner_email TEXT, reason TEXT, assets_found INT DEFAULT 0, assets_deleted INT DEFAULT 0, deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX IF NOT EXISTS idx_deleted_events_log_at ON deleted_events_log(deleted_at DESC)`,
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_events_studio_id ON events(studio_id)`,
+  `ALTER TABLE deleted_events_log ADD COLUMN IF NOT EXISTS owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL`,
+  `ALTER TABLE deleted_events_log ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_deleted_events_log_owner ON deleted_events_log(owner_user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_deleted_events_log_studio ON deleted_events_log(studio_id)`,
+  `UPDATE deleted_events_log d SET owner_user_id = u.id FROM users u WHERE d.owner_user_id IS NULL AND d.owner_email IS NOT NULL AND lower(trim(d.owner_email)) = lower(trim(u.email))`,
 ];
 
 const seedSettings = [

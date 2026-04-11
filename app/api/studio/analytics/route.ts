@@ -11,14 +11,13 @@ export async function GET() {
     
     // Summary stats
     const statsResult = await sql`
-      SELECT 
-        COUNT(*) as total_events,
-        COUNT(*) FILTER (WHERE status = 'completed') as completed_events,
-        COUNT(*) FILTER (WHERE status = 'live') as live_now,
-        COALESCE(SUM(current_viewers), 0) as total_viewers,
-        COALESCE(AVG(duration) FILTER (WHERE status = 'completed'), 0) as avg_duration
-      FROM events
-      WHERE studio_id = ${studioId}
+      SELECT
+        (SELECT COUNT(*)::bigint FROM events WHERE studio_id = ${studioId})
+          + (SELECT COUNT(*)::bigint FROM deleted_events_log WHERE studio_id = ${studioId}) AS total_events,
+        (SELECT COUNT(*)::bigint FROM events WHERE studio_id = ${studioId} AND status = 'completed') AS completed_events,
+        (SELECT COUNT(*)::bigint FROM events WHERE studio_id = ${studioId} AND status = 'live') AS live_now,
+        (SELECT COALESCE(SUM(current_viewers), 0)::bigint FROM events WHERE studio_id = ${studioId}) AS total_viewers,
+        (SELECT COALESCE(AVG(duration) FILTER (WHERE status = 'completed'), 0) FROM events WHERE studio_id = ${studioId}) AS avg_duration
     `
     
     const walletResult = await sql`SELECT balance FROM wallets WHERE user_id = ${studioId}`

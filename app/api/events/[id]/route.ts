@@ -1,5 +1,6 @@
 import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
+import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 
 export const GET = withAuth(async (user, request) => {
   const url = new URL(request.url)
@@ -53,12 +54,26 @@ export const DELETE = withAuth(async (user, request) => {
   const id = url.pathname.split("/").pop()!
   const sql = getDb()
 
-  const existing = await sql`SELECT * FROM events WHERE id = ${id}`
+  const existing = await sql`
+    SELECT e.*, u.email AS owner_email
+    FROM events e
+    LEFT JOIN users u ON e.user_id = u.id
+    WHERE e.id = ${id}
+  `
   if (existing.length === 0) return jsonError("Event not found", 404)
-  if (user.role !== "admin" && (existing[0] as Record<string, unknown>).user_id !== user.id) {
+  const row = existing[0] as Record<string, unknown>
+  if (user.role !== "admin" && row.user_id !== user.id) {
     return jsonError("Forbidden", 403)
   }
 
   await sql`DELETE FROM events WHERE id = ${id}`
+  await insertDeletedEventLog(sql, {
+    eventId: id,
+    eventTitle: (row.title as string) ?? null,
+    ownerEmail: (row.owner_email as string | null) ?? null,
+    ownerUserId: (row.user_id as string) ?? null,
+    studioId: (row.studio_id as string | null | undefined) ?? null,
+    reason: "manual_delete",
+  })
   return jsonOk({ deleted: true })
 })

@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         (SELECT COUNT(*) FROM users WHERE role = 'studio') as total_studios,
         (SELECT COUNT(*) FROM users WHERE role = 'streamer') as total_streamers,
         (SELECT COUNT(*) FROM events WHERE status = 'live') as live_events,
-        (SELECT COUNT(*) FROM events) as total_events,
+        (SELECT (SELECT COUNT(*) FROM events) + (SELECT COUNT(*) FROM deleted_events_log)) as total_events,
         (SELECT COALESCE(SUM(balance), 0) FROM wallets) as total_wallet_balance,
         (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed') as platform_revenue
     `

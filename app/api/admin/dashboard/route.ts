@@ -14,7 +14,7 @@ export async function GET() {
         (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') as active_studios,
         (SELECT COUNT(*)::int FROM users WHERE role = 'streamer') as total_streamers,
         (SELECT COUNT(*)::int FROM events WHERE status = 'live') as live_events,
-        (SELECT COUNT(*)::int FROM events) as total_events,
+        (SELECT (SELECT COUNT(*)::int FROM events) + (SELECT COUNT(*)::int FROM deleted_events_log)) as total_events,
         (SELECT COALESCE(SUM(balance), 0)::numeric FROM wallets) as total_wallet_balance,
         (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed') as total_revenue,
         (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE status = 'completed' AND created_at >= date_trunc('month', now())) as monthly_revenue

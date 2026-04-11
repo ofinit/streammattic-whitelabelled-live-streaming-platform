@@ -128,7 +128,8 @@ export async function getStudioWithStats(studioId: string) {
   const rows = await sql`
     SELECT
       u.*,
-      (SELECT COUNT(*)::int FROM events WHERE studio_id = u.id) AS total_events,
+      (SELECT (SELECT COUNT(*)::int FROM events WHERE studio_id = u.id)
+        + (SELECT COUNT(*)::int FROM deleted_events_log WHERE studio_id = u.id)) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE studio_id = u.id AND status = 'live') AS live_events,
       (SELECT COALESCE(w.balance, 0)::numeric FROM wallets w WHERE w.user_id = u.id) AS wallet_balance
     FROM users u
@@ -424,7 +425,7 @@ export async function getAdminDashboardStats() {
       (SELECT COUNT(*)::int FROM users WHERE role = 'studio' AND status = 'active') AS active_studios,
       (SELECT COUNT(*)::int FROM users WHERE role = 'streamer') AS total_users,
       (SELECT COUNT(*)::int FROM users WHERE role = 'streamer' AND status = 'active') AS active_users,
-      (SELECT COUNT(*)::int FROM events) AS total_events,
+      (SELECT (SELECT COUNT(*)::int FROM events) + (SELECT COUNT(*)::int FROM deleted_events_log)) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'scheduled') AS scheduled_events,
       (SELECT COUNT(*)::int FROM events WHERE status = 'ended') AS completed_events,
@@ -447,7 +448,8 @@ export async function getStudioDashboardStats(studioId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId}) AS total_events,
+      (SELECT (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId})
+        + (SELECT COUNT(*)::int FROM deleted_events_log WHERE owner_user_id = ${studioId})) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'ended') AS completed_events,
@@ -468,7 +470,8 @@ export async function getStreamerDashboardStats(userId: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId}) AS total_events,
+      (SELECT (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId})
+        + (SELECT COUNT(*)::int FROM deleted_events_log WHERE owner_user_id = ${userId})) AS total_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'live') AS live_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'scheduled') AS scheduled_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'ended') AS completed_events,

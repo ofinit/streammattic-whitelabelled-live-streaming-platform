@@ -9,7 +9,12 @@ export const GET = withAuth(async (user) => {
   if (isAdmin) {
     const [users, events, orders, revenue] = await Promise.all([
       sql`SELECT count(*)::int as total, count(*) FILTER (WHERE role = 'studio')::int as studios, count(*) FILTER (WHERE role = 'streamer')::int as streamers FROM users`,
-      sql`SELECT count(*)::int as total, count(*) FILTER (WHERE status = 'live')::int as live, count(*) FILTER (WHERE status = 'scheduled')::int as scheduled FROM events`,
+      sql`
+        SELECT
+          (SELECT COUNT(*)::int FROM events) + (SELECT COUNT(*)::int FROM deleted_events_log) AS total,
+          (SELECT COUNT(*)::int FROM events WHERE status = 'live') AS live,
+          (SELECT COUNT(*)::int FROM events WHERE status = 'scheduled') AS scheduled
+      `,
       sql`SELECT count(*)::int as total, COALESCE(sum(total_price) FILTER (WHERE status = 'completed'), 0)::bigint as total_revenue FROM orders`,
       sql`SELECT COALESCE(sum(balance), 0)::bigint as total_wallet_balance FROM wallets`,
     ])
@@ -33,7 +38,13 @@ export const GET = withAuth(async (user) => {
   const [wallet, credits, events, orders] = await Promise.all([
     sql`SELECT balance FROM wallets WHERE user_id = ${userId}`,
     sql`SELECT * FROM user_credits WHERE user_id = ${userId}`,
-    sql`SELECT count(*)::int as total, count(*) FILTER (WHERE status = 'live')::int as live, count(*) FILTER (WHERE status = 'scheduled')::int as scheduled FROM events WHERE user_id = ${userId}`,
+    sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId})
+          + (SELECT COUNT(*)::int FROM deleted_events_log WHERE owner_user_id = ${userId}) AS total,
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'live') AS live,
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${userId} AND status = 'scheduled') AS scheduled
+    `,
     sql`SELECT count(*)::int as total FROM orders WHERE user_id = ${userId}`,
   ])
 

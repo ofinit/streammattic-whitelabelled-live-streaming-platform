@@ -35,7 +35,7 @@ async function runCleanup() {
   try {
     // 1. Find expired events
     const expiredRes = await client.query(`
-      SELECT e.id, e.title, u.email as owner_email, 
+      SELECT e.id, e.title, e.user_id, e.studio_id, u.email as owner_email,
              e.hero_image_url, e.player_image_url, e.photo_gallery_urls, e.photographer_logo_url, e.thumbnail
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
@@ -81,9 +81,17 @@ async function runCleanup() {
 
       // 5. Log per-event deletion
       await client.query(
-        `INSERT INTO deleted_events_log (event_id, event_title, owner_email, reason, assets_found, assets_deleted)
-         VALUES ($1, $2, $3, 'expired', $4, $5)`,
-        [event.id, event.title, event.owner_email, pathsToDelete.size, assetsDeleted]
+        `INSERT INTO deleted_events_log (event_id, event_title, owner_email, owner_user_id, studio_id, reason, assets_found, assets_deleted)
+         VALUES ($1, $2, $3, $4, $5, 'expired', $6, $7)`,
+        [
+          event.id,
+          event.title,
+          event.owner_email,
+          event.user_id,
+          event.studio_id,
+          pathsToDelete.size,
+          assetsDeleted,
+        ]
       );
     }
 

@@ -23,6 +23,7 @@ import {
 } from "@/lib/server/event-stream-policy"
 import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
 import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
+import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -691,9 +692,15 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
 
     const sql = getDb()
-    const existing = await sql`SELECT * FROM events WHERE id = ${id}`
+    const existing = await sql`
+      SELECT e.*, u.email AS owner_email
+      FROM events e
+      LEFT JOIN users u ON e.user_id = u.id
+      WHERE e.id = ${id}
+    `
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
-    const ownerId = (existing[0] as Record<string, unknown>).user_id as string
+    const row = existing[0] as Record<string, unknown>
+    const ownerId = row.user_id as string
     if (ownerId !== user.id && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -713,6 +720,14 @@ export async function DELETE(req: NextRequest) {
     }
 
     await sql`DELETE FROM events WHERE id = ${id}`
+    await insertDeletedEventLog(sql, {
+      eventId: id,
+      eventTitle: (row.title as string) ?? null,
+      ownerEmail: (row.owner_email as string | null) ?? null,
+      ownerUserId: (row.user_id as string) ?? null,
+      studioId: (row.studio_id as string | null | undefined) ?? null,
+      reason: "manual_delete",
+    })
     return NextResponse.json({ deleted: true })
   } catch (error) {
     console.error("[studio/events DELETE] Error:", error)

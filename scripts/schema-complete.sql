@@ -231,6 +231,7 @@ CREATE INDEX IF NOT EXISTS idx_packages_type   ON packages(type);
 CREATE TABLE IF NOT EXISTS events (
   id                      UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id                 UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  studio_id               UUID            REFERENCES users(id) ON DELETE SET NULL,
   title                   TEXT            NOT NULL,
   subtitle                TEXT,
   description             TEXT,
@@ -277,6 +278,7 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_events_user_id     ON events(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_studio_id   ON events(studio_id);
 CREATE INDEX IF NOT EXISTS idx_events_status      ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_scheduled_at ON events(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_events_stream_type ON events(stream_type);
@@ -677,12 +679,16 @@ CREATE TABLE IF NOT EXISTS deleted_events_log (
   event_id UUID,
   event_title TEXT,
   owner_email TEXT,
+  owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  studio_id UUID REFERENCES users(id) ON DELETE SET NULL,
   reason TEXT,
   assets_found INT DEFAULT 0,
   assets_deleted INT DEFAULT 0,
   deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_deleted_events_log_at ON deleted_events_log(deleted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deleted_events_log_owner ON deleted_events_log(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_deleted_events_log_studio ON deleted_events_log(studio_id);
 
 -- =============================================================
 -- SEED: Admin user  (password = admin123)

@@ -380,11 +380,17 @@ export default function StreamerEventsPage() {
   }
 
   const handleToggleSuspend = async (ev: Record<string, unknown>, suspended: boolean) => {
+    const eventId = typeof ev.id === "string" ? ev.id : String(ev.id ?? "")
+    if (!eventId) {
+      toast.error("Missing event id")
+      return
+    }
     try {
-      const res = await fetch("/api/studio/events", {
-        method: "PUT",
+      const res = await fetch("/api/studio/events/suspend", {
+        method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: ev.id, isSuspended: suspended }),
+        body: JSON.stringify({ id: eventId, suspended }),
       })
       const resData = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {

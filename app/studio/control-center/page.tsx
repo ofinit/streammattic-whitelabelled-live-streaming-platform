@@ -427,11 +427,17 @@ export default function StudioEventsPage() {
       toast.error("Renew your Studio subscription in Settings to manage events.")
       return
     }
+    const eventId = typeof ev.id === "string" ? ev.id : String(ev.id ?? "")
+    if (!eventId) {
+      toast.error("Missing event id")
+      return
+    }
     try {
-      const res = await fetch("/api/studio/events", {
-        method: "PUT",
+      const res = await fetch("/api/studio/events/suspend", {
+        method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: ev.id, isSuspended: suspended }),
+        body: JSON.stringify({ id: eventId, suspended }),
       })
       const data = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {

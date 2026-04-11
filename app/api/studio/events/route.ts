@@ -22,6 +22,7 @@ import {
   bodyStreamTypeToDb,
 } from "@/lib/server/event-stream-policy"
 import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
+import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -39,17 +40,6 @@ function toSlug(text: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 80)
-}
-
-function sanitizeEventForClient(ev: Record<string, unknown>): Record<string, unknown> {
-  if (!ev || typeof ev !== "object") return ev
-  const out = { ...ev }
-  // Input ev is already camelCase from getEvents()
-  const hasCrewPin = !!(out.crewPinHash as string || out.crew_pin_hash as string)
-  delete out.crewPinHash
-  delete out.crew_pin_hash
-  out.has_crew_pin = hasCrewPin
-  return out
 }
 
 async function ensureUniqueSlug(sql: ReturnType<typeof import("@/lib/db").getDb>, base: string, excludeId?: string): Promise<string> {
@@ -353,6 +343,43 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json(
           { error: subGatePut.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" },
           { status: 403 },
+        )
+      }
+    }
+
+    /** Only `id` + `isSuspended` — skip credits, stream policy, and full-row UPDATE (avoids 500s from unrelated columns). */
+    const bodyRecord = body as Record<string, unknown>
+    const definedKeys = Object.keys(bodyRecord).filter((k) => bodyRecord[k] !== undefined)
+    if (
+      definedKeys.length === 2 &&
+      definedKeys.includes("id") &&
+      definedKeys.includes("isSuspended") &&
+      typeof id === "string"
+    ) {
+      const nextSuspended = Boolean(isSuspended)
+      try {
+        const rows = await sql`
+          UPDATE events SET is_suspended = ${nextSuspended}, updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING *
+        `
+        if (rows.length === 0) {
+          return NextResponse.json({ error: "Event not found" }, { status: 404 })
+        }
+        const updatedEvent = rows[0] as Record<string, unknown>
+        return NextResponse.json({
+          event: toCamel(sanitizeEventForClient(updatedEvent as Record<string, unknown>)),
+        })
+      } catch (e) {
+        console.error("[studio/events PUT suspend-only]", e)
+        return NextResponse.json(
+          {
+            error:
+              e instanceof Error && e.message.includes("is_suspended")
+                ? "Database is missing is_suspended. Run migrations or redeploy the latest schema."
+                : "Could not update suspension status.",
+          },
+          { status: 500 },
         )
       }
     }

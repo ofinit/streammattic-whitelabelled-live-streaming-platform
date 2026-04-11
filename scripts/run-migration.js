@@ -113,6 +113,10 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_deleted_events_log_owner ON deleted_events_log(owner_user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_deleted_events_log_studio ON deleted_events_log(studio_id)`,
   `UPDATE deleted_events_log d SET owner_user_id = u.id FROM users u WHERE d.owner_user_id IS NULL AND d.owner_email IS NOT NULL AND lower(trim(d.owner_email)) = lower(trim(u.email))`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_state TEXT`,
+  `ALTER TABLE gst_configurations ADD COLUMN IF NOT EXISTS gst_type TEXT NOT NULL DEFAULT 'individual'`,
+  `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_gst_number TEXT`,
+  `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`,
 ];
 
 const seedSettings = [

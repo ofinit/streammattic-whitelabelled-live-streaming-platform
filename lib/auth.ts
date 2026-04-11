@@ -1,6 +1,7 @@
 import { compare as bcryptCompare } from "bcryptjs"
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
+import { getIndianStateName } from "@/lib/indian-states"
 
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
@@ -91,7 +92,7 @@ export async function createSession(userId: string, ip?: string, userAgent?: str
 export async function getSessionUser(token: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT u.id, u.email, u.name, u.phone, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared,
+    SELECT u.id, u.email, u.name, u.phone, u.billing_state, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared,
            u.studio_subscription_expires_at, u.created_at, u.updated_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
@@ -186,16 +187,23 @@ export async function createUser(data: {
   password: string
   name: string
   phone?: string
+  /** Indian state code (e.g. KA); optional for admin-created accounts */
+  billingState?: string | null
   role?: "admin" | "studio" | "streamer"
 }) {
   const sql = getDb()
   const passwordHash = await hashPassword(data.password)
   const role = data.role ?? "streamer"
+  const billingStateCode =
+    typeof data.billingState === "string" && data.billingState.trim() !== ""
+      ? data.billingState.trim().toUpperCase()
+      : null
+  const stateLabelForGst = billingStateCode ? getIndianStateName(billingStateCode) : null
 
   const rows = await sql`
-    INSERT INTO users (email, password_hash, name, phone, role)
-    VALUES (${data.email}, ${passwordHash}, ${data.name}, ${data.phone ?? null}, ${role})
-    RETURNING id, email, name, phone, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
+    INSERT INTO users (email, password_hash, name, phone, billing_state, role)
+    VALUES (${data.email}, ${passwordHash}, ${data.name}, ${data.phone ?? null}, ${billingStateCode}, ${role})
+    RETURNING id, email, name, phone, billing_state, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
   `
 
   const user = toCamel(rows[0] as Record<string, unknown>)
@@ -204,6 +212,11 @@ export async function createUser(data: {
   await sql`INSERT INTO wallets (user_id) VALUES (${user.id as string})`
   // Create credits record
   await sql`INSERT INTO user_credits (user_id) VALUES (${user.id as string})`
+
+  await sql`
+    INSERT INTO gst_configurations (user_id, gst_type, gst_enabled, state)
+    VALUES (${user.id as string}, 'individual', false, ${stateLabelForGst})
+  `
 
   if (role === "studio") {
     await sql`

@@ -48,7 +48,13 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (data: { email: string; password: string; firstName: string; lastName: string; phone?: string }) =>
+  register: (data: {
+    email: string
+    password: string
+    fullName: string
+    phone: string
+    billingState: string
+  }) =>
     apiFetch<{ user: any }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),

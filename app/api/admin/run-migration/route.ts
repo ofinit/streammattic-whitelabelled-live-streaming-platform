@@ -135,6 +135,16 @@ export async function POST(req: Request) {
     await tryExec(label, stmt)
   }
 
+  const columnAlters: [string, string][] = [
+    ["ALTER users billing_state", `ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_state TEXT`],
+    ["ALTER gst_configurations gst_type", `ALTER TABLE gst_configurations ADD COLUMN IF NOT EXISTS gst_type TEXT NOT NULL DEFAULT 'individual'`],
+    ["ALTER invoices recipient_gst_number", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_gst_number TEXT`],
+    ["ALTER invoices recipient_address", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`],
+  ]
+  for (const [label, stmt] of columnAlters) {
+    await tryExec(label, stmt)
+  }
+
   // Trigger function
   await tryExec("FUNCTION update_updated_at", `
     CREATE OR REPLACE FUNCTION update_updated_at()

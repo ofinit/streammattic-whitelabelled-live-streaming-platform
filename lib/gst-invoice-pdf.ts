@@ -7,6 +7,10 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   platform: PlatformGSTSettings
   recipientName: string
   recipientEmail: string
+  recipientGstNumber?: string | null
+  recipientAddress?: string | null
+  /** b2b | b2c | legacy tax_invoice */
+  invoiceType?: string | null
   baseAmountPaise: number
   gstPercentage: number
   gstAmountPaise: number
@@ -45,6 +49,15 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   line("Bill To", 12, true)
   line(params.recipientName, 10)
   line(params.recipientEmail, 10)
+  if (params.invoiceType && params.invoiceType !== "tax_invoice") {
+    line(`Invoice type: ${String(params.invoiceType).toUpperCase()}`, 10)
+  }
+  if (params.recipientGstNumber) {
+    line(`GSTIN: ${params.recipientGstNumber}`, 10)
+  }
+  if (params.recipientAddress) {
+    line(params.recipientAddress, 9)
+  }
   y -= 10
 
   const fmt = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`

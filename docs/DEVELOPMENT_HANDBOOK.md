@@ -155,6 +155,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/studio/setup/route.ts` | `/api/studio/setup` |
 | `app/api/upload/route.ts` | `/api/upload` |
 | `app/api/uploads/[...path]/route.ts` | `/api/uploads/[...path]` |
+| `app/api/user/billing/route.ts` | `/api/user/billing` |
 | `app/api/users/[id]/route.ts` | `/api/users/[id]` |
 | `app/api/users/route.ts` | `/api/users` |
 | `app/api/wallet/route.ts` | `/api/wallet` |

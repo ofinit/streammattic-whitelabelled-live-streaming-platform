@@ -14,6 +14,7 @@ import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle, CreditCard
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
+import { BillingGstSection } from "@/components/settings/billing-gst-section"
 import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { calendarDaysUntilSubscriptionEnd, isStudioSubscriptionPastDue } from "@/lib/studio-subscription-shared"
@@ -268,6 +269,8 @@ export default function StudioSettingsPage() {
             </form>
           </CardContent>
         </Card>
+
+        <BillingGstSection />
 
         {/* Password Settings */}
         <Card className="border-border bg-card">

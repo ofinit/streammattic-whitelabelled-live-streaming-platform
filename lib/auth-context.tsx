@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string
   name: string
   phone?: string | null
+  /** Indian state code (e.g. KA) for GST billing */
+  billingState?: string | null
   role: UserRole
   status: string
   avatar?: string | null
@@ -28,7 +30,13 @@ interface AuthContextType {
   impersonatedBy: string | null
   login: (email: string, password: string) => Promise<AuthUser | null>
   logout: () => void
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<boolean>
+  register: (data: {
+    email: string
+    password: string
+    fullName: string
+    phone: string
+    billingState: string
+  }) => Promise<boolean>
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>
   impersonate: (userId: string) => Promise<string | null>
   stopImpersonating: () => Promise<string | null>
@@ -165,7 +173,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const register = useCallback(async (data: { email: string; password: string; firstName: string; lastName: string }): Promise<boolean> => {
+  const register = useCallback(
+    async (data: {
+      email: string
+      password: string
+      fullName: string
+      phone: string
+      billingState: string
+    }): Promise<boolean> => {
     setIsLoading(true)
     try {
       const res = await fetch("/api/auth/register", {

@@ -11,6 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Menu, X, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
+import { INDIAN_STATES_AND_UT } from "@/lib/indian-states"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const DEFAULT_CALLBACK = "/streamer"
 
@@ -31,8 +39,9 @@ export default function SignupPage() {
   const { isWhiteLabel, studio, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [billingState, setBillingState] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
@@ -49,6 +58,10 @@ export default function SignupPage() {
       setError("Passwords do not match")
       return
     }
+    if (!billingState) {
+      setError("Please select your state")
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch("/api/auth/register", {
@@ -57,8 +70,9 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          billingState,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -116,31 +130,47 @@ export default function SignupPage() {
               <CardContent className="space-y-4">
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First name</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        placeholder="Jane"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="bg-secondary border-border"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last name</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Doe"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="bg-secondary border-border"
-                        required
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Full name as per PAN / bank"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="bg-secondary border-border"
+                      required
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-phone">Mobile number</Label>
+                    <Input
+                      id="signup-phone"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="10-digit mobile (e.g. 9876543210)"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="bg-secondary border-border"
+                      required
+                      autoComplete="tel"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State (for GST billing)</Label>
+                    <Select value={billingState} onValueChange={setBillingState} required>
+                      <SelectTrigger className="bg-secondary border-border w-full">
+                        <SelectValue placeholder="Select state / UT" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {INDIAN_STATES_AND_UT.map((s) => (
+                          <SelectItem key={s.code} value={s.code}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>

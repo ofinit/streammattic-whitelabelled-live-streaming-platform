@@ -31,6 +31,8 @@ export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elega
   email: string
   name: string
   phone?: string
+  /** Indian state code (e.g. KA) for GST billing */
+  billingState?: string | null
   role: UserRole
   status: UserStatus
   avatar?: string
@@ -1068,6 +1070,7 @@ export interface GSTConfiguration {
   id: string
   entityId: string // userId, studioId, or adminId
   entityType: UserRole
+  gstType?: "individual" | "business_registered" | "business_unregistered"
   gstEnabled: boolean
   gstPercentage: number // 18, 12, 5, 28, etc.
   gstNumber?: string // GSTIN (15 characters)

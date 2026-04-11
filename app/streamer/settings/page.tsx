@@ -14,6 +14,7 @@ import { Loader2, User, Lock, Bell, CheckCircle, AlertCircle } from "lucide-reac
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
+import { BillingGstSection } from "@/components/settings/billing-gst-section"
 
 export default function StreamerSettingsPage() {
   const { user, changePassword, isLoading } = useAuth()
@@ -187,6 +188,8 @@ export default function StreamerSettingsPage() {
             </form>
           </CardContent>
         </Card>
+
+        <BillingGstSection />
 
         {/* Password Settings */}
         <Card className="border-border bg-card">

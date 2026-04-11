@@ -1,13 +1,45 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { createUser, createSession, setSessionCookie } from "@/lib/auth"
+import { isValidIndianStateCode, normalizeIndianMobile } from "@/lib/indian-states"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, firstName, lastName, phone } = await request.json()
+    const body = await request.json()
+    const {
+      email,
+      password,
+      fullName,
+      phone,
+      billingState,
+      firstName,
+      lastName,
+    } = body as Record<string, string | undefined>
 
-    if (!email || !password || !firstName || !lastName) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 })
+    const nameFromLegacy =
+      typeof firstName === "string" && typeof lastName === "string"
+        ? `${firstName} ${lastName}`.trim()
+        : ""
+    const name =
+      typeof fullName === "string" && fullName.trim().length > 0 ? fullName.trim() : nameFromLegacy
+
+    if (!email || !password || !name) {
+      return NextResponse.json({ error: "Full name, email, and password are required" }, { status: 400 })
+    }
+
+    if (!phone || typeof phone !== "string") {
+      return NextResponse.json({ error: "Mobile number is required" }, { status: 400 })
+    }
+    const mobileNorm = normalizeIndianMobile(phone)
+    if (!mobileNorm) {
+      return NextResponse.json(
+        { error: "Enter a valid 10-digit Indian mobile number" },
+        { status: 400 },
+      )
+    }
+
+    if (!billingState || typeof billingState !== "string" || !isValidIndianStateCode(billingState)) {
+      return NextResponse.json({ error: "State is required (select from the list)" }, { status: 400 })
     }
 
     // Validate email format
@@ -32,8 +64,9 @@ export async function POST(request: NextRequest) {
     const user = await createUser({
       email: email.toLowerCase().trim(),
       password,
-      name: `${firstName} ${lastName}`.trim(),
-      phone: phone || undefined,
+      name,
+      phone: mobileNorm,
+      billingState: billingState.trim().toUpperCase(),
       role: "streamer",
     })
 

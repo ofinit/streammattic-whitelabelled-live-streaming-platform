@@ -3,6 +3,28 @@ import { splitGST } from "@/lib/gst-service"
 import { getPlatformGSTSettings } from "@/lib/platform-gst"
 import { applyStudioUpgradeOrRenewal } from "@/lib/studio-subscription"
 
+type Sql = ReturnType<typeof getDb>
+
+async function getRecipientBillingForInvoice(sql: Sql, userId: string) {
+  const gstRows = await sql`
+    SELECT gst_number, business_address, city, state, pincode
+    FROM gst_configurations WHERE user_id = ${userId} LIMIT 1
+  `
+  const g = gstRows[0] as Record<string, unknown> | undefined
+  const gstRaw =
+    typeof g?.gst_number === "string" ? g.gst_number.trim().toUpperCase() : ""
+  const invoiceType = gstRaw.length > 0 ? "b2b" : "b2c"
+  const parts = [g?.business_address, g?.city, g?.state, g?.pincode].filter(
+    (x) => x != null && String(x).trim() !== "",
+  ) as string[]
+  const recipientAddress = parts.length > 0 ? parts.join(", ") : null
+  return {
+    recipientGstNumber: gstRaw || null,
+    invoiceType,
+    recipientAddress,
+  }
+}
+
 // ============================================================
 // RAZORPAY - Server-side order creation & verification
 // ============================================================
@@ -424,6 +446,7 @@ export async function processSuccessfulPayment(params: {
         .filter(Boolean)
         .join(", ")
       const invNum = invoiceNumberFromOrderId(params.orderId)
+      const bill = await getRecipientBillingForInvoice(sql, params.userId)
 
       const invRows = await sql`
         INSERT INTO invoices (
@@ -437,6 +460,8 @@ export async function processSuccessfulPayment(params: {
           recipient_type,
           recipient_name,
           recipient_email,
+          recipient_gst_number,
+          recipient_address,
           base_amount,
           gst_percentage,
           cgst_amount,
@@ -451,7 +476,7 @@ export async function processSuccessfulPayment(params: {
         )
         VALUES (
           ${invNum},
-          'tax_invoice',
+          ${bill.invoiceType},
           'platform',
           ${platform.businessName},
           ${platform.gstNumber || null},
@@ -460,6 +485,8 @@ export async function processSuccessfulPayment(params: {
           ${u.role},
           ${u.name},
           ${u.email},
+          ${bill.recipientGstNumber},
+          ${bill.recipientAddress},
           ${walletCreditPaise},
           ${gstPercentage},
           ${cgstAmount},
@@ -498,6 +525,7 @@ export async function processSuccessfulPayment(params: {
         .filter(Boolean)
         .join(", ")
       const invNum = invoiceNumberFromOrderId(params.orderId)
+      const bill = await getRecipientBillingForInvoice(sql, params.userId)
 
       const invRows = await sql`
         INSERT INTO invoices (
@@ -511,6 +539,8 @@ export async function processSuccessfulPayment(params: {
           recipient_type,
           recipient_name,
           recipient_email,
+          recipient_gst_number,
+          recipient_address,
           base_amount,
           gst_percentage,
           cgst_amount,
@@ -525,7 +555,7 @@ export async function processSuccessfulPayment(params: {
         )
         VALUES (
           ${invNum},
-          'tax_invoice',
+          ${bill.invoiceType},
           'platform',
           ${platform.businessName},
           ${platform.gstNumber || null},
@@ -534,6 +564,8 @@ export async function processSuccessfulPayment(params: {
           ${u.role},
           ${u.name},
           ${u.email},
+          ${bill.recipientGstNumber},
+          ${bill.recipientAddress},
           ${studioBasePaise},
           ${gstPercentage},
           ${cgstAmount},

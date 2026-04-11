@@ -321,17 +321,17 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                       <Info className="h-4 w-4 text-blue-400" />
                       <AlertDescription className="text-muted-foreground text-sm">
                         {integrationData?.has_platform_defaults ? (
-                          <>
-                            Admin credentials are available for OAuth. Add your own Client ID and Secret below only if
-                            you want your brand on Google&apos;s consent screen, or if the platform has no credentials
-                            yet.
-                          </>
+                          <p className="m-0 leading-relaxed">
+                            Admin credentials are available for OAuth. Add your own Client ID and Secret below only if you
+                            want your brand on Google&apos;s consent screen, or if the platform has no credentials yet.
+                          </p>
                         ) : (
-                          <>
-                            Enter a <strong>Web application</strong> OAuth client from Google Cloud Console with the
-                            redirect URI from the setup guide below. Without these, you cannot connect a channel until an
-                            admin configures platform credentials.
-                          </>
+                          <p className="m-0 leading-relaxed">
+                            Enter a{" "}
+                            <strong className="font-semibold text-foreground">Web application</strong> OAuth client from
+                            Google Cloud Console with the redirect URI from the setup guide below. Without these, you
+                            cannot connect a channel until an admin configures platform credentials.
+                          </p>
                         )}
                       </AlertDescription>
                     </Alert>
@@ -474,8 +474,11 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                     <Alert className="border-yellow-500/20 bg-yellow-500/5">
                       <AlertTriangle className="h-4 w-4 text-yellow-500" />
                       <AlertDescription className="text-xs">
-                        The redirect URI in Google Cloud must match this deployment exactly. If OAuth fails with
-                        redirect_uri_mismatch, compare the URI in the error to the one in the box above.
+                        <p className="m-0 leading-relaxed">
+                          The redirect URI in Google Cloud must match this deployment exactly. If OAuth fails with{" "}
+                          <code className="rounded bg-muted px-1 py-0.5 text-[0.7rem]">redirect_uri_mismatch</code>,
+                          compare the URI in the error to the one in the box above.
+                        </p>
                       </AlertDescription>
                     </Alert>
                   </CardContent>
@@ -486,8 +489,10 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
             <Alert className="bg-muted/50 border-border">
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Connect your YouTube channels to create live broadcasts directly from StreamLivee. You can connect multiple
-                channels and choose which one to use for each event.
+                <p className="m-0 leading-relaxed">
+                  Connect your YouTube channels to create live broadcasts directly from StreamLivee. You can connect
+                  multiple channels and choose which one to use for each event.
+                </p>
               </AlertDescription>
             </Alert>
 

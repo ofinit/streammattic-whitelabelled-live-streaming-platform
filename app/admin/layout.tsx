@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
+  const { user, originalUser, isAuthenticated, isLoading, isImpersonating } = useAuth()
   const router = useRouter()
   const { isCollapsed } = useSidebar()
   const isPublicAdminAuthPage =
@@ -20,14 +20,18 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     pathname === "/admin/forgot-password" ||
     pathname === "/admin/reset-password"
 
+  /** True while cookie session is admin, including the moment after "View as …" before navigation leaves /admin */
+  const hasAdminAccess =
+    user?.role === "admin" || (isImpersonating && originalUser?.role === "admin")
+
   useEffect(() => {
     if (isPublicAdminAuthPage || isLoading) return  // wait until auth check completes
     if (!isAuthenticated) {
       router.push("/admin/login")
-    } else if (user?.role !== "admin") {
+    } else if (!hasAdminAccess) {
       router.push("/login")
     }
-  }, [isPublicAdminAuthPage, isLoading, isAuthenticated, user, router])
+  }, [isPublicAdminAuthPage, isLoading, isAuthenticated, hasAdminAccess, router])
 
   if (isPublicAdminAuthPage) {
     return <>{children}</>
@@ -38,7 +42,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!isAuthenticated || !hasAdminAccess) {
     return null
   }
 

@@ -80,17 +80,77 @@ export async function initiateRazorpayRefund(paymentId: string, amount: number) 
 // ============================================================
 // INSTAMOJO - Payment request creation & verification
 // ============================================================
+// API v2: OAuth2 client_credentials → Bearer token; form-urlencoded bodies.
+// https://docs.instamojo.com/reference/generate-access-token-application-based-authentication
+// https://docs.instamojo.com/reference/create-a-payment-request
+//
+// Use INSTAMOJO_CLIENT_ID + INSTAMOJO_CLIENT_SECRET (from Instamojo developer / OAuth).
+// For backward compatibility, INSTAMOJO_API_KEY / INSTAMOJO_AUTH_TOKEN are used as
+// client_id / client_secret if the CLIENT_* vars are unset.
 
-const INSTAMOJO_API_KEY = process.env.INSTAMOJO_API_KEY || ""
-const INSTAMOJO_AUTH_TOKEN = process.env.INSTAMOJO_AUTH_TOKEN || ""
-const INSTAMOJO_BASE_URL = process.env.INSTAMOJO_BASE_URL || "https://api.instamojo.com/v2"
+type InstamojoTokenCache = { accessToken: string; expiresAtMs: number }
+let instamojoTokenCache: InstamojoTokenCache | null = null
 
-function instamojoHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "X-Api-Key": INSTAMOJO_API_KEY,
-    "X-Auth-Token": INSTAMOJO_AUTH_TOKEN,
+function instamojoRoots(): { v2Base: string; apiRoot: string } {
+  const raw = (process.env.INSTAMOJO_BASE_URL || "https://api.instamojo.com/v2").replace(/\/$/, "")
+  const v2Base = raw.includes("/v2") ? raw : `${raw}/v2`
+  const apiRoot = raw.replace(/\/v2$/, "") || "https://api.instamojo.com"
+  return { v2Base, apiRoot }
+}
+
+function instamojoClientCredentials(): { clientId: string; clientSecret: string } {
+  const clientId = process.env.INSTAMOJO_CLIENT_ID || process.env.INSTAMOJO_API_KEY || ""
+  const clientSecret = process.env.INSTAMOJO_CLIENT_SECRET || process.env.INSTAMOJO_AUTH_TOKEN || ""
+  return { clientId, clientSecret }
+}
+
+async function getInstamojoAccessToken(): Promise<string> {
+  const { clientId, clientSecret } = instamojoClientCredentials()
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "Instamojo: set INSTAMOJO_CLIENT_ID and INSTAMOJO_CLIENT_SECRET (OAuth), or legacy INSTAMOJO_API_KEY + INSTAMOJO_AUTH_TOKEN as id/secret per Instamojo dashboard.",
+    )
   }
+
+  const now = Date.now()
+  const skewMs = 120_000
+  if (instamojoTokenCache && instamojoTokenCache.expiresAtMs > now + skewMs) {
+    return instamojoTokenCache.accessToken
+  }
+
+  const { apiRoot } = instamojoRoots()
+  const tokenUrl = `${apiRoot.replace(/\/$/, "")}/oauth2/token/`
+  const res = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  })
+
+  const text = await res.text()
+  if (!res.ok) {
+    throw new Error(`Instamojo OAuth token failed: ${text}`)
+  }
+
+  const data = JSON.parse(text) as { access_token?: string; expires_in?: number }
+  if (!data.access_token) {
+    throw new Error(`Instamojo OAuth: missing access_token in response: ${text}`)
+  }
+
+  const expiresInSec = typeof data.expires_in === "number" ? data.expires_in : 3600
+  instamojoTokenCache = {
+    accessToken: data.access_token,
+    expiresAtMs: now + expiresInSec * 1000,
+  }
+  return instamojoTokenCache.accessToken
+}
+
+async function instamojoBearerHeaders(): Promise<Record<string, string>> {
+  const token = await getInstamojoAccessToken()
+  return { Authorization: `Bearer ${token}` }
 }
 
 export async function createInstamojoPayment(params: {
@@ -102,20 +162,30 @@ export async function createInstamojoPayment(params: {
   redirectUrl: string
   webhookUrl?: string
 }) {
-  const res = await fetch(`${INSTAMOJO_BASE_URL}/payment_requests/`, {
+  const { v2Base } = instamojoRoots()
+  const auth = await instamojoBearerHeaders()
+  const form = new URLSearchParams({
+    amount: params.amount.toFixed(2),
+    purpose: params.purpose,
+    buyer_name: params.buyerName,
+    email: params.email,
+    phone: params.phone || "",
+    redirect_url: params.redirectUrl,
+    send_email: "false",
+    send_sms: "false",
+    allow_repeated_payments: "false",
+  })
+  if (params.webhookUrl) {
+    form.set("webhook", params.webhookUrl)
+  }
+
+  const res = await fetch(`${v2Base}/payment_requests/`, {
     method: "POST",
-    headers: instamojoHeaders(),
-    body: JSON.stringify({
-      amount: params.amount.toFixed(2),
-      purpose: params.purpose,
-      buyer_name: params.buyerName,
-      email: params.email,
-      phone: params.phone || "",
-      redirect_url: params.redirectUrl,
-      webhook: params.webhookUrl,
-      send_email: false,
-      allow_repeated_payments: false,
-    }),
+    headers: {
+      ...auth,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: form.toString(),
   })
 
   if (!res.ok) {
@@ -127,8 +197,13 @@ export async function createInstamojoPayment(params: {
 }
 
 export async function verifyInstamojoPayment(paymentRequestId: string) {
-  const res = await fetch(`${INSTAMOJO_BASE_URL}/payment_requests/${paymentRequestId}/`, {
-    headers: instamojoHeaders(),
+  const { v2Base } = instamojoRoots()
+  const auth = await instamojoBearerHeaders()
+  const res = await fetch(`${v2Base}/payment_requests/${paymentRequestId}/`, {
+    headers: {
+      ...auth,
+      Accept: "application/json",
+    },
   })
   if (!res.ok) throw new Error("Failed to fetch Instamojo payment status")
   return res.json()

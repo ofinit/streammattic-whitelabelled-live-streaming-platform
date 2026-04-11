@@ -188,11 +188,13 @@ async function run() {
   console.log("Skipping legacy SQL admin seed (password format did not match app login).");
   console.log("Create admin with: node --env-file=.env.production scripts/seed-production-admin.js");
 
-  console.log("Seeding settings...");
+  // Insert defaults only when the key is missing. Do NOT overwrite existing rows —
+  // DO UPDATE would reset admin-configured pricing, GST, gateways, etc. on every run.
+  console.log("Seeding settings (missing keys only)...");
   for (const s of seedSettings) {
     try {
       const val = JSON.stringify(s.value).replace(/'/g, "''");
-      await exec(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value = '${val}'::jsonb, updated_at = NOW()`);
+      await exec(`INSERT INTO platform_settings (key, value) VALUES ('${s.key}', '${val}'::jsonb) ON CONFLICT (key) DO NOTHING`);
     } catch (e) {
       console.error(`Setting ${s.key}:`, e?.message?.substring(0, 100));
     }

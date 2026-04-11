@@ -282,9 +282,10 @@ export async function POST(req: Request) {
     ["gst_config", { enabled:true, percentage:18, gstin:"", companyName:"StreamLivee", companyAddress:"" }],
     ["payment_gateways", { razorpay:{enabled:false,label:"Razorpay"}, instamojo:{enabled:false,label:"Instamojo"} }],
   ]
+  // Same as scripts/run-migration.js: only insert missing keys; never overwrite production values.
   for (const [key, value] of settings) {
     const val = JSON.stringify(value).replace(/'/g, "''")
-    await tryExec(`SEED setting:${key}`, `INSERT INTO platform_settings (key,value) VALUES ('${key}','${val}'::jsonb) ON CONFLICT (key) DO UPDATE SET value='${val}'::jsonb, updated_at=NOW()`)
+    await tryExec(`SEED setting:${key}`, `INSERT INTO platform_settings (key,value) VALUES ('${key}','${val}'::jsonb) ON CONFLICT (key) DO NOTHING`)
   }
 
   // Seed event templates

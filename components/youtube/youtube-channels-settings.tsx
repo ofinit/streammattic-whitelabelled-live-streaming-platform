@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,20 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Youtube, Plus, Info, Loader2, Lock, Key, Eye, EyeOff, CheckCircle2, Trash2, AlertTriangle } from "lucide-react"
+import {
+  Youtube,
+  Plus,
+  Info,
+  Loader2,
+  Lock,
+  Key,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Trash2,
+  AlertTriangle,
+  ExternalLink,
+} from "lucide-react"
 import { YouTubeChannelCard } from "@/components/youtube/youtube-channel-card"
 import { ConnectYouTubeDialog } from "@/components/youtube/connect-youtube-dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -35,8 +48,16 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
   const [showCredSecret, setShowCredSecret] = useState(false)
   const [credForm, setCredForm] = useState({ google_client_id: "", google_client_secret: "" })
   const [credEdited, setCredEdited] = useState(false)
+  const [oauthCallbackUrl, setOauthCallbackUrl] = useState("")
   const { toast } = useToast()
   const { user } = useAuth()
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    setOauthCallbackUrl(
+      `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/auth/youtube/callback`,
+    )
+  }, [])
 
   const OWNER_ID = user?.id || ""
   const OWNER_TYPE = (user?.role || "streamer") as "streamer" | "studio" | "admin"
@@ -273,11 +294,8 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                         <div>
                           <CardTitle className="text-lg">Your Google OAuth credentials</CardTitle>
                           <CardDescription>
-                            Required if the platform has not set global credentials. Use the same redirect URI as in
-                            Google Cloud Console:{" "}
-                            <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                              …/api/auth/youtube/callback
-                            </code>
+                            Required if the platform has not set global credentials. See the setup guide below for the
+                            exact <strong>Authorized redirect URI</strong> to register in Google Cloud.
                           </CardDescription>
                         </div>
                       </div>
@@ -311,8 +329,8 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                         ) : (
                           <>
                             Enter a <strong>Web application</strong> OAuth client from Google Cloud Console with the
-                            redirect URI above. Without these, you cannot connect a channel until an admin configures
-                            platform credentials.
+                            redirect URI from the setup guide below. Without these, you cannot connect a channel until an
+                            admin configures platform credentials.
                           </>
                         )}
                       </AlertDescription>
@@ -396,11 +414,68 @@ export function YouTubeChannelsSettings({ returnUrl }: { returnUrl: string }) {
                       )}
                     </div>
 
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <CardTitle className="text-base">Setup guide: Google Cloud OAuth</CardTitle>
+                    <CardDescription>Create a Web application OAuth client and paste the Client ID and Secret above</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm text-muted-foreground">
+                    <div className="rounded-lg border border-border bg-muted/40 p-3">
+                      <p className="mb-1.5 text-xs font-medium text-foreground">Authorized redirect URI (must match exactly)</p>
+                      <code className="block break-all font-mono text-xs text-foreground">
+                        {oauthCallbackUrl || "Loading…"}
+                      </code>
+                      {typeof window !== "undefined" && !process.env.NEXT_PUBLIC_APP_URL && (
+                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                          In production, set <code className="rounded bg-muted px-1">NEXT_PUBLIC_APP_URL</code> to your
+                          live site URL so this matches Google Cloud (e.g. https://streamlivee.com).
+                        </p>
+                      )}
+                    </div>
+                    <ol className="list-inside list-decimal space-y-2.5">
+                      <li>
+                        Open{" "}
+                        <a
+                          href="https://console.cloud.google.com/apis/credentials"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-2 inline-flex items-center gap-0.5"
+                        >
+                          Google Cloud Console — Credentials
+                          <ExternalLink className="inline h-3 w-3" />
+                        </a>
+                        .
+                      </li>
+                      <li>Select or create a project.</li>
+                      <li>
+                        Enable{" "}
+                        <strong className="text-foreground">YouTube Data API v3</strong> (APIs &amp; Services → Library).
+                      </li>
+                      <li>
+                        Go to <strong className="text-foreground">APIs &amp; Services → Credentials</strong> → Create
+                        credentials → <strong className="text-foreground">OAuth client ID</strong> → Application type:{" "}
+                        <strong className="text-foreground">Web application</strong>.
+                      </li>
+                      <li>
+                        Under <strong className="text-foreground">Authorized redirect URIs</strong>, add the URI shown in
+                        the box above (one line, no trailing slash).
+                      </li>
+                      <li>
+                        Complete the <strong className="text-foreground">OAuth consent screen</strong> (User type,
+                        app name, scopes). For personal use you can use &quot;External&quot; and add test users if in
+                        testing.
+                      </li>
+                      <li>Copy the <strong className="text-foreground">Client ID</strong> and <strong className="text-foreground">Client secret</strong> into the form above, then click Save credentials.</li>
+                      <li>Return here and use <strong className="text-foreground">Connect Your First Channel</strong> to sign in with Google.</li>
+                    </ol>
                     <Alert className="border-yellow-500/20 bg-yellow-500/5">
                       <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      <AlertDescription className="text-xs text-muted-foreground">
-                        Create OAuth credentials in Google Cloud Console → APIs & Services → Credentials, and add the
-                        authorized redirect URI that matches your app&apos;s callback URL.
+                      <AlertDescription className="text-xs">
+                        The redirect URI in Google Cloud must match this deployment exactly. If OAuth fails with
+                        redirect_uri_mismatch, compare the URI in the error to the one in the box above.
                       </AlertDescription>
                     </Alert>
                   </CardContent>

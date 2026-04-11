@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Menu, X, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 const DEFAULT_CALLBACK = "/streamer"
 
@@ -27,6 +28,7 @@ function pathForRole(role: string | undefined): string {
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { login } = useAuth()
   const { isWhiteLabel, studio, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -55,19 +57,14 @@ function LoginPageContent() {
     if (!email.trim() || !password) return
     setCredentialsLoading(true)
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError((data as { error?: string }).error || "Invalid email or password.")
+      const user = await login(email.trim(), password)
+      if (!user) {
+        setError("Invalid email or password.")
         return
       }
-      const user = (data as { user?: { role?: string } }).user
-      router.replace(pathForRole(user?.role))
+      // Defer navigation so AuthContext commit runs before streamer layout’s guard (would send anonymous users to /).
+      const dest = pathForRole(user.role)
+      window.setTimeout(() => router.replace(dest), 0)
     } catch {
       setError("Something went wrong.")
     } finally {

@@ -10,11 +10,24 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Menu, X, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
 
 const DEFAULT_CALLBACK = "/streamer"
 
+function pathForRole(role: string | undefined): string {
+  switch (role) {
+    case "admin":
+      return "/admin"
+    case "studio":
+      return "/studio"
+    default:
+      return DEFAULT_CALLBACK
+  }
+}
+
 export default function SignupPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const { isWhiteLabel, studio, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -54,23 +67,15 @@ export default function SignupPage() {
         setLoading(false)
         return
       }
-      const loginRes = await fetch("/api/auth/login", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
-      })
-      const loginData = await loginRes.json().catch(() => ({}))
-      if (!loginRes.ok) {
+      const loggedIn = await login(email.trim(), password)
+      if (!loggedIn) {
         setError("Account created. Please sign in.")
         setLoading(false)
         router.push("/login")
         return
       }
-      const role = (loginData as { user?: { role?: string } }).user?.role
-      if (role === "studio") router.push("/studio")
-      else if (role === "admin") router.push("/admin")
-      else router.push(DEFAULT_CALLBACK)
+      setLoading(false)
+      window.setTimeout(() => router.replace(pathForRole(loggedIn.role)), 0)
     } catch {
       setError("Something went wrong")
       setLoading(false)

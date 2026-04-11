@@ -32,16 +32,12 @@ function AdminLoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    const success = await login(email, password)
-    if (success) {
-      const res = await fetch("/api/auth/me")
-      if (res.ok) {
-        const data = await res.json()
-        if (data.user?.role === "admin") {
-          const redirect = searchParams.get("redirect") || "/admin"
-          router.push(redirect)
-          return
-        }
+    const user = await login(email, password)
+    if (user) {
+      if (user.role === "admin") {
+        const redirect = searchParams.get("redirect") || "/admin"
+        window.setTimeout(() => router.push(redirect), 0)
+        return
       }
       setError("Access denied. Admin only.")
       return

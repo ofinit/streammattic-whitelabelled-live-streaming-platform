@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import type { UserRole } from "./types"
 
-interface AuthUser {
+export interface AuthUser {
   id: string
   email: string
   name: string
@@ -26,7 +26,7 @@ interface AuthContextType {
   isImpersonating: boolean
   originalUser: AuthUser | null
   impersonatedBy: string | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<AuthUser | null>
   logout: () => void
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<boolean>
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>
@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchCurrentUser()
   }, [fetchCurrentUser])
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<AuthUser | null> => {
     setIsLoading(true)
     try {
       const res = await fetch("/api/auth/login", {
@@ -138,16 +138,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
-      if (res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { user?: AuthUser; error?: string }
+      if (res.ok && data.user) {
         await fetchCurrentUser()
         setIsLoading(false)
-        return true
+        return data.user
       }
       setIsLoading(false)
-      return false
+      return null
     } catch {
       setIsLoading(false)
-      return false
+      return null
     }
   }, [fetchCurrentUser])
 

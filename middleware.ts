@@ -69,6 +69,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/health") ||
     /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
     pathname.startsWith("/api/watch/") ||
+    /** Host-based studio / platform branding lookup (login page, marketing — no session yet) */
+    pathname.startsWith("/api/branding") ||
     pathname.startsWith("/api/auth") ||
     /** Admin APIs enforce role in route handlers */
     pathname.startsWith("/api/admin") ||

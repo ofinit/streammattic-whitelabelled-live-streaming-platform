@@ -294,8 +294,10 @@ export function StudioUpgradePaymentPanel({
         <Alert variant="destructive" className="border-amber-600/50 bg-amber-500/10 text-amber-950 dark:text-amber-100">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Studio payments are tied to your <strong>signed-in</strong> account, not the profile you are viewing.
-            Click <strong>Stop impersonating</strong> in the banner, then sign in as this streamer to complete payment.
+            <p className="m-0 leading-relaxed">
+              Studio payments are tied to your <strong>signed-in</strong> account, not the profile you are viewing.{" "}
+              Click <strong>Stop impersonating</strong> in the banner, then sign in as this streamer to complete payment.
+            </p>
           </AlertDescription>
         </Alert>
       )}

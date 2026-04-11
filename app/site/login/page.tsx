@@ -32,21 +32,11 @@ export default function SiteLoginPage() {
     e.preventDefault()
     setError("")
 
-    const success = await login(email, password)
-    if (success) {
-      // Re-fetch to get user role for redirect
-      try {
-        const res = await fetch("/api/auth/me")
-        if (res.ok) {
-          const data = await res.json()
-          const role = data.user?.role
-          if (role === "admin") router.push("/admin")
-          else if (role === "studio") router.push("/studio")
-          else router.push("/streamer")
-          return
-        }
-      } catch { /* fallback */ }
-      router.push("/studio")
+    const user = await login(email, password)
+    if (user) {
+      const dest =
+        user.role === "admin" ? "/admin" : user.role === "studio" ? "/studio" : "/streamer"
+      window.setTimeout(() => router.push(dest), 0)
     } else {
       setError("Invalid email or password")
     }

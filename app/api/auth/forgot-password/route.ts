@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { sendPasswordResetEmail } from "@/lib/email"
+import { EMAIL_SEND_FAILED_MESSAGE, sendPasswordResetEmail } from "@/lib/email"
 import { findUserByEmailForLogin } from "@/lib/db-queries"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     const sent = await sendPasswordResetEmail(canonicalEmail, resetUrl)
     if (!sent) {
       await sql`DELETE FROM admin_password_reset_tokens WHERE token = ${token}`
-      return NextResponse.json({ error: "Could not send email. Check SMTP configuration." }, { status: 500 })
+      return NextResponse.json({ error: EMAIL_SEND_FAILED_MESSAGE }, { status: 500 })
     }
 
     return NextResponse.json(GENERIC_OK)

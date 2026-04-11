@@ -7,6 +7,36 @@ function hasPlatformEmailProvider(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim() || process.env.SMTP_HOST?.trim())
 }
 
+/** Shown when `sendEmail` returns false (Resend or SMTP failure). No secrets. */
+export const EMAIL_SEND_FAILED_MESSAGE =
+  "Could not send email. For Resend: set RESEND_API_KEY and RESEND_FROM with a verified domain. For SMTP: set SMTP_HOST, port, and credentials. Check server logs for [Resend] or [SMTP]."
+
+const DEFAULT_MAIL_FROM = `"StreamLivee" <noreply@streamlivee.com>`
+
+/**
+ * Cleans `RESEND_FROM` / `SMTP_FROM` when env UIs add extra quotes or backslash-escaped quotes,
+ * which otherwise produce malformed From headers in Resend request bodies.
+ */
+export function normalizeFromAddress(raw: string): string {
+  let s = raw.trim()
+  while (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+    s = s.slice(1, -1).trim()
+  }
+  const angle = s.indexOf("<")
+  if (angle > 0) {
+    let name = s.slice(0, angle).trim()
+    const addr = s.slice(angle).trim()
+    name = name.replace(/^[\\"]+/g, "").replace(/[\\"]+$/g, "").replace(/\\"/g, '"')
+    s = `${name} ${addr}`.trim()
+  } else {
+    s = s.replace(/^[\\"]+/g, "").replace(/[\\"]+$/g, "").trim()
+  }
+  if (!/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(s)) {
+    return DEFAULT_MAIL_FROM
+  }
+  return s
+}
+
 /** Default app SMTP (Coolify / VPS). Port 587 = STARTTLS; 465 = implicit TLS. */
 function createDefaultSmtpTransport(): nodemailer.Transporter {
   const port = Number(process.env.SMTP_PORT) || 587
@@ -46,10 +76,11 @@ export const mailer = createDefaultSmtpTransport()
  */
 export async function sendEmail(to: string, subject: string, html: string, text?: string, studioId?: string) {
   let finalMailer = mailer
-  let from =
+  let from = normalizeFromAddress(
     process.env.RESEND_FROM ||
-    process.env.SMTP_FROM ||
-    `"StreamLivee" <noreply@streamlivee.com>`
+      process.env.SMTP_FROM ||
+      DEFAULT_MAIL_FROM,
+  )
   let brandName = (await getPlatformSetting("platform_name")) as string || "StreamLivee"
 
   // Check if studio has custom SMTP
@@ -73,11 +104,17 @@ export async function sendEmail(to: string, subject: string, html: string, text?
         tls: { minVersion: "TLSv1.2" as const },
       })
       brandName = branding.platformName || brandName
-      from = branding.smtpFromEmail 
-        ? (branding.smtpFromName ? `"${branding.smtpFromName}" <${branding.smtpFromEmail}>` : branding.smtpFromEmail)
-        : `"${brandName}" <${branding.smtpUser}>`
+      from = normalizeFromAddress(
+        branding.smtpFromEmail
+          ? branding.smtpFromName
+            ? `"${branding.smtpFromName}" <${branding.smtpFromEmail}>`
+            : branding.smtpFromEmail
+          : `"${brandName}" <${branding.smtpUser}>`,
+      )
     }
   }
+
+  from = normalizeFromAddress(from)
 
   if (finalMailer === mailer && process.env.RESEND_API_KEY?.trim()) {
     const resend = new Resend(process.env.RESEND_API_KEY)
@@ -89,7 +126,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
       text: text || "Please enable HTML to view this message.",
     })
     if (error) {
-      console.error("[Resend] emails.send failed:", error)
+      console.error("[Resend] emails.send failed:", JSON.stringify(error))
       return false
     }
     console.log("[Resend] Message sent:", data?.id)

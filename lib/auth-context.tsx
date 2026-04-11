@@ -31,7 +31,7 @@ interface AuthContextType {
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<boolean>
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>
   impersonate: (userId: string) => Promise<string | null>
-  stopImpersonating: () => string | null
+  stopImpersonating: () => Promise<string | null>
   updateUserStatus: (userId: string, status: "active" | "suspended") => Promise<boolean>
   refreshUser: () => Promise<void>
 }
@@ -240,21 +240,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   }, [user])
 
-  const stopImpersonating = useCallback((): string | null => {
-    if (originalUser) {
-      setUser(originalUser)
-      setOriginalUser(null)
-      setIsImpersonating(false)
-      setImpersonatedBy(null)
+  const stopImpersonating = useCallback(async (): Promise<string | null> => {
+    if (!originalUser) return null
 
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem(IMPERSONATE_KEY)
-      }
-
-      return getRouteForRole(originalUser.role)
+    const route = getRouteForRole(originalUser.role)
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(IMPERSONATE_KEY)
     }
-    return null
-  }, [originalUser])
+    setOriginalUser(null)
+    setIsImpersonating(false)
+    setImpersonatedBy(null)
+
+    await fetchCurrentUser()
+    return route
+  }, [originalUser, fetchCurrentUser])
 
   const updateUserStatus = useCallback(async (userId: string, status: "active" | "suspended"): Promise<boolean> => {
     try {

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
         (SELECT COUNT(*) FROM events WHERE status = 'live') as live_events,
         (SELECT COUNT(*) FROM events) as total_events,
         (SELECT COALESCE(SUM(balance), 0) FROM wallets) as total_wallet_balance,
-        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'completed') as platform_revenue
+        (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status = 'completed') as platform_revenue
     `
     
     const r = result[0]

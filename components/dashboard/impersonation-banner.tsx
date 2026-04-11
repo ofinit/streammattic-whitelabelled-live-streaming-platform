@@ -11,8 +11,8 @@ export function ImpersonationBanner() {
 
   if (!isImpersonating) return null
 
-  const handleStopImpersonating = () => {
-    const targetRoute = stopImpersonating()
+  const handleStopImpersonating = async () => {
+    const targetRoute = await stopImpersonating()
     if (targetRoute) {
       router.push(targetRoute)
     }

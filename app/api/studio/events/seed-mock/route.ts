@@ -55,6 +55,7 @@ export async function POST() {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
     const userId = user.id as string
     const isStudio = user.role === "studio"
@@ -80,7 +81,8 @@ export async function POST() {
           is_password_protected, event_password, allow_chat, allow_reactions,
           simulcast_config, slug, timezone, show_scheduled_page, template_data,
           validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
-          photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
+          photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain,
+          is_mock
         ) VALUES (
           ${userId}, ${title}, ${null}, ${description},
           ${PENDING_STREAM_DB}, ${null}, ${null},
@@ -96,7 +98,8 @@ export async function POST() {
           ${validityExpiresAtValue},
           ${null}, ${null}, ${"[]"}::jsonb,
           ${null}, ${"{}"}::jsonb, ${null},
-          ${isStudio}
+          ${isStudio},
+          ${true}
         )
         RETURNING id, title
       `
@@ -117,5 +120,47 @@ export async function POST() {
   } catch (e) {
     console.error("[studio/events/seed-mock POST]", e)
     return NextResponse.json({ error: "Failed to create sample events" }, { status: 500 })
+  }
+}
+
+/**
+ * Removes seeded sample events for the current user (flagged `is_mock` or legacy title/description match).
+ */
+export async function DELETE() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const sql = getDb()
+    const sub = await checkStudioSubscriptionActiveForEventManagement(sql, user.id as string, user.role as string)
+    if (!sub.ok) {
+      return NextResponse.json({ error: sub.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" }, { status: 403 })
+    }
+
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+
+    const userId = user.id as string
+    const legacyDesc = "%Edit the event to choose a stream type and go live.%"
+    const rows = await sql`
+      DELETE FROM events
+      WHERE user_id = ${userId}
+      AND (
+        is_mock = true
+        OR (
+          title LIKE ${"Sample: %"}
+          AND description LIKE ${"%Preview sample using%"}
+          AND description LIKE ${legacyDesc}
+        )
+      )
+      RETURNING id
+    `
+
+    return NextResponse.json({
+      success: true,
+      deleted: rows.length,
+    })
+  } catch (e) {
+    console.error("[studio/events/seed-mock DELETE]", e)
+    return NextResponse.json({ error: "Failed to remove sample events" }, { status: 500 })
   }
 }

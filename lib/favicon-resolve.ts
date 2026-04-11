@@ -4,6 +4,9 @@ import { getPlatformSetting } from "@/lib/db-queries"
 /** Default: red tile + white play (live) */
 export const DEFAULT_FAVICON_PATH = "/favicon-live-red.svg"
 
+/** Raster fallback for Open Graph when the favicon is SVG (many social crawlers skip SVG for og:image). */
+export const DEFAULT_OG_IMAGE_PATH = "/og-default.png"
+
 function normalizeFaviconValue(val: unknown): string | null {
   if (val == null) return null
   if (typeof val === "string" && val.trim()) return val.trim()

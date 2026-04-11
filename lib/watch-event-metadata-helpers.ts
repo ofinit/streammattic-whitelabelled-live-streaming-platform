@@ -1,4 +1,4 @@
-import { DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
+import { DEFAULT_FAVICON_PATH, DEFAULT_OG_IMAGE_PATH } from "@/lib/favicon-resolve"
 
 /** Shape returned by GET /api/watch (after JSON); keeps metadata logic in sync with watch UI. */
 export type WatchEventMetaPayload = {
@@ -139,9 +139,18 @@ export function buildWatchShareDescription(ev: WatchEventMetaPayload, scheduleLi
   return parts.join("\n\n").slice(0, 600)
 }
 
+/** True when URL/path points at an SVG (og:image is unreliable for SVG on many platforms). */
+function isSvgAssetUrl(pathOrUrl: string): boolean {
+  const u = pathOrUrl.trim().toLowerCase()
+  if (!u) return false
+  const noQuery = u.split("?")[0]?.split("#")[0] ?? u
+  return noQuery.endsWith(".svg")
+}
+
 /**
  * OG image: event hero (or wedding couple photo) when set; otherwise the domain favicon
  * (`defaultFaviconPathOrUrl` from GET /api/watch `favicon`, else platform default path).
+ * When that favicon is SVG, uses {@link DEFAULT_OG_IMAGE_PATH} so link previews get a raster image.
  */
 export function resolveWatchOgImageUrl(
   baseUrl: string,
@@ -157,5 +166,6 @@ export function resolveWatchOgImageUrl(
 
   const fav =
     (typeof defaultFaviconPathOrUrl === "string" && defaultFaviconPathOrUrl.trim()) || DEFAULT_FAVICON_PATH
-  return toAbsolutePublicAssetUrl(baseUrl, fav)
+  const forOg = isSvgAssetUrl(fav) ? DEFAULT_OG_IMAGE_PATH : fav
+  return toAbsolutePublicAssetUrl(baseUrl, forOg)
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import useSWR from "swr"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -62,6 +62,7 @@ import { formatEventScheduledDisplay } from "@/lib/utils"
 import { studioSubscriptionExpiredForEvents } from "@/lib/studio-subscription-shared"
 import { toast } from "sonner"
 import Link from "next/link"
+import { isSampleEvent } from "@/lib/event-sample"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
@@ -165,6 +166,8 @@ export default function StudioEventsPage() {
   }, [])
 
   const [seedMockLoading, setSeedMockLoading] = useState(false)
+  const [clearMockLoading, setClearMockLoading] = useState(false)
+  const [clearMockOpen, setClearMockOpen] = useState(false)
   const [deleteEvent, setDeleteEvent] = useState<Record<string, unknown> | null>(null)
   const [copiedField, setCopiedField] = useState<"rtmp" | "key" | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
@@ -184,6 +187,10 @@ export default function StudioEventsPage() {
   )
 
   const events = data?.events ?? []
+  const sampleEventCount = useMemo(
+    () => events.filter((e: Record<string, unknown>) => isSampleEvent(e as { isMock?: boolean; title?: string })).length,
+    [events],
+  )
 
   // When events list loads and we have an edit stub (only id) after OAuth return, replace with full event
   useEffect(() => {
@@ -267,6 +274,37 @@ export default function StudioEventsPage() {
       toast.error("Could not create sample events")
     } finally {
       setSeedMockLoading(false)
+    }
+  }
+
+  const handleClearMockTemplates = async () => {
+    if (studioSubExpired) {
+      toast.error("Renew your Studio subscription in Settings to manage events.")
+      setClearMockOpen(false)
+      return
+    }
+    setClearMockLoading(true)
+    try {
+      const res = await fetch("/api/studio/events/seed-mock", {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; deleted?: number }
+      if (!res.ok) {
+        toast.error(data.error || "Could not remove sample events")
+        return
+      }
+      toast.success(
+        data.deleted != null && data.deleted > 0
+          ? `Removed ${data.deleted} sample event${data.deleted === 1 ? "" : "s"}.`
+          : "No sample events to remove.",
+      )
+      setClearMockOpen(false)
+      await mutate()
+    } catch {
+      toast.error("Could not remove sample events")
+    } finally {
+      setClearMockLoading(false)
     }
   }
 
@@ -520,7 +558,9 @@ export default function StudioEventsPage() {
     return path
   }
 
-  const renderEventCard = (event: any) => (
+  const renderEventCard = (event: any) => {
+    const sample = isSampleEvent(event as { isMock?: boolean; title?: string })
+    return (
     <div
       key={event.id as string}
       className="flex flex-col sm:flex-row items-start sm:items-center gap-3 gap-y-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
@@ -557,6 +597,14 @@ export default function StudioEventsPage() {
                     >
                         {event.status === "ended" ? "ended" : event.status === "on_break" ? "BRB" : (event.status as string)}
                     </Badge>
+                    {sample && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 h-3.5 shrink-0 border-amber-500/60 text-amber-800 dark:text-amber-200 bg-amber-500/10"
+                      >
+                        Sample
+                      </Badge>
+                    )}
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
                     <span className="flex items-center gap-1">
@@ -589,6 +637,14 @@ export default function StudioEventsPage() {
               : event.status === "on_break" ? "on break"
               : event.status as string}
           </Badge>
+          {sample && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-amber-500/60 text-amber-800 dark:text-amber-200 bg-amber-500/10"
+            >
+              Sample
+            </Badge>
+          )}
         </div>
         <div className="flex flex-col gap-0.5 mt-0.5">
           <a
@@ -728,7 +784,8 @@ export default function StudioEventsPage() {
         </DropdownMenu>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -748,14 +805,27 @@ export default function StudioEventsPage() {
           <h1 className="text-2xl font-bold">Control Center</h1>
           <p className="text-muted-foreground">Create and manage your streaming events</p>
         </div>
-        <Button
-          onClick={handleCreateEvent}
-          className="w-full sm:w-auto"
-          disabled={studioSubExpired}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Event
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          {sampleEventCount > 0 && (
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-amber-500/40 text-amber-900 dark:text-amber-100 hover:bg-amber-500/10"
+              disabled={studioSubExpired}
+              onClick={() => setClearMockOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Remove sample events ({sampleEventCount})
+            </Button>
+          )}
+          <Button
+            onClick={handleCreateEvent}
+            className="w-full sm:w-auto"
+            disabled={studioSubExpired}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -946,6 +1016,29 @@ export default function StudioEventsPage() {
         externalSlugError={saveError?.slug ?? undefined}
         primaryDomain={primaryDomain}
       />
+
+      <AlertDialog open={clearMockOpen} onOpenChange={setClearMockOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove all sample events?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deletes every event created by &quot;Generate sample events&quot; (and matching legacy previews) for your
+              account. Real events you created yourself are not removed unless they use the same sample title pattern.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearMockLoading}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={clearMockLoading || studioSubExpired}
+              onClick={() => void handleClearMockTemplates()}
+            >
+              {clearMockLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remove sample events"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>
         <AlertDialogContent>

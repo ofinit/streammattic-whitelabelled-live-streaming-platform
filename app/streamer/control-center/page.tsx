@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import useSWR from "swr"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -59,6 +59,7 @@ import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
 import { formatEventScheduledDisplay } from "@/lib/utils"
 import { toast } from "sonner"
+import { isSampleEvent } from "@/lib/event-sample"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const EVENTS_PAGE_SIZE = 20
@@ -163,6 +164,10 @@ export default function StreamerEventsPage() {
   )
 
   const events = data?.events ?? []
+  const sampleEventCount = useMemo(
+    () => events.filter((e: Record<string, unknown>) => isSampleEvent(e as { isMock?: boolean; title?: string })).length,
+    [events],
+  )
   const totalCount = data?.totalCount ?? 0
   const liveCount = data?.liveCount ?? 0
   const scheduledCount = data?.scheduledCount ?? 0
@@ -228,6 +233,35 @@ export default function StreamerEventsPage() {
       toast.error("Could not create sample events")
     } finally {
       setSeedMockLoading(false)
+    }
+  }
+
+  const [clearMockLoading, setClearMockLoading] = useState(false)
+  const [clearMockOpen, setClearMockOpen] = useState(false)
+
+  const handleClearMockTemplates = async () => {
+    setClearMockLoading(true)
+    try {
+      const res = await fetch("/api/studio/events/seed-mock", {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; deleted?: number }
+      if (!res.ok) {
+        toast.error(data.error || "Could not remove sample events")
+        return
+      }
+      toast.success(
+        data.deleted != null && data.deleted > 0
+          ? `Removed ${data.deleted} sample event${data.deleted === 1 ? "" : "s"}.`
+          : "No sample events to remove.",
+      )
+      setClearMockOpen(false)
+      await mutate()
+    } catch {
+      toast.error("Could not remove sample events")
+    } finally {
+      setClearMockLoading(false)
     }
   }
 
@@ -499,7 +533,9 @@ export default function StreamerEventsPage() {
     return path
   }
 
-  const renderEventCard = (event: any) => (
+  const renderEventCard = (event: any) => {
+    const sample = isSampleEvent(event as { isMock?: boolean; title?: string })
+    return (
     <div
       key={event.id as string}
       className="flex flex-col sm:flex-row items-start sm:items-center gap-3 gap-y-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
@@ -536,6 +572,14 @@ export default function StreamerEventsPage() {
                     >
                         {event.status === "ended" ? "ended" : event.status === "on_break" ? "BRB" : (event.status as string)}
                     </Badge>
+                    {sample && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 h-3.5 shrink-0 border-amber-500/60 text-amber-800 dark:text-amber-200 bg-amber-500/10"
+                      >
+                        Sample
+                      </Badge>
+                    )}
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
                     <span className="flex items-center gap-1">
@@ -573,6 +617,14 @@ export default function StreamerEventsPage() {
            {event.templateData?.category && (
              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary/80 bg-primary/5">
                {event.templateData.category as string}
+             </Badge>
+           )}
+           {sample && (
+             <Badge
+               variant="outline"
+               className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-amber-500/60 text-amber-800 dark:text-amber-200 bg-amber-500/10"
+             >
+               Sample
              </Badge>
            )}
          </div>
@@ -714,7 +766,8 @@ export default function StreamerEventsPage() {
         </DropdownMenu>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -724,6 +777,16 @@ export default function StreamerEventsPage() {
           <p className="text-muted-foreground">Manage and control your live streaming events</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          {sampleEventCount > 0 && (
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-amber-500/40 text-amber-900 dark:text-amber-100 hover:bg-amber-500/10"
+              onClick={() => setClearMockOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Remove sample events ({sampleEventCount})
+            </Button>
+          )}
           <Button onClick={handleCreateEvent} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Event
@@ -912,6 +975,29 @@ export default function StreamerEventsPage() {
         youtubeOwnerType="streamer"
         externalSlugError={saveError?.slug ?? undefined}
       />
+
+      <AlertDialog open={clearMockOpen} onOpenChange={setClearMockOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove all sample events?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deletes every event created by &quot;Generate sample events&quot; (and matching legacy previews) for your
+              account. Real events you created yourself are not removed unless they use the same sample title pattern.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearMockLoading}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={clearMockLoading}
+              onClick={() => void handleClearMockTemplates()}
+            >
+              {clearMockLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Remove sample events"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>
         <AlertDialogContent>

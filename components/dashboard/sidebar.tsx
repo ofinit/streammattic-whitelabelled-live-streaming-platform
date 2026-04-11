@@ -65,7 +65,7 @@ const adminNav: NavItem[] = [
   { title: "Streaming", href: "/admin/streaming", icon: Server },
   { title: "Wallets", href: "/admin/wallets", icon: Wallet },
   { title: "GST invoices", href: "/admin/invoices", icon: Receipt },
-  { title: "Orders", href: "/admin/orders", icon: ShoppingCart, badge: 8 },
+  { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { title: "Visitor leads", href: "/admin/visitor-registrations", icon: ClipboardList },
   { title: "Payment Gateways", href: "/admin/payments", icon: CreditCard },

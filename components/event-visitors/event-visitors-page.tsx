@@ -75,15 +75,11 @@ export function EventVisitorsPage({
   basePath: string
 }) {
   const searchParams = useSearchParams()
-  const eventIdFromQuery = searchParams.get("eventId")?.trim() || ""
+  /** Studio page is scoped by ?eventId= from the control-center link; admin lists all events (no event filter). */
+  const studioEventId = mode === "studio" ? (searchParams.get("eventId")?.trim() || "") : ""
 
-  const [eventFilter, setEventFilter] = useState(eventIdFromQuery)
   const [searchInput, setSearchInput] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-
-  useEffect(() => {
-    setEventFilter(eventIdFromQuery)
-  }, [eventIdFromQuery])
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
@@ -92,21 +88,20 @@ export function EventVisitorsPage({
 
   const adminListUrl = useMemo(() => {
     const q = new URLSearchParams()
-    if (eventFilter) q.set("eventId", eventFilter)
     if (debouncedSearch) q.set("q", debouncedSearch)
     q.set("limit", "100")
     q.set("offset", "0")
     return `/api/admin/event-visitors?${q.toString()}`
-  }, [eventFilter, debouncedSearch])
+  }, [debouncedSearch])
 
   const studioListUrl = useMemo(() => {
-    if (!eventFilter) return null
+    if (!studioEventId) return null
     const q = new URLSearchParams()
     if (debouncedSearch) q.set("q", debouncedSearch)
     q.set("limit", "100")
     q.set("offset", "0")
-    return `/api/studio/events/${encodeURIComponent(eventFilter)}/visitors?${q.toString()}`
-  }, [eventFilter, debouncedSearch])
+    return `/api/studio/events/${encodeURIComponent(studioEventId)}/visitors?${q.toString()}`
+  }, [studioEventId, debouncedSearch])
 
   const swrKey = mode === "admin" ? adminListUrl : studioListUrl
   const { data, error, isLoading, mutate } = useSWR(swrKey, fetcher)
@@ -120,15 +115,14 @@ export function EventVisitorsPage({
   const downloadCsv = async () => {
     if (mode === "admin") {
       const q = new URLSearchParams()
-      if (eventFilter) q.set("eventId", eventFilter)
       if (debouncedSearch) q.set("q", debouncedSearch)
       q.set("format", "csv")
       window.open(`/api/admin/event-visitors?${q.toString()}`, "_blank")
-    } else if (eventFilter) {
+    } else if (studioEventId) {
       const q = new URLSearchParams()
       if (debouncedSearch) q.set("q", debouncedSearch)
       q.set("format", "csv")
-      window.open(`/api/studio/events/${encodeURIComponent(eventFilter)}/visitors?${q.toString()}`, "_blank")
+      window.open(`/api/studio/events/${encodeURIComponent(studioEventId)}/visitors?${q.toString()}`, "_blank")
     }
   }
 
@@ -153,7 +147,7 @@ export function EventVisitorsPage({
           variant="outline"
           size="sm"
           onClick={() => void downloadCsv()}
-          disabled={mode === "studio" && !eventFilter}
+          disabled={mode === "studio" && !studioEventId}
         >
           <Download className="h-4 w-4 mr-2" />
           Export CSV
@@ -163,10 +157,10 @@ export function EventVisitorsPage({
       {mode === "admin" && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Filters</CardTitle>
+            <CardTitle className="text-base">Search</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="space-y-2 w-full">
+          <CardContent className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div className="space-y-2 w-full flex-1">
               <Label htmlFor="visitor-search">Search</Label>
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -179,26 +173,14 @@ export function EventVisitorsPage({
                 />
               </div>
             </div>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-2">
-                <Label htmlFor="ev-id">Event ID or slug</Label>
-                <Input
-                  id="ev-id"
-                  placeholder="Optional — leave empty for all events"
-                  value={eventFilter}
-                  onChange={(e) => setEventFilter(e.target.value.trim())}
-                  className="w-full min-w-[min(100%,280px)] max-w-md"
-                />
-              </div>
-              <Button variant="secondary" size="sm" onClick={() => void mutate()}>
-                Refresh
-              </Button>
-            </div>
+            <Button variant="secondary" size="sm" className="shrink-0" onClick={() => void mutate()}>
+              Refresh
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {mode === "studio" && eventFilter && (
+      {mode === "studio" && studioEventId && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Search</CardTitle>
@@ -218,7 +200,7 @@ export function EventVisitorsPage({
         </Card>
       )}
 
-      {mode === "studio" && !eventFilter && (
+      {mode === "studio" && !studioEventId && (
         <Card>
           <CardContent className="flex flex-col gap-4 py-8 items-center text-center">
             <p className="text-muted-foreground text-sm max-w-md">
@@ -232,9 +214,9 @@ export function EventVisitorsPage({
         </Card>
       )}
 
-      {mode === "studio" && eventFilter && (
+      {mode === "studio" && studioEventId && (
         <p className="text-sm text-muted-foreground">
-          Event: <span className="font-mono text-foreground">{eventFilter}</span> · {total} total
+          Event: <span className="font-mono text-foreground">{studioEventId}</span> · {total} total
         </p>
       )}
 
@@ -268,7 +250,7 @@ export function EventVisitorsPage({
                   <TableHead>Visitor name</TableHead>
                   <TableHead>Visitor email</TableHead>
                   <TableHead>Visitor phone</TableHead>
-                  <TableHead>Country</TableHead>
+                  <TableHead>Visitor country</TableHead>
                   <TableHead>Visitor IP</TableHead>
                   <TableHead>Visitor user agent</TableHead>
                 </TableRow>

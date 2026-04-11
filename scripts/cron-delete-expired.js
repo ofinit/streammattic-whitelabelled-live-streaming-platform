@@ -75,11 +75,16 @@ async function runCleanup() {
         }
       }
 
-      // 4. Delete event from DB
+      // 4. Break FKs and dependents (match lib/server/cleanup-service.ts)
+      await client.query("UPDATE orders SET event_id = NULL WHERE event_id = $1", [event.id]);
+      await client.query("UPDATE refund_requests SET event_id = NULL WHERE event_id = $1", [event.id]);
+      await client.query("DELETE FROM event_dates WHERE event_id = $1", [event.id]).catch(() => {});
+
+      // 5. Delete event row
       await client.query("DELETE FROM events WHERE id = $1", [event.id]);
       deletedCount++;
 
-      // 5. Log per-event deletion
+      // 6. Log per-event deletion
       await client.query(
         `INSERT INTO deleted_events_log (event_id, event_title, owner_email, owner_user_id, studio_id, reason, assets_found, assets_deleted)
          VALUES ($1, $2, $3, $4, $5, 'expired', $6, $7)`,
@@ -95,7 +100,7 @@ async function runCleanup() {
       );
     }
 
-    // 6. Finalize job log
+    // 7. Finalize job log
     await client.query(
       "UPDATE cron_job_logs SET status = 'success', ended_at = NOW(), deleted_count = $1 WHERE id = $2",
       [deletedCount, jobId]

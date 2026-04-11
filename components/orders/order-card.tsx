@@ -5,13 +5,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { formatDistanceToNow } from "date-fns"
-import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock } from "lucide-react"
+import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock, Building2 } from "lucide-react"
 
 const orderTypeLabels: Record<string, string> = {
   credit_purchase: "Credit Purchase",
   validity_extension: "Validity Extension",
   wallet_recharge: "Wallet Recharge",
   service_charge: "Service Charge",
+  studio_upgrade: "Studio Upgrade",
+  annual_subscription: "Annual Subscription",
 }
 
 const orderTypeIcons: Record<string, typeof CreditCard> = {
@@ -19,6 +21,8 @@ const orderTypeIcons: Record<string, typeof CreditCard> = {
   validity_extension: Clock,
   wallet_recharge: Wallet,
   service_charge: Wand2,
+  studio_upgrade: Building2,
+  annual_subscription: Calendar,
 }
 
 const streamTypeLabels: Record<string, string> = {
@@ -44,6 +48,10 @@ export function OrderCard({ order, showUser = false }: OrderCardProps) {
         return `Validity Extension - ${order.validityDays} days`
       case "wallet_recharge":
         return `Wallet Recharge`
+      case "studio_upgrade":
+        return "Studio upgrade"
+      case "annual_subscription":
+        return "Annual subscription"
       case "service_charge":
         return order.serviceType === "ai_image"
           ? `AI Image Generation (${order.quantity}x)`
@@ -90,11 +98,15 @@ export function OrderCard({ order, showUser = false }: OrderCardProps) {
             ) : (
               <div>
                 <div className="text-lg font-bold">
-                  {"₹"}{(order.totalPrice / 100).toLocaleString("en-IN")}
+                  {"₹"}
+                  {(Number(order.totalPrice) / 100).toLocaleString("en-IN", {
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
-                {order.quantity > 1 && (
+                {order.quantity > 1 && Number.isFinite(Number(order.unitPrice)) && (
                   <div className="text-xs text-muted-foreground">
-                    {"₹"}{(order.unitPrice / 100).toFixed(2)} x {order.quantity}
+                    {"₹"}
+                    {(Number(order.unitPrice) / 100).toFixed(2)} x {order.quantity}
                   </div>
                 )}
               </div>

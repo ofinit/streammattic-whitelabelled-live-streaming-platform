@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { format } from "date-fns"
+import { formatDateTimeIst } from "@/lib/format-datetime-ist"
 import { 
-  Activity, 
   Trash2, 
   CheckCircle2, 
   XCircle, 
@@ -108,7 +107,10 @@ export default function SystemTasksPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Tasks</h1>
-          <p className="text-muted-foreground">Monitor automated cleanup jobs and event deletion logs.</p>
+            <p className="text-muted-foreground">
+              Monitor automated cleanup jobs and event deletion logs. Times below are shown in{" "}
+              <span className="text-foreground/90">IST (Asia/Kolkata)</span>.
+            </p>
         </div>
         <Button 
           variant="outline" 
@@ -130,7 +132,7 @@ export default function SystemTasksPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {lastJob?.startedAt ? format(new Date(lastJob.startedAt), "MMM d, HH:mm") : "Never"}
+              {lastJob?.startedAt ? formatDateTimeIst(lastJob.startedAt) : "Never"}
             </div>
             <p className="text-xs text-muted-foreground">
               {lastJob?.status === "success" ? "Completed successfully" : lastJob?.status === "failure" ? "Job failed" : "No recent activity"}
@@ -174,14 +176,16 @@ export default function SystemTasksPage() {
               />
               <span className="text-sm font-medium">{config.enabled ? "Enabled" : "Disabled"}</span>
             </div>
-            <p className="text-xs text-muted-foreground">Internal scheduler active</p>
+            <p className="text-xs text-muted-foreground">
+              Hourly check in the app; runs cleanup when enabled and last success was over 24h ago
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Automation & Controls */}
-        <Card className="lg:col-span-1 border-primary/20 bg-primary/5">
+        <Card className="border-primary/20 bg-primary/5 min-h-[320px] flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Play className="w-5 h-5 text-primary" />
@@ -193,7 +197,9 @@ export default function SystemTasksPage() {
             <div className="space-y-2">
               <h4 className="text-sm font-semibold">Immediate Cleanup</h4>
               <p className="text-xs text-muted-foreground">
-                Triggers an immediate scan for expired events and unlinks image assets from the server.
+                Scans for events past <code className="text-[10px]">validity_expires_at</code>,{" "}
+                <strong className="text-foreground">permanently deletes</strong> matching image files under{" "}
+                <code className="text-[10px]">UPLOAD_DIR</code>, then removes the event row and writes an audit log.
               </p>
               <Button 
                 onClick={handleRunNow} 
@@ -215,44 +221,51 @@ export default function SystemTasksPage() {
                 <h4 className="text-sm font-semibold">Coolify Cron Command</h4>
               </div>
               <p className="text-xs text-muted-foreground">
-                For maximum reliability in Ozero/Coolify, you can add this as a System Cron Job in the Coolify dashboard.
+                <strong className="text-foreground">Not required</strong> if this app stays online and Auto-Cleanup is
+                on—the same cleanup runs inside the Node process. Coolify does{" "}
+                <strong className="text-foreground">not</strong> add a cron for you; add one only if you want a
+                scheduled job independent of the long-running server (e.g. extra safety after deploys).
               </p>
+              <p className="text-[10px] text-muted-foreground">Production (app container, repo root):</p>
               <div className="relative group">
                 <code className="block p-3 rounded bg-muted text-[10px] break-all pr-10 border leading-relaxed">
-                  node --env-file=.env.local scripts/cron-delete-expired.js
+                  node --env-file=.env.production scripts/cron-delete-expired.js
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => copyToClipboard("node --env-file=.env.local scripts/cron-delete-expired.js")}
+                  onClick={() =>
+                    copyToClipboard("node --env-file=.env.production scripts/cron-delete-expired.js")
+                  }
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground italic">
-                * Note: Internal scheduler handles this automatically if enabled above.
+                Requires <code className="text-[10px]">DATABASE_URL</code> and <code className="text-[10px]">UPLOAD_DIR</code>{" "}
+                (same as the web app). Deletes files on disk like “Run Cleanup Task Now”.
               </p>
             </div>
           </CardContent>
         </Card>
 
         {/* Cron Job History */}
-        <Card className="lg:col-span-1">
+        <Card className="min-h-[320px] flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5 text-primary" />
               Recent Executions
             </CardTitle>
-            <CardDescription>Status history of the cleanup cron script.</CardDescription>
+            <CardDescription>History of cleanup runs (manual, auto, or external cron).</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1">
             <div className="space-y-4">
               {cronLogs.length === 0 && <p className="text-sm text-center py-4 text-muted-foreground">No history found</p>}
               {cronLogs.map((log: any) => (
                 <div key={log.id} className="flex items-center justify-between text-sm border-b pb-3 last:border-0 last:pb-0">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{format(new Date(log.startedAt), "MMM d, HH:mm")}</span>
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="font-medium">{formatDateTimeIst(log.startedAt)}</span>
                     <span className="text-xs text-muted-foreground">
                       Deleted {log.deletedCount || 0} event(s)
                     </span>
@@ -267,9 +280,10 @@ export default function SystemTasksPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Deletion Audit Logs */}
-        <Card className="lg:col-span-2">
+      {/* Deletion Audit — full width */}
+      <Card className="w-full">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -279,7 +293,7 @@ export default function SystemTasksPage() {
                 </CardTitle>
                 <CardDescription>Records of events deleted due to expiry.</CardDescription>
               </div>
-              <div className="relative w-48 sm:w-64">
+              <div className="relative w-full max-w-md">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
@@ -292,14 +306,14 @@ export default function SystemTasksPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border max-h-[500px] overflow-auto">
+            <div className="rounded-md border max-h-[min(560px,70vh)] overflow-auto w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Event Title</TableHead>
-                    <TableHead>Owner</TableHead>
-                    <TableHead>Deleted At</TableHead>
-                    <TableHead className="text-right">Assets</TableHead>
+                    <TableHead className="min-w-[180px]">Event Title</TableHead>
+                    <TableHead className="min-w-[160px]">Owner</TableHead>
+                    <TableHead className="min-w-[200px] whitespace-nowrap">Deleted At (IST)</TableHead>
+                    <TableHead className="text-right min-w-[100px]">Assets</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -312,14 +326,16 @@ export default function SystemTasksPage() {
                   )}
                   {filteredDeletionLogs.map((log: any) => (
                     <TableRow key={log.id}>
-                      <TableCell className="font-medium max-w-[200px] truncate">
-                        {log.eventTitle}
+                      <TableCell className="font-medium max-w-[min(100vw,480px)]">
+                        <span className="line-clamp-2" title={log.eventTitle}>
+                          {log.eventTitle}
+                        </span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs uppercase">
-                        {log.ownerEmail || "N/A"}
+                      <TableCell className="text-muted-foreground text-xs">
+                        <span className="break-all">{log.ownerEmail || "N/A"}</span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs">
-                        {format(new Date(log.deletedAt), "MMM d, HH:mm")}
+                        {formatDateTimeIst(log.deletedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Badge variant="secondary" className="font-normal">
@@ -333,7 +349,6 @@ export default function SystemTasksPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }

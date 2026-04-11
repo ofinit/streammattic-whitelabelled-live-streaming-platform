@@ -24,3 +24,13 @@ export function lookupCountryNameFromIp(ip: string | null | undefined): string |
   if (!geo?.country) return null
   return countryNameFromCode(geo.country)
 }
+
+/** Prefer stored DB value; if missing, derive from IP (fixes older rows before ip_country was saved). */
+export function resolveVisitorIpCountry(
+  ipAddress: string | null | undefined,
+  storedCountry: string | null | undefined,
+): string | null {
+  const s = storedCountry?.trim()
+  if (s) return s
+  return lookupCountryNameFromIp(ipAddress ?? null)
+}

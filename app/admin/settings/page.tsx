@@ -237,7 +237,9 @@ export default function AdminSettingsPage() {
     <div className="min-h-screen">
       <Header title="Settings" subtitle="Manage platform and account settings" />
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-10 md:px-6">
+        {/* Account: profile + password side-by-side on large screens */}
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Profile Settings */}
         <Card className="border-border bg-card">
           <CardHeader>
@@ -286,13 +288,13 @@ export default function AdminSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
                   <Input
                     id="email"
                     type="email"
                     value={profileData.email}
                     disabled
-                    className="bg-secondary border-0 opacity-80 flex-1 max-w-sm"
+                    className="bg-secondary border-0 opacity-80 min-w-0 flex-1"
                   />
                   <ChangeEmailDialog 
                     currentEmail={profileData.email} 
@@ -326,7 +328,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Password Settings */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card h-fit">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
@@ -379,8 +381,9 @@ export default function AdminSettingsPage() {
             </form>
           </CardContent>
         </Card>
+        </div>
 
-        {/* Platform Settings */}
+        {/* Platform Settings — full width */}
         <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -513,7 +516,7 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Platform Domain */}
+        {/* Platform Domain — full width */}
         <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex items-center justify-between w-full">
@@ -587,6 +590,8 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Notifications + Security — side-by-side on large screens */}
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Notification Settings */}
         <Card className="border-border bg-card">
           <CardHeader>
@@ -648,7 +653,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Security Settings */}
-        <Card className="border-border bg-card">
+        <Card className="border-border bg-card h-fit">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
@@ -682,6 +687,7 @@ export default function AdminSettingsPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   )

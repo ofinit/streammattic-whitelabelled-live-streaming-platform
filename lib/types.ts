@@ -5,7 +5,7 @@ export type UserRole = "admin" | "studio" | "streamer"
 export type UserStatus = "active" | "inactive" | "suspended"
 
 // Order Status
-export type OrderStatus = "completed" | "failed" | "cancelled"
+export type OrderStatus = "pending" | "completed" | "failed" | "cancelled" | "refunded"
 
 // Event Status
 export type EventStatus = "draft" | "scheduled" | "live" | "completed" | "cancelled" | "on_break" | "ended"
@@ -181,7 +181,13 @@ export interface Order {
   orderNumber: string
   userId: string
   user?: User
-  orderType: "credit_purchase" | "validity_extension" | "wallet_recharge" | "service_charge"
+  orderType:
+    | "credit_purchase"
+    | "validity_extension"
+    | "wallet_recharge"
+    | "service_charge"
+    | "studio_upgrade"
+    | "annual_subscription"
   status: OrderStatus
   // For credit purchases
   streamType?: StreamTypeKey

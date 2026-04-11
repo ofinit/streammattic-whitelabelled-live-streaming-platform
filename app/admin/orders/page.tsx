@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter } from "lucide-react"
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,6 +27,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
 
+  const pendingOrders = orders.filter((o) => o.status === "pending")
   const completedOrders = orders.filter((o) => o.status === "completed")
   const failedOrders = orders.filter((o) => o.status === "failed")
   const cancelledOrders = orders.filter((o) => o.status === "cancelled")
@@ -35,8 +36,8 @@ export default function AdminOrdersPage() {
     return orderList.filter((o) => {
       const matchesSearch =
         o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
-        (o as any).buyer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        o.user?.name?.toLowerCase().includes(search.toLowerCase()) // fallback for older components
+        o.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        o.user?.email?.toLowerCase().includes(search.toLowerCase())
       const matchesType = typeFilter === "all" || o.orderType === typeFilter || !o.orderType
       return matchesSearch && matchesType
     })
@@ -88,13 +89,16 @@ export default function AdminOrdersPage() {
             <SelectItem value="wallet_recharge">Wallet Recharge</SelectItem>
             <SelectItem value="validity_extension">Validity Extension</SelectItem>
             <SelectItem value="service_charge">Service Charge</SelectItem>
+            <SelectItem value="studio_upgrade">Studio Upgrade</SelectItem>
+            <SelectItem value="annual_subscription">Annual Subscription</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <Tabs defaultValue="all">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="all">All ({orders.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
           <TabsTrigger value="failed">Failed ({failedOrders.length})</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
@@ -102,6 +106,9 @@ export default function AdminOrdersPage() {
 
         <TabsContent value="all" className="mt-6">
           <OrderList orderList={orders} />
+        </TabsContent>
+        <TabsContent value="pending" className="mt-6">
+          <OrderList orderList={pendingOrders} />
         </TabsContent>
         <TabsContent value="completed" className="mt-6">
           <OrderList orderList={completedOrders} />

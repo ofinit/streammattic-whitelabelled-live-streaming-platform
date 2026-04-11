@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 import { userCanViewEventVisitors } from "@/lib/event-visitor-access"
 import { escapeSqlLikePattern } from "@/lib/search-like"
+import { resolveVisitorIpCountry } from "@/lib/ip-country"
 
 function csvEscape(s: string): string {
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
@@ -127,6 +128,12 @@ export async function GET(
       listParams,
     )
 
+    const enrichedRows = (rows as Record<string, unknown>[]).map((row) => {
+      const ip = row.ip_address != null ? String(row.ip_address) : ""
+      const country = resolveVisitorIpCountry(ip || null, row.ip_country != null ? String(row.ip_country) : null)
+      return { ...row, ip_country: country ?? row.ip_country }
+    })
+
     if (format === "csv") {
       const header = [
         "time_ist",
@@ -142,7 +149,7 @@ export async function GET(
         "utm_campaign",
         "created_at_utc",
       ].join(",")
-      const lines = (rows as Record<string, unknown>[]).map((row) =>
+      const lines = enrichedRows.map((row) =>
         [
           csvEscape(String(row.time_ist ?? "")),
           csvEscape(String(row.full_name ?? "")),
@@ -168,7 +175,7 @@ export async function GET(
       })
     }
 
-    const registrations = (rows as Record<string, unknown>[]).map((r) => toCamel(r))
+    const registrations = enrichedRows.map((r) => toCamel(r))
 
     return NextResponse.json({ success: true, total, limit, offset, registrations })
   } catch (error: unknown) {

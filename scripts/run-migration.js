@@ -122,6 +122,17 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_evr_event_created ON event_visitor_registrations(event_id, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_evr_created ON event_visitor_registrations(created_at DESC)`,
   `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`,
+  `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS visitor_key TEXT`,
+  `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS session_key TEXT`,
+  `CREATE TABLE IF NOT EXISTS event_visitor_sessions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE, visitor_key TEXT NOT NULL, session_key TEXT NOT NULL, user_id UUID REFERENCES users(id) ON DELETE SET NULL, is_logged_in BOOLEAN NOT NULL DEFAULT false, full_name TEXT, email TEXT, phone TEXT, ip_address TEXT, user_agent TEXT, accept_language TEXT, referer TEXT, landing_page_url TEXT, utm_source TEXT NOT NULL DEFAULT 'direct', utm_medium TEXT NOT NULL DEFAULT 'none', utm_campaign TEXT, country_code TEXT, first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), duration_seconds INT, context_type TEXT, context_id UUID, CONSTRAINT evs_context_check CHECK (context_type IS NULL OR context_type IN ('platform', 'studio')), CONSTRAINT evs_event_session_unique UNIQUE (event_id, session_key))`,
+  `CREATE INDEX IF NOT EXISTS idx_evs_event_first ON event_visitor_sessions(event_id, first_seen_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_evs_event_visitor ON event_visitor_sessions(event_id, visitor_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_evs_event_utm ON event_visitor_sessions(event_id, utm_source)`,
+  `CREATE TABLE IF NOT EXISTS analytics_funnel_events (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), event_type TEXT NOT NULL, visitor_key TEXT NOT NULL, session_key TEXT, user_id UUID REFERENCES users(id) ON DELETE SET NULL, related_event_id UUID REFERENCES events(id) ON DELETE SET NULL, utm_source TEXT, utm_medium TEXT, utm_campaign TEXT, context_type TEXT, context_id UUID, payload JSONB NOT NULL DEFAULT '{}', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), CONSTRAINT afe_context_check CHECK (context_type IS NULL OR context_type IN ('platform', 'studio')))`,
+  `CREATE INDEX IF NOT EXISTS idx_afe_type_created ON analytics_funnel_events(event_type, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_afe_visitor ON analytics_funnel_events(visitor_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_afe_user ON analytics_funnel_events(user_id) WHERE user_id IS NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_afe_related_event ON analytics_funnel_events(related_event_id) WHERE related_event_id IS NOT NULL`,
 ];
 
 const seedSettings = [

@@ -25,6 +25,17 @@ export function lookupCountryNameFromIp(ip: string | null | undefined): string |
   return countryNameFromCode(geo.country)
 }
 
+/** ISO 3166-1 alpha-2 from IP (for analytics columns); null for private/unknown. */
+export function lookupCountryCodeFromIp(ip: string | null | undefined): string | null {
+  if (!ip?.trim()) return null
+  const first = ip.split(",")[0]?.trim() ?? ""
+  if (!first || first === "127.0.0.1" || first === "::1") return null
+  const geo = geoip.lookup(first)
+  const code = geo?.country
+  if (!code || code.length !== 2) return null
+  return code.toUpperCase()
+}
+
 /** Prefer stored DB value; if missing, derive from IP (fixes older rows before ip_country was saved). */
 export function resolveVisitorIpCountry(
   ipAddress: string | null | undefined,

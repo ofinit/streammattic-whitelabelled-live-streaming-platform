@@ -481,7 +481,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const replayIframeRef = useRef<HTMLIFrameElement | null>(null)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const eventStatusRef = useRef<string | null>(null)
-  const presenceRegistered = useRef(false)
   const countdownZeroRefetchSentRef = useRef(false)
   const [gardenFlowers, setGardenFlowers] = useState<GardenFloatingFlower[]>([])
   const [midnightParticles, setMidnightParticles] = useState<MidnightParticle[]>([])
@@ -565,25 +564,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     setTimeout(() => setShareCopied(false), 2000)
   }
 
-  // Real viewer presence tracking
-  useEffect(() => {
-    const join = () => {
-      if (presenceRegistered.current) return
-      presenceRegistered.current = true
-      fetch(`/api/watch/${eventId}/presence`, { method: "POST" }).catch(() => {})
-    }
-    const leave = () => {
-      if (!presenceRegistered.current) return
-      presenceRegistered.current = false
-      fetch(`/api/watch/${eventId}/presence`, { method: "DELETE", keepalive: true }).catch(() => {})
-    }
-    join()
-    window.addEventListener("beforeunload", leave)
-    return () => {
-      window.removeEventListener("beforeunload", leave)
-      leave()
-    }
-  }, [eventId])
+  // Viewer presence join/leave is handled by VisitorSessionTracker (session beacon + presence POST).
 
   /** Event-scoped favicon (platform → event studio → default); restore session favicon on leave. */
   useEffect(() => {

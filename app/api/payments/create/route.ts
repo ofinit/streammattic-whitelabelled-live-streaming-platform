@@ -8,6 +8,7 @@ import { getPlatformGSTSettings, toGSTCalculationConfig } from "@/lib/platform-g
 import { applyStudioUpgradeOrRenewalSql } from "@/lib/studio-subscription"
 import { getPaymentGatewayFlags } from "@/lib/payment-gateway-settings"
 import { randomUUID } from "crypto"
+import { emitCreditPurchasedFunnel } from "@/lib/analytics-funnel"
 
 function newOrderNumber(): string {
   return `SL-${randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`
@@ -135,6 +136,7 @@ export const POST = withAuth(async (user, request) => {
 
       // 2. Atomic update: Deduct, Create Order (completed), Create Payment, Create Transaction, Upgrade User
       const { withTransaction } = await import("@/lib/db")
+      let walletCompletedOrderId: string | null = null
       await withTransaction(async (tx) => {
         const wOrderNumber = newOrderNumber()
         const wDesc = description || `${orderType} payment`
@@ -145,6 +147,7 @@ export const POST = withAuth(async (user, request) => {
           RETURNING id
         `, [wOrderNumber, userId, orderType, amountInPaise, wDesc, metaJson])
         const orderId = (orderRows.rows[0] as Record<string, unknown>).id as string
+        walletCompletedOrderId = orderId
 
         // B. Insert payment (completed)
         await tx.query(`
@@ -198,6 +201,13 @@ export const POST = withAuth(async (user, request) => {
           `, [userId])
         }
       })
+
+      if (
+        walletCompletedOrderId &&
+        (orderType === "wallet_recharge" || orderType === "studio_upgrade")
+      ) {
+        await emitCreditPurchasedFunnel(userId, walletCompletedOrderId, orderType, amountInPaise)
+      }
 
       return jsonOk({ success: true, message: "Upgrade successful! Welcome to Studio." })
     }

@@ -69,6 +69,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | --- | --- |
 | `app/api/admin/analytics/overview/route.ts` | `/api/admin/analytics/overview` |
 | `app/api/admin/analytics/revenue/route.ts` | `/api/admin/analytics/revenue` |
+| `app/api/admin/analytics/visitors/route.ts` | `/api/admin/analytics/visitors` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
 | `app/api/admin/email-templates/route.ts` | `/api/admin/email-templates` |
 | `app/api/admin/event-visitors/route.ts` | `/api/admin/event-visitors` |
@@ -167,6 +168,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/watch/[eventId]/crew-credentials/route.ts` | `/api/watch/[eventId]/crew-credentials` |
 | `app/api/watch/[eventId]/presence/route.ts` | `/api/watch/[eventId]/presence` |
 | `app/api/watch/[eventId]/route.ts` | `/api/watch/[eventId]` |
+| `app/api/watch/[eventId]/session/route.ts` | `/api/watch/[eventId]/session` |
 | `app/api/watch/[eventId]/visitor/route.ts` | `/api/watch/[eventId]/visitor` |
 | `app/api/webhooks/instamojo/route.ts` | `/api/webhooks/instamojo` |
 | `app/api/webhooks/razorpay/route.ts` | `/api/webhooks/razorpay` |

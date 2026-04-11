@@ -142,6 +142,8 @@ export async function POST(req: Request) {
     ["ALTER invoices recipient_address", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`],
     ["ALTER events capture_visitor_data", `ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`],
     ["ALTER event_visitor_registrations ip_country", `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`],
+    ["ALTER event_visitor_registrations visitor_key", `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS visitor_key TEXT`],
+    ["ALTER event_visitor_registrations session_key", `ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS session_key TEXT`],
   ]
   for (const [label, stmt] of columnAlters) {
     await tryExec(label, stmt)
@@ -176,6 +178,68 @@ export async function POST(req: Request) {
     ],
   ]
   for (const [label, stmt] of visitorMigrations) {
+    await tryExec(label, stmt)
+  }
+
+  const analyticsMigrations: [string, string][] = [
+    [
+      "TABLE event_visitor_sessions",
+      `CREATE TABLE IF NOT EXISTS event_visitor_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        visitor_key TEXT NOT NULL,
+        session_key TEXT NOT NULL,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        is_logged_in BOOLEAN NOT NULL DEFAULT false,
+        full_name TEXT,
+        email TEXT,
+        phone TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        accept_language TEXT,
+        referer TEXT,
+        landing_page_url TEXT,
+        utm_source TEXT NOT NULL DEFAULT 'direct',
+        utm_medium TEXT NOT NULL DEFAULT 'none',
+        utm_campaign TEXT,
+        country_code TEXT,
+        first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        duration_seconds INT,
+        context_type TEXT,
+        context_id UUID,
+        CONSTRAINT evs_context_check CHECK (context_type IS NULL OR context_type IN ('platform', 'studio')),
+        CONSTRAINT evs_event_session_unique UNIQUE (event_id, session_key)
+      )`,
+    ],
+    ["IDX evs_event_first", `CREATE INDEX IF NOT EXISTS idx_evs_event_first ON event_visitor_sessions(event_id, first_seen_at DESC)`],
+    ["IDX evs_event_visitor", `CREATE INDEX IF NOT EXISTS idx_evs_event_visitor ON event_visitor_sessions(event_id, visitor_key)`],
+    ["IDX evs_event_utm", `CREATE INDEX IF NOT EXISTS idx_evs_event_utm ON event_visitor_sessions(event_id, utm_source)`],
+    [
+      "TABLE analytics_funnel_events",
+      `CREATE TABLE IF NOT EXISTS analytics_funnel_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_type TEXT NOT NULL,
+        visitor_key TEXT NOT NULL,
+        session_key TEXT,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        related_event_id UUID REFERENCES events(id) ON DELETE SET NULL,
+        utm_source TEXT,
+        utm_medium TEXT,
+        utm_campaign TEXT,
+        context_type TEXT,
+        context_id UUID,
+        payload JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT afe_context_check CHECK (context_type IS NULL OR context_type IN ('platform', 'studio'))
+      )`,
+    ],
+    ["IDX afe_type_created", `CREATE INDEX IF NOT EXISTS idx_afe_type_created ON analytics_funnel_events(event_type, created_at DESC)`],
+    ["IDX afe_visitor", `CREATE INDEX IF NOT EXISTS idx_afe_visitor ON analytics_funnel_events(visitor_key)`],
+    ["IDX afe_user", `CREATE INDEX IF NOT EXISTS idx_afe_user ON analytics_funnel_events(user_id) WHERE user_id IS NOT NULL`],
+    ["IDX afe_related_event", `CREATE INDEX IF NOT EXISTS idx_afe_related_event ON analytics_funnel_events(related_event_id) WHERE related_event_id IS NOT NULL`],
+  ]
+  for (const [label, stmt] of analyticsMigrations) {
     await tryExec(label, stmt)
   }
 

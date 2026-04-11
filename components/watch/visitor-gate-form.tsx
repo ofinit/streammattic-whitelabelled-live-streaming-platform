@@ -30,6 +30,7 @@ import {
   composeInternationalPhone,
   flagEmojiFromIso,
 } from "@/lib/phone-country-codes"
+import { readWatchSessionKeys } from "@/lib/watch-session-client"
 
 const fieldBorderClass =
   "border-2 border-primary/50 bg-secondary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
@@ -100,6 +101,7 @@ export function VisitorGateForm({
     setSubmitting(true)
     try {
       const utmQuery = typeof window !== "undefined" ? window.location.search : ""
+      const keys = readWatchSessionKeys(eventId)
       const res = await fetch(`/api/watch/${encodeURIComponent(eventId)}/visitor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -109,6 +111,8 @@ export function VisitorGateForm({
           phoneDial,
           phoneLocal,
           utmQuery,
+          visitorKey: keys.visitorKey ?? undefined,
+          sessionKey: keys.sessionKey ?? undefined,
         }),
       })
       const data = (await res.json().catch(() => ({}))) as { error?: string }

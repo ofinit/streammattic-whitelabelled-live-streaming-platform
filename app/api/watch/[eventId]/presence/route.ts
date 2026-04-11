@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { insertFunnelEvent } from "@/lib/analytics-funnel"
 
 type Params = { params: Promise<{ eventId: string }> }
 
-// POST — viewer joined: increment current_viewers
-export async function POST(_req: NextRequest, { params }: Params) {
+async function resolveEventUuid(eventId: string): Promise<string | null> {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT id FROM events WHERE id::text = ${eventId} OR slug = ${eventId} LIMIT 1
+  `
+  if (rows.length === 0) return null
+  return (rows[0] as { id: string }).id
+}
+
+// POST — viewer joined: increment current_viewers (+ optional funnel)
+export async function POST(req: NextRequest, { params }: Params) {
   const { eventId } = await params
   if (!eventId) return NextResponse.json({ ok: false }, { status: 400 })
   try {
+    let visitorKey: string | undefined
+    let sessionKey: string | undefined
+    try {
+      const body = (await req.json()) as { visitorKey?: string; sessionKey?: string }
+      if (typeof body.visitorKey === "string" && body.visitorKey.trim()) visitorKey = body.visitorKey.trim()
+      if (typeof body.sessionKey === "string" && body.sessionKey.trim()) sessionKey = body.sessionKey.trim()
+    } catch {
+      /* empty body */
+    }
+
     const db = getDb()
     await db`
       UPDATE events
@@ -16,6 +36,17 @@ export async function POST(_req: NextRequest, { params }: Params) {
       WHERE (id::text = ${eventId} OR slug = ${eventId})
         AND status IN ('live', 'on_break')
     `
+
+    const eventUuid = await resolveEventUuid(eventId)
+    if (eventUuid && visitorKey) {
+      await insertFunnelEvent({
+        eventType: "VIEWER_JOINED",
+        visitorKey,
+        sessionKey: sessionKey ?? null,
+        relatedEventId: eventUuid,
+      })
+    }
+
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 })

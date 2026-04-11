@@ -1,4 +1,5 @@
 import { getDb } from "./db"
+import { emitCreditPurchasedFunnel } from "@/lib/analytics-funnel"
 import { splitGST } from "@/lib/gst-service"
 import { getPlatformGSTSettings } from "@/lib/platform-gst"
 import { applyStudioUpgradeOrRenewal } from "@/lib/studio-subscription"
@@ -595,6 +596,10 @@ export async function processSuccessfulPayment(params: {
     INSERT INTO notifications (user_id, type, title, message)
     VALUES (${params.userId}, 'payment', 'Payment Successful', ${notifMessage})
   `
+
+  if (orderType === "wallet_recharge" || orderType === "studio_upgrade") {
+    await emitCreditPurchasedFunnel(params.userId, params.orderId, orderType, totalPaise)
+  }
 
   return { invoiceId }
 }

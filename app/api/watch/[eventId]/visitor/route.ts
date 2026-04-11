@@ -3,22 +3,9 @@ import { getDb } from "@/lib/db"
 import { getRequestClientIp } from "@/lib/client-ip"
 import { lookupCountryNameFromIp } from "@/lib/ip-country"
 import { composeInternationalPhone } from "@/lib/phone-country-codes"
+import { resolveAttribution } from "@/lib/attribution"
 
 const RATE_LIMIT_PER_HOUR = 30
-
-function parseUtmFromSearch(search: string): { source: string | null; medium: string | null; campaign: string | null } {
-  try {
-    const q = search.startsWith("?") ? search.slice(1) : search
-    const params = new URLSearchParams(q)
-    return {
-      source: params.get("utm_source"),
-      medium: params.get("utm_medium"),
-      campaign: params.get("utm_campaign"),
-    }
-  } catch {
-    return { source: null, medium: null, campaign: null }
-  }
-}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -44,6 +31,8 @@ export async function POST(
   const phoneDial = typeof body.phoneDial === "string" ? body.phoneDial.trim() : ""
   const phoneLocal = typeof body.phoneLocal === "string" ? body.phoneLocal.trim() : ""
   const utmQuery = typeof body.utmQuery === "string" ? body.utmQuery : ""
+  const visitorKeyBody = typeof body.visitorKey === "string" ? body.visitorKey.trim().slice(0, 200) : ""
+  const sessionKeyBody = typeof body.sessionKey === "string" ? body.sessionKey.trim().slice(0, 200) : ""
 
   if (!fullName || fullName.length > 500) {
     return NextResponse.json({ error: "Full name is required" }, { status: 400 })
@@ -77,6 +66,8 @@ export async function POST(
       )
     `.catch(() => {})
     await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`.catch(() => {})
+  await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS visitor_key TEXT`.catch(() => {})
+  await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS session_key TEXT`.catch(() => {})
 
   const eventRows = await sql`
     SELECT id, is_suspended, capture_visitor_data
@@ -113,17 +104,21 @@ export async function POST(
     }
   }
 
-  const utm = parseUtmFromSearch(utmQuery)
+  const referer = req.headers.get("referer")?.slice(0, 2000) ?? null
+  const utm = resolveAttribution(req.nextUrl, referer, utmQuery)
   const userAgent = req.headers.get("user-agent")?.slice(0, 2000) ?? null
   const acceptLanguage = req.headers.get("accept-language")?.slice(0, 500) ?? null
-  const referer = req.headers.get("referer")?.slice(0, 2000) ?? null
   const ipCountry = lookupCountryNameFromIp(ip)
+
+  const visitorKeySql = visitorKeyBody || null
+  const sessionKeySql = sessionKeyBody || null
 
   await sql`
     INSERT INTO event_visitor_registrations (
       event_id, full_name, email, phone,
       ip_address, ip_country, user_agent, accept_language, referer,
-      utm_source, utm_medium, utm_campaign
+      utm_source, utm_medium, utm_campaign,
+      visitor_key, session_key
     ) VALUES (
       ${eventUuid},
       ${fullName},
@@ -134,9 +129,11 @@ export async function POST(
       ${userAgent},
       ${acceptLanguage},
       ${referer},
-      ${utm.source},
-      ${utm.medium},
-      ${utm.campaign}
+      ${utm.utm_source},
+      ${utm.utm_medium},
+      ${utm.utm_campaign},
+      ${visitorKeySql},
+      ${sessionKeySql}
     )
   `
 

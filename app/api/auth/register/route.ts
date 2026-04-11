@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
+import { cookies } from "next/headers"
 import { getDb } from "@/lib/db"
 import { createUser, createSession, setSessionCookie } from "@/lib/auth"
 import { isValidIndianStateCode, normalizeIndianMobile } from "@/lib/indian-states"
+import { VISITOR_COOKIE_NAME } from "@/lib/visitor-analytics-constants"
+import { insertFunnelEvent } from "@/lib/analytics-funnel"
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,6 +80,16 @@ export async function POST(request: NextRequest) {
 
     // Set cookie
     await setSessionCookie(token, expiresAt)
+
+    const jar = await cookies()
+    const visitorKey =
+      jar.get(VISITOR_COOKIE_NAME)?.value?.trim() || `vk_signup_${(user.id as string).replace(/-/g, "").slice(0, 16)}`
+    await insertFunnelEvent({
+      eventType: "SIGNUP_COMPLETED",
+      visitorKey,
+      userId: user.id as string,
+      payload: { email: user.email },
+    })
 
     return NextResponse.json({ user }, { status: 201 })
   } catch (error) {

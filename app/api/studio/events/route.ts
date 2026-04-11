@@ -24,6 +24,7 @@ import {
 import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
 import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
+import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -278,6 +279,17 @@ export async function POST(req: NextRequest) {
 
     const event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
+
+    const vk = await visitorKeyForUser(targetUserId)
+    await insertFunnelEvent({
+      eventType: "EVENT_CREATED",
+      visitorKey: vk,
+      userId: targetUserId,
+      relatedEventId: eventId,
+      contextType: "studio",
+      contextId: targetUserId,
+      payload: { title: title.trim() },
+    })
 
     if (totalNeed > 0 && !shouldBypassCreditsDeduction && !isPendingCreate) {
       await sql`

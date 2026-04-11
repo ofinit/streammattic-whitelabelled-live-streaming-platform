@@ -1,4 +1,5 @@
 import { getDb, toCamel, toCamelRows } from "@/lib/db"
+import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
 import { jsonOk, jsonError, withOptionalAuth, withAuth } from "@/lib/api-helpers"
 import {
   STREAM_TYPE_MAP,
@@ -117,6 +118,20 @@ export const POST = withAuth(async (user, request) => {
   `
 
   const event = rows[0] as Record<string, unknown>
+  const eventId = event.id as string
+
+  const vk = await visitorKeyForUser(targetUserId)
+  const ctx =
+    user.role === "studio" ? ({ type: "studio" as const, id: targetUserId }) : ({ type: "platform" as const, id: null })
+  await insertFunnelEvent({
+    eventType: "EVENT_CREATED",
+    visitorKey: vk,
+    userId: targetUserId,
+    relatedEventId: eventId,
+    contextType: ctx.type,
+    contextId: ctx.id,
+    payload: { title: String(title), source: "api_events" },
+  })
 
   if (totalNeed > 0 && !shouldBypassCreditsDeduction) {
     await sql`

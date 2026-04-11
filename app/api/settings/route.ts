@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db"
 import { getPlatformSetting } from "@/lib/db-queries"
 import { invalidateCache } from "@/lib/redis"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
+import { coerceYoutubeConfigEnabledFlag, coerceYoutubeConfigOverride } from "@/lib/youtube-dashboard-settings"
 
 export const dynamic = "force-dynamic"
 
@@ -13,7 +14,11 @@ export const GET = withAuth(async (user, request) => {
   if (key) {
     const rows = await sql`SELECT key, value FROM platform_settings WHERE key = ${key}`
     if (rows.length === 0) return jsonError("Setting not found", 404)
-    return jsonOk({ setting: rows[0] })
+    const row = rows[0] as { key: string; value: unknown }
+    if (row.key === "youtube_config_enabled") {
+      return jsonOk({ setting: { ...row, value: coerceYoutubeConfigEnabledFlag(row.value) } })
+    }
+    return jsonOk({ setting: row })
   }
 
   // Admin gets all settings, non-admin gets only public settings
@@ -34,13 +39,26 @@ export const GET = withAuth(async (user, request) => {
   let rows: { key: string; value: unknown }[] =
     user.role === "admin"
       ? (await sql`SELECT key, value, updated_at FROM platform_settings ORDER BY key`) as { key: string; value: unknown }[]
-      : (await sql`SELECT key, value FROM platform_settings WHERE key = ANY(${publicKeys}) ORDER BY key`) as { key: string; value: unknown }[]
+      : (await sql(
+          "SELECT key, value FROM platform_settings WHERE key = ANY($1::text[]) ORDER BY key",
+          [[publicKeys]],
+        )) as { key: string; value: unknown }[]
+
+  rows = rows.map((row) => {
+    if (row.key === "youtube_config_enabled") {
+      return { ...row, value: coerceYoutubeConfigEnabledFlag(row.value) }
+    }
+    return row
+  })
 
   // For studio/streamer, add per-entity override so they can override master toggle
   if (user.role === "studio" || user.role === "streamer") {
     const overrideKey = `youtube_config_override_${user.role}:${user.id}`
     const overrideVal = await getPlatformSetting(overrideKey)
-    rows = [...rows, { key: "youtube_config_override", value: overrideVal }]
+    rows = [
+      ...rows,
+      { key: "youtube_config_override", value: coerceYoutubeConfigOverride(overrideVal) },
+    ]
   }
 
   // Streamers & studios: studio annual subscription catalog price (upgrade / renewal UI)

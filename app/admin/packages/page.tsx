@@ -18,6 +18,21 @@ import {
   validityCreditsForDuration,
   validityExtensionCredits,
 } from "@/lib/validity-extensions"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { parseAiImagePricing } from "@/lib/ai-image-generation"
+import {
+  FAL_IMAGE_MODEL_OPTIONS,
+  OPENROUTER_IMAGE_MODEL_OPTIONS,
+  getCatalogReferenceCostPaise,
+  getDefaultFalModelOptionId,
+  getDefaultOpenRouterModelOptionId,
+} from "@/lib/ai-image-model-catalog"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -77,9 +92,18 @@ export default function AdminPricingPage() {
     enabled: true,
   })
 
-  const [aiImagePricing, setAiImagePricing] = useState({
-    price: 500, // 5 INR in paisa
-    enabled: true,
+  const [aiImagePricing, setAiImagePricing] = useState(() => {
+    const falId = getDefaultFalModelOptionId()
+    const orId = getDefaultOpenRouterModelOptionId()
+    return {
+      price: 500,
+      enabled: true,
+      imageBackend: null as "fal" | "openrouter" | null,
+      falModelId: falId,
+      openRouterModelId: orId,
+      providerReferenceCostFalPaise: getCatalogReferenceCostPaise("fal", falId) ?? 180,
+      providerReferenceCostOpenRouterPaise: getCatalogReferenceCostPaise("openrouter", orId) ?? 280,
+    }
   })
 
   const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({ rtmp: true })
@@ -115,13 +139,24 @@ export default function AdminPricingPage() {
       }
 
       const aiSettings = map.ai_image_pricing
-      if (aiSettings && typeof aiSettings === "object" && aiSettings !== null) {
-        const a = aiSettings as Record<string, unknown>
-        setAiImagePricing({
-          price: typeof a.price === "number" ? a.price : 500,
-          enabled: a.enabled !== false,
-        })
-      }
+      const parsed = parseAiImagePricing(aiSettings ?? null)
+      const falId = parsed.falModelId?.trim() || getDefaultFalModelOptionId()
+      const orId = parsed.openRouterModelId?.trim() || getDefaultOpenRouterModelOptionId()
+      setAiImagePricing({
+        price: parsed.price,
+        enabled: parsed.enabled,
+        imageBackend: parsed.imageBackend ?? null,
+        falModelId: falId,
+        openRouterModelId: orId,
+        providerReferenceCostFalPaise:
+          parsed.providerReferenceCostFalPaise ??
+          getCatalogReferenceCostPaise("fal", falId) ??
+          180,
+        providerReferenceCostOpenRouterPaise:
+          parsed.providerReferenceCostOpenRouterPaise ??
+          getCatalogReferenceCostPaise("openrouter", orId) ??
+          280,
+      })
 
       setSettingsLoadState("ready")
     } catch (e) {
@@ -749,30 +784,176 @@ export default function AdminPricingPage() {
           </div>
         </CardHeader>
         {aiImagePricing.enabled && (
-          <CardContent>
-            <div className="max-w-sm space-y-2">
-              <Label htmlFor="aiPrice">Price Per Image</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
-                <Input
-                  id="aiPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={aiImagePricing.price / 100}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    const n = parseFloat(v)
-                    if (v === "" || Number.isNaN(n)) return
-                    setAiImagePricing((prev) => ({ ...prev, price: Math.round(n * 100) }))
-                  }}
-                  className="border-0 bg-secondary pl-7"
-                />
+          <CardContent className="space-y-6">
+            <div className="grid max-w-2xl gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Generation backend</Label>
+                <Select
+                  value={aiImagePricing.imageBackend ?? "env"}
+                  onValueChange={(v) =>
+                    setAiImagePricing((prev) => ({
+                      ...prev,
+                      imageBackend: v === "env" ? null : (v as "fal" | "openrouter"),
+                    }))
+                  }
+                >
+                  <SelectTrigger className="border-0 bg-secondary">
+                    <SelectValue placeholder="Backend" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="env">Use server env (AI_IMAGE_BACKEND)</SelectItem>
+                    <SelectItem value="fal">Fal</SelectItem>
+                    <SelectItem value="openrouter">OpenRouter</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Overrides Coolify <code className="text-xs">AI_IMAGE_BACKEND</code> when not &quot;Use server env&quot;.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Charged per generation from the user's wallet.
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="aiPrice">Retail price per image (wallet)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                  <Input
+                    id="aiPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={aiImagePricing.price / 100}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      const n = parseFloat(v)
+                      if (v === "" || Number.isNaN(n)) return
+                      setAiImagePricing((prev) => ({ ...prev, price: Math.round(n * 100) }))
+                    }}
+                    className="border-0 bg-secondary pl-7"
+                  />
+                </div>
+              </div>
             </div>
+
+            <div className="grid max-w-4xl gap-6 md:grid-cols-2">
+              <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+                <Label className="text-sm font-semibold">Fal model</Label>
+                <Select
+                  value={aiImagePricing.falModelId}
+                  onValueChange={(id) => {
+                    const ref = getCatalogReferenceCostPaise("fal", id)
+                    setAiImagePricing((prev) => ({
+                      ...prev,
+                      falModelId: id,
+                      providerReferenceCostFalPaise: ref ?? prev.providerReferenceCostFalPaise,
+                    }))
+                  }}
+                >
+                  <SelectTrigger className="border-0 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FAL_IMAGE_MODEL_OPTIONS.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Est. API cost (Fal) — adjust to match your bill</Label>
+                  <div className="relative max-w-[12rem]">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={aiImagePricing.providerReferenceCostFalPaise / 100}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        const n = parseFloat(v)
+                        if (v === "" || Number.isNaN(n)) return
+                        setAiImagePricing((prev) => ({
+                          ...prev,
+                          providerReferenceCostFalPaise: Math.round(n * 100),
+                        }))
+                      }}
+                      className="border-0 bg-background pl-7"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Margin (Fal path):{" "}
+                  <span className="font-medium text-foreground">
+                    ₹{Math.max(0, (aiImagePricing.price - aiImagePricing.providerReferenceCostFalPaise) / 100).toFixed(2)}
+                  </span>{" "}
+                  per image (retail − est. cost)
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+                <Label className="text-sm font-semibold">OpenRouter model</Label>
+                <Select
+                  value={aiImagePricing.openRouterModelId}
+                  onValueChange={(id) => {
+                    const ref = getCatalogReferenceCostPaise("openrouter", id)
+                    setAiImagePricing((prev) => ({
+                      ...prev,
+                      openRouterModelId: id,
+                      providerReferenceCostOpenRouterPaise: ref ?? prev.providerReferenceCostOpenRouterPaise,
+                    }))
+                  }}
+                >
+                  <SelectTrigger className="border-0 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPENROUTER_IMAGE_MODEL_OPTIONS.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Est. API cost (OpenRouter) — adjust to match your bill
+                  </Label>
+                  <div className="relative max-w-[12rem]">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{"₹"}</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={aiImagePricing.providerReferenceCostOpenRouterPaise / 100}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        const n = parseFloat(v)
+                        if (v === "" || Number.isNaN(n)) return
+                        setAiImagePricing((prev) => ({
+                          ...prev,
+                          providerReferenceCostOpenRouterPaise: Math.round(n * 100),
+                        }))
+                      }}
+                      className="border-0 bg-background pl-7"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Margin (OpenRouter path):{" "}
+                  <span className="font-medium text-foreground">
+                    ₹
+                    {Math.max(
+                      0,
+                      (aiImagePricing.price - aiImagePricing.providerReferenceCostOpenRouterPaise) / 100,
+                    ).toFixed(2)}
+                  </span>{" "}
+                  per image
+                </p>
+              </div>
+            </div>
+
+            <p className="max-w-3xl text-xs text-muted-foreground">
+              Catalog costs are rough defaults. Generation uses the model for the active backend (env or override above).
+              Charged amount is always the retail price per image.
+            </p>
           </CardContent>
         )}
       </Card>

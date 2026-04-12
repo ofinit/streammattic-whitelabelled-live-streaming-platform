@@ -4,17 +4,18 @@ import { randomUUID } from "crypto"
 import { fal } from "@fal-ai/client"
 import { getDb, toCamel } from "@/lib/db"
 import { parseAiImagePricing, AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
+import {
+  resolveImageBackendFromConfig,
+  resolveFalModelIdForGeneration,
+  resolveOpenRouterModelIdForGeneration,
+  getEffectiveProviderReferenceCostPaise,
+} from "@/lib/ai-image-resolve"
+import { getCatalogLabel } from "@/lib/ai-image-model-catalog"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { encodeBufferToWebp } from "@/lib/server/webp"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
-import { buildFalSubscribeInput, getFalImageModelId } from "@/lib/fal-image-input"
-import {
-  getAiImageBackendFromEnv,
-  getOpenRouterImageModelFromEnv,
-  isFalBackendConfigured,
-  isOpenRouterBackendConfigured,
-  isActiveAiBackendConfigured,
-} from "@/lib/ai-image-backend"
+import { buildFalSubscribeInput } from "@/lib/fal-image-input"
+import { isFalBackendConfigured, isOpenRouterBackendConfigured } from "@/lib/ai-image-backend"
 import { generateImageBufferOpenRouter } from "@/lib/openrouter-image"
 
 /** Apply on each request so Coolify/runtime env is always used (avoid stale empty key at module load). */
@@ -130,16 +131,29 @@ export async function GET() {
   const sql = getDb()
   const rows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
   const config = parseAiImagePricing(rows.length > 0 ? rows[0].value : null)
-  const backend = getAiImageBackendFromEnv()
+  const backend = resolveImageBackendFromConfig(config)
+  const falModelId = resolveFalModelIdForGeneration(config)
+  const openRouterModelId = resolveOpenRouterModelIdForGeneration(config)
+  const providerReferenceCostPaise = getEffectiveProviderReferenceCostPaise(config)
+  const marginPaise =
+    providerReferenceCostPaise !== null ? config.price - providerReferenceCostPaise : null
+  const backendReady = backend === "fal" ? isFalBackendConfigured() : isOpenRouterBackendConfigured()
   return jsonOk({
     price: config.price,
     enabled: config.enabled,
     backend,
+    imageBackendSetting: config.imageBackend ?? null,
+    falModelId,
+    openRouterModelId,
+    falModelLabel: getCatalogLabel("fal", falModelId),
+    openRouterModelLabel: getCatalogLabel("openrouter", openRouterModelId),
+    providerReferenceCostPaise,
+    marginPaise,
     backendsAvailable: {
       fal: isFalBackendConfigured(),
       openrouter: isOpenRouterBackendConfigured(),
     },
-    backendReady: isActiveAiBackendConfigured(),
+    backendReady,
   })
 }
 
@@ -149,7 +163,18 @@ export const POST = withAuth(async (user, request: Request) => {
     return jsonError("Forbidden", 403)
   }
 
-  const backend = getAiImageBackendFromEnv()
+  let body: { prompt?: unknown; imageSize?: unknown; userId?: unknown }
+  try {
+    body = await request.json()
+  } catch {
+    return jsonError("Invalid JSON body", 400)
+  }
+
+  const sql = getDb()
+  const pricingRows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
+  const aiConfig = parseAiImagePricing(pricingRows.length > 0 ? pricingRows[0].value : null)
+  const backend = resolveImageBackendFromConfig(aiConfig)
+
   if (backend === "fal") {
     const falKey = configureFalFromEnv()
     if (!falKey) {
@@ -161,19 +186,12 @@ export const POST = withAuth(async (user, request: Request) => {
     }
   } else if (!isOpenRouterBackendConfigured()) {
     console.error(
-      "[generate-image] OPENROUTER_API_KEY or OPENROUTER_IMAGE_MODEL missing — required when AI_IMAGE_BACKEND=openrouter.",
+      "[generate-image] OPENROUTER_API_KEY or OPENROUTER_IMAGE_MODEL missing — required when using OpenRouter backend.",
     )
     return jsonError(
       "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY and OPENROUTER_IMAGE_MODEL in the server environment.",
       503,
     )
-  }
-
-  let body: { prompt?: unknown; imageSize?: unknown; userId?: unknown }
-  try {
-    body = await request.json()
-  } catch {
-    return jsonError("Invalid JSON body", 400)
   }
 
   const rawPrompt = typeof body.prompt === "string" ? body.prompt : ""
@@ -197,10 +215,6 @@ export const POST = withAuth(async (user, request: Request) => {
       : (user.id as string)
   /** Platform admin creating assets for their own account — no wallet debit (still uses platform API quota). */
   const isPlatformAdminSelfService = role === "admin" && userId === (user.id as string)
-  const sql = getDb()
-
-  const pricingRows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
-  const aiConfig = parseAiImagePricing(pricingRows.length > 0 ? pricingRows[0].value : null)
 
   if (!aiConfig.enabled) {
     return jsonError("AI Image Generation is currently disabled by administrators.", 403)
@@ -241,25 +255,26 @@ export const POST = withAuth(async (user, request: Request) => {
     debitTxn = debitTxnRows[0] as Record<string, unknown>
   }
 
+  const resolvedFalModelId = resolveFalModelIdForGeneration(aiConfig)
+  const resolvedOpenRouterModelId = resolveOpenRouterModelIdForGeneration(aiConfig)
+
   try {
     let raw: Buffer
 
     if (backend === "openrouter") {
       const apiKey = process.env.OPENROUTER_API_KEY!.trim()
-      const orModel = getOpenRouterImageModelFromEnv()
-      console.info("[generate-image] OpenRouter model:", orModel)
+      console.info("[generate-image] OpenRouter model:", resolvedOpenRouterModelId)
       raw = await generateImageBufferOpenRouter({
         apiKey,
-        model: orModel,
+        model: resolvedOpenRouterModelId,
         prompt,
         imageSize,
       })
     } else {
-      const modelId = getFalImageModelId()
-      console.info("[generate-image] Fal model:", modelId)
+      console.info("[generate-image] Fal model:", resolvedFalModelId)
 
-      const result = await fal.subscribe(modelId, {
-        input: buildFalSubscribeInput(modelId, prompt, imageSize),
+      const result = await fal.subscribe(resolvedFalModelId, {
+        input: buildFalSubscribeInput(resolvedFalModelId, prompt, imageSize),
       })
 
       const urls = extractImageUrlsFromFalResult(result)
@@ -324,8 +339,8 @@ export const POST = withAuth(async (user, request: Request) => {
         : "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
     } else if (lower.includes("403") && (lower.includes("forbidden") || lower.includes("access"))) {
       client = isOr
-        ? `OpenRouter denied access (403) for model "${getOpenRouterImageModelFromEnv()}". Check model id, billing, and OpenRouter dashboard.`
-        : `Fal API denied access (403) for model "${getFalImageModelId()}". Confirm billing and model access in the Fal dashboard (partner models need entitlement). Default is fal-ai/flux-1/schnell; try unsetting FAL_IMAGE_MODEL or set FAL_IMAGE_MODEL=fal-ai/flux/dev. See https://fal.ai/docs/documentation/model-apis/overview`
+        ? `OpenRouter denied access (403) for model "${resolvedOpenRouterModelId}". Check model id, billing, and OpenRouter dashboard.`
+        : `Fal API denied access (403) for model "${resolvedFalModelId}". Confirm billing and model access in the Fal dashboard (partner models need entitlement). See https://fal.ai/docs/documentation/model-apis/overview`
     } else if (lower.includes("402") || lower.includes("payment") || lower.includes("insufficient") || lower.includes("quota")) {
       client = isOr
         ? "OpenRouter billing or quota issue. Check credits and usage on openrouter.ai."

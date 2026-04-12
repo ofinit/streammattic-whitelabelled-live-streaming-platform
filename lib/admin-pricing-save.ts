@@ -143,7 +143,15 @@ function assertStudioSubscription(raw: unknown): { price: number; enabled: boole
   return { price: Math.round(price), enabled }
 }
 
-function assertAiImagePricing(raw: unknown): { price: number; enabled: boolean } {
+function assertAiImagePricing(raw: unknown): {
+  price: number
+  enabled: boolean
+  imageBackend?: "fal" | "openrouter" | null
+  falModelId?: string | null
+  openRouterModelId?: string | null
+  providerReferenceCostFalPaise?: number | null
+  providerReferenceCostOpenRouterPaise?: number | null
+} {
   if (!raw || typeof raw !== "object") {
     throw new Error("aiImagePricing is required")
   }
@@ -153,7 +161,42 @@ function assertAiImagePricing(raw: unknown): { price: number; enabled: boolean }
     throw new Error("aiImagePricing.price is too large")
   }
   const enabled = parseEnabledFlag(s.enabled, true)
-  return { price: Math.round(price), enabled }
+  let imageBackend: "fal" | "openrouter" | null = null
+  if (s.imageBackend === "fal" || s.imageBackend === "openrouter") {
+    imageBackend = s.imageBackend
+  } else if (s.imageBackend !== undefined && s.imageBackend !== null) {
+    throw new Error("aiImagePricing.imageBackend must be fal, openrouter, or null")
+  }
+  let falModelId: string | null = null
+  if (typeof s.falModelId === "string") {
+    falModelId = s.falModelId.trim().slice(0, 200) || null
+  } else if (s.falModelId !== undefined && s.falModelId !== null) {
+    throw new Error("aiImagePricing.falModelId must be a string or null")
+  }
+  let openRouterModelId: string | null = null
+  if (typeof s.openRouterModelId === "string") {
+    openRouterModelId = s.openRouterModelId.trim().slice(0, 200) || null
+  } else if (s.openRouterModelId !== undefined && s.openRouterModelId !== null) {
+    throw new Error("aiImagePricing.openRouterModelId must be a string or null")
+  }
+  const parseOptRef = (key: string): number | null => {
+    const v = s[key]
+    if (v === undefined || v === null) return null
+    const r = assertFiniteNonNeg(v, `aiImagePricing.${key}`)
+    if (r > 1e12) throw new Error(`aiImagePricing.${key} is too large`)
+    return Math.round(r)
+  }
+  const providerReferenceCostFalPaise = parseOptRef("providerReferenceCostFalPaise")
+  const providerReferenceCostOpenRouterPaise = parseOptRef("providerReferenceCostOpenRouterPaise")
+  return {
+    price: Math.round(price),
+    enabled,
+    imageBackend,
+    falModelId,
+    openRouterModelId,
+    providerReferenceCostFalPaise,
+    providerReferenceCostOpenRouterPaise,
+  }
 }
 
 /**
@@ -165,7 +208,15 @@ export function parseAdminPricingRequest(body: unknown): {
   validityDefaultDays: number
   validityTiers: ValidityTier[]
   studioSubscription: { price: number; enabled: boolean }
-  aiImagePricing: { price: number; enabled: boolean }
+  aiImagePricing: {
+    price: number
+    enabled: boolean
+    imageBackend?: "fal" | "openrouter" | null
+    falModelId?: string | null
+    openRouterModelId?: string | null
+    providerReferenceCostFalPaise?: number | null
+    providerReferenceCostOpenRouterPaise?: number | null
+  }
 } {
   if (!body || typeof body !== "object") {
     throw new Error("Request body must be a JSON object")

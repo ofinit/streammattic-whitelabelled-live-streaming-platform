@@ -117,6 +117,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/dashboard/route.ts` | `/api/dashboard` |
 | `app/api/domains/cloudflare/configure/route.ts` | `/api/domains/cloudflare/configure` |
 | `app/api/domains/cloudflare/status/route.ts` | `/api/domains/cloudflare/status` |
+| `app/api/events/[id]/analytics/route.ts` | `/api/events/[id]/analytics` |
 | `app/api/events/[id]/route.ts` | `/api/events/[id]` |
 | `app/api/events/route.ts` | `/api/events` |
 | `app/api/favicon/resolve/route.ts` | `/api/favicon/resolve` |

@@ -54,10 +54,6 @@ const fetcher = (url: string) =>
     return r.json()
   })
 
-function formatPaise(p: number) {
-  return `₹${(p / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
 /** Traffic metrics: higher delta % is better. Bounce: lower is better. */
 function DeltaBadge({
   pct,
@@ -620,76 +616,6 @@ export default function EventAnalyticsPage({ params }: { params: Promise<{ slug:
                 </span>
               </p>
             )}
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="border-border/60 bg-background shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">Funnel events</CardTitle>
-                  <CardDescription>Steps with related_event_id in window</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Count</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.funnel.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={2} className="text-center text-muted-foreground">
-                            None in window
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        data.funnel.map((r: { eventType: string; count: number }) => (
-                          <TableRow key={r.eventType}>
-                            <TableCell className="font-mono text-xs">{r.eventType}</TableCell>
-                            <TableCell className="text-right tabular-nums">{r.count}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/60 bg-background shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">Orders (window)</CardTitle>
-                  <CardDescription>Linked to this event</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">#</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.orders.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            No orders in window
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        data.orders.map((r: { status: string; count: number; totalPaise: number }) => (
-                          <TableRow key={r.status}>
-                            <TableCell className="capitalize">{r.status}</TableCell>
-                            <TableCell className="text-right tabular-nums">{r.count}</TableCell>
-                            <TableCell className="text-right tabular-nums">{formatPaise(r.totalPaise)}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
 
             <Card className="border-border/60 bg-background shadow-sm">
               <CardHeader>

@@ -73,7 +73,9 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
       <main
         className={cn(
           "min-w-0 transition-all duration-300 pl-0 md:pt-0",
-          isImpersonating ? "pt-[6.75rem] md:pt-0" : "pt-14 md:pt-0",
+          isImpersonating
+            ? "pt-[6.75rem] md:pt-0"
+            : "pt-[calc(3.5rem+env(safe-area-inset-top,0px))] md:pt-0",
           isCollapsed ? "md:pl-16" : "md:pl-64",
         )}
       >

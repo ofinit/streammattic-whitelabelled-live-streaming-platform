@@ -8,9 +8,12 @@ import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { encodeBufferToWebp } from "@/lib/server/webp"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
 
-fal.config({
-  credentials: process.env.FAL_KEY,
-})
+/** Apply on each request so Coolify/runtime env is always used (avoid stale empty key at module load). */
+function configureFalFromEnv() {
+  const key = process.env.FAL_KEY?.trim()
+  fal.config({ credentials: key })
+  return key
+}
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 const AI_GENERATED_SUBDIR = "ai-generated"
@@ -59,6 +62,15 @@ export const POST = withAuth(async (user, request: Request) => {
   const role = user.role as string
   if (role !== "studio" && role !== "admin" && role !== "streamer") {
     return jsonError("Forbidden", 403)
+  }
+
+  const falKey = configureFalFromEnv()
+  if (!falKey) {
+    console.error("[generate-image] FAL_KEY is not set — set it in the server environment (e.g. Coolify → Environment).")
+    return jsonError(
+      "AI image generation is not configured on this server (missing FAL_KEY). Add your Fal API key to environment variables.",
+      503,
+    )
   }
 
   let body: { prompt?: unknown; imageSize?: unknown; userId?: unknown }
@@ -178,12 +190,49 @@ export const POST = withAuth(async (user, request: Request) => {
       freeForPlatformAdmin: isPlatformAdminSelfService,
     })
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    const lower = msg.toLowerCase()
     console.error("[generate-image] Error:", error)
 
     if (walletId) {
       await refundAiGenerationWallet(sql, walletId, userId, price, "Refund: AI image generation failed")
     }
 
-    return jsonError("Failed to generate image", 500)
+    /** Map Fal / network failures to actionable messages (key is set but invalid, quota, egress, etc.). */
+    let client =
+      "Image generation failed. Check container logs for [generate-image] or verify Fal dashboard (billing / model access)."
+    if (
+      lower.includes("401") ||
+      lower.includes("unauthorized") ||
+      lower.includes("invalid api key") ||
+      lower.includes("authentication")
+    ) {
+      client =
+        "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
+    } else if (lower.includes("403") && (lower.includes("forbidden") || lower.includes("access"))) {
+      client =
+        "Fal API denied access (403). Check the key’s permissions and that model fal-ai/flux/schnell is allowed for your account."
+    } else if (lower.includes("402") || lower.includes("payment") || lower.includes("insufficient") || lower.includes("quota")) {
+      client = "Fal API billing or quota issue. Add credits or check usage on fal.ai."
+    } else if (lower.includes("429") || lower.includes("rate limit")) {
+      client = "Fal API rate limit reached. Retry shortly."
+    } else if (
+      lower.includes("econnrefused") ||
+      lower.includes("etimedout") ||
+      lower.includes("enotfound") ||
+      lower.includes("fetch failed") ||
+      lower.includes("network")
+    ) {
+      client =
+        "Could not reach Fal or download the image (network). Ensure the server allows outbound HTTPS and can resolve DNS."
+    } else if (lower.includes("download failed") || lower.includes("http 4") || lower.includes("http 5")) {
+      client = "Generated image URL could not be downloaded. Retry or check Fal status; wallet was refunded if debited."
+    } else if (lower.includes("webp") || lower.includes("sharp") || lower.includes("process generated image")) {
+      client = "Could not process the generated image on the server (encoding). Check logs; wallet was refunded if debited."
+    } else if (lower.includes("no image generated")) {
+      client = "Fal returned no image for this prompt. Try a different prompt or retry."
+    }
+
+    return jsonError(client, 500)
   }
 })

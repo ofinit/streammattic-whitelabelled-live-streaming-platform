@@ -85,7 +85,6 @@ const studioNav: NavItem[] = [
   { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
   { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
-  { title: "Visitor leads", href: "/studio/event-visitors", icon: ClipboardList },
   { title: "YouTube Channels", href: "/studio/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
@@ -96,7 +95,6 @@ const streamerNav: NavItem[] = [
   { title: "Create Event", href: "/streamer/create-events", icon: Calendar },
   { title: "Packages", href: "/streamer/packages", icon: Package },
   { title: "Billing & Wallet", href: "/streamer/wallet", icon: Wallet },
-  { title: "Visitor leads", href: "/streamer/event-visitors", icon: ClipboardList },
   { title: "YouTube Channels", href: "/streamer/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/streamer/settings", icon: Settings },
 ]
@@ -313,10 +311,11 @@ export function Sidebar() {
     <TooltipProvider delayDuration={0}>
       <header
         className={cn(
-          "fixed left-0 right-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-sidebar-border bg-sidebar-background px-3 md:hidden",
+          "fixed left-0 right-0 z-40 flex shrink-0 flex-col border-b border-sidebar-border bg-sidebar pt-[env(safe-area-inset-top,0px)] shadow-sm md:hidden",
           isImpersonating ? "top-11" : "top-0",
         )}
       >
+        <div className="flex h-14 min-h-14 items-center justify-between px-3">
         <div className="flex min-w-0 items-center gap-2">
           <BrandedLogo size="sm" />
         </div>
@@ -330,12 +329,13 @@ export function Sidebar() {
         >
           <Menu className="h-6 w-6" />
         </Button>
+        </div>
       </header>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="w-[min(100vw-1rem,20rem)] border-sidebar-border bg-sidebar-background p-0 sm:max-w-xs [&>button]:text-sidebar-foreground"
+          className="w-[min(100vw-1rem,20rem)] border-sidebar-border bg-sidebar p-0 shadow-2xl sm:max-w-xs [&>button]:z-50 [&>button]:text-sidebar-foreground"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation</SheetTitle>
@@ -365,7 +365,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 hidden h-screen border-r border-sidebar-border bg-sidebar-background transition-all duration-300 md:flex md:flex-col",
+          "fixed left-0 top-0 z-40 hidden h-screen border-r border-sidebar-border bg-sidebar transition-all duration-300 md:flex md:flex-col",
           isCollapsed ? "w-16" : "w-64",
         )}
       >

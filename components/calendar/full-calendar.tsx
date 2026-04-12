@@ -51,10 +51,13 @@ const getStatusColor = (status: string) => {
 }
 
 const getTypeIcon = (type: string) => {
-  switch (type.toLowerCase()) {
+  const t = type.toLowerCase()
+  switch (t) {
     case "rtmp":
       return <Video className="h-3 w-3 shrink-0" />
     case "youtube":
+    case "youtube_api":
+    case "youtube_embed":
       return <Youtube className="h-3 w-3 shrink-0" />
     case "hls":
       return <MonitorPlay className="h-3 w-3 shrink-0" />
@@ -143,7 +146,7 @@ export function FullCalendar({ currentDate, onDateChange, events, onEventClick }
 
       {/* Calendar Grid */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-7 auto-rows-fr h-full min-h-[600px] border-l border-border">
+        <div className="grid grid-cols-7 auto-rows-fr h-full min-h-[min(600px,70dvh)] sm:min-h-[600px] border-l border-border">
           {days.map((day, dayIdx) => {
             const dateKey = format(day, "yyyy-MM-dd")
             const dayEvents = eventsByDate[dateKey] || []

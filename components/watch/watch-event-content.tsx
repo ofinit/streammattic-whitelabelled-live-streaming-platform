@@ -51,7 +51,12 @@ import {
 } from "@/lib/event-title-typography"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
 import { getWatchPageSkin } from "@/lib/watch-template-skin"
-import { VisitorGateForm, readVisitorGateComplete } from "@/components/watch/visitor-gate-form"
+import {
+  ChatVisitorInlineForm,
+  VisitorGateForm,
+  readVisitorDisplayName,
+  readVisitorGateComplete,
+} from "@/components/watch/visitor-gate-form"
 
 function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
   if (raw == null || raw === "") return {}
@@ -465,6 +470,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [password, setPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [visitorGateComplete, setVisitorGateComplete] = useState(false)
+  /** Set when visitor name is known (full-page gate, prior session, or chat inline form). */
+  const [chatVisitorDisplayName, setChatVisitorDisplayName] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState("")
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -497,6 +504,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   useEffect(() => {
     setVisitorGateComplete(readVisitorGateComplete(eventId))
+    setChatVisitorDisplayName(readVisitorDisplayName(eventId))
   }, [eventId])
 
   const fetchWatchEvent = useCallback(async (): Promise<LiveEvent | null> => {
@@ -643,10 +651,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const handleSendMessage = (e: FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || !event) return
+    const ev = event as unknown as Record<string, unknown>
+    const captureOn =
+      ev.captureVisitorData !== false && ev.capture_visitor_data !== false
+    const fromStorage =
+      chatVisitorDisplayName?.trim() || readVisitorDisplayName(eventId)?.trim()
+    if (!captureOn && !fromStorage) return
+    const userLabel = fromStorage || "You"
     const message: ChatMessage = {
       id: Date.now().toString(),
-      user: "You",
+      user: userLabel,
       message: newMessage,
       timestamp: new Date(),
     }
@@ -990,13 +1005,18 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const evGate = event as unknown as Record<string, unknown>
   const captureVisitorData =
     evGate.captureVisitorData !== false && evGate.capture_visitor_data !== false
+  const allowChat = evGate.allowChat !== false && evGate.allow_chat !== false
+  const allowReactions = evGate.allowReactions !== false && evGate.allow_reactions !== false
 
   if (captureVisitorData && !visitorGateComplete) {
     return (
       <VisitorGateForm
         eventId={eventId}
         eventTitle={event.title}
-        onComplete={() => setVisitorGateComplete(true)}
+        onComplete={() => {
+          setVisitorGateComplete(true)
+          setChatVisitorDisplayName(readVisitorDisplayName(eventId))
+        }}
       />
     )
   }
@@ -1558,7 +1578,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 >
                   {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                 </Button>
-                {event.allowReactions ? (
+                {allowReactions ? (
                   <div
                     className={`flex min-w-0 items-center gap-0.5 border-l pl-2 sm:pl-3 ${
                       streamChrome === "default" ? "border-white/20" : "border-white/25"
@@ -1848,6 +1868,47 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                         ? "Join the conversation..."
                         : "Send a message..."
 
+    const visitorDisplayName =
+      chatVisitorDisplayName?.trim() || readVisitorDisplayName(eventId)?.trim()
+    const needsInlineVisitorForChat = !captureVisitorData && !visitorDisplayName
+
+    if (needsInlineVisitorForChat) {
+      return (
+        <>
+          <div className={`flex items-center justify-between border-b p-4 ${headerClass}`}>
+            <div className="flex items-center gap-2">
+              <MessageCircle className={`h-5 w-5 ${iconClass}`} />
+              <span className={`font-medium ${titleClass}`}>{chatTitle}</span>
+            </div>
+            <div className={`flex items-center gap-1 text-sm ${metaClass}`}>
+              <Users className="h-4 w-4" />
+              <span>{viewerCount}</span>
+            </div>
+          </div>
+          {streamChrome === "corporateTech" ? (
+            <div
+              className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${scrollBg} [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.35)_transparent]`}
+            >
+              <ChatVisitorInlineForm
+                eventId={eventId}
+                eventTitle={event.title}
+                onComplete={(name) => setChatVisitorDisplayName(name)}
+                className="flex-1"
+              />
+            </div>
+          ) : (
+            <ScrollArea className={`flex-1 ${scrollBg}`}>
+              <ChatVisitorInlineForm
+                eventId={eventId}
+                eventTitle={event.title}
+                onComplete={(name) => setChatVisitorDisplayName(name)}
+              />
+            </ScrollArea>
+          )}
+        </>
+      )
+    }
+
     const chatMessageList = (
       <div className="space-y-4">
         {chatMessages.map((msg) => (
@@ -2084,7 +2145,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             {shareCopied ? <Check className="mr-2 h-4 w-4 text-green-500" /> : <Share2 className="mr-2 h-4 w-4" />}
             {shareCopied ? "Copied!" : "Share"}
           </Button>
-          {event.allowChat ? (
+          {allowChat ? (
             <Button variant="outline" className="border-border bg-transparent lg:hidden" onClick={() => setShowChat(!showChat)}>
               <MessageCircle className="mr-2 h-4 w-4" />
               Chat
@@ -2311,13 +2372,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div
               className={cn(
                 "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
+                allowChat ? "lg:grid-cols-3" : "",
               )}
             >
               <div
                 className={cn(
                   "space-y-6",
-                  event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl",
+                  allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl",
                 )}
               >
                 {renderStreamPlayer(WEDDING_STREAM_SHELL)}
@@ -2339,7 +2400,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-rose-200/80 bg-white shadow-xl lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -2549,10 +2610,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div
               className={cn(
                 "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
+                allowChat ? "lg:grid-cols-3" : "",
               )}
             >
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(GARDEN_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div className="rounded-xl border border-emerald-200/60 bg-white p-6 text-center shadow-md">
@@ -2572,7 +2633,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-emerald-200/80 bg-white/90 shadow-xl backdrop-blur-sm lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -2880,8 +2941,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               <h2 className="font-christian-rose-script text-4xl text-[#b76e79] md:text-5xl">Watch Live Stream</h2>
             </div>
 
-            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(CHRISTIAN_ROSE_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div
@@ -2904,7 +2965,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-[#f4c2c2]/90 bg-white shadow-xl lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -3232,8 +3293,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               </h2>
             </div>
 
-            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(NIKAH_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div
@@ -3254,7 +3315,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-[20px] border-[3px] bg-white shadow-xl lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -3595,8 +3656,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               </h2>
             </div>
 
-            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", event.allowChat ? "lg:grid-cols-3" : "")}>
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+            <div className={cn("grid grid-cols-1 gap-8 lg:items-start", allowChat ? "lg:grid-cols-3" : "")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(BIRTHDAY_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div
@@ -3616,7 +3677,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border-[3px] bg-white shadow-xl lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -3811,10 +3872,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div
               className={cn(
                 "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
+                allowChat ? "lg:grid-cols-3" : "",
               )}
             >
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(MIDNIGHT_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div className="border border-amber-500/25 bg-black/50 p-6 text-center backdrop-blur-sm">
@@ -3825,7 +3886,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-none border border-amber-500/35 bg-black/90 shadow-[0_0_28px_rgba(0,0,0,0.5)] lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -4009,10 +4070,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div
               className={cn(
                 "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
+                allowChat ? "lg:grid-cols-3" : "",
               )}
             >
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 {renderStreamPlayer(COASTAL_STREAM_SHELL)}
                 {weddingHeroDescription ? (
                   <div className="rounded-2xl border border-white/55 bg-white/70 p-6 text-center shadow-md backdrop-blur-md">
@@ -4023,7 +4084,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-teal-200/80 bg-white/90 shadow-[0_8px_32px_rgba(0,109,119,0.12)] backdrop-blur-sm lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -4077,7 +4138,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         formatExtraDate={formatExtraDate}
         showScheduledPageEnabled={showScheduledPageEnabled}
         countdown={countdown}
-        allowChat={!!event.allowChat}
+        allowChat={!!allowChat}
         showChat={showChat}
         renderStreamPlayer={renderStreamPlayer}
         renderLiveChatBody={renderLiveChatBody}
@@ -4308,10 +4369,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div
               className={cn(
                 "grid grid-cols-1 gap-8 lg:items-start",
-                event.allowChat ? "lg:grid-cols-3" : "",
+                allowChat ? "lg:grid-cols-3" : "",
               )}
             >
-              <div className={cn("space-y-6", event.allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
                 <div className="relative">
                   {renderStreamPlayer(CELESTIAL_STREAM_SHELL)}
                   <div
@@ -4328,7 +4389,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ) : null}
               </div>
 
-              {event.allowChat ? (
+              {allowChat ? (
                 <div
                   className={`flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-violet-600/35 bg-[#1a1f3d]/80 shadow-[0_0_32px_rgba(0,0,0,0.45)] backdrop-blur-md lg:min-h-[600px] ${
                     showChat ? "flex" : "hidden lg:flex"
@@ -4367,7 +4428,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         formatExtraDate={formatExtraDate}
         showScheduledPageEnabled={showScheduledPageEnabled}
         countdown={countdown}
-        allowChat={!!event.allowChat}
+        allowChat={!!allowChat}
         showChat={showChat}
         renderStreamPlayer={renderStreamPlayer}
         renderLiveChatBody={renderLiveChatBody}
@@ -4414,7 +4475,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         primaryDateFormatted={primaryDateFormatted}
         showScheduledPageEnabled={showScheduledPageEnabled}
         countdown={countdown}
-        allowChat={!!event.allowChat}
+        allowChat={!!allowChat}
         showChat={showChat}
         setShowChat={setShowChat}
         renderStreamPlayer={renderStreamPlayer}
@@ -4456,7 +4517,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         {renderDetailsPanel("default")}
       </div>
 
-      {event.allowChat && showChat && (
+      {allowChat && showChat && (
         <div className="flex h-[400px] flex-col border-t border-border lg:h-auto lg:w-80 lg:border-l lg:border-t-0">
           {renderLiveChatBody()}
         </div>

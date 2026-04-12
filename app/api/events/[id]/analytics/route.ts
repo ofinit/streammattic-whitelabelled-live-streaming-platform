@@ -121,8 +121,6 @@ export async function GET(
       landingRows,
       leadsWindow,
       leadsTotal,
-      funnelRows,
-      orderRows,
     ] = await Promise.all([
       sql`
         SELECT
@@ -262,26 +260,6 @@ export async function GET(
         FROM event_visitor_registrations
         WHERE event_id = ${eventUuid}::uuid
       `,
-      sql`
-        SELECT event_type, COUNT(*)::bigint AS c
-        FROM analytics_funnel_events
-        WHERE created_at >= ${sinceIso}::timestamptz
-          AND created_at < ${untilIso}::timestamptz
-          AND related_event_id = ${eventUuid}::uuid
-        GROUP BY event_type
-        ORDER BY c DESC
-      `,
-      sql`
-        SELECT
-          status,
-          COUNT(*)::bigint AS c,
-          COALESCE(SUM(total_price), 0)::bigint AS total_paise
-        FROM orders
-        WHERE event_id = ${eventUuid}::uuid
-          AND created_at >= ${sinceIso}::timestamptz
-          AND created_at < ${untilIso}::timestamptz
-        GROUP BY status
-      `,
     ])
 
     const s0 = sessionStats[0] as {
@@ -416,15 +394,6 @@ export async function GET(
         inWindow: Number((leadsWindow[0] as { c: bigint }).c),
         allTime: Number((leadsTotal[0] as { c: bigint }).c),
       },
-      funnel: (funnelRows as { event_type: string; c: bigint }[]).map((r) => ({
-        eventType: r.event_type,
-        count: Number(r.c),
-      })),
-      orders: (orderRows as { status: string; c: bigint; total_paise: bigint }[]).map((r) => ({
-        status: r.status,
-        count: Number(r.c),
-        totalPaise: Number(r.total_paise),
-      })),
     })
   } catch (error: unknown) {
     console.error("[api/events/[id]/analytics]", error)

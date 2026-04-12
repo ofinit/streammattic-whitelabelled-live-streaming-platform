@@ -97,7 +97,7 @@ export default function StreamerCalendarPage() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start h-full min-h-[700px]">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start min-h-0 lg:min-h-[700px]">
         {/* Left Sidebar */}
         <div className="w-full lg:w-64 shrink-0 space-y-6">
           <Button className="w-full shadow-sm" size="lg" asChild>
@@ -107,7 +107,7 @@ export default function StreamerCalendarPage() {
             </Link>
           </Button>
 
-          <Card className="border-border shadow-sm">
+          <Card className="hidden border-border shadow-sm lg:block">
             <CardContent className="p-3">
               <EventCalendar 
                 mode="single" 

@@ -1088,8 +1088,8 @@ export function EventFormDialog({
           captureVisitorData:
             (event as unknown as Record<string, unknown>).captureVisitorData !== false &&
             (event as unknown as Record<string, unknown>).capture_visitor_data !== false,
-          allowChat: event.allowChat,
-          allowReactions: event.allowReactions,
+          allowChat: event.allowChat !== false,
+          allowReactions: event.allowReactions !== false,
           showScheduledPage: (event as any).show_scheduled_page === true || (event as any).showScheduledPage === true,
           templateId: ((event as any).templateId ?? (event as any).template_id ?? (event as any).templateData?.templateId) || "tpl-default",
           rtmpUrl: event.rtmpUrl || "",

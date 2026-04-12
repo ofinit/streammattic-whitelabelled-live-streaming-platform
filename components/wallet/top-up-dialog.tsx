@@ -119,8 +119,8 @@ export function TopUpDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md gap-0 p-4 pt-10 sm:p-6 sm:pt-6 sm:gap-4">
+        <DialogHeader className="pr-8 text-left sm:pr-0">
           <DialogTitle>
             {isAdmin && targetUser ? `Recharge ${targetUser.name}'s wallet` : "Recharge wallet"}
           </DialogTitle>

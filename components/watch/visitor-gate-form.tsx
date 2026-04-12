@@ -36,9 +36,33 @@ const fieldBorderClass =
   "border-2 border-primary/50 bg-secondary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
 
 const STORAGE_KEY_PREFIX = "sl_visitor_gate:"
+const DISPLAY_NAME_PREFIX = "sl_visitor_display_name:"
 
 export function visitorGateStorageKey(eventId: string) {
   return `${STORAGE_KEY_PREFIX}${eventId}`
+}
+
+export function visitorDisplayNameStorageKey(eventId: string) {
+  return `${DISPLAY_NAME_PREFIX}${eventId}`
+}
+
+/** Persisted when visitor details are submitted (full-page gate or chat inline). */
+export function writeVisitorDisplayName(eventId: string, fullName: string) {
+  try {
+    sessionStorage.setItem(visitorDisplayNameStorageKey(eventId), fullName.trim())
+  } catch {
+    /* ignore */
+  }
+}
+
+export function readVisitorDisplayName(eventId: string): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const v = sessionStorage.getItem(visitorDisplayNameStorageKey(eventId))
+    return v && v.trim() ? v.trim() : null
+  } catch {
+    return null
+  }
 }
 
 export function readVisitorGateComplete(eventId: string): boolean {
@@ -120,6 +144,7 @@ export function VisitorGateForm({
         setError(data.error || "Something went wrong. Please try again.")
         return
       }
+      writeVisitorDisplayName(eventId, fullName.trim())
       writeVisitorGateComplete(eventId)
       onComplete()
     } catch {
@@ -260,6 +285,213 @@ export function VisitorGateForm({
           </form>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+/** When event does not use the full-page visitor gate, collect details inside the chat panel before messaging. */
+export function ChatVisitorInlineForm({
+  eventId,
+  eventTitle,
+  onComplete,
+  className,
+}: {
+  eventId: string
+  eventTitle?: string
+  onComplete: (displayName: string) => void
+  className?: string
+}) {
+  const [fullName, setFullName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phoneDial, setPhoneDial] = useState("+91")
+  const [phoneLocal, setPhoneLocal] = useState("")
+  const [dialOpen, setDialOpen] = useState(false)
+  const [privacyOpen, setPrivacyOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  const selectedDial = useMemo(
+    () => PHONE_DIAL_OPTIONS.find((o) => o.dial === phoneDial) ?? PHONE_DIAL_OPTIONS[0],
+    [phoneDial],
+  )
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError("")
+    const phone = composeInternationalPhone(phoneDial, phoneLocal)
+    if (!fullName.trim()) {
+      setError("Please enter your full name.")
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Please enter a valid email address.")
+      return
+    }
+    if (!phone || phone.replace(/\s/g, "").length < 8) {
+      setError("Please enter a valid mobile number.")
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const utmQuery = typeof window !== "undefined" ? window.location.search : ""
+      const keys = readWatchSessionKeys(eventId)
+      const res = await fetch(`/api/watch/${encodeURIComponent(eventId)}/visitor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          phoneDial,
+          phoneLocal,
+          utmQuery,
+          visitorKey: keys.visitorKey ?? undefined,
+          sessionKey: keys.sessionKey ?? undefined,
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.")
+        return
+      }
+      const name = fullName.trim()
+      writeVisitorDisplayName(eventId, name)
+      onComplete(name)
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className={cn("flex flex-col gap-3 p-4", className)}>
+      <div>
+        <p className="text-sm font-semibold text-foreground">Join the chat</p>
+        <p className="text-xs text-muted-foreground">
+          {eventTitle ? `Enter your details to send messages on “${eventTitle}”.` : "Enter your details to send messages."}
+        </p>
+      </div>
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="chat-vg-name" className="text-xs">
+            Full name
+          </Label>
+          <Input
+            id="chat-vg-name"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className={fieldBorderClass}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="chat-vg-email" className="text-xs">
+            Email
+          </Label>
+          <Input
+            id="chat-vg-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={fieldBorderClass}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Mobile number</Label>
+          <div className="flex gap-2">
+            <Popover open={dialOpen} onOpenChange={setDialOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={dialOpen}
+                  className={cn(
+                    "h-9 w-[108px] shrink-0 justify-between px-2 font-mono text-xs tabular-nums",
+                    fieldBorderClass,
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="text-base leading-none" aria-hidden>
+                      {flagEmojiFromIso(selectedDial.iso)}
+                    </span>
+                    <span>{phoneDial}</span>
+                  </span>
+                  <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[min(100vw-2rem,280px)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search code or country…" className="h-9" />
+                  <CommandList className="max-h-[220px]">
+                    <CommandEmpty>No match.</CommandEmpty>
+                    <CommandGroup>
+                      {PHONE_DIAL_OPTIONS.map((o) => (
+                        <CommandItem
+                          key={`${o.iso}-${o.dial}`}
+                          value={`${o.dial} ${o.iso} ${o.name}`}
+                          onSelect={() => {
+                            setPhoneDial(o.dial)
+                            setDialOpen(false)
+                          }}
+                        >
+                          <span className="mr-2 text-lg leading-none" aria-hidden>
+                            {flagEmojiFromIso(o.iso)}
+                          </span>
+                          <span className="font-mono tabular-nums">{o.dial}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <Input
+              inputMode="tel"
+              autoComplete="tel-national"
+              placeholder="Number"
+              value={phoneLocal}
+              onChange={(e) => setPhoneLocal(e.target.value)}
+              className={cn("min-w-0 flex-1 text-sm", fieldBorderClass)}
+              required
+            />
+          </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          By continuing, you agree to our processing of this data as described in our{" "}
+          <button
+            type="button"
+            className="text-foreground underline underline-offset-2 hover:text-primary"
+            onClick={() => setPrivacyOpen(true)}
+          >
+            Privacy Policy
+          </button>
+          .
+        </p>
+        <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
+          <DialogContent className="flex max-h-[min(85vh,720px)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+            <DialogHeader className="shrink-0 border-b border-border px-6 py-4 text-left">
+              <DialogTitle>Privacy Policy</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Last updated: April 10, 2026
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[min(60vh,520px)] px-6 py-4">
+              <div className="space-y-1 pb-2 text-sm leading-relaxed text-foreground/90">
+                <PrivacyPolicyContent />
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        <Button type="submit" className="w-full" size="sm" disabled={submitting}>
+          {submitting ? "Please wait…" : "Continue to chat"}
+        </Button>
+      </form>
     </div>
   )
 }

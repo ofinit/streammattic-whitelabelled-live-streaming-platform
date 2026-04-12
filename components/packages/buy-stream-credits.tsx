@@ -284,15 +284,15 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           const busy = purchaseBusy === key
 
           return (
-            <Card key={key} className="border-border bg-card">
+            <Card key={key} className="border-border bg-card overflow-hidden">
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <Icon className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <CardTitle className="text-base flex items-center gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="text-base flex flex-wrap items-center gap-2">
                         {label}
                         {recommended && (
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
@@ -300,12 +300,12 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription>{description}</CardDescription>
+                      <CardDescription className="mt-0.5">{description}</CardDescription>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-left sm:text-right">
                     <p className="text-xs text-muted-foreground">Base price</p>
-                    <p className="text-lg font-bold">
+                    <p className="text-lg font-bold tabular-nums">
                       {formatPaisa(config.basePrice)}
                       <span className="text-xs font-normal text-muted-foreground">/credit</span>
                     </p>
@@ -313,11 +313,11 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-                  <div className="space-y-2">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-6">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <Label className="text-sm">Quantity</Label>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateQty(key, -1)} disabled={qty <= 1}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => updateQty(key, -1)} disabled={qty <= 1}>
                         <Minus className="h-4 w-4" />
                         <span className="sr-only">Decrease quantity</span>
                       </Button>
@@ -326,14 +326,14 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                         min="1"
                         value={qty}
                         onChange={(e) => setQty(key, Number(e.target.value))}
-                        className="w-20 h-9 text-center bg-secondary border-0"
+                        className="h-9 w-20 shrink-0 text-center bg-secondary border-0"
                       />
-                      <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => updateQty(key, 1)}>
+                      <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => updateQty(key, 1)}>
                         <Plus className="h-4 w-4" />
                         <span className="sr-only">Increase quantity</span>
                       </Button>
 
-                      <div className="hidden md:flex items-center gap-1 ml-2">
+                      <div className="hidden md:flex flex-wrap items-center gap-1">
                         {config.volumeDiscountTiers.map((tier) => (
                           <Button
                             key={tier.minQty}
@@ -350,11 +350,11 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex items-end justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm text-muted-foreground">Price/credit:</span>
-                        <span className="font-medium">{formatPaisa(pricePerEvent)}</span>
+                        <span className="font-medium tabular-nums">{formatPaisa(pricePerEvent)}</span>
                         {tierLabel && (
                           <Badge variant="secondary" className="text-[10px]">
                             <TrendingDown className="mr-1 h-3 w-3" />
@@ -367,12 +367,17 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+                      <div className="text-left sm:text-right">
                         <p className="text-xs text-muted-foreground">Total</p>
-                        <p className="text-xl font-bold">{formatPaisa(totalPrice)}</p>
+                        <p className="text-xl font-bold tabular-nums">{formatPaisa(totalPrice)}</p>
                       </div>
-                      <Button type="button" onClick={() => void handlePurchase(key)} disabled={!walletEnough || busy}>
+                      <Button
+                        type="button"
+                        className="w-full shrink-0 sm:w-auto"
+                        onClick={() => void handlePurchase(key)}
+                        disabled={!walletEnough || busy}
+                      >
                         {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
                         Buy {qty} Credits
                       </Button>

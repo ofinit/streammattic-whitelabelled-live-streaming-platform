@@ -4,7 +4,30 @@ fal.config({
   credentials: process.env.FAL_KEY,
 })
 
-const MODEL = process.env.FAL_IMAGE_MODEL?.trim() || "fal-ai/flux/schnell"
+const MODEL = process.env.FAL_IMAGE_MODEL?.trim() || "fal-ai/nano-banana-2"
+
+const FLUX_SIZE_TO_ASPECT = {
+  landscape_16_9: "16:9",
+  landscape_4_3: "4:3",
+  portrait_16_9: "9:16",
+  portrait_4_3: "3:4",
+  square_hd: "1:1",
+  square: "1:1",
+}
+
+function buildFalInput(modelId, prompt, imageSize) {
+  const mid = modelId.toLowerCase()
+  if (mid.includes("flux/schnell")) {
+    return {
+      prompt,
+      image_size: imageSize,
+      num_inference_steps: 4,
+      num_images: 1,
+    }
+  }
+  const aspect = FLUX_SIZE_TO_ASPECT[imageSize] ?? "16:9"
+  return { prompt, num_images: 1, aspect_ratio: aspect, output_format: "png" }
+}
 
 const imagePrompts = [
   // Event Type images
@@ -77,12 +100,7 @@ async function generateImage(item) {
   console.log(`Generating: ${item.id}...`)
   try {
     const result = await fal.subscribe(MODEL, {
-      input: {
-        prompt: item.prompt,
-        image_size: item.size,
-        num_inference_steps: 4,
-        num_images: 1,
-      },
+      input: buildFalInput(MODEL, item.prompt, item.size),
     })
     const url = result.data?.images?.[0]?.url
     if (url) {

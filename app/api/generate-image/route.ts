@@ -9,13 +9,14 @@ import {
   resolveFalModelIdForGeneration,
   resolveOpenRouterModelIdForGeneration,
   getEffectiveProviderReferenceCostPaise,
+  isOpenRouterGenerationPossible,
 } from "@/lib/ai-image-resolve"
 import { getCatalogLabel } from "@/lib/ai-image-model-catalog"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { encodeBufferToWebp } from "@/lib/server/webp"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
 import { buildFalSubscribeInput } from "@/lib/fal-image-input"
-import { isFalBackendConfigured, isOpenRouterBackendConfigured } from "@/lib/ai-image-backend"
+import { isFalBackendConfigured } from "@/lib/ai-image-backend"
 import { generateImageBufferOpenRouter } from "@/lib/openrouter-image"
 
 /** Apply on each request so Coolify/runtime env is always used (avoid stale empty key at module load). */
@@ -137,7 +138,8 @@ export async function GET() {
   const providerReferenceCostPaise = getEffectiveProviderReferenceCostPaise(config)
   const marginPaise =
     providerReferenceCostPaise !== null ? config.price - providerReferenceCostPaise : null
-  const backendReady = backend === "fal" ? isFalBackendConfigured() : isOpenRouterBackendConfigured()
+  const backendReady =
+    backend === "fal" ? isFalBackendConfigured() : isOpenRouterGenerationPossible(config)
   return jsonOk({
     price: config.price,
     enabled: config.enabled,
@@ -151,7 +153,7 @@ export async function GET() {
     marginPaise,
     backendsAvailable: {
       fal: isFalBackendConfigured(),
-      openrouter: isOpenRouterBackendConfigured(),
+      openrouter: isOpenRouterGenerationPossible(config),
     },
     backendReady,
   })
@@ -184,14 +186,21 @@ export const POST = withAuth(async (user, request: Request) => {
         503,
       )
     }
-  } else if (!isOpenRouterBackendConfigured()) {
-    console.error(
-      "[generate-image] OPENROUTER_API_KEY or OPENROUTER_IMAGE_MODEL missing — required when using OpenRouter backend.",
-    )
-    return jsonError(
-      "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY and OPENROUTER_IMAGE_MODEL in the server environment.",
-      503,
-    )
+  } else {
+    if (!process.env.OPENROUTER_API_KEY?.trim()) {
+      console.error("[generate-image] OPENROUTER_API_KEY missing — required when using OpenRouter backend.")
+      return jsonError(
+        "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY in the server environment.",
+        503,
+      )
+    }
+    if (!resolveOpenRouterModelIdForGeneration(aiConfig).trim()) {
+      console.error("[generate-image] OpenRouter model missing — set OPENROUTER_IMAGE_MODEL or Admin → Packages → OpenRouter model.")
+      return jsonError(
+        "OpenRouter model is not configured. Set OPENROUTER_IMAGE_MODEL in environment or choose a model in Admin → Packages (AI Image Generation).",
+        503,
+      )
+    }
   }
 
   const rawPrompt = typeof body.prompt === "string" ? body.prompt : ""

@@ -26,6 +26,12 @@ export function resolveOpenRouterModelIdForGeneration(config: AiImagePricingConf
   return getOpenRouterImageModelFromEnv()
 }
 
+/** True when OpenRouter can run: API key present and model id from DB or env. */
+export function isOpenRouterGenerationPossible(config: AiImagePricingConfig): boolean {
+  if (!process.env.OPENROUTER_API_KEY?.trim()) return false
+  return resolveOpenRouterModelIdForGeneration(config).trim().length > 0
+}
+
 /** Reference cost for margin: admin override, else catalog lookup for resolved backend + model. */
 export function getEffectiveProviderReferenceCostPaise(config: AiImagePricingConfig): number | null {
   const backend = resolveImageBackendFromConfig(config)

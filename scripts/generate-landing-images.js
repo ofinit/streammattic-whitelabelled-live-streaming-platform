@@ -1,8 +1,10 @@
-import * as fal from "@fal-ai/serverless-client"
+import { fal } from "@fal-ai/client"
 
 fal.config({
   credentials: process.env.FAL_KEY,
 })
+
+const MODEL = process.env.FAL_IMAGE_MODEL?.trim() || "fal-ai/flux/schnell"
 
 const imagePrompts = [
   // Event Type images
@@ -74,7 +76,7 @@ const imagePrompts = [
 async function generateImage(item) {
   console.log(`Generating: ${item.id}...`)
   try {
-    const result = await fal.subscribe("fal-ai/flux/schnell", {
+    const result = await fal.subscribe(MODEL, {
       input: {
         prompt: item.prompt,
         image_size: item.size,
@@ -82,7 +84,7 @@ async function generateImage(item) {
         num_images: 1,
       },
     })
-    const url = result.images?.[0]?.url
+    const url = result.data?.images?.[0]?.url
     if (url) {
       console.log(`  OK: ${item.id} -> ${url}`)
       return { id: item.id, url }

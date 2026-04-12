@@ -1,7 +1,7 @@
 import path from "path"
 import fs from "fs/promises"
 import { randomUUID } from "crypto"
-import * as fal from "@fal-ai/serverless-client"
+import { fal } from "@fal-ai/client"
 import { getDb, toCamel } from "@/lib/db"
 import { parseAiImagePricing, AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
@@ -18,9 +18,21 @@ function configureFalFromEnv() {
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 const AI_GENERATED_SUBDIR = "ai-generated"
 
+/** Default matches Fal Model APIs docs; override if your key returns 403 for this endpoint (see fal.ai/models). */
+const DEFAULT_FAL_IMAGE_MODEL = "fal-ai/flux/schnell"
+
+function getFalImageModelId(): string {
+  const m = process.env.FAL_IMAGE_MODEL?.trim()
+  return m && m.length > 0 ? m : DEFAULT_FAL_IMAGE_MODEL
+}
+
 const FETCH_TIMEOUT_MS = 120_000
 
-/** Fal may return `{ images }` (legacy client) or `{ data: { images } }` (newer API). */
+/**
+ * Normalize Fal output: `@fal-ai/client` returns `{ data, requestId }` per
+ * https://fal.ai/docs/documentation/model-apis/overview — images live under `data.images`.
+ * Legacy shapes without `data` are still supported.
+ */
 function extractImageUrlsFromFalResult(result: unknown): string[] {
   if (result == null || typeof result !== "object") return []
   const top = result as Record<string, unknown>
@@ -208,7 +220,10 @@ export const POST = withAuth(async (user, request: Request) => {
   }
 
   try {
-    const result = await fal.subscribe("fal-ai/flux/schnell", {
+    const modelId = getFalImageModelId()
+    console.info("[generate-image] Fal model:", modelId)
+
+    const result = await fal.subscribe(modelId, {
       input: {
         prompt,
         image_size: imageSize,
@@ -276,7 +291,7 @@ export const POST = withAuth(async (user, request: Request) => {
         "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
     } else if (lower.includes("403") && (lower.includes("forbidden") || lower.includes("access"))) {
       client =
-        "Fal API denied access (403). Check the key’s permissions and that model fal-ai/flux/schnell is allowed for your account."
+        `Fal API denied access (403) for model "${getFalImageModelId()}". In the Fal dashboard confirm API key scope and that this model is enabled for your account. You can set FAL_IMAGE_MODEL to another text-to-image endpoint from fal.ai/models with compatible inputs, or use the official @fal-ai/client (already deployed). See https://fal.ai/docs/documentation/model-apis/overview`
     } else if (lower.includes("402") || lower.includes("payment") || lower.includes("insufficient") || lower.includes("quota")) {
       client = "Fal API billing or quota issue. Add credits or check usage on fal.ai."
     } else if (lower.includes("429") || lower.includes("rate limit")) {

@@ -36,6 +36,7 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getDefaultTemplateHeroBackdropUrl } from "@/lib/template-default-media"
 import { EventTemplateBanner } from "./event-template-banner"
+import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { CorporateTechForwardWatchView } from "./corporate-tech-forward-watch-view"
 import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
@@ -1056,6 +1057,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   }
 
   const evRawTop = event as unknown as Record<string, unknown>
+  const headerImageUrl =
+    (evRawTop.headerImageUrl as string | undefined) ||
+    (evRawTop.header_image_url as string | undefined)
+  const globalHeaderImage =
+    typeof headerImageUrl === "string" && headerImageUrl.trim() ? (
+      <EventGlobalHeaderImage url={headerImageUrl.trim()} />
+    ) : null
   const templateId = watchTemplateId
   const templateData = parseWatchTemplateData(evRawTop.templateData)
   /** Include tpl-default so event title uses template default (or custom) font + size from Design settings */
@@ -1108,6 +1116,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        {globalHeaderImage}
         <div className="relative w-full aspect-video max-h-[60vh] bg-gradient-to-br from-primary/20 via-background to-primary/5 flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
           <div className="relative flex items-center justify-center">
@@ -1195,6 +1204,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   if ((event.status as string) === "on_break") {
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        {globalHeaderImage}
         <div className="relative w-full aspect-video max-h-[60vh] bg-gradient-to-br from-orange-950/40 via-background to-orange-900/10 flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent" />
           <div className="relative flex items-center justify-center">
@@ -2212,6 +2222,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="relative flex min-h-screen flex-col bg-[#fefae0] font-wedding text-stone-800">
+        {globalHeaderImage}
         <style jsx global>{`
           /* Same motion as reference HTML @keyframes fall (renamed to avoid global name collisions) */
           @keyframes watchWeddingHtmlPetalFall {
@@ -2427,6 +2438,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#faf9f6] font-garden-sans text-emerald-950">
+        {globalHeaderImage}
         <style jsx global>{`
           @keyframes watchGardenFlowerFall {
             0% {
@@ -2699,6 +2711,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             }
           }
         `}</style>
+        {globalHeaderImage}
 
         <section className="relative z-[2] flex min-h-[88vh] flex-col items-center justify-center overflow-hidden text-center bg-[#3d2528]">
           {roseHeroBackdrop ? (
@@ -3056,6 +3069,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             }
           }
         `}</style>
+        {globalHeaderImage}
 
         <div
           className="pointer-events-none fixed inset-0 z-[1]"
@@ -3402,6 +3416,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             }
           }
         `}</style>
+        {globalHeaderImage}
 
         <section
           className="relative z-[3] flex min-h-[88vh] flex-col overflow-hidden px-4 py-12 text-center md:py-16"
@@ -3704,6 +3719,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#0a0a0a] font-midnight-sans text-zinc-100">
+        {globalHeaderImage}
         <div
           className="pointer-events-none fixed inset-0 z-0 opacity-[0.14]"
           aria-hidden
@@ -3912,6 +3928,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="relative flex min-h-screen flex-col overflow-x-hidden coastal-sand-texture-bg font-coastal-sans text-slate-800">
+        {globalHeaderImage}
         <div className="pointer-events-none fixed inset-0 z-[2] overflow-hidden" aria-hidden>
           {coastalBubbles.map((b) => (
             <span
@@ -4129,6 +4146,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     return (
       <CorporateTechForwardWatchView
         event={event}
+        headerImageUrl={headerImageUrl}
         heroSubtitle={heroSubtitle}
         heroBlurb={heroBlurb}
         heroBackdropUrl={corpHeroBackdrop}
@@ -4160,6 +4178,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
     return (
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#0b0d17] font-celestial-sans text-zinc-100">
+        {globalHeaderImage}
         <section className="relative z-10 flex min-h-[88vh] items-center justify-center overflow-hidden pt-12">
           {celestialHeroBackdrop ? (
             <div
@@ -4417,6 +4436,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     return (
       <WeddingTraditionalHinduWatchView
         event={event}
+        headerImageUrl={headerImageUrl}
         watchTemplateId={watchTemplateId}
         coupleHero={coupleHero}
         coupleParts={coupleParts}
@@ -4451,6 +4471,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     return (
       <MemorialServiceWatchView
         event={event}
+        headerImageUrl={headerImageUrl}
         heroBackdropUrl={heroBackdropUrl}
         deceasedName={deceasedNameDisplay}
         deceasedPhotoUrl={deceasedPhotoMemorial}
@@ -4496,6 +4517,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background lg:flex-row">
       <div className="flex flex-1 flex-col">
+        {globalHeaderImage}
         {heroImageUrl && (
           <div className="relative aspect-[21/9] max-h-[280px] w-full overflow-hidden bg-muted">
             <img src={heroImageUrl} alt="" className="h-full w-full object-cover" />

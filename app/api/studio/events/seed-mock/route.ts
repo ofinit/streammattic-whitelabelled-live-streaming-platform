@@ -50,6 +50,7 @@ export async function POST() {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
@@ -80,7 +81,7 @@ export async function POST() {
           youtube_url, embed_code, status, scheduled_at,
           is_password_protected, event_password, allow_chat, allow_reactions,
           simulcast_config, slug, timezone, show_scheduled_page, template_data,
-          validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
+          validity_expires_at, hero_image_url, header_image_url, player_image_url, photo_gallery_urls,
           photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain,
           is_mock
         ) VALUES (
@@ -96,7 +97,7 @@ export async function POST() {
           ${false},
           ${templateDataJson}::jsonb,
           ${validityExpiresAtValue},
-          ${null}, ${null}, ${"[]"}::jsonb,
+          ${null}, ${null}, ${null}, ${"[]"}::jsonb,
           ${null}, ${"{}"}::jsonb, ${null},
           ${isStudio},
           ${true}

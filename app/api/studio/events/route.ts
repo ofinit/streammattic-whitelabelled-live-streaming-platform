@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData,
       youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
       additionalDates, templateId, templateData: rawTemplateData,
-      heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin,
     } = body
 
@@ -231,6 +231,7 @@ export async function POST(req: NextRequest) {
       photographerContact && typeof photographerContact === "object" ? JSON.stringify(photographerContact) : "{}"
 
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
@@ -253,7 +254,7 @@ export async function POST(req: NextRequest) {
         youtube_url, embed_code, status, scheduled_at,
         is_password_protected, event_password, allow_chat, allow_reactions, capture_visitor_data,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
-        validity_expires_at, hero_image_url, player_image_url, photo_gallery_urls,
+        validity_expires_at, hero_image_url, header_image_url, player_image_url, photo_gallery_urls,
         photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
@@ -270,7 +271,7 @@ export async function POST(req: NextRequest) {
         ${showScheduledPage ?? false},
         ${templateDataJson}::jsonb,
         ${validityExpiresAtValue},
-        ${heroImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
+        ${heroImageUrl || null}, ${headerImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
         ${photographerLogoUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
         ${user.role === 'studio'}
       )
@@ -330,7 +331,7 @@ export async function PUT(req: NextRequest) {
       id, title, subtitle, description, scheduledAt, status, slug: rawSlug,
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData, timezone, showScheduledPage, showRecording,
       additionalDates, templateId, templateData: rawTemplateData,
-      heroImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin,
       streamType, youtubeUrl, embedCode, simulcastConfig,
       isSuspended,
@@ -603,6 +604,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const finalHeroImageUrl = resolveImageUrlColumn(heroImageUrl, prev.hero_image_url)
+    const finalHeaderImageUrl = resolveImageUrlColumn(headerImageUrl, prev.header_image_url)
     const finalPlayerImageUrl = resolveImageUrlColumn(playerImageUrl, prev.player_image_url)
     const finalPhotographerLogoUrl = resolveImageUrlColumn(photographerLogoUrl, prev.photographer_logo_url)
 
@@ -648,6 +650,7 @@ export async function PUT(req: NextRequest) {
         template_data = ${JSON.stringify(newTemplateData)}::jsonb,
         validity_expires_at = COALESCE(${validityExpiresAtValue ?? null}, validity_expires_at),
         hero_image_url = ${finalHeroImageUrl},
+        header_image_url = ${finalHeaderImageUrl},
         player_image_url = ${finalPlayerImageUrl},
         photo_gallery_urls = ${finalPhotoGallery}::jsonb,
         photographer_logo_url = ${finalPhotographerLogoUrl},

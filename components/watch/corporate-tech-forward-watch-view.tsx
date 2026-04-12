@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { useMemo, useState, useEffect } from "react"
 import type { LiveEvent } from "@/lib/types"
+import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { Play, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,8 @@ export type CorporateStreamDateRow = {
 
 export type CorporateTechForwardWatchViewProps = {
   event: LiveEvent
+  /** Full-width strip above the corporate hero (event row `header_image_url`). */
+  headerImageUrl?: string
   /** Under the title: event Sub-title first, else template company tagline, else default. */
   heroSubtitle: string
   heroBlurb: string
@@ -53,6 +56,7 @@ function buildStreamText(rows: number): string {
 
 export function CorporateTechForwardWatchView({
   event,
+  headerImageUrl,
   heroSubtitle,
   heroBlurb,
   heroBackdropUrl,
@@ -105,6 +109,7 @@ export function CorporateTechForwardWatchView({
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[#0a0a0a] font-sans text-white">
+      <EventGlobalHeaderImage url={headerImageUrl} />
       <div className="corp-tech-grid-bg pointer-events-none fixed inset-0 z-0 motion-reduce:hidden" aria-hidden />
 
       <div

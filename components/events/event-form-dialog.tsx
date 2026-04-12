@@ -763,6 +763,7 @@ export function EventFormDialog({
 
   // Standard event media and options (all templates)
   const [heroImageUrl, setHeroImageUrl] = useState("")
+  const [headerImageUrl, setHeaderImageUrl] = useState("")
   const [playerImageUrl, setPlayerImageUrl] = useState("")
   const [photoGalleryUrls, setPhotoGalleryUrls] = useState<string[]>([])
   const [photographerLogoUrl, setPhotographerLogoUrl] = useState("")
@@ -1102,6 +1103,7 @@ export function EventFormDialog({
         setTemplateData(parseTemplateDataFromEvent((event as any).templateData))
         const ev = event as any
         setHeroImageUrl((ev.heroImageUrl as string) || "")
+        setHeaderImageUrl((ev.headerImageUrl as string) || "")
         setPlayerImageUrl((ev.playerImageUrl as string) || "")
         setPhotoGalleryUrls(parsePhotoGalleryUrls(ev.photoGalleryUrls))
         setPhotographerLogoUrl((ev.photographerLogoUrl as string) || "")
@@ -1139,6 +1141,7 @@ export function EventFormDialog({
           useCustomDomain: youtubeOwnerType === "studio", // Default to true if in studio mode
         })
         setHeroImageUrl("")
+        setHeaderImageUrl("")
         setPlayerImageUrl("")
         setPhotoGalleryUrls([])
         setPhotographerLogoUrl("")
@@ -1729,6 +1732,7 @@ export function EventFormDialog({
       templateData: { ...templateData, templateId: formData.templateId || "tpl-default" },
       // Send null (not omit) when cleared so PUT can persist clearing — COALESCE no longer blocks NULL.
       heroImageUrl: heroImageUrl.trim() ? heroImageUrl.trim() : null,
+      headerImageUrl: headerImageUrl.trim() ? headerImageUrl.trim() : null,
       playerImageUrl: playerImageUrl.trim() ? playerImageUrl.trim() : null,
       photoGalleryUrls: [...photoGalleryUrls],
       photographerLogoUrl: photographerLogoUrl.trim() ? photographerLogoUrl.trim() : null,
@@ -3148,6 +3152,45 @@ export function EventFormDialog({
               <Card className="border-muted">
                 <CardContent className="pt-4 space-y-4">
                   <h4 className="text-sm font-medium">Event media & info</h4>
+                  <div className="space-y-2">
+                    <Label>Header image</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Full width above the template header on the watch page — optional.
+                    </p>
+                    {headerImageUrl ? (
+                      <div className="relative h-24 w-full max-w-md rounded border overflow-hidden">
+                        <img src={headerImageUrl} alt="Header" className="w-full h-full object-cover" />
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeaderImageUrl("")}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                        <AiImagePickerDialog
+                          dialogTitle="Header image"
+                          uploadSubdir="event-header"
+                          walletUserId={creditsUserId}
+                          onImageUrl={(url) => setHeaderImageUrl(url)}
+                        >
+                          <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                            Change
+                          </Button>
+                        </AiImagePickerDialog>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AiImagePickerDialog
+                          dialogTitle="Header image"
+                          uploadSubdir="event-header"
+                          walletUserId={creditsUserId}
+                          onImageUrl={(url) => setHeaderImageUrl(url)}
+                        >
+                          <Button type="button" variant="outline" size="sm" className="gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Add image
+                          </Button>
+                        </AiImagePickerDialog>
+                        <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Player image</Label>

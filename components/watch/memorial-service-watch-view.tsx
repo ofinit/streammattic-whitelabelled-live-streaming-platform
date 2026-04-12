@@ -5,11 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { LiveEvent } from "@/lib/types"
 import { Play, ChevronDown, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export type MemorialWatchViewProps = {
   event: LiveEvent
+  /** Full-width strip above the memorial hero (`header_image_url`). */
+  headerImageUrl?: string
   heroBackdropUrl: string
   deceasedName: string
   deceasedPhotoUrl: string
@@ -61,6 +64,7 @@ export function formatMemorialDate(raw: string | undefined): string {
 
 export function MemorialServiceWatchView({
   event,
+  headerImageUrl,
   heroBackdropUrl,
   deceasedName,
   deceasedPhotoUrl,
@@ -105,6 +109,7 @@ export function MemorialServiceWatchView({
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f8f5f0] font-memorial-serif text-[#2c3e50]">
+      <EventGlobalHeaderImage url={headerImageUrl} />
       <section className="relative flex min-h-[min(100dvh,920px)] items-center justify-center overflow-hidden px-4 py-16 md:py-20">
         <div
           className="absolute inset-0 bg-gradient-to-br from-[#1e3c72] via-[#2a5298] to-[#7e8ba3]"

@@ -7,6 +7,7 @@ import type { LiveEvent } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { heroTitleFontSizeStyle, titleFallbackFontClass } from "@/lib/event-title-typography"
+import { EventGlobalHeaderImage } from "./event-global-header-image"
 
 /** Must match `--hindu-garland-tile` / `::before` `background-size` in `app/globals.css` */
 const HINDU_GARLAND_TILE_PX = 30
@@ -31,6 +32,8 @@ export type HinduStreamDateRow = {
 
 export type WeddingTraditionalHinduWatchViewProps = {
   event: LiveEvent
+  /** Full-width strip above the hero (`header_image_url`). */
+  headerImageUrl?: string
   watchTemplateId: string
   coupleHero: string
   coupleParts: string[] | null
@@ -76,6 +79,7 @@ function useRevealOnScroll() {
 
 export function WeddingTraditionalHinduWatchView({
   event,
+  headerImageUrl,
   watchTemplateId,
   coupleHero,
   coupleParts,
@@ -138,6 +142,7 @@ export function WeddingTraditionalHinduWatchView({
       ref={rootRef}
       className="relative min-h-screen overflow-x-hidden bg-[#FFF8DC] font-hindu-wedding-serif text-[#5c0a0a]"
     >
+      <EventGlobalHeaderImage url={headerImageUrl} />
       <svg
         className="pointer-events-none fixed -right-[200px] -top-[200px] z-0 h-[600px] w-[600px] animate-[hinduRotateMandala_60s_linear_infinite] opacity-[0.06] motion-reduce:animate-none"
         viewBox="0 0 200 200"

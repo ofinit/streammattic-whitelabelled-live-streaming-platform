@@ -200,6 +200,7 @@ CREATE TABLE events (
   template_data JSONB DEFAULT '{}',
   validity_expires_at TIMESTAMPTZ,
   hero_image_url TEXT,
+  header_image_url TEXT,
   player_image_url TEXT,
   photo_gallery_urls JSONB DEFAULT '[]',
   photographer_logo_url TEXT,

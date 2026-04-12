@@ -17,9 +17,9 @@ export interface TemplateFieldGroup {
   fields: TemplateField[]
 }
 
-// Standard event media (player image, hero image, photo gallery, photographer logo & contact)
+// Standard event media (player image, hero image, header image, photo gallery, photographer logo & contact)
 // are implemented as a shared block in the event form (Design tab) and stored on the event
-// (hero_image_url, player_image_url, etc.), not in template_data. All templates use that
+// (hero_image_url, header_image_url, player_image_url, etc.), not in template_data. All templates use that
 // same block plus the template-specific groups below.
 
 // Template category to fields mapping

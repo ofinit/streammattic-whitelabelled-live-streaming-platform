@@ -33,7 +33,7 @@ export async function runEventCleanupTask() {
     // 1. Find expired events
     const expiredEvents = await sql`
       SELECT e.id, e.title, e.user_id as "userId", e.studio_id as "studioId", u.email as "ownerEmail",
-             e.hero_image_url as "heroImageUrl", e.player_image_url as "playerImageUrl",
+             e.hero_image_url as "heroImageUrl", e.header_image_url as "headerImageUrl", e.player_image_url as "playerImageUrl",
              e.photo_gallery_urls as "photoGalleryUrls", e.photographer_logo_url as "photographerLogoUrl",
              e.thumbnail
       FROM events e
@@ -49,7 +49,8 @@ export async function runEventCleanupTask() {
       // 2. Collect image paths
       const pathsToDelete = new Set<string>()
       const candidateUrls = [
-        event.heroImageUrl, 
+        event.heroImageUrl,
+        event.headerImageUrl,
         event.playerImageUrl, 
         event.photographerLogoUrl, 
         event.thumbnail

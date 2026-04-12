@@ -3,7 +3,7 @@
 import { use, useMemo, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ArrowLeft, BarChart3, Copy, Check, Loader2 } from "lucide-react"
+import { BarChart3, Copy, Check, Loader2 } from "lucide-react"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,9 +40,6 @@ export default function EventAnalyticsPage({ params }: { params: Promise<{ slug:
   const { user, isLoading: authLoading } = useAuth()
   const [days, setDays] = useState<7 | 30 | 90>(30)
   const [copied, setCopied] = useState(false)
-
-  const basePath =
-    user?.role === "studio" ? "/studio" : user?.role === "admin" ? "/admin" : "/streamer"
 
   const apiUrl = user
     ? `/api/events/${encodeURIComponent(slug)}/analytics?days=${days}`
@@ -97,12 +94,6 @@ export default function EventAnalyticsPage({ params }: { params: Promise<{ slug:
           <Link href="/" className="flex items-center gap-2">
             <BrandedLogo size="sm" />
           </Link>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`${basePath}/control-center`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Control center
-            </Link>
-          </Button>
         </div>
       </header>
 

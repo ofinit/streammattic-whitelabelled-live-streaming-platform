@@ -10,7 +10,7 @@
 
 export const DEFAULT_FAL_IMAGE_MODEL = "fal-ai/flux-1/schnell"
 
-/** Maps UI / legacy flux `image_size` values to nano-banana-style `aspect_ratio` enum. */
+/** Maps UI / legacy flux `image_size` values to aspect ratio strings (nano-banana, OpenRouter `image_config`, etc.). */
 const FLUX_IMAGE_SIZE_TO_ASPECT: Record<string, string> = {
   landscape_16_9: "16:9",
   landscape_4_3: "4:3",
@@ -18,6 +18,11 @@ const FLUX_IMAGE_SIZE_TO_ASPECT: Record<string, string> = {
   portrait_4_3: "3:4",
   square_hd: "1:1",
   square: "1:1",
+}
+
+/** Shared mapping for any provider that uses `16:9`-style aspect ratio strings. */
+export function imageSizeToAspectRatioString(imageSize: string): string {
+  return FLUX_IMAGE_SIZE_TO_ASPECT[imageSize] ?? "16:9"
 }
 
 function isFluxSchnellFamily(modelId: string): boolean {
@@ -57,7 +62,7 @@ export function buildFalSubscribeInput(
       output_format: "jpeg",
     }
   }
-  const aspect = FLUX_IMAGE_SIZE_TO_ASPECT[imageSize] ?? "16:9"
+  const aspect = imageSizeToAspectRatioString(imageSize)
   return {
     prompt,
     num_images: 1,

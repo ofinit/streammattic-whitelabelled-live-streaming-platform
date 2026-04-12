@@ -57,14 +57,23 @@ interface LandingImageEditorProps {
 
 export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageEditorProps) {
   const [aiPrice, setAiPrice] = useState<number | null>(null)
+  const [aiShowPricingLine, setAiShowPricingLine] = useState(false)
   const { data: walletJson, isLoading: walletLoading } = useSWR("/api/wallets", fetcher, { revalidateOnFocus: true })
   const walletBalance = Number((walletJson?.wallet as { balance?: number } | undefined)?.balance ?? 0)
 
   useEffect(() => {
     fetch("/api/generate-image")
       .then((res) => res.json())
-      .then((data) => setAiPrice(data.price ?? null))
-      .catch(() => setAiPrice(null))
+      .then((data: Record<string, unknown>) => {
+        setAiPrice(typeof data.price === "number" ? data.price : null)
+        const enabled = data.enabled !== false
+        const ready = data.backendReady === true
+        setAiShowPricingLine(enabled && ready)
+      })
+      .catch(() => {
+        setAiPrice(null)
+        setAiShowPricingLine(false)
+      })
   }, [])
 
   return (
@@ -74,7 +83,9 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
           <div>
             <CardTitle>Landing Page Images</CardTitle>
             <CardDescription className="mt-1">
-              Upload your own images for free, or generate with AI from your wallet balance.
+              {aiShowPricingLine
+                ? "Upload your own images for free, or generate with AI from your wallet balance."
+                : "Upload your own images for free. AI generation may be disabled or not configured on the server."}
             </CardDescription>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -84,7 +95,7 @@ export function LandingImageEditor({ branding, onBrandingUpdate }: LandingImageE
                 {walletLoading ? "…" : `₹${(walletBalance / 100).toFixed(0)}`}
               </span>
             </div>
-            {aiPrice !== null && (
+            {aiShowPricingLine && aiPrice !== null && (
               <span className="text-xs text-muted-foreground">
                 AI generation: ₹{(aiPrice / 100).toFixed(0)} / image
               </span>

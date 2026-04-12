@@ -8,6 +8,14 @@ import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { encodeBufferToWebp } from "@/lib/server/webp"
 import { getPublicBaseUrl } from "@/lib/public-base-url"
 import { buildFalSubscribeInput, getFalImageModelId } from "@/lib/fal-image-input"
+import {
+  getAiImageBackendFromEnv,
+  getOpenRouterImageModelFromEnv,
+  isFalBackendConfigured,
+  isOpenRouterBackendConfigured,
+  isActiveAiBackendConfigured,
+} from "@/lib/ai-image-backend"
+import { generateImageBufferOpenRouter } from "@/lib/openrouter-image"
 
 /** Apply on each request so Coolify/runtime env is always used (avoid stale empty key at module load). */
 function configureFalFromEnv() {
@@ -122,7 +130,17 @@ export async function GET() {
   const sql = getDb()
   const rows = await sql`SELECT value FROM platform_settings WHERE key = 'ai_image_pricing'`
   const config = parseAiImagePricing(rows.length > 0 ? rows[0].value : null)
-  return jsonOk({ price: config.price, enabled: config.enabled })
+  const backend = getAiImageBackendFromEnv()
+  return jsonOk({
+    price: config.price,
+    enabled: config.enabled,
+    backend,
+    backendsAvailable: {
+      fal: isFalBackendConfigured(),
+      openrouter: isOpenRouterBackendConfigured(),
+    },
+    backendReady: isActiveAiBackendConfigured(),
+  })
 }
 
 export const POST = withAuth(async (user, request: Request) => {
@@ -131,11 +149,22 @@ export const POST = withAuth(async (user, request: Request) => {
     return jsonError("Forbidden", 403)
   }
 
-  const falKey = configureFalFromEnv()
-  if (!falKey) {
-    console.error("[generate-image] FAL_KEY is not set — set it in the server environment (e.g. Coolify → Environment).")
+  const backend = getAiImageBackendFromEnv()
+  if (backend === "fal") {
+    const falKey = configureFalFromEnv()
+    if (!falKey) {
+      console.error("[generate-image] FAL_KEY is not set — set it in the server environment (e.g. Coolify → Environment).")
+      return jsonError(
+        "AI image generation is not configured on this server (missing FAL_KEY). Add your Fal API key to environment variables.",
+        503,
+      )
+    }
+  } else if (!isOpenRouterBackendConfigured()) {
+    console.error(
+      "[generate-image] OPENROUTER_API_KEY or OPENROUTER_IMAGE_MODEL missing — required when AI_IMAGE_BACKEND=openrouter.",
+    )
     return jsonError(
-      "AI image generation is not configured on this server (missing FAL_KEY). Add your Fal API key to environment variables.",
+      "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY and OPENROUTER_IMAGE_MODEL in the server environment.",
       503,
     )
   }
@@ -166,7 +195,7 @@ export const POST = withAuth(async (user, request: Request) => {
     role === "admin" && requestedUserId !== ""
       ? requestedUserId
       : (user.id as string)
-  /** Platform admin creating assets for their own account — no wallet debit (still uses platform FAL quota). */
+  /** Platform admin creating assets for their own account — no wallet debit (still uses platform API quota). */
   const isPlatformAdminSelfService = role === "admin" && userId === (user.id as string)
   const sql = getDb()
 
@@ -213,25 +242,39 @@ export const POST = withAuth(async (user, request: Request) => {
   }
 
   try {
-    const modelId = getFalImageModelId()
-    console.info("[generate-image] Fal model:", modelId)
+    let raw: Buffer
 
-    const result = await fal.subscribe(modelId, {
-      input: buildFalSubscribeInput(modelId, prompt, imageSize),
-    })
+    if (backend === "openrouter") {
+      const apiKey = process.env.OPENROUTER_API_KEY!.trim()
+      const orModel = getOpenRouterImageModelFromEnv()
+      console.info("[generate-image] OpenRouter model:", orModel)
+      raw = await generateImageBufferOpenRouter({
+        apiKey,
+        model: orModel,
+        prompt,
+        imageSize,
+      })
+    } else {
+      const modelId = getFalImageModelId()
+      console.info("[generate-image] Fal model:", modelId)
 
-    const urls = extractImageUrlsFromFalResult(result)
-    const remoteUrl = urls[0]
-    if (!remoteUrl) {
-      console.error("[generate-image] Unexpected Fal shape (no image URLs):", JSON.stringify(result)?.slice(0, 2000))
-      throw new Error("No image generated (empty response from Fal — check API response shape / model access)")
+      const result = await fal.subscribe(modelId, {
+        input: buildFalSubscribeInput(modelId, prompt, imageSize),
+      })
+
+      const urls = extractImageUrlsFromFalResult(result)
+      const remoteUrl = urls[0]
+      if (!remoteUrl) {
+        console.error("[generate-image] Unexpected Fal shape (no image URLs):", JSON.stringify(result)?.slice(0, 2000))
+        throw new Error("No image generated (empty response from Fal — check API response shape / model access)")
+      }
+
+      const fetchRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+      if (!fetchRes.ok) {
+        throw new Error(`Download failed: HTTP ${fetchRes.status}`)
+      }
+      raw = Buffer.from(await fetchRes.arrayBuffer())
     }
-
-    const fetchRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
-    if (!fetchRes.ok) {
-      throw new Error(`Download failed: HTTP ${fetchRes.status}`)
-    }
-    const raw = Buffer.from(await fetchRes.arrayBuffer())
 
     let webp: Buffer
     try {
@@ -265,25 +308,30 @@ export const POST = withAuth(async (user, request: Request) => {
       await refundAiGenerationWallet(sql, walletId, userId, price, "Refund: AI image generation failed")
     }
 
-    /** Map Fal / network failures to actionable messages (key is set but invalid, quota, egress, etc.). */
+    /** Map provider / network failures to actionable messages (key is set but invalid, quota, egress, etc.). */
     const generic =
-      "Image generation failed. Check container logs for [generate-image] or verify Fal dashboard (billing / model access)."
+      "Image generation failed. Check container logs for [generate-image] or verify provider keys and billing (Fal / OpenRouter)."
     let client = generic
+    const isOr = backend === "openrouter" || lower.includes("openrouter")
     if (
       lower.includes("401") ||
       lower.includes("unauthorized") ||
       lower.includes("invalid api key") ||
       lower.includes("authentication")
     ) {
-      client =
-        "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
+      client = isOr
+        ? "OpenRouter rejected the credentials (401). Confirm OPENROUTER_API_KEY in Coolify and redeploy."
+        : "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
     } else if (lower.includes("403") && (lower.includes("forbidden") || lower.includes("access"))) {
-      client =
-        `Fal API denied access (403) for model "${getFalImageModelId()}". Confirm billing and model access in the Fal dashboard (partner models need entitlement). Default is fal-ai/flux-1/schnell; try unsetting FAL_IMAGE_MODEL or set FAL_IMAGE_MODEL=fal-ai/flux/dev. See https://fal.ai/docs/documentation/model-apis/overview`
+      client = isOr
+        ? `OpenRouter denied access (403) for model "${getOpenRouterImageModelFromEnv()}". Check model id, billing, and OpenRouter dashboard.`
+        : `Fal API denied access (403) for model "${getFalImageModelId()}". Confirm billing and model access in the Fal dashboard (partner models need entitlement). Default is fal-ai/flux-1/schnell; try unsetting FAL_IMAGE_MODEL or set FAL_IMAGE_MODEL=fal-ai/flux/dev. See https://fal.ai/docs/documentation/model-apis/overview`
     } else if (lower.includes("402") || lower.includes("payment") || lower.includes("insufficient") || lower.includes("quota")) {
-      client = "Fal API billing or quota issue. Add credits or check usage on fal.ai."
+      client = isOr
+        ? "OpenRouter billing or quota issue. Check credits and usage on openrouter.ai."
+        : "Fal API billing or quota issue. Add credits or check usage on fal.ai."
     } else if (lower.includes("429") || lower.includes("rate limit")) {
-      client = "Fal API rate limit reached. Retry shortly."
+      client = isOr ? "OpenRouter rate limit reached. Retry shortly." : "Fal API rate limit reached. Retry shortly."
     } else if (
       lower.includes("econnrefused") ||
       lower.includes("etimedout") ||
@@ -292,13 +340,16 @@ export const POST = withAuth(async (user, request: Request) => {
       lower.includes("network")
     ) {
       client =
-        "Could not reach Fal or download the image (network). Ensure the server allows outbound HTTPS and can resolve DNS."
+        "Could not reach the image provider or download the image (network). Ensure the server allows outbound HTTPS and can resolve DNS."
     } else if (lower.includes("download failed") || lower.includes("http 4") || lower.includes("http 5")) {
-      client = "Generated image URL could not be downloaded. Retry or check Fal status; wallet was refunded if debited."
+      client =
+        "Generated image could not be downloaded. Retry or check provider status; wallet was refunded if debited."
     } else if (lower.includes("webp") || lower.includes("sharp") || lower.includes("process generated image")) {
       client = "Could not process the generated image on the server (encoding). Check logs; wallet was refunded if debited."
     } else if (lower.includes("no image generated")) {
       client = "Fal returned no image for this prompt. Try a different prompt or retry."
+    } else if (lower.includes("openrouter: no image")) {
+      client = "OpenRouter returned no image for this prompt. Try a model with image output or a different prompt."
     } else if (client === generic) {
       /** Surface a short, safe snippet so operators see the real Fal/validation error without digging in logs. */
       const hint = detail.replace(/\s+/g, " ").trim().slice(0, 420)

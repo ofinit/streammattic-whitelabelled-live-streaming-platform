@@ -71,6 +71,10 @@ export function AiImagePickerDialog({
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [aiPrice, setAiPrice] = useState<number | null>(null)
+  const [aiEnabled, setAiEnabled] = useState(true)
+  const [aiBackendReady, setAiBackendReady] = useState(false)
+  const [aiBackend, setAiBackend] = useState<"fal" | "openrouter" | null>(null)
+  const [aiMetaLoading, setAiMetaLoading] = useState(true)
 
   const walletUrl =
     disabled
@@ -98,12 +102,32 @@ export function AiImagePickerDialog({
     user?.role === "admin" && !!user?.id && effectiveWalletUserId === user.id
 
   useEffect(() => {
-    if (disabled) return
+    if (disabled) {
+      setAiMetaLoading(false)
+      return
+    }
+    setAiMetaLoading(true)
     fetch("/api/generate-image")
       .then((res) => res.json())
-      .then((data) => setAiPrice(data.price ?? null))
-      .catch(() => setAiPrice(null))
+      .then((data: Record<string, unknown>) => {
+        setAiPrice(typeof data.price === "number" ? data.price : null)
+        setAiEnabled(data.enabled !== false)
+        setAiBackendReady(data.backendReady === true)
+        const b = data.backend
+        setAiBackend(b === "openrouter" ? "openrouter" : b === "fal" ? "fal" : null)
+      })
+      .catch(() => {
+        setAiPrice(null)
+        setAiEnabled(true)
+        setAiBackendReady(false)
+        setAiBackend(null)
+      })
+      .finally(() => setAiMetaLoading(false))
   }, [disabled])
+
+  const showAiSection = !disabled && !aiMetaLoading && aiEnabled && aiBackendReady
+  const showAiBlockedByAdmin = !disabled && !aiMetaLoading && !aiEnabled
+  const showAiServerMisconfigured = !disabled && !aiMetaLoading && aiEnabled && !aiBackendReady
 
   const canAffordAi =
     isPlatformAdminFreeAi ||
@@ -290,7 +314,15 @@ export function AiImagePickerDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>Upload your own image or generate one with AI</DialogDescription>
+          <DialogDescription>
+            {!disabled && aiMetaLoading
+              ? "Upload your own image or generate one with AI"
+              : showAiSection || showAiServerMisconfigured
+                ? "Upload your own image or generate one with AI"
+                : showAiBlockedByAdmin
+                  ? "Upload an image for this slot (AI generation is disabled by administrators)."
+                  : "Upload an image for this slot."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
@@ -336,73 +368,97 @@ export function AiImagePickerDialog({
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-popover px-2 text-muted-foreground">or</span>
-            </div>
-          </div>
+          {showAiSection ? (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-popover px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Generate with AI</Label>
-              {isPlatformAdminFreeAi ? (
-                <span className="text-xs text-muted-foreground">Free for platform admin</span>
-              ) : (
-                aiPrice !== null && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Wallet className="h-3 w-3" />
-                    Cost: ₹{(aiPrice / 100).toFixed(0)} per image
-                  </span>
-                )
-              )}
-            </div>
-            <Textarea
-              placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={3}
-              maxLength={AI_IMAGE_PROMPT_MAX_LENGTH}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              {prompt.length} / {AI_IMAGE_PROMPT_MAX_LENGTH} characters
-            </p>
-            {!canAffordAi && aiPrice !== null && !walletLoading && !isPlatformAdminFreeAi && (
-              <p className="text-xs text-destructive">
-                Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹
-                {(aiPrice / 100).toFixed(0)} to use AI generation.
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Generate with AI</Label>
+                  {isPlatformAdminFreeAi ? (
+                    <span className="text-xs text-muted-foreground">Free for platform admin</span>
+                  ) : (
+                    aiPrice !== null && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Wallet className="h-3 w-3" />
+                        Cost: ₹{(aiPrice / 100).toFixed(0)} per image
+                        {aiBackend === "openrouter" ? (
+                          <span className="text-muted-foreground/80"> · OpenRouter</span>
+                        ) : aiBackend === "fal" ? (
+                          <span className="text-muted-foreground/80"> · Fal</span>
+                        ) : null}
+                      </span>
+                    )
+                  )}
+                </div>
+                <Textarea
+                  placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={3}
+                  maxLength={AI_IMAGE_PROMPT_MAX_LENGTH}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {prompt.length} / {AI_IMAGE_PROMPT_MAX_LENGTH} characters
+                </p>
+                {!canAffordAi && aiPrice !== null && !walletLoading && !isPlatformAdminFreeAi && (
+                  <p className="text-xs text-destructive">
+                    Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹
+                    {(aiPrice / 100).toFixed(0)} to use AI generation.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  onClick={() => void handleGenerate()}
+                  disabled={
+                    generating ||
+                    walletLoading ||
+                    !prompt.trim() ||
+                    !canAffordAi ||
+                    (!isPlatformAdminFreeAi && aiPrice === null)
+                  }
+                  className="w-full"
+                  style={{ backgroundColor: "hsl(152 76% 46%)" }}
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Generate Image
+                      {isPlatformAdminFreeAi ? "" : aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : showAiServerMisconfigured ? (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-popover px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                AI generation is enabled but the server is not configured for the selected provider. Use upload, or ask an
+                administrator to set API keys (Fal or OpenRouter) and redeploy.
               </p>
-            )}
-            <Button
-              type="button"
-              onClick={() => void handleGenerate()}
-              disabled={
-                generating ||
-                walletLoading ||
-                !prompt.trim() ||
-                !canAffordAi ||
-                (!isPlatformAdminFreeAi && aiPrice === null)
-              }
-              className="w-full"
-              style={{ backgroundColor: "hsl(152 76% 46%)" }}
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Image
-                  {isPlatformAdminFreeAi ? "" : aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
-                </>
-              )}
-            </Button>
-          </div>
+            </>
+          ) : null}
 
           {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         </div>

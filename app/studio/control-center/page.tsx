@@ -751,6 +751,15 @@ export default function StudioEventsPage() {
               {getEventPublicUrl(event)}/crew
             </a>
           )}
+          <a
+            href={`${getEventPublicUrl(event)}/analytics`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-muted-foreground/75 hover:text-primary hover:underline truncate font-mono"
+            title={`${getEventPublicUrl(event)}/analytics`}
+          >
+            {getEventPublicUrl(event)}/analytics
+          </a>
         </div>
       </div>
 

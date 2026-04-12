@@ -20,6 +20,68 @@ const AI_GENERATED_SUBDIR = "ai-generated"
 
 const FETCH_TIMEOUT_MS = 120_000
 
+/** Fal may return `{ images }` (legacy client) or `{ data: { images } }` (newer API). */
+function extractImageUrlsFromFalResult(result: unknown): string[] {
+  if (result == null || typeof result !== "object") return []
+  const top = result as Record<string, unknown>
+  const fromImages = (images: unknown): string[] => {
+    if (!Array.isArray(images)) return []
+    return images
+      .map((img) => {
+        if (img && typeof img === "object" && "url" in img && typeof (img as { url: unknown }).url === "string") {
+          return (img as { url: string }).url
+        }
+        return ""
+      })
+      .filter(Boolean)
+  }
+  const direct = fromImages(top.images)
+  if (direct.length > 0) return direct
+  const data = top.data
+  if (data != null && typeof data === "object") {
+    return fromImages((data as Record<string, unknown>).images)
+  }
+  return []
+}
+
+/** Fal often throws plain objects or Errors with non-enumerable fields — stringify for logs + pattern match. */
+function stringifyUnknownError(err: unknown): string {
+  if (err instanceof Error) {
+    const any = err as Error & {
+      status?: number
+      statusCode?: number
+      body?: unknown
+      response?: { data?: unknown; status?: number }
+    }
+    const parts = [err.message]
+    if (typeof any.status === "number") parts.push(`status=${any.status}`)
+    if (typeof any.statusCode === "number") parts.push(`statusCode=${any.statusCode}`)
+    if (any.response?.status != null) parts.push(`http=${any.response.status}`)
+    if (any.body !== undefined) {
+      try {
+        parts.push(`body=${JSON.stringify(any.body)}`)
+      } catch {
+        parts.push("body=[unserializable]")
+      }
+    } else if (any.response?.data !== undefined) {
+      try {
+        parts.push(`response.data=${JSON.stringify(any.response.data)}`)
+      } catch {
+        parts.push("response.data=[unserializable]")
+      }
+    }
+    return parts.join(" ")
+  }
+  if (typeof err === "object" && err !== null) {
+    try {
+      return JSON.stringify(err)
+    } catch {
+      return String(err)
+    }
+  }
+  return String(err)
+}
+
 async function refundAiGenerationWallet(
   sql: ReturnType<typeof getDb>,
   walletId: string,
@@ -146,18 +208,20 @@ export const POST = withAuth(async (user, request: Request) => {
   }
 
   try {
-    const result = (await fal.subscribe("fal-ai/flux/schnell", {
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
       input: {
         prompt,
         image_size: imageSize,
         num_inference_steps: 4,
         num_images: 1,
       },
-    })) as { images?: { url: string }[] }
+    })
 
-    const remoteUrl = result.images?.[0]?.url
+    const urls = extractImageUrlsFromFalResult(result)
+    const remoteUrl = urls[0]
     if (!remoteUrl) {
-      throw new Error("No image generated")
+      console.error("[generate-image] Unexpected Fal shape (no image URLs):", JSON.stringify(result)?.slice(0, 2000))
+      throw new Error("No image generated (empty response from Fal — check API response shape / model access)")
     }
 
     const fetchRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
@@ -190,17 +254,18 @@ export const POST = withAuth(async (user, request: Request) => {
       freeForPlatformAdmin: isPlatformAdminSelfService,
     })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error)
-    const lower = msg.toLowerCase()
-    console.error("[generate-image] Error:", error)
+    const detail = stringifyUnknownError(error)
+    const lower = detail.toLowerCase()
+    console.error("[generate-image] Error:", detail, error)
 
     if (walletId) {
       await refundAiGenerationWallet(sql, walletId, userId, price, "Refund: AI image generation failed")
     }
 
     /** Map Fal / network failures to actionable messages (key is set but invalid, quota, egress, etc.). */
-    let client =
+    const generic =
       "Image generation failed. Check container logs for [generate-image] or verify Fal dashboard (billing / model access)."
+    let client = generic
     if (
       lower.includes("401") ||
       lower.includes("unauthorized") ||
@@ -231,6 +296,12 @@ export const POST = withAuth(async (user, request: Request) => {
       client = "Could not process the generated image on the server (encoding). Check logs; wallet was refunded if debited."
     } else if (lower.includes("no image generated")) {
       client = "Fal returned no image for this prompt. Try a different prompt or retry."
+    } else if (client === generic) {
+      /** Surface a short, safe snippet so operators see the real Fal/validation error without digging in logs. */
+      const hint = detail.replace(/\s+/g, " ").trim().slice(0, 420)
+      if (hint.length > 0) {
+        client = `${generic} Detail: ${hint}`
+      }
     }
 
     return jsonError(client, 500)

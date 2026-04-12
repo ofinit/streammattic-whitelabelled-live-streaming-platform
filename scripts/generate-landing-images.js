@@ -4,7 +4,7 @@ fal.config({
   credentials: process.env.FAL_KEY,
 })
 
-const MODEL = process.env.FAL_IMAGE_MODEL?.trim() || "fal-ai/nano-banana-2"
+const MODEL = process.env.FAL_IMAGE_MODEL?.trim() || "fal-ai/flux-1/schnell"
 
 const FLUX_SIZE_TO_ASPECT = {
   landscape_16_9: "16:9",
@@ -17,12 +17,22 @@ const FLUX_SIZE_TO_ASPECT = {
 
 function buildFalInput(modelId, prompt, imageSize) {
   const mid = modelId.toLowerCase()
-  if (mid.includes("flux/schnell")) {
+  if (mid.includes("flux-1/schnell") || mid.includes("flux/schnell")) {
     return {
       prompt,
       image_size: imageSize,
       num_inference_steps: 4,
       num_images: 1,
+    }
+  }
+  if (mid.includes("/flux/dev")) {
+    return {
+      prompt,
+      image_size: imageSize,
+      num_inference_steps: 28,
+      num_images: 1,
+      guidance_scale: 3.5,
+      output_format: "jpeg",
     }
   }
   const aspect = FLUX_SIZE_TO_ASPECT[imageSize] ?? "16:9"

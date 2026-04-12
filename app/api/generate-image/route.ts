@@ -279,7 +279,7 @@ export const POST = withAuth(async (user, request: Request) => {
         "Fal API rejected the credentials (401). Confirm Coolify has FAL_KEY exactly as shown in fal.ai (no quotes or spaces), redeploy, and that the key is enabled for server-side use."
     } else if (lower.includes("403") && (lower.includes("forbidden") || lower.includes("access"))) {
       client =
-        `Fal API denied access (403) for model "${getFalImageModelId()}". In the Fal dashboard confirm API key scope and that this model is enabled (some endpoints are partner-only). Default is fal-ai/nano-banana-2; set FAL_IMAGE_MODEL=fal-ai/flux/schnell only if your account has access—the app maps inputs per model. See https://fal.ai/docs/documentation/model-apis/overview`
+        `Fal API denied access (403) for model "${getFalImageModelId()}". Confirm billing and model access in the Fal dashboard (partner models need entitlement). Default is fal-ai/flux-1/schnell; try unsetting FAL_IMAGE_MODEL or set FAL_IMAGE_MODEL=fal-ai/flux/dev. See https://fal.ai/docs/documentation/model-apis/overview`
     } else if (lower.includes("402") || lower.includes("payment") || lower.includes("insufficient") || lower.includes("quota")) {
       client = "Fal API billing or quota issue. Add credits or check usage on fal.ai."
     } else if (lower.includes("429") || lower.includes("rate limit")) {

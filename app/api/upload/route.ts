@@ -8,7 +8,15 @@ import { getPublicBaseUrl } from "@/lib/public-base-url"
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 const LANDING_SUBDIR = "landing-images"
-const ALLOWED_SUBDIRS = ["landing-images", "event-hero", "event-player", "event-gallery", "event-photographer", "branding"]
+const ALLOWED_SUBDIRS = [
+  "landing-images",
+  "event-hero",
+  "event-header",
+  "event-player",
+  "event-gallery",
+  "event-photographer",
+  "branding",
+]
 
 const MAX_BATCH_FILES = 24
 const MAX_SIZE = 8 * 1024 * 1024 // 8MB per file

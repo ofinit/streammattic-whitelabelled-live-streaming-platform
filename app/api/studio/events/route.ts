@@ -343,6 +343,7 @@ export async function PUT(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     

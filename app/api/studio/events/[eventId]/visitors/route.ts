@@ -89,7 +89,7 @@ export async function GET(
     const eventUuid = String(event.id)
 
     const conditions: string[] = ["r.event_id = $1"]
-    const params: unknown[] = [eventUuid]
+    const queryParams: unknown[] = [eventUuid]
     let i = 2
 
     if (searchRaw.length > 0) {
@@ -108,18 +108,18 @@ export async function GET(
         COALESCE(r.utm_campaign, '') ILIKE $${p} ESCAPE '\\' OR
         to_char(r.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS') ILIKE $${p} ESCAPE '\\'
       )`)
-      params.push(pattern)
+      queryParams.push(pattern)
       i++
     }
 
     const where = conditions.join(" AND ")
     const limitIdx = i
     const offsetIdx = i + 1
-    const listParams = [...params, limit, offset]
+    const listParams = [...queryParams, limit, offset]
 
     const countRows = await sql(
       `SELECT COUNT(*)::int AS c FROM event_visitor_registrations r WHERE ${where}`,
-      params,
+      queryParams,
     )
     const total = Number((countRows[0] as { c?: number | string } | undefined)?.c) || 0
 

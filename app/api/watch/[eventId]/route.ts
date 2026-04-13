@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent } from "@/lib/favicon-resolve"
 
+/** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
+const WATCH_EVENT_ID_SKIP = new Set(
+  ["robots.txt", "favicon.ico", "sitemap.xml", "sitemap_index.xml", "apple-touch-icon.png", "manifest.json"].map((s) =>
+    s.toLowerCase(),
+  ),
+)
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
   const { eventId } = await params
   if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+  if (WATCH_EVENT_ID_SKIP.has(eventId.toLowerCase()) || eventId.includes("..")) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
 
   try {
     const sql = getDb()
@@ -15,37 +25,49 @@ export async function GET(
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
     console.log(`[api/watch/[eventId]] Fetching event for ID/Slug: ${eventId}`)
 
-    // Query for the event by ID or Slug
-    const rows = await sql`
-      SELECT e.*, 
+    // Branding lives on studio_branding, not users. One bind for id OR slug (avoids driver edge cases).
+    const rows = await sql(
+      `SELECT e.*, 
              u.name AS studio_name,
-             u.platform_name,
-             u.logo_url,
-             u.primary_color,
-             u.secondary_color,
-             u.custom_domain,
+             sb.platform_name,
+             sb.logo AS logo_url,
+             sb.primary_color,
+             sb.secondary_color,
              (
                SELECT domain FROM domains 
                WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true 
                LIMIT 1
              ) AS primary_domain,
              (
-               SELECT json_agg(json_build_object(
-                 'id', ed.id,
-                 'label', ed.label,
-                 'scheduledAt', ed.scheduled_at,
-                 'timezone', ed.timezone,
-                 'streamKey', ed.stream_key,
-                 'rtmpUrl', ed.rtmp_url,
-                 'sortOrder', ed.sort_order
-               ) ORDER BY ed.sort_order)
+               SELECT domain FROM domains 
+               WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true 
+               LIMIT 1
+             ) AS custom_domain,
+             (
+               SELECT COALESCE(
+                 json_agg(
+                   json_build_object(
+                     'id', ed.id,
+                     'label', ed.label,
+                     'scheduledAt', ed.scheduled_at,
+                     'timezone', ed.timezone,
+                     'streamKey', ed.stream_key,
+                     'rtmpUrl', ed.rtmp_url,
+                     'sortOrder', ed.sort_order
+                   )
+                   ORDER BY ed.sort_order
+                 ),
+                 '[]'::json
+               )
                FROM event_dates ed
                WHERE ed.event_id = e.id
-             ) as event_dates
+             ) AS event_dates
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
-      WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
-    `
+      LEFT JOIN studio_branding sb ON sb.user_id = u.id
+      WHERE e.id::text = $1 OR e.slug = $1`,
+      [eventId],
+    )
 
     if (rows.length === 0) {
       console.log(`[api/watch/[eventId]] Event not found: ${eventId}`)
@@ -90,7 +112,7 @@ export async function GET(
     // Fallback to minimal data if full query failed (maybe domains table doesn't exist?)
     try {
        const sql = getDb()
-       const rows = await sql`SELECT * FROM events WHERE id::text = ${eventId} OR slug = ${eventId} LIMIT 1`
+       const rows = await sql("SELECT * FROM events WHERE id::text = $1 OR slug = $1 LIMIT 1", [eventId])
        if (rows.length > 0) {
          return NextResponse.json({ event: toCamel(rows[0] as any) })
        }

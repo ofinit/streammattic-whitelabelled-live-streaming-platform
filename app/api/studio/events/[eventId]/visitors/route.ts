@@ -118,10 +118,10 @@ export async function GET(
     const listParams = [...params, limit, offset]
 
     const countRows = await sql(
-      `SELECT COUNT(*)::bigint AS c FROM event_visitor_registrations r WHERE ${where}`,
+      `SELECT COUNT(*)::int AS c FROM event_visitor_registrations r WHERE ${where}`,
       params,
     )
-    const total = Number((countRows[0] as { c: string }).c) || 0
+    const total = Number((countRows[0] as { c?: number | string } | undefined)?.c) || 0
 
     const rows = await sql(
       `SELECT

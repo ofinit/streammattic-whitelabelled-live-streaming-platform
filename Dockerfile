@@ -43,7 +43,8 @@ ENV HOSTNAME="0.0.0.0"
 
 # Docker-level probe (Coolify: if UI + Dockerfile both define checks, Dockerfile takes precedence)
 # https://coolify.io/docs/knowledge-base/health-checks
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+# Next.js first listen + first compile can exceed 90s on small hosts; Coolify rolls back if probe fails early.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=8 \
   CMD curl -fsS http://127.0.0.1:3000/api/health > /dev/null || exit 1
 
 CMD ["npm", "start"]

@@ -1,9 +1,10 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    // Only run in the Node.js runtime (not Edge)
+  if (process.env.NEXT_RUNTIME !== "nodejs") return
+
+  // Never throw: a failed import or DB init here can abort the Node process and fail Docker/Coolify health checks.
+  try {
     console.log("[Instrumentation] Registering background tasks...")
-    
-    // Lazy import to avoid issues during build/edge
+
     const { runEventCleanupTask } = await import("./lib/server/cleanup-service")
     const { getDb } = await import("./lib/db")
 
@@ -16,11 +17,11 @@ export async function register() {
     const checkAndRunCleanup = async () => {
       try {
         const sql = getDb()
-        
+
         // 1. Check if automation is enabled
         const settings = await sql`SELECT value FROM platform_settings WHERE key = 'auto_cleanup_config'`
         const config = (settings[0]?.value as { enabled?: boolean }) || { enabled: false }
-        
+
         if (!config.enabled) return
 
         // 2. Check last successful run
@@ -30,10 +31,10 @@ export async function register() {
           ORDER BY started_at DESC 
           LIMIT 1
         `
-        
+
         const now = new Date()
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-        
+
         if (lastSuccess.length === 0 || new Date(lastSuccess[0].started_at as string) < oneDayAgo) {
           console.log("[Instrumentation] Auto-cleanup is due. Running now...")
           await runEventCleanupTask()
@@ -44,7 +45,9 @@ export async function register() {
     }
 
     // Run check on startup, then every hour
-    checkAndRunCleanup()
-    setInterval(checkAndRunCleanup, CHECK_INTERVAL_MS)
+    void checkAndRunCleanup()
+    setInterval(() => void checkAndRunCleanup(), CHECK_INTERVAL_MS)
+  } catch (err) {
+    console.error("[Instrumentation] Register failed — server continues without background cleanup:", err)
   }
 }

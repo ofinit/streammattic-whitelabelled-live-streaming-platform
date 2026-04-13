@@ -39,6 +39,7 @@ import {
   Minus,
   ImageIcon,
   Upload,
+  Wand2,
   X,
   ShieldAlert,
   ClipboardList,
@@ -3441,7 +3442,28 @@ export function EventFormDialog({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Photo gallery</Label>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <Label className="shrink-0">Photo gallery</Label>
+                      <AiImagePickerDialog
+                        dialogTitle="Photo gallery"
+                        uploadSubdir="event-gallery"
+                        walletUserId={creditsUserId}
+                        disabled={!!galleryUploadProgress}
+                        onImageUrl={(url) => {
+                          setPhotoGalleryUrls((prev) => [...prev, url])
+                          toast({
+                            title: "Photo added",
+                            description: "Image added to the gallery.",
+                          })
+                        }}
+                      >
+                        <Button type="button" variant="outline" size="sm" className="gap-2 h-8">
+                          <Wand2 className="h-4 w-4" />
+                          Add with AI
+                        </Button>
+                      </AiImagePickerDialog>
+                      <span className="text-xs text-muted-foreground">Upload below or AI (wallet)</span>
+                    </div>
                     {/* Uploaded thumbnails */}
                     {photoGalleryUrls.length > 0 && (
                       <div className="flex flex-wrap gap-2">

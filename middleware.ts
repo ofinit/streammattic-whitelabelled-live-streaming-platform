@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 
 const PUBLIC_PATHS = [
   "/",
+  /** Client photo gallery (BYOS) — same Next.js app; guests allowed (v1 shell; tokens later) */
+  "/client-gallery",
   "/login",
   "/forgot-password",
   "/reset-password",
@@ -36,6 +38,7 @@ const RESERVED_ROOT_SEGMENT = new Set([
   "analytics",
   "api",
   "auth",
+  "client-gallery",
   "demo",
   "forgot-password",
   "login",

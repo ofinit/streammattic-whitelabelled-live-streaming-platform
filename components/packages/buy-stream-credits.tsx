@@ -36,7 +36,11 @@ import {
   YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS,
 } from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
-import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
+import {
+  parsePhotoGalleryAddon,
+  resolveGalleryHref,
+  type PhotoGalleryAddonSettings,
+} from "@/lib/photo-gallery-addon"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -562,14 +566,27 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                 </div>
               ) : null}
             </div>
-            {photoGalleryEntitled && photoGalleryCatalog.galleryServiceBaseUrl ? (
-              <Button variant="outline" size="sm" asChild>
-                <a href={photoGalleryCatalog.galleryServiceBaseUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Open gallery app
-                </a>
-              </Button>
-            ) : null}
+            {photoGalleryEntitled && photoGalleryCatalog
+              ? (() => {
+                  const galleryHref = resolveGalleryHref(photoGalleryCatalog)
+                  const isExternal = /^https?:\/\//i.test(galleryHref)
+                  return (
+                    <Button variant="outline" size="sm" asChild>
+                      {isExternal ? (
+                        <a href={galleryHref} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Open gallery app
+                        </a>
+                      ) : (
+                        <Link href={galleryHref}>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Open gallery app
+                        </Link>
+                      )}
+                    </Button>
+                  )
+                })()
+              : null}
           </CardContent>
         </Card>
       )}

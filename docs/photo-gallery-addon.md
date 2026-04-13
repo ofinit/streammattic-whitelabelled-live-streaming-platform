@@ -1,62 +1,44 @@
 # Client photo gallery add-on (BYOS)
 
-Stream-Livee stores **catalog settings** and **per-user entitlements** in Postgres. The **gallery application** (presigned S3 uploads, thumbnails, optional face search) is a **separate deploy** you run when you build it. This page covers **DNS** for that app’s public URL and how **face-index pricing** relates to **your** AI vendor costs.
+Stream-Livee stores **catalog settings** and **per-user entitlements** in Postgres. The **gallery UI** for clients is served by **this** Next.js app at a configurable path (default **`/client-gallery`**), on the platform domain and on each studio’s custom domain. **Presigned S3 uploads**, thumbnails, and heavy processing can still live in workers or a future service; **same-origin routing** avoids a separate deploy just to host the gallery shell.
 
-## Gallery app base URL — DNS
+## Same-origin gallery path (default)
 
-**What you enter in Admin → Packages** is the full HTTPS origin customers use to open the gallery, for example:
+**What you configure in Admin → Packages** is primarily a **path** on the current host, e.g. `https://your-studio.com/client-gallery` (no extra DNS for “gallery” alone — the domain already points at Coolify).
 
-`https://gallery.yourdomain.com`
+| Field | Meaning |
+| --- | --- |
+| **Gallery path (same origin)** | Must start with `/`. Default `/client-gallery`. Entitled users see **Open gallery app** → this path on whatever origin they are on. |
+| **Legacy external gallery URL (optional)** | If you still run a separate gallery app, set its full `https://…` origin here; **Open gallery** uses that instead of the path. |
 
-(no trailing slash)
+When the legacy URL is **empty**, Packages links to **`/client-gallery`** (or your custom path) on the **current** origin — platform domain or studio custom domain.
 
-### Steps (typical)
-
-1. **Deploy** the gallery service on your infrastructure (e.g. another Coolify app, same server or another host).
-2. **Choose a hostname** dedicated to that service, e.g. `gallery.yourdomain.com`.
-3. **DNS at your registrar / DNS host**
-   - **A record:** `gallery` → **public IPv4** of the machine or load balancer that terminates HTTPS, **or**
-   - **CNAME:** `gallery` → the hostname your host gives you (e.g. Coolify’s generated app URL or a load balancer), if your provider allows CNAME for that subdomain.
-4. **TLS:** Terminate HTTPS on that hostname (Let’s Encrypt in Coolify, or your proxy). The URL in admin must use **`https://`** once certificates are valid.
-5. **Coolify:** Add the domain on the **gallery** service; Coolify/Traefik usually requests certificates automatically. Wait until the domain resolves and HTTPS works, then paste the same URL into **Gallery app base URL**.
-
-Stream-Livee does **not** provision DNS or certificates for that hostname; it only **displays** the link to entitled users.
+**Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
 
 ## Face index credit & “included face indexes / month”
 
 | Field | Meaning |
 | --- | --- |
-| **Face index credit (₹)** | Intended **retail** price per face-index operation (e.g. one image indexed for search), charged from the customer’s **wallet** when that billing path exists. |
+| **Face index credit (₹)** | Intended **retail** price per vision-analysis / indexing job (or per batch) once billing exists; charged from the customer’s **wallet** when that path is implemented. |
 | **Included face indexes / month** | Intended **allowance** before overage billing; `0` means “no included quota” in the product design. |
 
 Today these values are **admin configuration only**. They do **not** trigger API calls, wallet debits, or an AI service inside this repository until you implement the gallery worker and hook it to `wallet_transactions` (or equivalent).
 
-## Your AI costs (not shown in the admin UI)
+## OpenRouter (vision) vs biometric face search
 
-The admin UI shows **what you charge customers**, not **what you pay** AWS/Azure/Google or your GPU host.
+**OpenRouter** in this repo is used for **AI image generation** and can be used for **vision** workloads (captioning, tags, structured JSON about images). That fits an **“AI-assisted gallery”** (text derived from images, smart search on those tags).
 
-- **Your revenue per index** ≈ the **Face index credit** you set (minus taxes/refunds).
-- **Your cost per index** = whatever your chosen stack bills (per image, per face, per minute of GPU, etc.).
-- **Margin** = revenue per index − cost per index (you must estimate cost from the provider’s pricing page and your usage pattern).
+**Biometric** same-person search across large libraries (embeddings, face-ID style) is **not** what chat/vision routes are for; industry norm is **AWS Rekognition**, **Azure Face**, **Google Vision** face features, or **self-hosted** stacks (e.g. InsightFace).
 
-This app **does not** compute or display vendor cost. You maintain a spreadsheet or monitoring against your cloud bill.
+**Admin copy:** treat **Face index credit** as your **retail price** for a vision/indexing job; compare against **OpenRouter** pricing for the chosen **vision** model (tokens in + out) plus any margin you need. For true biometric search, model costs from a dedicated face API or self-hosted pipeline apply instead.
 
-### Common options (you choose one when building the gallery service)
+**Your vendor cost** is still not computed automatically in the admin UI — you maintain margin against [OpenRouter models pricing](https://openrouter.ai/models) or your chosen provider’s page.
 
-| Approach | Cost driver | Where to read pricing |
-| --- | --- | --- |
-| **AWS Rekognition** | Per-image / per-face API usage, region-dependent | [AWS Rekognition pricing](https://aws.amazon.com/rekognition/pricing/) |
-| **Azure AI Face** | Per-transaction pricing tiers | [Azure AI Face pricing](https://azure.microsoft.com/pricing/details/cognitive-services/face-api/) |
-| **Google Cloud Vision** | Per-image features | [Google Cloud Vision pricing](https://cloud.google.com/vision/pricing) |
-| **Self-hosted** | GPU/CPU instances, no per-call cloud ML fee | Your infra provider (Coolify server, VPS, etc.) |
+### Quick sanity check (vision on OpenRouter)
 
-**Model names** (e.g. a specific Rekognition API operation) are determined by **your gallery service implementation**, not by Stream-Livee core. Point your gallery app at **one** provider per environment so accounting stays predictable.
-
-### Quick sanity check
-
-1. Pick a provider and region.
-2. Read **price per indexed image** (or per 1,000 images) from their page.
-3. Set **Face index credit** in admin **above** that unit cost if you want positive margin before GST.
+1. Pick a vision-capable model and note price per 1M input/output tokens.
+2. Estimate tokens per image in dev (prompt + image + JSON output).
+3. Set **Face index credit** above your expected per-job cost if you want positive margin.
 
 ---
 

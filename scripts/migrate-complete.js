@@ -801,6 +801,7 @@ async function step13_seed_settings(c) {
       value: {
         listingEnabled: false,
         productName: "Client photo gallery",
+        galleryPath: "/client-gallery",
         galleryServiceBaseUrl: "",
         monthlyPricePaisa: 0,
         faceIndexCreditPricePaisa: 500,

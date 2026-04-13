@@ -49,6 +49,7 @@ import {
   getDefaultOpenRouterModelOptionId,
 } from "@/lib/ai-image-model-catalog"
 import {
+  DEFAULT_CLIENT_GALLERY_PATH,
   getDefaultPhotoGalleryAddonSettings,
   parsePhotoGalleryAddon,
   type PhotoGalleryAddonSettings,
@@ -1014,8 +1015,9 @@ export default function AdminPricingPage() {
               <div>
                 <CardTitle>Client photo gallery (BYOS)</CardTitle>
                 <CardDescription>
-                  Optional add-on: studios and streamers use their own S3 bucket; grant access per account under Streamers /
-                  Studios.
+                  Optional add-on: studios bring their own S3 storage; the gallery UI opens on this app at the path below (default{" "}
+                  <code className="text-foreground">{DEFAULT_CLIENT_GALLERY_PATH}</code>). Grant access per account under
+                  Streamers / Studios.
                 </CardDescription>
               </div>
             </div>
@@ -1034,58 +1036,49 @@ export default function AdminPricingPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4 max-w-3xl">
-          <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
             <div className="flex gap-3">
               <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" aria-hidden />
               <div className="min-w-0 space-y-4 text-muted-foreground">
                 <section>
-                  <p className="font-medium text-foreground">Gallery app base URL — DNS</p>
-                  <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed">
-                    <li>
-                      Deploy the <strong className="text-foreground">gallery application</strong> separately (not this
-                      Stream-Livee app). Give it its own hostname, e.g. <code className="text-foreground">gallery.yourdomain.com</code>.
-                    </li>
-                    <li>
-                      At your DNS provider, point that hostname to your server: an <strong className="text-foreground">A</strong>{" "}
-                      record to the public IPv4, or a <strong className="text-foreground">CNAME</strong> to the hostname your
-                      host (e.g. Coolify / Traefik) provides.
-                    </li>
-                    <li>
-                      Terminate <strong className="text-foreground">HTTPS</strong> on that hostname (Let’s Encrypt in Coolify, or
-                      your reverse proxy). Wait until the URL loads with a valid certificate.
-                    </li>
-                    <li>
-                      Paste the same origin here: <code className="text-foreground">https://…</code> with{" "}
-                      <strong className="text-foreground">no trailing slash</strong>. Stream-Livee does not create DNS or TLS for
-                      this host.
-                    </li>
-                  </ol>
+                  <p className="font-medium text-foreground">Same app — gallery path, not a second hostname</p>
+                  <p className="mt-2 text-xs leading-relaxed">
+                    The client gallery screen is part of <strong className="text-foreground">this</strong> Stream-Livee app. Set
+                    the path below (default <code className="text-foreground">{DEFAULT_CLIENT_GALLERY_PATH}</code>); guests and
+                    customers use that URL on the <strong className="text-foreground">platform domain</strong> and on each{" "}
+                    <strong className="text-foreground">studio custom domain</strong> (example:{" "}
+                    <code className="text-foreground">https://studio.example.com{DEFAULT_CLIENT_GALLERY_PATH}</code>). You do{" "}
+                    <strong className="text-foreground">not</strong> deploy a separate gallery app or add DNS records just for
+                    the gallery — existing A/CNAME to Coolify already covers it.
+                  </p>
                 </section>
                 <section>
-                  <p className="font-medium text-foreground">Pricing fields</p>
+                  <p className="font-medium text-foreground">What the pricing fields mean</p>
                   <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-relaxed">
                     <li>
-                      <strong className="text-foreground">Monthly price</strong> — reference amount shown on Packages; set to{" "}
-                      <code className="text-foreground">0</code> if pricing is contact admin / custom.
+                      <strong className="text-foreground">Monthly price</strong> — reference amount on Packages; use{" "}
+                      <code className="text-foreground">0</code> if you sell this as contact admin / custom.
                     </li>
                     <li>
-                      <strong className="text-foreground">Face index credit</strong> — intended{" "}
-                      <strong className="text-foreground">retail</strong> price per image indexed for face search (when that
-                      billing exists). Wallet debits are not wired from this screen alone.
+                      <strong className="text-foreground">Face index credit</strong> —{" "}
+                      <strong className="text-foreground">Retail</strong> price you plan to charge per vision/index job (e.g.
+                      captioning, tags, or a future indexing step). Wallet automation is not wired from this form alone.
                     </li>
                     <li>
-                      <strong className="text-foreground">Included face indexes / month</strong> — included quota before
-                      overage; <code className="text-foreground">0</code> means no included allowance in the product design.
+                      <strong className="text-foreground">Included face indexes / month</strong> — allowance before overage;{" "}
+                      <code className="text-foreground">0</code> = none in the product design.
                     </li>
                   </ul>
                 </section>
                 <section>
-                  <p className="font-medium text-foreground">Your AI / vendor cost</p>
+                  <p className="font-medium text-foreground">OpenRouter (vision) vs true face-ID search</p>
                   <p className="mt-2 text-xs leading-relaxed">
-                    This dashboard does <strong className="text-foreground">not</strong> show what you pay AWS, Azure, Google,
-                    or a GPU host. Face indexing is implemented in the <strong className="text-foreground">gallery service</strong>{" "}
-                    you deploy; choose one provider (e.g. Rekognition, Azure Face) and compare their per-image pricing to your
-                    credit price so you keep margin. No model is selected inside Stream-Livee core.
+                    <strong className="text-foreground">OpenRouter</strong> is a good fit for{" "}
+                    <strong className="text-foreground">vision-assisted</strong> features: captions, tags, structured text
+                    about each photo — priced by tokens; size your &quot;face index credit&quot; above typical OpenRouter cost
+                    per job. <strong className="text-foreground">Biometric</strong> same-person search across huge libraries is
+                    a different stack (e.g. Rekognition, Azure Face, self-hosted embeddings), not chat models. This screen does
+                    not store a model ID until a pipeline exists.
                   </p>
                 </section>
               </div>
@@ -1102,9 +1095,23 @@ export default function AdminPricingPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pg-base-url">Gallery app base URL</Label>
+            <Label htmlFor="pg-gallery-path">Gallery path (same origin)</Label>
             <Input
-              id="pg-base-url"
+              id="pg-gallery-path"
+              placeholder={DEFAULT_CLIENT_GALLERY_PATH}
+              value={photoGalleryAddon.galleryPath}
+              onChange={(e) => setPhotoGalleryAddon((p) => ({ ...p, galleryPath: e.target.value || DEFAULT_CLIENT_GALLERY_PATH }))}
+              className="bg-secondary border-0 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Must start with <code className="text-foreground">/</code>. Packages &quot;Open gallery&quot; uses this path on
+              the current host unless a legacy external URL is set below.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pg-legacy-url">Legacy external gallery URL (optional)</Label>
+            <Input
+              id="pg-legacy-url"
               type="url"
               placeholder="https://gallery.yourdomain.com"
               value={photoGalleryAddon.galleryServiceBaseUrl}
@@ -1112,8 +1119,7 @@ export default function AdminPricingPage() {
               className="bg-secondary border-0 font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Must match the HTTPS origin of your deployed gallery app. Shown to entitled users on Packages as “Open gallery
-              app.”
+              Only if you still host a separate gallery app. When empty, users open the path above on this app.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -1153,7 +1159,7 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">Per indexed image (future)</p>
+              <p className="text-[10px] text-muted-foreground">Per vision/index job — future billing</p>
             </div>
             <div className="space-y-2">
               <Label>Included face indexes / month</Label>

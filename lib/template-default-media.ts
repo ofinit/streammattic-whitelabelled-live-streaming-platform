@@ -44,6 +44,90 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   /** Birthday party bash — colorful cake / celebration */
   "tpl-birthday-party":
     "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=2400&q=80",
+  /** Default / General */
+  "tpl-default":
+    "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=2400&q=80",
+  /** Music Concert */
+  "tpl-concert":
+    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=2400&q=80",
+  /** Hindu Ceremony */
+  "tpl-hindu":
+    "https://images.unsplash.com/photo-1603204077779-bed963ea7d0e?auto=format&fit=crop&w=2400&q=80",
+  /** Sports Event */
+  "tpl-sports":
+    "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=2400&q=80",
+  /** Political Event */
+  "tpl-political":
+    "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?auto=format&fit=crop&w=2400&q=80",
+  /** School / Education */
+  "tpl-school":
+    "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=2400&q=80",
+  /** Indian Festival */
+  "tpl-indian-festival":
+    "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=2400&q=80",
+  /** Gaming Event */
+  "tpl-gaming":
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2400&q=80",
+  /** Podcast */
+  "tpl-podcast":
+    "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=2400&q=80",
+  /** Movie Premiere */
+  "tpl-movie-premiere":
+    "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2400&q=80",
+  /** Award Ceremony */
+  "tpl-award-ceremony":
+    "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=2400&q=80",
+  /** Comedy Show */
+  "tpl-comedy-show":
+    "https://images.unsplash.com/photo-1527224857830-43a7acc85260?auto=format&fit=crop&w=2400&q=80",
+  /** Product Launch */
+  "tpl-product-launch":
+    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=2400&q=80",
+  /** Webinar */
+  "tpl-webinar":
+    "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?auto=format&fit=crop&w=2400&q=80",
+  /** Auction */
+  "tpl-auction":
+    "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=2400&q=80",
+  /** Real Estate */
+  "tpl-real-estate":
+    "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=2400&q=80",
+  /** Baby Shower */
+  "tpl-baby-shower":
+    "https://images.unsplash.com/photo-1535572290543-960a8046f5af?auto=format&fit=crop&w=2400&q=80",
+  /** Graduation */
+  "tpl-graduation":
+    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=2400&q=80",
+  /** Engagement */
+  "tpl-engagement":
+    "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=2400&q=80",
+  /** Anniversary */
+  "tpl-anniversary":
+    "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=2400&q=80",
+  /** Reunion */
+  "tpl-reunion":
+    "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=2400&q=80",
+  /** Chinese Festival */
+  "tpl-chinese-festival":
+    "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=2400&q=80",
+  /** Christmas */
+  "tpl-christmas":
+    "https://images.unsplash.com/photo-1511895426328-dc8714191011?auto=format&fit=crop&w=2400&q=80",
+  /** Eid Celebration */
+  "tpl-eid":
+    "https://images.unsplash.com/photo-1564769662533-4f00a87b4056?auto=format&fit=crop&w=2400&q=80",
+  /** Thanksgiving */
+  "tpl-thanksgiving":
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=2400&q=80",
+  /** Halloween */
+  "tpl-halloween":
+    "https://images.unsplash.com/photo-1508361001413-7a9dca21d08a?auto=format&fit=crop&w=2400&q=80",
+  /** Fitness */
+  "tpl-fitness":
+    "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=2400&q=80",
+  /** Charity */
+  "tpl-charity":
+    "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=2400&q=80",
 }
 
 export function getDefaultTemplateHeroBackdropUrl(templateId: string): string | undefined {

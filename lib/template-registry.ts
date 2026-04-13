@@ -5,7 +5,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-default",
     name: "Default",
-    thumbnail: "/templates/default-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-default"] ?? "",
     category: "General",
     isActive: true,
     sortOrder: 1,
@@ -13,7 +13,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding",
     name: "Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2,
@@ -21,7 +21,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding-garden",
     name: "Ethereal Garden Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-garden"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-garden"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2.5,
@@ -29,7 +29,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding-midnight",
     name: "Midnight Elegance Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-midnight"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-midnight"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2.55,
@@ -37,7 +37,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding-coastal",
     name: "Coastal Breeze Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-coastal"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-coastal"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2.56,
@@ -45,7 +45,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding-celestial",
     name: "Celestial Dreams Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-celestial"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-celestial"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2.57,
@@ -53,7 +53,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-wedding-traditional-hindu",
     name: "Shubh Vivah",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-traditional-hindu"] ?? "/templates/wedding-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-traditional-hindu"] ?? "",
     category: "Wedding",
     isActive: true,
     sortOrder: 2.58,
@@ -77,7 +77,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-concert",
     name: "Music Concert",
-    thumbnail: "/templates/concert-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-concert"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 4,
@@ -85,7 +85,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-christian",
     name: "Christian Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian"] ?? "/templates/christian-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christian"] ?? "",
     category: "Wedding",
     extraCategories: ["Religious"],
     isActive: true,
@@ -112,7 +112,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-muslim",
     name: "Muslim Wedding",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim"] ?? "/templates/muslim-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-muslim"] ?? "",
     category: "Wedding",
     extraCategories: ["Religious"],
     isActive: true,
@@ -121,7 +121,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-hindu",
     name: "Hindu Ceremony",
-    thumbnail: "/templates/hindu-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-hindu"] ?? "",
     category: "Religious",
     isActive: true,
     sortOrder: 7,
@@ -129,7 +129,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-sports",
     name: "Sports Event",
-    thumbnail: "/templates/sports-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-sports"] ?? "",
     category: "Sports",
     isActive: true,
     sortOrder: 8,
@@ -137,7 +137,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-political",
     name: "Political Event",
-    thumbnail: "/templates/political-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-political"] ?? "",
     category: "Political",
     isActive: true,
     sortOrder: 9,
@@ -145,7 +145,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-school",
     name: "School Event",
-    thumbnail: "/templates/school-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-school"] ?? "",
     category: "Education",
     isActive: true,
     sortOrder: 10,
@@ -153,7 +153,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-funeral",
     name: "Memorial Service",
-    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-funeral"] ?? "/templates/funeral-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-funeral"] ?? "",
     category: "Memorial",
     isActive: true,
     sortOrder: 99,
@@ -161,7 +161,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-indian-festival",
     name: "Indian Festival",
-    thumbnail: "/templates/indian-festival-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-indian-festival"] ?? "",
     category: "General",
     isActive: true,
     sortOrder: 11,
@@ -169,7 +169,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-gaming",
     name: "Gaming Event",
-    thumbnail: "/templates/gaming-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-gaming"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 12,
@@ -177,7 +177,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-podcast",
     name: "Podcast",
-    thumbnail: "/templates/podcast-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-podcast"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 13,
@@ -185,7 +185,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-movie-premiere",
     name: "Movie Premiere",
-    thumbnail: "/templates/movie-premiere-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-movie-premiere"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 14,
@@ -193,7 +193,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-award-ceremony",
     name: "Award Ceremony",
-    thumbnail: "/templates/award-ceremony-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-award-ceremony"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 15,
@@ -201,7 +201,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-comedy-show",
     name: "Comedy Show",
-    thumbnail: "/templates/comedy-show-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-comedy-show"] ?? "",
     category: "Entertainment",
     isActive: true,
     sortOrder: 16,
@@ -209,7 +209,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-product-launch",
     name: "Product Launch",
-    thumbnail: "/templates/product-launch-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-product-launch"] ?? "",
     category: "Business",
     isActive: true,
     sortOrder: 17,
@@ -217,7 +217,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-webinar",
     name: "Webinar",
-    thumbnail: "/templates/webinar-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-webinar"] ?? "",
     category: "Business",
     isActive: true,
     sortOrder: 18,
@@ -225,7 +225,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-auction",
     name: "Auction",
-    thumbnail: "/templates/auction-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-auction"] ?? "",
     category: "Business",
     isActive: true,
     sortOrder: 19,
@@ -233,7 +233,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-real-estate",
     name: "Real Estate",
-    thumbnail: "/templates/real-estate-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-real-estate"] ?? "",
     category: "Business",
     isActive: true,
     sortOrder: 20,
@@ -241,7 +241,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-baby-shower",
     name: "Baby Shower",
-    thumbnail: "/templates/baby-shower-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-baby-shower"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 21,
@@ -249,7 +249,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-birthday-party",
     name: "Birthday Party Bash",
-    thumbnail: "/templates/birthday-party-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-birthday-party"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 22,
@@ -257,7 +257,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-graduation",
     name: "Graduation",
-    thumbnail: "/templates/graduation-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-graduation"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 23,
@@ -265,7 +265,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-engagement",
     name: "Engagement",
-    thumbnail: "/templates/engagement-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-engagement"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 24,
@@ -273,7 +273,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-anniversary",
     name: "Anniversary",
-    thumbnail: "/templates/anniversary-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-anniversary"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 25,
@@ -281,7 +281,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-reunion",
     name: "Reunion",
-    thumbnail: "/templates/reunion-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-reunion"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 26,
@@ -289,7 +289,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-chinese-festival",
     name: "Chinese Festival",
-    thumbnail: "/templates/chinese-festival-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-chinese-festival"] ?? "",
     category: "Holiday",
     isActive: true,
     sortOrder: 27,
@@ -297,7 +297,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-christmas",
     name: "Christmas",
-    thumbnail: "/templates/christmas-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-christmas"] ?? "",
     category: "Holiday",
     isActive: true,
     sortOrder: 28,
@@ -305,7 +305,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-eid",
     name: "Eid Celebration",
-    thumbnail: "/templates/eid-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-eid"] ?? "",
     category: "Holiday",
     isActive: true,
     sortOrder: 29,
@@ -313,7 +313,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-thanksgiving",
     name: "Thanksgiving",
-    thumbnail: "/templates/thanksgiving-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-thanksgiving"] ?? "",
     category: "Holiday",
     isActive: true,
     sortOrder: 30,
@@ -321,7 +321,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-halloween",
     name: "Halloween",
-    thumbnail: "/templates/halloween-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-halloween"] ?? "",
     category: "Holiday",
     isActive: true,
     sortOrder: 31,
@@ -329,7 +329,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-fitness",
     name: "Fitness",
-    thumbnail: "/templates/fitness-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-fitness"] ?? "",
     category: "Health",
     isActive: true,
     sortOrder: 32,
@@ -337,7 +337,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   {
     id: "tpl-charity",
     name: "Charity",
-    thumbnail: "/templates/charity-template.jpg",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-charity"] ?? "",
     category: "Social",
     isActive: true,
     sortOrder: 34,

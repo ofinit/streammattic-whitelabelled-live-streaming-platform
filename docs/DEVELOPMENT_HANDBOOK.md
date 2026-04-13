@@ -23,6 +23,8 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 
 **Backups and cloning prod to local:** [`scripts/README-BACKUP-RESTORE.md`](../scripts/README-BACKUP-RESTORE.md) (`PRODUCTION_DATABASE_URL`, `db:backup`, `db:setup-local`).
 
+**Admin database export/import (optional):** Set `ADMIN_DATABASE_TOOLS_ENABLED=true` to enable [`/admin/database`](../app/admin/database/page.tsx) and [`/api/admin/database/*`](../app/api/admin/database/) (admin-only; requires `pg_dump` / `psql` on the host for full functionality). Optional `BACKUP_DIR` overrides the default `./backups` directory for server-side backup listing and import.
+
 **Docker:** [`docker-compose.yml`](../docker-compose.yml) runs the app and Postgres 16; set `DATABASE_URL` to use hostname `postgres` when the app runs inside Compose. [`docker-compose.cloudjiffy.yml`](../docker-compose.cloudjiffy.yml) runs the app container only against an external database.
 
 ## Security notes
@@ -72,6 +74,9 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/analytics/revenue/route.ts` | `/api/admin/analytics/revenue` |
 | `app/api/admin/analytics/visitors/route.ts` | `/api/admin/analytics/visitors` |
 | `app/api/admin/dashboard/route.ts` | `/api/admin/dashboard` |
+| `app/api/admin/database/backups/route.ts` | `/api/admin/database/backups` |
+| `app/api/admin/database/export/route.ts` | `/api/admin/database/export` |
+| `app/api/admin/database/import/route.ts` | `/api/admin/database/import` |
 | `app/api/admin/email-templates/route.ts` | `/api/admin/email-templates` |
 | `app/api/admin/event-visitors/route.ts` | `/api/admin/event-visitors` |
 | `app/api/admin/events/route.ts` | `/api/admin/events` |

@@ -33,6 +33,7 @@ import {
   Menu,
   Zap,
   ClipboardList,
+  Database,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -73,6 +74,7 @@ const adminNav: NavItem[] = [
   { title: "Integrations", href: "/admin/settings/integrations", icon: Plug },
   { title: "GST", href: "/admin/settings/gst", icon: Receipt },
   { title: "System Tasks", href: "/admin/system-tasks", icon: Radio },
+  { title: "Database", href: "/admin/database", icon: Database },
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 

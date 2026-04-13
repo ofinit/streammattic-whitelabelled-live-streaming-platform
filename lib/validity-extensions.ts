@@ -5,8 +5,11 @@ export type ParsedValidityExtensions = {
   extendedTiers: ValidityTier[]
 }
 
-/** Validity length (days) billed at the base 1-credit rate for YouTube Embed (product default). */
+/** Default preselected validity for new YouTube Embed events (must match admin tier `days` when enabled). */
 export const YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS = 90
+
+/** YouTube Embed: these tier lengths bill as 1 stream credit each (not ceil(days / defaultDays)). */
+export const YOUTUBE_EMBED_ONE_CREDIT_VALIDITY_DAYS: ReadonlySet<number> = new Set([60, 90])
 
 /** Total stream-type credits for validity duration (1 per default-day block, e.g. 30-day blocks). */
 export function validityCreditsForDuration(validityDays: number, defaultDays: number): number {
@@ -16,15 +19,16 @@ export function validityCreditsForDuration(validityDays: number, defaultDays: nu
 }
 
 /**
- * Same as {@link validityCreditsForDuration} except YouTube Embed at {@link YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS}
- * bills as **1** stream credit (promotional default), not ceil(days / defaultDays).
+ * Same as {@link validityCreditsForDuration} except YouTube Embed at tiers in
+ * {@link YOUTUBE_EMBED_ONE_CREDIT_VALIDITY_DAYS} bill as **1** stream credit each.
  */
 export function validityCreditsForStreamAndDuration(
   streamType: string | null | undefined,
   validityDays: number,
   defaultDays: number,
 ): number {
-  if (streamType === "youtube_embed" && validityDays === YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS) {
+  const d = Math.max(1, Math.floor(Number(validityDays)) || 1)
+  if (streamType === "youtube_embed" && YOUTUBE_EMBED_ONE_CREDIT_VALIDITY_DAYS.has(d)) {
     return 1
   }
   return validityCreditsForDuration(validityDays, defaultDays)

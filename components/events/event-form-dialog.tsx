@@ -318,9 +318,14 @@ function TitleSizeSliderBlock({
 /** Watch-page validity applies to all stream types; we group types for UX copy and for resetting rules when switching ingest vs embed. */
 type ValidityStreamGroup = "ingest" | "embed"
 
+function isYoutubeEmbedFormType(streamType: string | undefined | null): boolean {
+  const t = String(streamType || "")
+  return t === "youtube_embed" || t === "youtube"
+}
+
 function streamValidityGroup(streamType: string): ValidityStreamGroup {
   const t = streamType || ""
-  if (t === "youtube_api" || t === "youtube_embed" || t === "third_party") return "embed"
+  if (t === "youtube_api" || isYoutubeEmbedFormType(t) || t === "third_party") return "embed"
   return "ingest"
 }
 
@@ -329,7 +334,7 @@ function streamTypeLabelForSettings(streamType: string): string {
   if (!t) return "Draft (stream not configured yet)"
   if (t === "rtmp") return "RTMP / OBS encoder"
   if (t === "youtube_api") return "YouTube API (ingest)"
-  if (t === "youtube_embed") return "YouTube embed (URL)"
+  if (isYoutubeEmbedFormType(t)) return "YouTube embed (URL)"
   if (t === "third_party") return "Third-party embed"
   if (t === "hls") return "HLS"
   return "Stream"
@@ -1154,7 +1159,18 @@ export function EventFormDialog({
         setPhotoGalleryUrls([])
         setPhotographerLogoUrl("")
         setPhotographerContact({})
-        setValidityChoiceKey("included")
+        {
+          const tierSource =
+            validityExtSettings.extendedTiers.length > 0
+              ? validityExtSettings.extendedTiers
+              : parseValidityExtensionsSetting(null).extendedTiers
+          const hasTier90 = tierSource.some((t) => t.days === 90 && t.enabled)
+          if (isYoutubeEmbedFormType(initialStreamType) && hasTier90) {
+            setValidityChoiceKey("tier:90")
+          } else {
+            setValidityChoiceKey("included")
+          }
+        }
         setValidityExpiresAt("")
         setCrewPin("")
         setIsCrewPinEnabled(false)
@@ -1218,7 +1234,7 @@ export function EventFormDialog({
     if (prev !== group) {
       if (
         !event &&
-        formData.streamType === "youtube_embed" &&
+        isYoutubeEmbedFormType(formData.streamType) &&
         validityExtSettings.extendedTiers.some((t) => t.days === 90 && t.enabled)
       ) {
         setValidityChoiceKey("tier:90")
@@ -1245,7 +1261,7 @@ export function EventFormDialog({
     const cur = formData.streamType
     const prev = prevStreamTypeForYtEmbedDefaultRef.current
 
-    if (cur !== "youtube_embed") {
+    if (!isYoutubeEmbedFormType(cur)) {
       prevStreamTypeForYtEmbedDefaultRef.current = cur
       youtubeEmbedDefaultAppliedFpRef.current = ""
       return
@@ -1258,7 +1274,7 @@ export function EventFormDialog({
     }
 
     const tierFp = validityExtSettings.extendedTiers.map((t) => `${t.days}:${t.enabled ? 1 : 0}`).join(",")
-    const transitionedFromNonYoutubeEmbed = prev !== "youtube_embed"
+    const transitionedFromNonYoutubeEmbed = !isYoutubeEmbedFormType(prev)
 
     if (transitionedFromNonYoutubeEmbed) {
       setValidityChoiceKey("tier:90")
@@ -1380,8 +1396,9 @@ export function EventFormDialog({
       return `Default tier is a free draft (about ${d} days from creation, no credits). When you pick a longer validity option below, we check ${bucket ?? "enabled stream type"} credits for planning only—the saved event still uses the draft window until you choose a stream type on the Stream tab.`
     }
     const base = eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays)
-    if (formData.streamType === "youtube_embed" || formData.streamType === "youtube") {
-      return `${base} YouTube Embed’s default ${YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS}-day window is billed as 1 credit (same as the standard single block).`
+    if (isYoutubeEmbedFormType(formData.streamType)) {
+      const d = validityExtSettings.defaultDays > 0 ? validityExtSettings.defaultDays : 30
+      return `${base} YouTube Embed: ${YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS}-day validity is preselected for new events and billed as 1 credit; the ${d}-day and 60-day tiers are also 1 credit each. Longer tiers use the totals shown in the list.`
     }
     return base
   }, [

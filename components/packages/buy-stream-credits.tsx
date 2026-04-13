@@ -28,7 +28,11 @@ import { formatPaisa } from "@/lib/cascade-wallet-service"
 import { getBestPriceForQuantity } from "@/lib/stream-type-pricing"
 import { normalizeUserCreditsRow } from "@/lib/normalize-user-credits"
 import type { ParsedValidityExtensions } from "@/lib/validity-extensions"
-import { validityCreditsForDuration } from "@/lib/validity-extensions"
+import {
+  validityCreditsForDuration,
+  validityCreditsForStreamAndDuration,
+  YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS,
+} from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -433,28 +437,75 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
             <CardTitle className="text-base">Event Validity Extensions</CardTitle>
           </div>
           <CardDescription>
-            Each event is valid for {ve.defaultDays} days by default. Extending costs additional credits of the same stream type (admin-configured).
+            Each event is valid for {ve.defaultDays} days by default for most stream types. Extending uses the same stream-type credits (admin tiers).{" "}
+            <span className="text-foreground/90">
+              YouTube Embed uses promotional validity pricing when creating events (see below).
+            </span>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
-              <p className="text-lg font-bold">{ve.defaultDays} days</p>
-              <p className="text-xs text-primary">Default validity</p>
+        <CardContent className="space-y-6">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+              RTMP, YouTube API &amp; third party
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                <p className="text-lg font-bold">{ve.defaultDays} days</p>
+                <p className="text-xs text-primary">Default validity</p>
+                <p className="text-[10px] text-muted-foreground mt-1">1 credit (validity)</p>
+              </div>
+              {ve.extendedTiers
+                .filter((t: { enabled?: boolean }) => t.enabled !== false)
+                .map((tier: { days: number }) => {
+                  const total = validityCreditsForDuration(tier.days, ve.defaultDays)
+                  return (
+                    <div key={`std-${tier.days}`} className="rounded-lg bg-secondary/50 p-3 text-center">
+                      <p className="text-lg font-bold">{tier.days} days</p>
+                      <p className="text-xs text-muted-foreground">
+                        {total} credit{total !== 1 ? "s" : ""} total (validity)
+                      </p>
+                    </div>
+                  )
+                })}
             </div>
-            {ve.extendedTiers
-              .filter((t: any) => t.enabled)
-              .map((tier: any) => {
-                const total = validityCreditsForDuration(tier.days, ve.defaultDays)
-                return (
-                  <div key={tier.days} className="rounded-lg bg-secondary/50 p-3 text-center">
-                    <p className="text-lg font-bold">{tier.days} days</p>
-                    <p className="text-xs text-muted-foreground">
-                      {total} credit{total !== 1 ? "s" : ""} total (validity)
-                    </p>
-                  </div>
-                )
-              })}
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">YouTube Embed</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              The event form preselects {YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS} days for new YouTube Embed events. The 60‑ and{" "}
+              {YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS}‑day tiers each debit 1 credit; other lengths follow the columns below.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                <p className="text-lg font-bold">{ve.defaultDays} days</p>
+                <p className="text-xs text-primary">Default tier in form</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {validityCreditsForStreamAndDuration("youtube_embed", ve.defaultDays, ve.defaultDays)} credit
+                  {validityCreditsForStreamAndDuration("youtube_embed", ve.defaultDays, ve.defaultDays) !== 1 ? "s" : ""}{" "}
+                  (validity)
+                </p>
+              </div>
+              {ve.extendedTiers
+                .filter((t: { enabled?: boolean }) => t.enabled !== false)
+                .map((tier: { days: number }) => {
+                  const total = validityCreditsForStreamAndDuration("youtube_embed", tier.days, ve.defaultDays)
+                  const isFormDefault = tier.days === YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS
+                  return (
+                    <div
+                      key={`yt-${tier.days}`}
+                      className={`rounded-lg p-3 text-center ${isFormDefault ? "bg-primary/5 border border-primary/20" : "bg-secondary/50"}`}
+                    >
+                      <p className="text-lg font-bold">{tier.days} days</p>
+                      {isFormDefault ? (
+                        <p className="text-xs text-primary">Preselected for new events</p>
+                      ) : null}
+                      <p className={`text-xs text-muted-foreground ${isFormDefault ? "mt-1" : ""}`}>
+                        {total} credit{total !== 1 ? "s" : ""} total (validity)
+                      </p>
+                    </div>
+                  )
+                })}
+            </div>
           </div>
         </CardContent>
       </Card>

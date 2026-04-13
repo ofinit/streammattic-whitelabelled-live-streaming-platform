@@ -2,7 +2,7 @@
 
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react"
 import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -816,8 +816,7 @@ export function EventFormDialog({
     current: number
     total: number
   } | null>(null)
-  /** Programmatic open for file picker — more reliable than <label> inside Radix Dialog. */
-  const photoGalleryInputRef = useRef<HTMLInputElement>(null)
+  const photoGalleryInputId = useId()
   const [galleryDragOver, setGalleryDragOver] = useState(false)
 
   // State for template category filter
@@ -3476,32 +3475,27 @@ export function EventFormDialog({
                         ))}
                         <div className="relative h-20 w-20 shrink-0">
                           <input
-                            ref={photoGalleryInputRef}
+                            id={photoGalleryInputId}
                             type="file"
                             accept="image/*"
                             multiple
                             className="sr-only"
-                            tabIndex={-1}
-                            aria-hidden
-                            title="Choose one or more images"
                             onChange={handlePhotoGalleryFilesChange}
                             disabled={!!standardUploading || !!galleryUploadProgress}
                           />
-                          <button
-                            type="button"
+                          {/*
+                            Use label+htmlFor (not programmatic input.click()) so the file dialog opens reliably
+                            inside Radix Dialog — same pattern as native forms; click() is often blocked as untrusted.
+                          */}
+                          <label
+                            htmlFor={photoGalleryInputId}
                             className={`flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
-                              standardUploading || galleryUploadProgress ? "cursor-not-allowed opacity-50" : ""
+                              standardUploading || galleryUploadProgress ? "pointer-events-none cursor-not-allowed opacity-50" : ""
                             }`}
-                            disabled={!!standardUploading || !!galleryUploadProgress}
                             aria-label="Add photos to gallery — you can select multiple files"
-                            title="Select multiple images in the file picker"
-                            onClick={() => {
-                              if (standardUploading || galleryUploadProgress) return
-                              photoGalleryInputRef.current?.click()
-                            }}
                           >
                             <Plus className="h-5 w-5 text-muted-foreground" />
-                          </button>
+                          </label>
                         </div>
                       </div>
                       {galleryUploadProgress ? (

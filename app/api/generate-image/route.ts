@@ -97,6 +97,51 @@ function stringifyUnknownError(err: unknown): string {
   return String(err)
 }
 
+/** User-facing errors for streamer/studio — no vendor or model names. */
+function publicGenerateImageFailureMessage(detailLower: string): string {
+  if (
+    detailLower.includes("401") ||
+    detailLower.includes("unauthorized") ||
+    detailLower.includes("invalid api key") ||
+    detailLower.includes("authentication")
+  ) {
+    return "Image generation could not be authorized. Contact your administrator."
+  }
+  if (detailLower.includes("403") && (detailLower.includes("forbidden") || detailLower.includes("access"))) {
+    return "Image generation was denied for this request. Contact your administrator."
+  }
+  if (
+    detailLower.includes("402") ||
+    detailLower.includes("payment") ||
+    detailLower.includes("insufficient") ||
+    detailLower.includes("quota")
+  ) {
+    return "Image generation is temporarily unavailable. Try again later or contact support."
+  }
+  if (detailLower.includes("429") || detailLower.includes("rate limit")) {
+    return "Too many image generation requests. Please wait and try again."
+  }
+  if (
+    detailLower.includes("econnrefused") ||
+    detailLower.includes("etimedout") ||
+    detailLower.includes("enotfound") ||
+    detailLower.includes("fetch failed") ||
+    detailLower.includes("network")
+  ) {
+    return "Could not complete image generation. Try again."
+  }
+  if (detailLower.includes("download failed") || detailLower.includes("http 4") || detailLower.includes("http 5")) {
+    return "The generated image could not be retrieved. Please try again; your wallet was refunded if debited."
+  }
+  if (detailLower.includes("webp") || detailLower.includes("sharp") || detailLower.includes("process generated image")) {
+    return "Could not process the generated image. Please try again; your wallet was refunded if debited."
+  }
+  if (detailLower.includes("no image")) {
+    return "No image was produced for this prompt. Try a different description or retry."
+  }
+  return "Image generation failed. Please try again or contact support if this continues."
+}
+
 async function refundAiGenerationWallet(
   sql: ReturnType<typeof getDb>,
   walletId: string,
@@ -161,6 +206,7 @@ export async function GET() {
 
 export const POST = withAuth(async (user, request: Request) => {
   const role = user.role as string
+  const isAdmin = role === "admin"
   if (role !== "studio" && role !== "admin" && role !== "streamer") {
     return jsonError("Forbidden", 403)
   }
@@ -182,7 +228,9 @@ export const POST = withAuth(async (user, request: Request) => {
     if (!falKey) {
       console.error("[generate-image] FAL_KEY is not set — set it in the server environment (e.g. Coolify → Environment).")
       return jsonError(
-        "AI image generation is not configured on this server (missing FAL_KEY). Add your Fal API key to environment variables.",
+        isAdmin
+          ? "AI image generation is not configured on this server (missing FAL_KEY). Add your Fal API key to environment variables."
+          : "AI image generation is not available on this server. Contact your administrator.",
         503,
       )
     }
@@ -190,14 +238,18 @@ export const POST = withAuth(async (user, request: Request) => {
     if (!process.env.OPENROUTER_API_KEY?.trim()) {
       console.error("[generate-image] OPENROUTER_API_KEY missing — required when using OpenRouter backend.")
       return jsonError(
-        "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY in the server environment.",
+        isAdmin
+          ? "AI image generation is not configured for OpenRouter. Set OPENROUTER_API_KEY in the server environment."
+          : "AI image generation is not available on this server. Contact your administrator.",
         503,
       )
     }
     if (!resolveOpenRouterModelIdForGeneration(aiConfig).trim()) {
       console.error("[generate-image] OpenRouter model missing — set OPENROUTER_IMAGE_MODEL or Admin → Packages → OpenRouter model.")
       return jsonError(
-        "OpenRouter model is not configured. Set OPENROUTER_IMAGE_MODEL in environment or choose a model in Admin → Packages (AI Image Generation).",
+        isAdmin
+          ? "OpenRouter model is not configured. Set OPENROUTER_IMAGE_MODEL in environment or choose a model in Admin → Packages (AI Image Generation)."
+          : "AI image generation is not available on this server. Contact your administrator.",
         503,
       )
     }
@@ -380,6 +432,10 @@ export const POST = withAuth(async (user, request: Request) => {
       if (hint.length > 0) {
         client = `${generic} Detail: ${hint}`
       }
+    }
+
+    if (!isAdmin) {
+      client = publicGenerateImageFailureMessage(lower)
     }
 
     return jsonError(client, 500)

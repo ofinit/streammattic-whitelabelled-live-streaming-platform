@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
+import { useState, useRef, useCallback, useEffect, useId, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -76,6 +77,8 @@ export function AiImagePickerDialog({
   const [error, setError] = useState("")
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputId = useId()
+  const [fileInputPortalReady, setFileInputPortalReady] = useState(false)
   const [aiPrice, setAiPrice] = useState<number | null>(null)
   const [aiEnabled, setAiEnabled] = useState(true)
   const [aiBackendReady, setAiBackendReady] = useState(false)
@@ -106,6 +109,11 @@ export function AiImagePickerDialog({
     walletUserId && walletUserId.trim() !== "" ? walletUserId.trim() : (user?.id ?? "")
   const isPlatformAdminFreeAi =
     user?.role === "admin" && !!user?.id && effectiveWalletUserId === user.id
+  const showAiProviderNamesToUser = user?.role === "admin"
+
+  useEffect(() => {
+    setFileInputPortalReady(true)
+  }, [])
 
   useEffect(() => {
     if (disabled) {
@@ -438,14 +446,14 @@ export function AiImagePickerDialog({
                 align the image inside the circle before uploading.
               </p>
             ) : null}
-            <div
+            <label
+              htmlFor={fileInputId}
               className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                 dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
               }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
             >
               {uploading ? (
                 <>
@@ -467,25 +475,7 @@ export function AiImagePickerDialog({
                   </p>
                 </>
               )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-                className="hidden"
-                onChange={(e) => {
-                  const list = e.target.files
-                  e.target.value = ""
-                  if (!list?.length) return
-                  if (allowMultipleUpload && !circularHeroCrop) {
-                    void handleMultipleFileUpload(Array.from(list))
-                  } else {
-                    const file = list[0]
-                    if (file) void handleFileUpload(file)
-                  }
-                }}
-              />
-            </div>
+            </label>
           </div>
 
           {showAiSection ? (
@@ -509,9 +499,9 @@ export function AiImagePickerDialog({
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Wallet className="h-3 w-3" />
                         Cost: ₹{(aiPrice / 100).toFixed(0)} per image
-                        {aiBackend === "openrouter" ? (
+                        {showAiProviderNamesToUser && aiBackend === "openrouter" ? (
                           <span className="text-muted-foreground/80"> · OpenRouter</span>
-                        ) : aiBackend === "fal" ? (
+                        ) : showAiProviderNamesToUser && aiBackend === "fal" ? (
                           <span className="text-muted-foreground/80"> · Fal</span>
                         ) : null}
                       </span>
@@ -574,8 +564,17 @@ export function AiImagePickerDialog({
                 </div>
               </div>
               <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                AI generation is enabled but the server is not configured for the selected provider. Use upload, or ask an
-                administrator to set API keys (Fal or OpenRouter) and redeploy.
+                {showAiProviderNamesToUser ? (
+                  <>
+                    AI generation is enabled but the server is not configured for the selected provider. Use upload, or set
+                    API keys (Fal or OpenRouter) and redeploy.
+                  </>
+                ) : (
+                  <>
+                    AI generation is enabled but the server is not fully configured. Use upload, or contact your
+                    administrator.
+                  </>
+                )}
               </p>
             </>
           ) : null}
@@ -584,6 +583,33 @@ export function AiImagePickerDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {fileInputPortalReady && dialogOpen
+      ? createPortal(
+          <input
+            id={fileInputId}
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
+            tabIndex={-1}
+            className="sr-only"
+            aria-hidden
+            onChange={(e) => {
+              const list = e.target.files
+              e.target.value = ""
+              if (!list?.length) return
+              if (allowMultipleUpload && !circularHeroCrop) {
+                void handleMultipleFileUpload(Array.from(list))
+              } else {
+                const file = list[0]
+                if (file) void handleFileUpload(file)
+              }
+            }}
+          />,
+          document.body,
+        )
+      : null}
 
     {cropImageSrc ? (
       <CircularProfileCropDialog

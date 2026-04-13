@@ -817,7 +817,6 @@ export function EventFormDialog({
     total: number
   } | null>(null)
   const [galleryDragOver, setGalleryDragOver] = useState(false)
-  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -3454,15 +3453,13 @@ export function EventFormDialog({
                         ))}
                       </div>
                     )}
-                    {/* Drop zone — full-width; button triggers hidden input for reliable file picker in Radix Dialog */}
-                    <button
-                      type="button"
-                      onClick={() => galleryInputRef.current?.click()}
+                    {/* Drop zone — label wraps hidden input; pure HTML, bypasses Radix focus-trap */}
+                    <label
                       className={`w-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                         galleryDragOver
                           ? "border-primary bg-primary/5"
                           : "border-border/50 hover:border-border"
-                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
                       onDragEnter={(e) => {
                         e.preventDefault(); e.stopPropagation()
@@ -3473,7 +3470,6 @@ export function EventFormDialog({
                         if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
                       }}
                       onDrop={handlePhotoGalleryDrop}
-                      disabled={!!standardUploading || !!galleryUploadProgress}
                       aria-label="Drop images here or click to browse"
                     >
                       {galleryUploadProgress ? (
@@ -3496,18 +3492,16 @@ export function EventFormDialog({
                           </p>
                         </>
                       )}
-                    </button>
-                    {/* Hidden input — triggered by button.onClick above; sr-only keeps it accessible but out of the overlay */}
-                    <input
-                      ref={galleryInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handlePhotoGalleryFilesChange}
-                      disabled={!!standardUploading || !!galleryUploadProgress}
-                      className="sr-only"
-                      aria-label="Add photos to gallery"
-                    />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoGalleryFilesChange}
+                        disabled={!!standardUploading || !!galleryUploadProgress}
+                        className="hidden"
+                        aria-label="Add photos to gallery"
+                      />
+                    </label>
                   </div>
                   <div className="space-y-2">
                     <Label>Photographer logo</Label>

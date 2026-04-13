@@ -817,6 +817,7 @@ export function EventFormDialog({
     total: number
   } | null>(null)
   const [galleryDragOver, setGalleryDragOver] = useState(false)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -3453,13 +3454,15 @@ export function EventFormDialog({
                         ))}
                       </div>
                     )}
-                    {/* Drop zone — full-width, same look as AiImagePickerDialog */}
-                    <div
-                      className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+                    {/* Drop zone — full-width; button triggers hidden input for reliable file picker in Radix Dialog */}
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      className={`w-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                         galleryDragOver
                           ? "border-primary bg-primary/5"
                           : "border-border/50 hover:border-border"
-                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
                       onDragEnter={(e) => {
                         e.preventDefault(); e.stopPropagation()
@@ -3470,7 +3473,7 @@ export function EventFormDialog({
                         if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
                       }}
                       onDrop={handlePhotoGalleryDrop}
-                      role="button"
+                      disabled={!!standardUploading || !!galleryUploadProgress}
                       aria-label="Drop images here or click to browse"
                     >
                       {galleryUploadProgress ? (
@@ -3484,27 +3487,27 @@ export function EventFormDialog({
                         </>
                       ) : (
                         <>
-                          <Upload className="mb-2 h-8 w-8 text-muted-foreground/60 pointer-events-none" aria-hidden />
-                          <p className="text-sm font-medium text-foreground pointer-events-none">
+                          <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden />
+                          <p className="text-sm font-medium text-foreground">
                             Drop images here or click to browse
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground pointer-events-none">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             Select multiple — JPEG, PNG, WebP, GIF up to 8 MB each
                           </p>
                         </>
                       )}
-                      {/* Transparent full-area input — direct trusted activation inside Radix Dialog */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePhotoGalleryFilesChange}
-                        disabled={!!standardUploading || !!galleryUploadProgress}
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                        title="Select images"
-                        aria-label="Add photos to gallery"
-                      />
-                    </div>
+                    </button>
+                    {/* Hidden input — triggered by button.onClick above; sr-only keeps it accessible but out of the overlay */}
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoGalleryFilesChange}
+                      disabled={!!standardUploading || !!galleryUploadProgress}
+                      className="sr-only"
+                      aria-label="Add photos to gallery"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Photographer logo</Label>

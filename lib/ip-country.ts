@@ -20,9 +20,13 @@ export function lookupCountryNameFromIp(ip: string | null | undefined): string |
   if (!ip?.trim()) return null
   const first = ip.split(",")[0]?.trim() ?? ""
   if (!first || first === "127.0.0.1" || first === "::1") return null
-  const geo = geoip.lookup(first)
-  if (!geo?.country) return null
-  return countryNameFromCode(geo.country)
+  try {
+    const geo = geoip.lookup(first)
+    if (!geo?.country) return null
+    return countryNameFromCode(geo.country)
+  } catch {
+    return null
+  }
 }
 
 /** ISO 3166-1 alpha-2 from IP (for analytics columns); null for private/unknown. */
@@ -30,10 +34,14 @@ export function lookupCountryCodeFromIp(ip: string | null | undefined): string |
   if (!ip?.trim()) return null
   const first = ip.split(",")[0]?.trim() ?? ""
   if (!first || first === "127.0.0.1" || first === "::1") return null
-  const geo = geoip.lookup(first)
-  const code = geo?.country
-  if (!code || code.length !== 2) return null
-  return code.toUpperCase()
+  try {
+    const geo = geoip.lookup(first)
+    const code = geo?.country
+    if (!code || code.length !== 2) return null
+    return code.toUpperCase()
+  } catch {
+    return null
+  }
 }
 
 /** Prefer stored DB value; if missing, derive from IP (fixes older rows before ip_country was saved). */
@@ -41,7 +49,11 @@ export function resolveVisitorIpCountry(
   ipAddress: string | null | undefined,
   storedCountry: string | null | undefined,
 ): string | null {
-  const s = storedCountry?.trim()
-  if (s) return s
-  return lookupCountryNameFromIp(ipAddress ?? null)
+  try {
+    const s = storedCountry?.trim()
+    if (s) return s
+    return lookupCountryNameFromIp(ipAddress ?? null)
+  } catch {
+    return storedCountry?.trim() || null
+  }
 }

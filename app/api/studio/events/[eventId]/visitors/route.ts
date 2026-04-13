@@ -5,6 +5,9 @@ import { userCanViewEventVisitors } from "@/lib/event-visitor-access"
 import { escapeSqlLikePattern } from "@/lib/search-like"
 import { resolveVisitorIpCountry } from "@/lib/ip-country"
 
+/** geoip-lite and DB drivers expect Node; avoid Edge where lookups can throw. */
+export const runtime = "nodejs"
+
 function csvEscape(s: string): string {
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
   return s
@@ -46,6 +49,9 @@ export async function GET(
       )
     `.catch(() => {})
     await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS ip_country TEXT`.catch(() => {})
+    await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS accept_language TEXT`.catch(() => {})
+    await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS visitor_key TEXT`.catch(() => {})
+    await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS session_key TEXT`.catch(() => {})
 
     const eventRows = await sql`
       SELECT id, user_id, studio_id FROM events
@@ -67,7 +73,7 @@ export async function GET(
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0)
     const format = url.searchParams.get("format")?.toLowerCase() === "csv" ? "csv" : "json"
 
-    const eventUuid = event.id
+    const eventUuid = String(event.id)
 
     const conditions: string[] = ["r.event_id = $1"]
     const params: unknown[] = [eventUuid]

@@ -3436,9 +3436,11 @@ export function EventFormDialog({
                   <div className="space-y-2">
                     <Label>Photo gallery</Label>
                     <p className="text-xs text-muted-foreground">
-                      Add <strong className="text-foreground">many images at once</strong>: use the + button and multi-select in
-                      the file dialog, or drag and drop images onto the area below. Files are compressed to WebP before
-                      upload.
+                      Add <strong className="text-foreground">many images at once</strong> via + (multi-select) or drag-and-drop.
+                      Each file is <strong className="text-foreground">resized in your browser</strong> (usually WebP; JPEG if
+                      WebP export is unavailable), then <strong className="text-foreground">always re-encoded and saved as WebP</strong>{" "}
+                      on the server (max edge 2560px, quality ~82). If browser resizing fails, the original is uploaded and still
+                      converted to WebP for storage.
                     </p>
                     <div
                       className={`relative rounded-lg border border-border/60 p-2 transition-colors ${

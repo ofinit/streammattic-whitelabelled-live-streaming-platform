@@ -3433,30 +3433,9 @@ export function EventFormDialog({
                   </div>
                   <div className="space-y-2">
                     <Label>Photo gallery</Label>
-                    <div
-                      className={`relative rounded-lg border border-border/60 p-2 transition-colors ${
-                        galleryDragOver ? "border-primary bg-primary/5 ring-2 ring-primary/25" : ""
-                      }`}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onDragEnter={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        if (!standardUploading && !galleryUploadProgress) setGalleryDragOver(true)
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
-                      }}
-                      onDrop={handlePhotoGalleryDrop}
-                    >
-                      <div
-                        className={`flex flex-wrap gap-2 ${galleryUploadProgress ? "pointer-events-none opacity-60" : ""}`}
-                        aria-busy={!!galleryUploadProgress}
-                      >
+                    {/* Uploaded thumbnails */}
+                    {photoGalleryUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
                         {photoGalleryUrls.map((url, i) => (
                           <div key={`${url}-${i}`} className="relative h-20 w-20 overflow-hidden rounded border">
                             <img src={url} alt="" className="h-full w-full object-cover" />
@@ -3472,56 +3451,59 @@ export function EventFormDialog({
                             </Button>
                           </div>
                         ))}
-                        {/*
-                          The input sits as a transparent overlay on top of the visible + button.
-                          This is the only pattern that reliably opens the file picker inside Radix Dialog
-                          without needing programmatic .click() (which is treated as untrusted) or
-                          label+htmlFor (which Radix's focus trap can intercept).
-                        */}
-                        <div
-                          className={`relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
-                            standardUploading || galleryUploadProgress ? "pointer-events-none cursor-not-allowed opacity-50" : ""
-                          }`}
-                          aria-label="Add photos to gallery"
-                        >
-                          <Plus className="h-5 w-5 text-muted-foreground pointer-events-none" aria-hidden />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            tabIndex={0}
-                            onChange={handlePhotoGalleryFilesChange}
-                            disabled={!!standardUploading || !!galleryUploadProgress}
-                            className="absolute inset-0 cursor-pointer opacity-0"
-                            title="Select images"
-                            aria-label="Add photos to gallery"
-                          />
-                        </div>
                       </div>
+                    )}
+                    {/* Drop zone — full-width, same look as AiImagePickerDialog */}
+                    <div
+                      className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+                        galleryDragOver
+                          ? "border-primary bg-primary/5"
+                          : "border-border/50 hover:border-border"
+                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+                      onDragEnter={(e) => {
+                        e.preventDefault(); e.stopPropagation()
+                        if (!standardUploading && !galleryUploadProgress) setGalleryDragOver(true)
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault(); e.stopPropagation()
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
+                      }}
+                      onDrop={handlePhotoGalleryDrop}
+                      role="button"
+                      aria-label="Drop images here or click to browse"
+                    >
                       {galleryUploadProgress ? (
-                        <div
-                          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/85 backdrop-blur-sm px-2"
-                          role="status"
-                          aria-live="polite"
-                          aria-label={
-                            galleryUploadProgress.phase === "compress"
-                              ? `Compressing image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}`
-                              : `Uploading ${galleryUploadProgress.total} files to server`
-                          }
-                        >
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-center text-xs font-medium text-foreground">
+                        <>
+                          <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
                             {galleryUploadProgress.phase === "compress"
-                              ? "Compressing images…"
-                              : "Uploading to server…"}
+                              ? `Compressing image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}…`
+                              : `Uploading ${galleryUploadProgress.total} file${galleryUploadProgress.total === 1 ? "" : "s"}…`}
                           </p>
-                          <p className="text-center text-[11px] text-muted-foreground">
-                            {galleryUploadProgress.phase === "compress"
-                              ? `Image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}`
-                              : `Sending ${galleryUploadProgress.total} file${galleryUploadProgress.total === 1 ? "" : "s"}…`}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mb-2 h-8 w-8 text-muted-foreground/60 pointer-events-none" aria-hidden />
+                          <p className="text-sm font-medium text-foreground pointer-events-none">
+                            Drop images here or click to browse
                           </p>
-                        </div>
-                      ) : null}
+                          <p className="mt-1 text-xs text-muted-foreground pointer-events-none">
+                            Select multiple — JPEG, PNG, WebP, GIF up to 8 MB each
+                          </p>
+                        </>
+                      )}
+                      {/* Transparent full-area input — direct trusted activation inside Radix Dialog */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoGalleryFilesChange}
+                        disabled={!!standardUploading || !!galleryUploadProgress}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        title="Select images"
+                        aria-label="Add photos to gallery"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">

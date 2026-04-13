@@ -817,7 +817,8 @@ export function EventFormDialog({
     total: number
   } | null>(null)
   const [galleryDragOver, setGalleryDragOver] = useState(false)
-  const photoGalleryInputId = useId()
+  /** Colons in React useId() can break label[htmlFor] matching in some browsers — sanitize. */
+  const photoGalleryInputId = `photo-gallery-${useId().replace(/:/g, "")}`
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -1631,28 +1632,6 @@ export function EventFormDialog({
     } catch {
       throw new Error(res.status === 413 ? "File too large for server" : `Upload failed (${res.status})`)
     }
-    // #region agent log
-    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
-      body: JSON.stringify({
-        sessionId: "522636",
-        runId: "post-fix",
-        hypothesisId: "H3",
-        location: "event-form-dialog.tsx:postEventUpload",
-        message: "gallery upload API response",
-        data: {
-          subdir,
-          status: res.status,
-          ok: res.ok,
-          hasUrl: Boolean(data.url),
-          errSnippet: data.error ? String(data.error).slice(0, 120) : undefined,
-          fileNameLen: file.name?.length ?? 0,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-    // #endregion
     if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
     if (!data.url) throw new Error("Upload did not return a URL")
     return data.url
@@ -1710,21 +1689,6 @@ export function EventFormDialog({
     const images = rawFiles.filter(
       (f) => Boolean(f.type?.startsWith("image/")) || looksLikeImageByName(f.name),
     )
-    // #region agent log
-    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
-      body: JSON.stringify({
-        sessionId: "522636",
-        runId: "post-fix",
-        hypothesisId: "H2",
-        location: "event-form-dialog.tsx:runPhotoGalleryUpload",
-        message: "after image filter",
-        data: { rawCount: rawFiles.length, imagesCount: images.length },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-    // #endregion
     if (images.length === 0) {
       if (rawFiles.length > 0) {
         toast({
@@ -1762,21 +1726,6 @@ export function EventFormDialog({
       }
 
       if (filesToUpload.length === 0) {
-        // #region agent log
-        fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
-          body: JSON.stringify({
-            sessionId: "522636",
-            runId: "post-fix",
-            hypothesisId: "H2",
-            location: "event-form-dialog.tsx:runPhotoGalleryUpload",
-            message: "compress left zero files",
-            data: { compressFailuresCount: compressFailures.length },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {})
-        // #endregion
         toast({
           variant: "destructive",
           title: "Photo gallery upload failed",
@@ -1818,21 +1767,6 @@ export function EventFormDialog({
     } catch (err) {
       console.error(err)
       const message = err instanceof Error ? err.message : "Could not upload photos"
-      // #region agent log
-      fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
-        body: JSON.stringify({
-          sessionId: "522636",
-          runId: "post-fix",
-          hypothesisId: "H4",
-          location: "event-form-dialog.tsx:runPhotoGalleryUpload",
-          message: "runPhotoGalleryUpload catch",
-          data: { message: message.slice(0, 200) },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {})
-      // #endregion
       toast({
         variant: "destructive",
         title: "Photo gallery upload failed",
@@ -1845,21 +1779,6 @@ export function EventFormDialog({
 
   const handlePhotoGalleryFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const list = e.target.files
-    // #region agent log
-    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
-      body: JSON.stringify({
-        sessionId: "522636",
-        runId: "post-fix",
-        hypothesisId: "H1",
-        location: "event-form-dialog.tsx:handlePhotoGalleryFilesChange",
-        message: "file input change",
-        data: { fileCount: list?.length ?? 0 },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-    // #endregion
     e.target.value = ""
     if (!list?.length) return
     await runPhotoGalleryUpload(Array.from(list))
@@ -3566,8 +3485,7 @@ export function EventFormDialog({
                         multiple
                         onChange={handlePhotoGalleryFilesChange}
                         disabled={!!standardUploading || !!galleryUploadProgress}
-                        className="sr-only"
-                        tabIndex={-1}
+                        className="hidden"
                         aria-label="Add photos to gallery"
                       />
                       <label

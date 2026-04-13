@@ -156,6 +156,17 @@ CREATE TABLE IF NOT EXISTS user_credits (
 );
 
 -- =============================================================
+-- TABLE: user_addon_entitlements (marketplace add-ons)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS user_addon_entitlements (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  photo_gallery_enabled BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_user_addon_entitlements_gallery ON user_addon_entitlements(user_id)
+  WHERE photo_gallery_enabled = true;
+
+-- =============================================================
 -- TABLE: credit_purchases
 -- =============================================================
 CREATE TABLE IF NOT EXISTS credit_purchases (
@@ -790,7 +801,8 @@ INSERT INTO platform_settings (key, value) VALUES
   ('simulcast_pricing', '{"youtube":{"price":75,"enabled":true,"label":"YouTube"},"facebook":{"price":75,"enabled":true,"label":"Facebook"},"custom_rtmp":{"price":100,"enabled":true,"label":"Custom RTMP"}}'::jsonb),
   ('studio_subscription', '{"enabled":true,"annualPrice":1800000,"label":"Studio Annual Subscription","description":"White-label platform access and hosting"}'::jsonb),
   ('gst_config', '{"enabled":true,"percentage":18,"gstin":"","companyName":"StreamLivee","companyAddress":""}'::jsonb),
-  ('payment_gateways', '{"razorpay":{"enabled":true,"label":"Razorpay"},"instamojo":{"enabled":true,"label":"Instamojo"}}'::jsonb)
+  ('payment_gateways', '{"razorpay":{"enabled":true,"label":"Razorpay"},"instamojo":{"enabled":true,"label":"Instamojo"}}'::jsonb),
+  ('photo_gallery_addon', '{"listingEnabled":false,"productName":"Client photo gallery","galleryServiceBaseUrl":"","monthlyPricePaisa":0,"faceIndexCreditPricePaisa":500,"includedFaceIndexesPerMonth":0}'::jsonb)
 -- Do not overwrite existing keys: same behavior as scripts/run-migration.js (preserve admin pricing/GST/gateways).
 ON CONFLICT (key) DO NOTHING;
 

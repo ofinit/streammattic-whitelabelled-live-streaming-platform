@@ -50,6 +50,8 @@ export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elega
   credits: StreamTypeCredits
   totalEvents: number
   studioSubscriptionExpiresAt?: string | null
+  /** Admin-granted client photo gallery add-on (BYOS). */
+  photoGalleryEnabled?: boolean
   }
 
 // Admin extends User
@@ -66,6 +68,8 @@ export interface Streamer extends User {
   credits: StreamTypeCredits
   totalEvents: number
   eventsUsed: number
+  /** Admin-granted client photo gallery add-on (BYOS). */
+  photoGalleryEnabled?: boolean
 }
 
 // Studio Branding

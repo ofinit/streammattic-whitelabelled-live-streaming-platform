@@ -35,16 +35,20 @@ export async function GET(req: Request) {
     const rows =
       role === "all"
         ? await sql(`
-          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color
+          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
+                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
+          LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id
           ORDER BY u.created_at DESC
         `)
         : await sql(
             `
-          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color
+          SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
+                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
+          LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id
           WHERE u.role = $1
           ORDER BY u.created_at DESC
         `,
@@ -80,6 +84,7 @@ export async function GET(req: Request) {
             (row.branding_platform_name as string) || (roleVal === "studio" ? "Unnamed Studio" : "Platform"),
           primaryColor: (row.branding_primary_color as string) || "#10b981",
         },
+        photoGalleryEnabled: row.photo_gallery_enabled === true,
       }
     })
 

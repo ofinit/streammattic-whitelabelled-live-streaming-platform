@@ -199,6 +199,20 @@ async function step3_core_tables(c) {
     )
   `);
 
+  // 6b. user_addon_entitlements (marketplace add-ons, e.g. client photo gallery BYOS)
+  await tryExec(c, "TABLE user_addon_entitlements", `
+    CREATE TABLE IF NOT EXISTS user_addon_entitlements (
+      user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      photo_gallery_enabled BOOLEAN NOT NULL DEFAULT false,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await tryExec(
+    c,
+    "IDX user_addon_entitlements gallery",
+    `CREATE INDEX IF NOT EXISTS idx_user_addon_entitlements_gallery ON user_addon_entitlements(user_id) WHERE photo_gallery_enabled = true`,
+  );
+
   // 7. credit_purchases
   await tryExec(c, "TABLE credit_purchases", `
     CREATE TABLE IF NOT EXISTS credit_purchases (
@@ -780,6 +794,17 @@ async function step13_seed_settings(c) {
       value: {
         razorpay: { enabled: false, label: "Razorpay" },
         instamojo: { enabled: false, label: "Instamojo" },
+      },
+    },
+    {
+      key: "photo_gallery_addon",
+      value: {
+        listingEnabled: false,
+        productName: "Client photo gallery",
+        galleryServiceBaseUrl: "",
+        monthlyPricePaisa: 0,
+        faceIndexCreditPricePaisa: 500,
+        includedFaceIndexesPerMonth: 0,
       },
     },
   ];

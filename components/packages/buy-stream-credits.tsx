@@ -22,6 +22,8 @@ import {
   Users,
   Loader2,
   Sparkles,
+  Images,
+  ExternalLink,
 } from "lucide-react"
 import type { StreamTypeKey, StreamTypePricing, StreamTypeCredits } from "@/lib/types"
 import { formatPaisa } from "@/lib/cascade-wallet-service"
@@ -34,6 +36,7 @@ import {
   YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS,
 } from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
+import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -60,15 +63,19 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading")
   const [purchaseBusy, setPurchaseBusy] = useState<string | null>(null)
+  const [photoGalleryCatalog, setPhotoGalleryCatalog] = useState<PhotoGalleryAddonSettings | null>(null)
+  const [photoGalleryEntitled, setPhotoGalleryEntitled] = useState(false)
+  const [photoGalleryEligible, setPhotoGalleryEligible] = useState(false)
 
   const loadAll = useCallback(async () => {
     setLoadState("loading")
     try {
-      const [pRes, wRes, cRes, sRes] = await Promise.all([
+      const [pRes, wRes, cRes, sRes, pgRes] = await Promise.all([
         fetch("/api/credits/pricing"),
         fetch("/api/wallets"),
         fetch("/api/credits"),
         fetch("/api/settings"),
+        fetch("/api/photo-gallery-addon/status"),
       ])
 
       if (!pRes.ok) {
@@ -108,6 +115,21 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
         setAiImagePricing(parseAiImagePricing(aiSetting))
       } else {
         setAiImagePricing(parseAiImagePricing(null))
+      }
+
+      if (pgRes.ok) {
+        const pg = (await pgRes.json()) as {
+          catalog?: unknown
+          entitled?: boolean
+          eligible?: boolean
+        }
+        setPhotoGalleryCatalog(parsePhotoGalleryAddon(pg.catalog ?? null))
+        setPhotoGalleryEntitled(pg.entitled === true)
+        setPhotoGalleryEligible(pg.eligible === true)
+      } else {
+        setPhotoGalleryCatalog(null)
+        setPhotoGalleryEntitled(false)
+        setPhotoGalleryEligible(false)
       }
 
       setLoadState("ready")
@@ -509,6 +531,48 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           </div>
         </CardContent>
       </Card>
+
+      {photoGalleryEligible && photoGalleryCatalog && photoGalleryCatalog.listingEnabled && (
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Images className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">{photoGalleryCatalog.productName}</CardTitle>
+            </div>
+            <CardDescription>
+              Bring your own S3 storage for client photo delivery. Access is granted by the platform admin.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-secondary/50 p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Status</p>
+                <p className="text-sm text-muted-foreground">
+                  {photoGalleryEntitled ? (
+                    <span className="text-emerald-600 dark:text-emerald-400">Enabled for your account</span>
+                  ) : (
+                    <span>Not enabled — ask your administrator to grant access.</span>
+                  )}
+                </p>
+              </div>
+              {photoGalleryCatalog.monthlyPricePaisa > 0 ? (
+                <div className="text-right">
+                  <p className="text-lg font-bold">{formatPaisa(photoGalleryCatalog.monthlyPricePaisa)}</p>
+                  <p className="text-xs text-muted-foreground">reference monthly (billing may be custom)</p>
+                </div>
+              ) : null}
+            </div>
+            {photoGalleryEntitled && photoGalleryCatalog.galleryServiceBaseUrl ? (
+              <Button variant="outline" size="sm" asChild>
+                <a href={photoGalleryCatalog.galleryServiceBaseUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open gallery app
+                </a>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Image Generation / On-Demand Features */}
       {aiImagePricing && aiImagePricing.enabled && (

@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer"
 import { Resend } from "resend"
 import { getPlatformSetting, getStudioBranding } from "@/lib/db-queries"
+import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import type { StudioBranding } from "@/lib/types"
 
 function hasPlatformEmailProvider(): boolean {
@@ -81,7 +82,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
       process.env.SMTP_FROM ||
       DEFAULT_MAIL_FROM,
   )
-  let brandName = (await getPlatformSetting("platform_name")) as string || "StreamLivee"
+  let brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
 
   // Check if studio has custom SMTP
   if (studioId) {
@@ -175,7 +176,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
  * Specialized function for sending the 6-digit OTP code securely
  */
 export async function sendVerificationOTP(toEmail: string, otpCode: string, studioId?: string) {
-  const brandName = (await getPlatformSetting("platform_name")) as string || "StreamLivee"
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
 
   if (!hasPlatformEmailProvider() && !studioId) {
     console.log(`\n======================================================`)
@@ -224,7 +225,7 @@ export async function sendStudioSubscriptionRenewalReminder(params: {
   daysLeft: number
   renewUrl: string
 }) {
-  const brandName = ((await getPlatformSetting("platform_name")) as string) || "StreamLivee"
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
   const { toEmail, name, daysLeft, renewUrl } = params
   const when =
     daysLeft === 0
@@ -264,7 +265,7 @@ export async function sendStudioSubscriptionRenewalReminder(params: {
  * Password reset link (see /api/auth/forgot-password).
  */
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
-  const brandName = ((await getPlatformSetting("platform_name")) as string) || "StreamLivee"
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
 
   if (!hasPlatformEmailProvider()) {
     console.log(`\n======================================================`)

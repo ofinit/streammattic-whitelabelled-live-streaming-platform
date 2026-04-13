@@ -1,5 +1,6 @@
 import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError } from "@/lib/api-helpers"
+import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import { NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -67,10 +68,10 @@ export async function GET(req: NextRequest) {
   return jsonOk({
     isWhiteLabel: false,
     branding: {
-      brandName: settings.platform_name || "StreamLivee",
+      brandName: resolvePlatformDisplayName(settings.platform_name),
       themeColor: settings.primary_color || "#10b981",
       companyLogo: settings.platform_logo || "/placeholder.svg?height=40&width=200",
       supportEmail: settings.support_email || "support@streamlivee.com",
-    }
+    },
   })
 }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown, Loader2 } from "lucide-react"
+import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown, Loader2, Images } from "lucide-react"
 import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTypePricing } from "@/lib/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
@@ -33,6 +33,11 @@ import {
   getDefaultFalModelOptionId,
   getDefaultOpenRouterModelOptionId,
 } from "@/lib/ai-image-model-catalog"
+import {
+  getDefaultPhotoGalleryAddonSettings,
+  parsePhotoGalleryAddon,
+  type PhotoGalleryAddonSettings,
+} from "@/lib/photo-gallery-addon"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -109,6 +114,10 @@ export default function AdminPricingPage() {
   const [expandedStreams, setExpandedStreams] = useState<Record<string, boolean>>({ rtmp: true })
   const [settingsLoadState, setSettingsLoadState] = useState<"loading" | "ready" | "error">("loading")
   const [saving, setSaving] = useState(false)
+  const [photoGalleryAddon, setPhotoGalleryAddon] = useState<PhotoGalleryAddonSettings>(() =>
+    getDefaultPhotoGalleryAddonSettings(),
+  )
+  const [savingPhotoGallery, setSavingPhotoGallery] = useState(false)
 
   const loadSettings = useCallback(async () => {
     setSettingsLoadState("loading")
@@ -157,6 +166,8 @@ export default function AdminPricingPage() {
           getCatalogReferenceCostPaise("openrouter", orId) ??
           280,
       })
+
+      setPhotoGalleryAddon(parsePhotoGalleryAddon(map.photo_gallery_addon))
 
       setSettingsLoadState("ready")
     } catch (e) {
@@ -274,6 +285,28 @@ export default function AdminPricingPage() {
       toast.error(e instanceof Error ? e.message : "Save failed")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSavePhotoGallery = async () => {
+    setSavingPhotoGallery(true)
+    try {
+      const res = await fetch("/api/admin/photo-gallery-addon", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(photoGalleryAddon),
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(body.error || "Failed to save photo gallery settings")
+        return
+      }
+      toast.success("Photo gallery add-on settings saved")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed")
+    } finally {
+      setSavingPhotoGallery(false)
     }
   }
 
@@ -956,6 +989,119 @@ export default function AdminPricingPage() {
             </p>
           </CardContent>
         )}
+      </Card>
+
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Images className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle>Client photo gallery (BYOS)</CardTitle>
+                <CardDescription>
+                  Optional add-on: studios and streamers use their own S3 bucket; grant access per account under Streamers /
+                  Studios.
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="pg-listing" className="text-sm text-muted-foreground">
+                List in Packages
+              </Label>
+              <Switch
+                id="pg-listing"
+                checked={photoGalleryAddon.listingEnabled}
+                onCheckedChange={(checked) =>
+                  setPhotoGalleryAddon((prev) => ({ ...prev, listingEnabled: checked }))
+                }
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-3xl">
+          <div className="space-y-2">
+            <Label htmlFor="pg-product-name">Product name (customer-facing)</Label>
+            <Input
+              id="pg-product-name"
+              value={photoGalleryAddon.productName}
+              onChange={(e) => setPhotoGalleryAddon((p) => ({ ...p, productName: e.target.value }))}
+              className="bg-secondary border-0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pg-base-url">Gallery app base URL</Label>
+            <Input
+              id="pg-base-url"
+              type="url"
+              placeholder="https://gallery.yourdomain.com"
+              value={photoGalleryAddon.galleryServiceBaseUrl}
+              onChange={(e) => setPhotoGalleryAddon((p) => ({ ...p, galleryServiceBaseUrl: e.target.value }))}
+              className="bg-secondary border-0 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Deploy the gallery service separately; this URL is shown to entitled users on Packages.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Monthly price (INR)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="bg-secondary border-0 pl-7"
+                  value={photoGalleryAddon.monthlyPricePaisa / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({ ...p, monthlyPricePaisa: Math.round(n * 100) }))
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">0 = contact admin / custom billing</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Face index credit (₹)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="bg-secondary border-0 pl-7"
+                  value={photoGalleryAddon.faceIndexCreditPricePaisa / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({ ...p, faceIndexCreditPricePaisa: Math.round(n * 100) }))
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Per indexed image (future)</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Included face indexes / month</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                className="bg-secondary border-0"
+                value={photoGalleryAddon.includedFaceIndexesPerMonth}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10)
+                  if (e.target.value === "" || Number.isNaN(n)) return
+                  setPhotoGalleryAddon((p) => ({ ...p, includedFaceIndexesPerMonth: Math.max(0, n) }))
+                }}
+              />
+            </div>
+          </div>
+          <Button type="button" onClick={() => void handleSavePhotoGallery()} disabled={savingPhotoGallery}>
+            {savingPhotoGallery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Save photo gallery settings
+          </Button>
+        </CardContent>
       </Card>
 
       {/* Save */}

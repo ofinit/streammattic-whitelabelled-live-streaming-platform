@@ -65,6 +65,8 @@ export const GET = withAuth(async (user, request) => {
   if (user.role === "streamer" || user.role === "studio") {
     const studioSub = await getPlatformSetting("studio_annual_subscription")
     rows = [...rows, { key: "studio_annual_subscription", value: studioSub }]
+    const photoGallery = await getPlatformSetting("photo_gallery_addon")
+    rows = [...rows, { key: "photo_gallery_addon", value: photoGallery }]
   }
 
   return jsonOk({ settings: rows })

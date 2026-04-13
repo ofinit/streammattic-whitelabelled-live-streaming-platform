@@ -85,6 +85,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/invoices/zip/route.ts` | `/api/admin/invoices/zip` |
 | `app/api/admin/maintenance/fix-validity/route.ts` | `/api/admin/maintenance/fix-validity` |
 | `app/api/admin/orders/route.ts` | `/api/admin/orders` |
+| `app/api/admin/photo-gallery-addon/route.ts` | `/api/admin/photo-gallery-addon` |
 | `app/api/admin/pricing/route.ts` | `/api/admin/pricing` |
 | `app/api/admin/refunds/[id]/route.ts` | `/api/admin/refunds/[id]` |
 | `app/api/admin/refunds/route.ts` | `/api/admin/refunds` |
@@ -94,6 +95,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/system-tasks/run/route.ts` | `/api/admin/system-tasks/run` |
 | `app/api/admin/transactions/route.ts` | `/api/admin/transactions` |
 | `app/api/admin/users/[id]/domains/route.ts` | `/api/admin/users/[id]/domains` |
+| `app/api/admin/users/[id]/photo-gallery/route.ts` | `/api/admin/users/[id]/photo-gallery` |
 | `app/api/admin/users/[id]/route.ts` | `/api/admin/users/[id]` |
 | `app/api/admin/users/route.ts` | `/api/admin/users` |
 | `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
@@ -138,6 +140,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/payments/create/route.ts` | `/api/payments/create` |
 | `app/api/payments/verify/instamojo/route.ts` | `/api/payments/verify/instamojo` |
 | `app/api/payments/verify/razorpay/route.ts` | `/api/payments/verify/razorpay` |
+| `app/api/photo-gallery-addon/status/route.ts` | `/api/photo-gallery-addon/status` |
 | `app/api/refunds/route.ts` | `/api/refunds` |
 | `app/api/settings/route.ts` | `/api/settings` |
 | `app/api/stream/create/route.ts` | `/api/stream/create` |

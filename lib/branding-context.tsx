@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { Branding, Studio } from "./types"
+import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 
 // Default platform branding (StreamLivee)
 const defaultBranding: Branding = {
@@ -51,7 +52,10 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
               : (result as { branding?: Record<string, unknown>; isWhiteLabel?: boolean; userId?: string })
           const b = payload?.branding
           if (b && typeof b === "object") {
-            const brandName = (b.brandName || b.platformName || defaultBranding.brandName) as string
+            const brandName = resolvePlatformDisplayName(
+              b.brandName ?? b.platformName ?? defaultBranding.brandName,
+              defaultBranding.brandName,
+            )
             const themeColor = (b.themeColor || b.primaryColor || defaultBranding.themeColor) as string
             const accentColor = (b.accentColor || b.secondaryColor || defaultBranding.accentColor) as string
             setBranding({

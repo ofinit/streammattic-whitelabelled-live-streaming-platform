@@ -25,10 +25,11 @@ import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
 import { getPlatformSetting } from "@/lib/db-queries"
+import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import { getPlatformFaviconUrl, DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
 
 export async function generateMetadata(): Promise<Metadata> {
-  const platformName = (await getPlatformSetting("platform_name")) || "StreamLivee"
+  const platformName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
   const brandIcon = (await getPlatformFaviconUrl()) || DEFAULT_FAVICON_PATH
 
   let metadataBase: URL

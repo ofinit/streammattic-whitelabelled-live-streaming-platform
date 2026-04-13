@@ -22,7 +22,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet } from "lucide-react"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
@@ -104,6 +104,30 @@ export default function AdminStreamersPage() {
   const handleEdit = async (data: any) => {
     console.log("[update API] Updating streamer:", editingStreamer?.id, data)
     setEditingStreamer(null)
+  }
+
+  const togglePhotoGallery = async (user: Streamer) => {
+    const next = !user.photoGalleryEnabled
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/photo-gallery`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ photoGalleryEnabled: next }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(data.error || "Failed to update photo gallery access")
+        return
+      }
+      setStreamers((s) =>
+        s.map((x) => (x.id === user.id ? { ...x, photoGalleryEnabled: next } : x)),
+      )
+      toast.success(next ? "Client photo gallery enabled" : "Client photo gallery disabled")
+    } catch (e) {
+      console.error(e)
+      toast.error("Failed to update photo gallery access")
+    }
   }
 
   const handleStatusChange = async () => {
@@ -200,6 +224,15 @@ export default function AdminStreamersPage() {
             <DropdownMenuItem onClick={() => setYoutubeOverrideStreamer(item)}>
               <Youtube className="mr-2 h-4 w-4" />
               YouTube API access
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void togglePhotoGallery(item)}>
+              <Images className="mr-2 h-4 w-4" />
+              {item.photoGalleryEnabled ? "Disable" : "Enable"} client photo gallery
+              {item.photoGalleryEnabled ? (
+                <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0 text-emerald-600 border-emerald-500/30">
+                  On
+                </Badge>
+              ) : null}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
 {item.status === "active" ? (

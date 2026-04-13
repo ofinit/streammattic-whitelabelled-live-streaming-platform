@@ -3,6 +3,11 @@
  * Neutral naming only in user-visible defaults.
  */
 
+import {
+  getDefaultGalleryVisionModelId,
+  getGalleryVisionCatalogReferenceCostPaise,
+} from "@/lib/photo-gallery-vision-model-catalog"
+
 /** Default path for same-origin gallery (platform + studio custom domains). */
 export const DEFAULT_CLIENT_GALLERY_PATH = "/client-gallery" as const
 
@@ -27,11 +32,19 @@ export type PhotoGalleryAddonSettings = {
   faceIndexCreditPricePaisa: number
   /** Included face indexes per month before overage (0 = none). */
   includedFaceIndexesPerMonth: number
+  /**
+   * Planned OpenRouter model for gallery vision jobs (tags/captions per image). Display + margin planning;
+   * core does not call this API until a worker implements debits.
+   */
+  faceIndexOpenRouterModelId: string
+  /** Est. OpenRouter cost per job in paise (margin planning; adjust to match openrouter.ai bill). */
+  faceIndexProviderReferenceCostPaise: number
 }
 
 export const PHOTO_GALLERY_PLATFORM_SETTING_KEY = "photo_gallery_addon" as const
 
 export function getDefaultPhotoGalleryAddonSettings(): PhotoGalleryAddonSettings {
+  const defaultVisionId = getDefaultGalleryVisionModelId()
   return {
     listingEnabled: false,
     productName: "Client photo gallery",
@@ -40,6 +53,9 @@ export function getDefaultPhotoGalleryAddonSettings(): PhotoGalleryAddonSettings
     monthlyPricePaisa: 0,
     faceIndexCreditPricePaisa: 500,
     includedFaceIndexesPerMonth: 0,
+    faceIndexOpenRouterModelId: defaultVisionId,
+    faceIndexProviderReferenceCostPaise:
+      getGalleryVisionCatalogReferenceCostPaise(defaultVisionId) ?? 120,
   }
 }
 
@@ -108,6 +124,17 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     ? Math.round(o.includedFaceIndexesPerMonth)
     : d.includedFaceIndexesPerMonth
 
+  let faceIndexOpenRouterModelId = d.faceIndexOpenRouterModelId
+  if (typeof o.faceIndexOpenRouterModelId === "string") {
+    const t = o.faceIndexOpenRouterModelId.trim().slice(0, 200)
+    if (t.length > 0) faceIndexOpenRouterModelId = t
+  }
+
+  let faceIndexProviderReferenceCostPaise = d.faceIndexProviderReferenceCostPaise
+  if (isFiniteNonNeg(o.faceIndexProviderReferenceCostPaise)) {
+    faceIndexProviderReferenceCostPaise = Math.round(o.faceIndexProviderReferenceCostPaise)
+  }
+
   return {
     listingEnabled,
     productName,
@@ -116,6 +143,8 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     monthlyPricePaisa,
     faceIndexCreditPricePaisa,
     includedFaceIndexesPerMonth,
+    faceIndexOpenRouterModelId,
+    faceIndexProviderReferenceCostPaise,
   }
 }
 
@@ -126,6 +155,9 @@ export function assertPhotoGalleryAddonForSave(raw: unknown): PhotoGalleryAddonS
   }
   if (parsed.faceIndexCreditPricePaisa > 1e12) {
     throw new Error("faceIndexCreditPricePaisa is too large")
+  }
+  if (parsed.faceIndexProviderReferenceCostPaise > 1e12) {
+    throw new Error("faceIndexProviderReferenceCostPaise is too large")
   }
   if (!parsed.galleryPath.startsWith("/")) {
     throw new Error("galleryPath must start with /")

@@ -54,6 +54,10 @@ import {
   parsePhotoGalleryAddon,
   type PhotoGalleryAddonSettings,
 } from "@/lib/photo-gallery-addon"
+import {
+  getGalleryVisionCatalogReferenceCostPaise,
+  OPENROUTER_GALLERY_VISION_MODEL_OPTIONS,
+} from "@/lib/photo-gallery-vision-model-catalog"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -1061,9 +1065,8 @@ export default function AdminPricingPage() {
                     </li>
                     <li>
                       <strong className="text-foreground">Face index credit</strong> —{" "}
-                      <strong className="text-foreground">Retail</strong> price you plan to charge per vision/index job later.
-                      <strong className="text-foreground"> No AI model is selected or billed</strong> in Stream-Livee for this
-                      yet; this field does not map to OpenRouter or any provider until you implement the gallery pipeline.
+                      <strong className="text-foreground">Retail</strong> price per vision/index job (wallet debit when
+                      implemented). Same idea as AI Image Generation: compare to the OpenRouter estimate below for margin.
                     </li>
                     <li>
                       <strong className="text-foreground">Included face indexes / month</strong> — allowance before overage;{" "}
@@ -1072,17 +1075,15 @@ export default function AdminPricingPage() {
                   </ul>
                 </section>
                 <section>
-                  <p className="font-medium text-foreground">AI model and cost (face index today)</p>
+                  <p className="font-medium text-foreground">OpenRouter model + est. cost (same pattern as AI images)</p>
                   <p className="mt-2 text-xs leading-relaxed">
-                    <strong className="text-foreground">None configured.</strong> This app does not call OpenRouter, Rekognition,
-                    or any other API for &quot;face index&quot; credits yet — there is no stored model ID and no automatic
-                    provider cost. The number you set under Face index credit is only a{" "}
-                    <strong className="text-foreground">planned retail</strong> price for when you build billing.
-                  </p>
-                  <p className="mt-2 text-xs leading-relaxed">
-                    <strong className="text-foreground">When you implement it:</strong> vision-style tagging/captioning often
-                    uses an <strong className="text-foreground">OpenRouter</strong> vision chat model (check per-token pricing
-                    at{" "}
+                    Pick the OpenRouter vision model you plan to use for per-photo jobs and an <strong className="text-foreground">
+                      estimated API cost per job
+                    </strong>{" "}
+                    (adjust from your bill). Stream-Livee core does <strong className="text-foreground">not</strong> call this
+                    API for gallery yet — this is for admin margin visibility, like Fal/OpenRouter under AI Image Generation.
+                    True <strong className="text-foreground">biometric</strong> face-ID search is a different product path
+                    (Rekognition, Azure Face, etc.). See{" "}
                     <a
                       href="https://openrouter.ai/models"
                       target="_blank"
@@ -1090,9 +1091,8 @@ export default function AdminPricingPage() {
                       className="text-primary underline-offset-4 hover:underline"
                     >
                       openrouter.ai/models
-                    </a>
-                    ). True <strong className="text-foreground">biometric</strong> same-person search usually means
-                    Rekognition, Azure Face, or self-hosted embeddings — a different cost model.
+                    </a>{" "}
+                    for live pricing.
                   </p>
                 </section>
               </div>
@@ -1159,9 +1159,7 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Planned retail only — no model billed yet. See info box for OpenRouter vs biometric when you implement.
-              </p>
+              <p className="text-[10px] text-muted-foreground">Retail per job; wallet billing when the gallery worker ships.</p>
             </div>
             <div className="space-y-2">
               <Label>Included face indexes / month</Label>
@@ -1179,6 +1177,71 @@ export default function AdminPricingPage() {
               />
             </div>
           </div>
+
+          <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+            <Label className="text-sm font-semibold">Planned OpenRouter model (gallery vision / index jobs)</Label>
+            <Select
+              value={photoGalleryAddon.faceIndexOpenRouterModelId}
+              onValueChange={(id) => {
+                const ref = getGalleryVisionCatalogReferenceCostPaise(id)
+                setPhotoGalleryAddon((prev) => ({
+                  ...prev,
+                  faceIndexOpenRouterModelId: id,
+                  faceIndexProviderReferenceCostPaise: ref ?? prev.faceIndexProviderReferenceCostPaise,
+                }))
+              }}
+            >
+              <SelectTrigger className="border-0 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OPENROUTER_GALLERY_VISION_MODEL_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                Est. API cost (OpenRouter) per job — adjust to match your bill
+              </Label>
+              <div className="relative max-w-[12rem]">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  step={0.01}
+                  min={0}
+                  className="border-0 bg-background pl-7"
+                  value={photoGalleryAddon.faceIndexProviderReferenceCostPaise / 100}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    const n = parseFloat(v)
+                    if (v === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({
+                      ...p,
+                      faceIndexProviderReferenceCostPaise: Math.round(n * 100),
+                    }))
+                  }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Margin (planned):{" "}
+              <span className="font-medium text-foreground">
+                ₹
+                {Math.max(
+                  0,
+                  (photoGalleryAddon.faceIndexCreditPricePaisa - photoGalleryAddon.faceIndexProviderReferenceCostPaise) / 100,
+                ).toFixed(2)}
+              </span>{" "}
+              per job (face index credit − est. OpenRouter cost)
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Catalog defaults are rough; charged amount will be the retail &quot;face index credit&quot; once debits exist.
+            </p>
+          </div>
+
           <Button type="button" onClick={() => void handleSavePhotoGallery()} disabled={savingPhotoGallery}>
             {savingPhotoGallery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save photo gallery settings

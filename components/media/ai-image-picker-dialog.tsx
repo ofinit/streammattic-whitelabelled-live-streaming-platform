@@ -410,193 +410,203 @@ export function AiImagePickerDialog({
         setDialogOpen(open)
         setError("")
       }}
+      modal={false}
     >
       <DialogTrigger asChild disabled={disabled}>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>
-            {!disabled && aiMetaLoading
-              ? "Upload your own image or generate one with AI"
-              : showAiSection || showAiServerMisconfigured
-                ? "Upload your own image or generate one with AI"
-                : showAiBlockedByAdmin
-                  ? "Upload an image for this slot (AI generation is disabled by administrators)."
-                  : "Upload an image for this slot."}
-          </DialogDescription>
-        </DialogHeader>
 
-        <div className="space-y-6 pt-2">
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">
-              {allowMultipleUpload && !circularHeroCrop ? "Upload images (Free)" : "Upload Image (Free)"}
-            </Label>
-            {circularHeroCrop ? (
-              <p className="text-xs text-muted-foreground">
-                This template uses a circular profile photo on the watch page. After you choose a file, you can zoom and
-                align the image inside the circle before uploading.
-              </p>
-            ) : null}
-            <div
-              className={`relative flex min-h-[140px] flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
-                dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
-              }`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
-              <div className="pointer-events-none flex flex-col items-center justify-center p-6">
-                {uploading ? (
-                  <>
-                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Uploading...</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
-                    <p className="text-sm font-medium text-foreground">
-                      {allowMultipleUpload && !circularHeroCrop
-                        ? "Drop images here or click to browse"
-                        : "Drop an image here or click to browse"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {allowMultipleUpload && !circularHeroCrop
-                        ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
-                        : "JPG, PNG, WebP, GIF up to 4MB"}
-                    </p>
-                  </>
-                )}
-              </div>
-              {!uploading ? (
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                  aria-label={allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"}
-                  onChange={(e) => {
-                    const list = e.target.files
-                    e.target.value = ""
-                    if (!list?.length) return
-                    if (allowMultipleUpload && !circularHeroCrop) {
-                      void handleMultipleFileUpload(Array.from(list))
-                    } else {
-                      const file = list[0]
-                      if (file) void handleFileUpload(file)
-                    }
-                  }}
-                />
-              ) : null}
-            </div>
-          </div>
+      {dialogOpen ? (
+        <>
+          <DialogContent
+            className="max-h-[90vh] overflow-y-auto"
+            onEscapeKeyDown={() => { setDialogOpen(false); setError("") }}
+            onInteractOutside={() => { setDialogOpen(false); setError("") }}
+          >
+            <DialogHeader>
+              <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>
+                {!disabled && aiMetaLoading
+                  ? "Upload your own image or generate one with AI"
+                  : showAiSection || showAiServerMisconfigured
+                    ? "Upload your own image or generate one with AI"
+                    : showAiBlockedByAdmin
+                      ? "Upload an image for this slot (AI generation is disabled by administrators)."
+                      : "Upload an image for this slot."}
+              </DialogDescription>
+            </DialogHeader>
 
-          {showAiSection ? (
-            <>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-popover px-2 text-muted-foreground">or</span>
-                </div>
-              </div>
-
+            <div className="space-y-6 pt-2">
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Generate with AI</Label>
-                  {isPlatformAdminFreeAi ? (
-                    <span className="text-xs text-muted-foreground">Free for platform admin</span>
-                  ) : (
-                    aiPrice !== null && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Wallet className="h-3 w-3" />
-                        Cost: ₹{(aiPrice / 100).toFixed(0)} per image
-                        {showAiProviderNamesToUser && aiBackend === "openrouter" ? (
-                          <span className="text-muted-foreground/80"> · OpenRouter</span>
-                        ) : showAiProviderNamesToUser && aiBackend === "fal" ? (
-                          <span className="text-muted-foreground/80"> · Fal</span>
-                        ) : null}
-                      </span>
-                    )
-                  )}
-                </div>
-                <Textarea
-                  placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={3}
-                  maxLength={AI_IMAGE_PROMPT_MAX_LENGTH}
-                  className="resize-none"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {prompt.length} / {AI_IMAGE_PROMPT_MAX_LENGTH} characters
-                </p>
-                {!canAffordAi && aiPrice !== null && !walletLoading && !isPlatformAdminFreeAi && (
-                  <p className="text-xs text-destructive">
-                    Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹
-                    {(aiPrice / 100).toFixed(0)} to use AI generation.
+                <Label className="text-sm font-medium">
+                  {allowMultipleUpload && !circularHeroCrop ? "Upload images (Free)" : "Upload Image (Free)"}
+                </Label>
+                {circularHeroCrop ? (
+                  <p className="text-xs text-muted-foreground">
+                    This template uses a circular profile photo on the watch page. After you choose a file, you can zoom and
+                    align the image inside the circle before uploading.
                   </p>
-                )}
-                <Button
-                  type="button"
-                  onClick={() => void handleGenerate()}
-                  disabled={
-                    generating ||
-                    walletLoading ||
-                    !prompt.trim() ||
-                    !canAffordAi ||
-                    (!isPlatformAdminFreeAi && aiPrice === null)
-                  }
-                  className="w-full"
-                  style={{ backgroundColor: "hsl(152 76% 46%)" }}
+                ) : null}
+                <div
+                  className={`relative flex min-h-[140px] flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
+                    dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
+                  }`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
                 >
-                  {generating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Generate Image
-                      {isPlatformAdminFreeAi ? "" : aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </>
-          ) : showAiServerMisconfigured ? (
-            <>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
+                  <div className="pointer-events-none flex flex-col items-center justify-center p-6">
+                    {uploading ? (
+                      <>
+                        <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Uploading...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
+                        <p className="text-sm font-medium text-foreground">
+                          {allowMultipleUpload && !circularHeroCrop
+                            ? "Drop images here or click to browse"
+                            : "Drop an image here or click to browse"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {allowMultipleUpload && !circularHeroCrop
+                            ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
+                            : "JPG, PNG, WebP, GIF up to 4MB"}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  {!uploading ? (
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
+                      className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                      aria-label={allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"}
+                      onChange={(e) => {
+                        const list = e.target.files
+                        e.target.value = ""
+                        if (!list?.length) return
+                        if (allowMultipleUpload && !circularHeroCrop) {
+                          void handleMultipleFileUpload(Array.from(list))
+                        } else {
+                          const file = list[0]
+                          if (file) void handleFileUpload(file)
+                        }
+                      }}
+                    />
+                  ) : null}
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-popover px-2 text-muted-foreground">or</span>
-                </div>
               </div>
-              <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                {showAiProviderNamesToUser ? (
-                  <>
-                    AI generation is enabled but the server is not configured for the selected provider. Use upload, or set
-                    API keys (Fal or OpenRouter) and redeploy.
-                  </>
-                ) : (
-                  <>
-                    AI generation is enabled but the server is not fully configured. Use upload, or contact your
-                    administrator.
-                  </>
-                )}
-              </p>
-            </>
-          ) : null}
 
-          {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        </div>
-      </DialogContent>
+              {showAiSection ? (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-popover px-2 text-muted-foreground">or</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Generate with AI</Label>
+                      {isPlatformAdminFreeAi ? (
+                        <span className="text-xs text-muted-foreground">Free for platform admin</span>
+                      ) : (
+                        aiPrice !== null && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Wallet className="h-3 w-3" />
+                            Cost: ₹{(aiPrice / 100).toFixed(0)} per image
+                            {showAiProviderNamesToUser && aiBackend === "openrouter" ? (
+                              <span className="text-muted-foreground/80"> · OpenRouter</span>
+                            ) : showAiProviderNamesToUser && aiBackend === "fal" ? (
+                              <span className="text-muted-foreground/80"> · Fal</span>
+                            ) : null}
+                          </span>
+                        )
+                      )}
+                    </div>
+                    <Textarea
+                      placeholder="Describe the image you want... e.g. 'Beautiful Indian wedding ceremony with floral decorations, warm lighting, professional photography'"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      rows={3}
+                      maxLength={AI_IMAGE_PROMPT_MAX_LENGTH}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {prompt.length} / {AI_IMAGE_PROMPT_MAX_LENGTH} characters
+                    </p>
+                    {!canAffordAi && aiPrice !== null && !walletLoading && !isPlatformAdminFreeAi && (
+                      <p className="text-xs text-destructive">
+                        Insufficient wallet balance (₹{(walletBalance / 100).toFixed(0)}). Top up at least ₹
+                        {(aiPrice / 100).toFixed(0)} to use AI generation.
+                      </p>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={() => void handleGenerate()}
+                      disabled={
+                        generating ||
+                        walletLoading ||
+                        !prompt.trim() ||
+                        !canAffordAi ||
+                        (!isPlatformAdminFreeAi && aiPrice === null)
+                      }
+                      className="w-full"
+                      style={{ backgroundColor: "hsl(152 76% 46%)" }}
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Generate Image
+                          {isPlatformAdminFreeAi ? "" : aiPrice !== null ? ` (₹${(aiPrice / 100).toFixed(0)})` : ""}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : showAiServerMisconfigured ? (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-popover px-2 text-muted-foreground">or</span>
+                    </div>
+                  </div>
+                  <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                    {showAiProviderNamesToUser ? (
+                      <>
+                        AI generation is enabled but the server is not configured for the selected provider. Use upload, or set
+                        API keys (Fal or OpenRouter) and redeploy.
+                      </>
+                    ) : (
+                      <>
+                        AI generation is enabled but the server is not fully configured. Use upload, or contact your
+                        administrator.
+                      </>
+                    )}
+                  </p>
+                </>
+              ) : null}
+
+              {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+            </div>
+          </DialogContent>
+        </>
+      ) : null}
     </Dialog>
 
     {cropImageSrc ? (

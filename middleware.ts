@@ -79,6 +79,12 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/watch/") ||
     /** Host-based studio / platform branding lookup (login page, marketing — no session yet) */
     pathname.startsWith("/api/branding") ||
+    /**
+     * Stored images (event hero/gallery, branding). GET must be public so previews and watch pages work
+     * without a session and when NEXT_PUBLIC_APP_URL host differs slightly from the browser host.
+     * POST /api/upload remains authenticated in the route handler.
+     */
+    pathname.startsWith("/api/uploads") ||
     pathname.startsWith("/api/auth") ||
     /** Admin APIs enforce role in route handlers */
     pathname.startsWith("/api/admin") ||

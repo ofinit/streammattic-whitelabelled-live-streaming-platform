@@ -1625,44 +1625,22 @@ export function EventFormDialog({
     form.append("file", file)
     form.append("subdir", subdir)
     const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || "Upload failed")
-    return data.url as string
+    let data: { error?: string; url?: string } = {}
+    try {
+      data = (await res.json()) as { error?: string; url?: string }
+    } catch {
+      throw new Error(res.status === 413 ? "File too large for server" : `Upload failed (${res.status})`)
+    }
+    if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
+    if (!data.url) throw new Error("Upload did not return a URL")
+    return data.url
   }
 
   /**
-   * Gallery uploads: prefer one batch POST; single file uses `file` field (same as hero/player — most reliable).
-   * If batch fails (e.g. multipart quirks), fall back to sequential single uploads.
+   * Gallery uploads: one POST per file (same as hero/player). Avoids batch multipart edge cases behind proxies.
    */
   const postGalleryFilesBatch = async (filesToUpload: File[]): Promise<{ urls: string[]; partialErrors?: string[] }> => {
     if (filesToUpload.length === 0) return { urls: [] }
-    if (filesToUpload.length === 1) {
-      const url = await postEventUpload("event-gallery", filesToUpload[0]!)
-      return { urls: [url] }
-    }
-
-    const parseUploadJson = async (res: Response): Promise<{ urls?: string[]; error?: string; partialErrors?: string[] }> => {
-      try {
-        return (await res.json())
-      } catch {
-        return { error: `Invalid response (${res.status})` }
-      }
-    }
-
-    const form = new FormData()
-    filesToUpload.forEach((f) => form.append("files", f))
-    form.append("subdir", "event-gallery")
-    const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" })
-    const data = await parseUploadJson(res)
-    if (res.ok) {
-      const urls = "urls" in data && Array.isArray(data.urls)
-        ? data.urls.filter((u): u is string => typeof u === "string" && u.length > 0)
-        : []
-      if (urls.length > 0) {
-        return { urls, partialErrors: "partialErrors" in data ? data.partialErrors : undefined }
-      }
-    }
-
     const urls: string[] = []
     const partialErrors: string[] = []
     for (const f of filesToUpload) {
@@ -1674,7 +1652,7 @@ export function EventFormDialog({
       }
     }
     if (urls.length === 0) {
-      throw new Error(data.error || "No files could be uploaded")
+      throw new Error(partialErrors.length ? `Could not upload: ${partialErrors.slice(0, 3).join(", ")}` : "No files could be uploaded")
     }
     return { urls, partialErrors: partialErrors.length > 0 ? partialErrors : undefined }
   }

@@ -1061,8 +1061,9 @@ export default function AdminPricingPage() {
                     </li>
                     <li>
                       <strong className="text-foreground">Face index credit</strong> —{" "}
-                      <strong className="text-foreground">Retail</strong> price you plan to charge per vision/index job (e.g.
-                      captioning, tags, or a future indexing step). Wallet automation is not wired from this form alone.
+                      <strong className="text-foreground">Retail</strong> price you plan to charge per vision/index job later.
+                      <strong className="text-foreground"> No AI model is selected or billed</strong> in Stream-Livee for this
+                      yet; this field does not map to OpenRouter or any provider until you implement the gallery pipeline.
                     </li>
                     <li>
                       <strong className="text-foreground">Included face indexes / month</strong> — allowance before overage;{" "}
@@ -1071,14 +1072,27 @@ export default function AdminPricingPage() {
                   </ul>
                 </section>
                 <section>
-                  <p className="font-medium text-foreground">OpenRouter (vision) vs true face-ID search</p>
+                  <p className="font-medium text-foreground">AI model and cost (face index today)</p>
                   <p className="mt-2 text-xs leading-relaxed">
-                    <strong className="text-foreground">OpenRouter</strong> is a good fit for{" "}
-                    <strong className="text-foreground">vision-assisted</strong> features: captions, tags, structured text
-                    about each photo — priced by tokens; size your &quot;face index credit&quot; above typical OpenRouter cost
-                    per job. <strong className="text-foreground">Biometric</strong> same-person search across huge libraries is
-                    a different stack (e.g. Rekognition, Azure Face, self-hosted embeddings), not chat models. This screen does
-                    not store a model ID until a pipeline exists.
+                    <strong className="text-foreground">None configured.</strong> This app does not call OpenRouter, Rekognition,
+                    or any other API for &quot;face index&quot; credits yet — there is no stored model ID and no automatic
+                    provider cost. The number you set under Face index credit is only a{" "}
+                    <strong className="text-foreground">planned retail</strong> price for when you build billing.
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed">
+                    <strong className="text-foreground">When you implement it:</strong> vision-style tagging/captioning often
+                    uses an <strong className="text-foreground">OpenRouter</strong> vision chat model (check per-token pricing
+                    at{" "}
+                    <a
+                      href="https://openrouter.ai/models"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      openrouter.ai/models
+                    </a>
+                    ). True <strong className="text-foreground">biometric</strong> same-person search usually means
+                    Rekognition, Azure Face, or self-hosted embeddings — a different cost model.
                   </p>
                 </section>
               </div>
@@ -1104,22 +1118,8 @@ export default function AdminPricingPage() {
               className="bg-secondary border-0 font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Must start with <code className="text-foreground">/</code>. Packages &quot;Open gallery&quot; uses this path on
-              the current host unless a legacy external URL is set below.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pg-legacy-url">Legacy external gallery URL (optional)</Label>
-            <Input
-              id="pg-legacy-url"
-              type="url"
-              placeholder="https://gallery.yourdomain.com"
-              value={photoGalleryAddon.galleryServiceBaseUrl}
-              onChange={(e) => setPhotoGalleryAddon((p) => ({ ...p, galleryServiceBaseUrl: e.target.value }))}
-              className="bg-secondary border-0 font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Only if you still host a separate gallery app. When empty, users open the path above on this app.
+              Must start with <code className="text-foreground">/</code>. Packages &quot;Open gallery&quot; opens this path on the
+              current host.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -1159,7 +1159,9 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">Per vision/index job — future billing</p>
+              <p className="text-[10px] text-muted-foreground">
+                Planned retail only — no model billed yet. See info box for OpenRouter vs biometric when you implement.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Included face indexes / month</Label>

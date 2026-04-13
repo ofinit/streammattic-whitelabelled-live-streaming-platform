@@ -3298,13 +3298,8 @@ export function EventFormDialog({
                         dialogTitle="Photo gallery"
                         uploadSubdir="event-gallery"
                         walletUserId={creditsUserId}
-                        onImageUrl={(url) => {
-                          setPhotoGalleryUrls((prev) => [...prev, url])
-                          toast({
-                            title: "Photo added",
-                            description: "Image added to the gallery.",
-                          })
-                        }}
+                        allowMultipleUpload
+                        onImageUrl={(url) => setPhotoGalleryUrls((prev) => [...prev, url])}
                       >
                         <Button type="button" variant="outline" size="sm" className="gap-2 h-8">
                           <Wand2 className="h-4 w-4" />

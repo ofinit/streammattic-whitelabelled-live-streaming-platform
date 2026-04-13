@@ -46,6 +46,11 @@ export type AiImagePickerDialogProps = {
    * so the hero image matches the circular profile frame on the watch page.
    */
   circularHeroCrop?: boolean
+  /**
+   * When true, the free upload zone accepts multiple images and uploads each sequentially (e.g. event photo gallery).
+   * Uses 8MB per file to match POST /api/upload. Incompatible with `circularHeroCrop` (crop flow stays single-file).
+   */
+  allowMultipleUpload?: boolean
 }
 
 /**
@@ -59,6 +64,7 @@ export function AiImagePickerDialog({
   walletUserId,
   uploadSubdir,
   circularHeroCrop,
+  allowMultipleUpload = false,
 }: AiImagePickerDialogProps) {
   const { user } = useAuth()
   const [generating, setGenerating] = useState(false)
@@ -170,6 +176,7 @@ export function AiImagePickerDialog({
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
+          credentials: "include",
         })
         const data = await res.json()
         if (data.error) {
@@ -187,6 +194,97 @@ export function AiImagePickerDialog({
     [endCircularCrop, onImageUrl, uploadSubdir],
   )
 
+  const maxBytesFreeUpload = allowMultipleUpload && !circularHeroCrop ? 8 * 1024 * 1024 : 4 * 1024 * 1024
+
+  const validateImageFile = useCallback((file: File): string | null => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if (!allowedTypes.includes(file.type)) {
+      return `${file.name}: use JPG, PNG, WebP, or GIF`
+    }
+    if (file.size > maxBytesFreeUpload) {
+      const mb = maxBytesFreeUpload / (1024 * 1024)
+      return `${file.name}: max ${mb}MB per file`
+    }
+    return null
+  }, [maxBytesFreeUpload])
+
+  const postOneUpload = useCallback(
+    async (file: File): Promise<{ ok: true; url: string } | { ok: false; message: string }> => {
+      const formData = new FormData()
+      formData.append("file", file)
+      if (uploadSubdir) {
+        formData.append("subdir", uploadSubdir)
+      }
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+      const data = (await res.json()) as { error?: string; url?: string }
+      if (data.error) {
+        return { ok: false, message: `${file.name}: ${data.error}` }
+      }
+      if (data.url) {
+        return { ok: true, url: data.url }
+      }
+      return { ok: false, message: `${file.name}: no URL returned` }
+    },
+    [uploadSubdir],
+  )
+
+  const handleMultipleFileUpload = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return
+      const validationErrors: string[] = []
+      for (const f of files) {
+        const v = validateImageFile(f)
+        if (v) validationErrors.push(v)
+      }
+      if (validationErrors.length === files.length) {
+        setError(validationErrors[0] ?? "No valid images")
+        return
+      }
+
+      setUploading(true)
+      setError("")
+      let successCount = 0
+      const uploadErrors: string[] = [...validationErrors]
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]!
+          const v = validateImageFile(file)
+          if (v) continue
+          const result = await postOneUpload(file)
+          if (result.ok) {
+            await onImageUrl(result.url)
+            successCount++
+          } else {
+            uploadErrors.push(result.message)
+          }
+        }
+        if (successCount > 0) {
+          setDialogOpen(false)
+          setError("")
+          toast.success(
+            successCount === 1
+              ? "1 image added"
+              : `${successCount} images added`,
+          )
+          if (uploadErrors.length > 0) {
+            toast.error(`Some files skipped: ${uploadErrors.slice(0, 4).join("; ")}${uploadErrors.length > 4 ? "…" : ""}`)
+          }
+        } else {
+          setError(uploadErrors[0] ?? "Upload failed")
+        }
+      } catch {
+        setError("Failed to upload images. Please try again.")
+      } finally {
+        setUploading(false)
+      }
+    },
+    [onImageUrl, postOneUpload, validateImageFile],
+  )
+
   const handleFileUpload = useCallback(
     async (file: File) => {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
@@ -194,8 +292,9 @@ export function AiImagePickerDialog({
         setError("Invalid file type. Allowed: JPG, PNG, WebP, GIF")
         return
       }
-      if (file.size > 4 * 1024 * 1024) {
-        setError("File too large. Maximum size is 4MB.")
+      if (file.size > maxBytesFreeUpload) {
+        const mb = maxBytesFreeUpload / (1024 * 1024)
+        setError(`File too large. Maximum size is ${mb}MB.`)
         return
       }
 
@@ -207,32 +306,24 @@ export function AiImagePickerDialog({
       setUploading(true)
       setError("")
       try {
-        const formData = new FormData()
-        formData.append("file", file)
-        if (uploadSubdir) {
-          formData.append("subdir", uploadSubdir)
-        }
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-        const data = await res.json()
-        if (data.error) {
-          setError(data.error)
+        const result = await postOneUpload(file)
+        if (!result.ok) {
+          setError(result.message)
           return
         }
-        if (data.url) {
-          await onImageUrl(data.url)
-          setDialogOpen(false)
-          setError("")
+        await onImageUrl(result.url)
+        if (allowMultipleUpload) {
+          toast.success("1 image added")
         }
+        setDialogOpen(false)
+        setError("")
       } catch {
         setError("Failed to upload image. Please try again.")
       } finally {
         setUploading(false)
       }
     },
-    [circularHeroCrop, onImageUrl, startCircularCrop, uploadSubdir],
+    [allowMultipleUpload, circularHeroCrop, maxBytesFreeUpload, onImageUrl, postOneUpload, startCircularCrop],
   )
 
   const handleGenerate = async () => {
@@ -268,6 +359,9 @@ export function AiImagePickerDialog({
       }
       if (data.imageUrl) {
         await onImageUrl(data.imageUrl)
+        if (allowMultipleUpload) {
+          toast.success("Image added")
+        }
         setDialogOpen(false)
         setPrompt("")
         setError("")
@@ -284,10 +378,18 @@ export function AiImagePickerDialog({
     (e: React.DragEvent) => {
       e.preventDefault()
       setDragActive(false)
-      const file = e.dataTransfer.files[0]
-      if (file) void handleFileUpload(file)
+      const raw = Array.from(e.dataTransfer.files)
+      const files = raw.filter((f) =>
+        ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type),
+      )
+      if (files.length === 0) return
+      if (allowMultipleUpload && !circularHeroCrop) {
+        void handleMultipleFileUpload(files)
+      } else {
+        void handleFileUpload(files[0]!)
+      }
     },
-    [handleFileUpload],
+    [allowMultipleUpload, circularHeroCrop, handleFileUpload, handleMultipleFileUpload],
   )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -327,7 +429,9 @@ export function AiImagePickerDialog({
 
         <div className="space-y-6 pt-2">
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Upload Image (Free)</Label>
+            <Label className="text-sm font-medium">
+              {allowMultipleUpload && !circularHeroCrop ? "Upload images (Free)" : "Upload Image (Free)"}
+            </Label>
             {circularHeroCrop ? (
               <p className="text-xs text-muted-foreground">
                 This template uses a circular profile photo on the watch page. After you choose a file, you can zoom and
@@ -351,18 +455,34 @@ export function AiImagePickerDialog({
               ) : (
                 <>
                   <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
-                  <p className="text-sm font-medium text-foreground">Drop an image here or click to browse</p>
-                  <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, WebP, GIF up to 4MB</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {allowMultipleUpload && !circularHeroCrop
+                      ? "Drop images here or click to browse"
+                      : "Drop an image here or click to browse"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {allowMultipleUpload && !circularHeroCrop
+                      ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
+                      : "JPG, PNG, WebP, GIF up to 4MB"}
+                  </p>
                 </>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
                 className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) void handleFileUpload(file)
+                  const list = e.target.files
+                  e.target.value = ""
+                  if (!list?.length) return
+                  if (allowMultipleUpload && !circularHeroCrop) {
+                    void handleMultipleFileUpload(Array.from(list))
+                  } else {
+                    const file = list[0]
+                    if (file) void handleFileUpload(file)
+                  }
                 }}
               />
             </div>

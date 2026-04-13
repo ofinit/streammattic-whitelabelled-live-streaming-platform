@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, useId, type ReactNode } from "react"
-import { createPortal } from "react-dom"
+import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -110,10 +109,6 @@ export function AiImagePickerDialog({
   const isPlatformAdminFreeAi =
     user?.role === "admin" && !!user?.id && effectiveWalletUserId === user.id
   const showAiProviderNamesToUser = user?.role === "admin"
-
-  useEffect(() => {
-    setFileInputPortalReady(true)
-  }, [])
 
   useEffect(() => {
     if (disabled) {
@@ -446,36 +441,58 @@ export function AiImagePickerDialog({
                 align the image inside the circle before uploading.
               </p>
             ) : null}
-            <label
-              htmlFor={fileInputId}
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+            <div
+              className={`relative flex min-h-[140px] flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
                 dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
               }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
-              {uploading ? (
-                <>
-                  <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Uploading...</p>
-                </>
-              ) : (
-                <>
-                  <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
-                  <p className="text-sm font-medium text-foreground">
-                    {allowMultipleUpload && !circularHeroCrop
-                      ? "Drop images here or click to browse"
-                      : "Drop an image here or click to browse"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {allowMultipleUpload && !circularHeroCrop
-                      ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
-                      : "JPG, PNG, WebP, GIF up to 4MB"}
-                  </p>
-                </>
-              )}
-            </label>
+              <div className="pointer-events-none flex flex-col items-center justify-center p-6">
+                {uploading ? (
+                  <>
+                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
+                    <p className="text-sm font-medium text-foreground">
+                      {allowMultipleUpload && !circularHeroCrop
+                        ? "Drop images here or click to browse"
+                        : "Drop an image here or click to browse"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {allowMultipleUpload && !circularHeroCrop
+                        ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
+                        : "JPG, PNG, WebP, GIF up to 4MB"}
+                    </p>
+                  </>
+                )}
+              </div>
+              {!uploading ? (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
+                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                  aria-label={allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"}
+                  onChange={(e) => {
+                    const list = e.target.files
+                    e.target.value = ""
+                    if (!list?.length) return
+                    if (allowMultipleUpload && !circularHeroCrop) {
+                      void handleMultipleFileUpload(Array.from(list))
+                    } else {
+                      const file = list[0]
+                      if (file) void handleFileUpload(file)
+                    }
+                  }}
+                />
+              ) : null}
+            </div>
           </div>
 
           {showAiSection ? (
@@ -583,33 +600,6 @@ export function AiImagePickerDialog({
         </div>
       </DialogContent>
     </Dialog>
-
-    {fileInputPortalReady && dialogOpen
-      ? createPortal(
-          <input
-            id={fileInputId}
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-            tabIndex={-1}
-            className="sr-only"
-            aria-hidden
-            onChange={(e) => {
-              const list = e.target.files
-              e.target.value = ""
-              if (!list?.length) return
-              if (allowMultipleUpload && !circularHeroCrop) {
-                void handleMultipleFileUpload(Array.from(list))
-              } else {
-                const file = list[0]
-                if (file) void handleFileUpload(file)
-              }
-            }}
-          />,
-          document.body,
-        )
-      : null}
 
     {cropImageSrc ? (
       <CircularProfileCropDialog

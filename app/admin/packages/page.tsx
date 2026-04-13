@@ -1106,11 +1106,8 @@ export default function AdminPricingPage() {
                     <li>
                       <strong className="text-foreground">Face index credit</strong> —{" "}
                       <strong className="text-foreground">Retail</strong> price per vision/index job (wallet debit when
-                      implemented). Same idea as AI Image Generation: compare to the OpenRouter estimate below for margin.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Included face indexes / month</strong> — allowance before overage;{" "}
-                      <code className="text-foreground">0</code> = none in the product design.
+                      implemented). No free quota — every job debits at this rate once billing exists. Compare to the OpenRouter
+                      estimate below for margin.
                     </li>
                   </ul>
                 </section>
@@ -1160,7 +1157,7 @@ export default function AdminPricingPage() {
               current host.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Monthly price (INR)</Label>
               <div className="relative">
@@ -1198,21 +1195,6 @@ export default function AdminPricingPage() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">Retail per job; wallet billing when the gallery worker ships.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Included face indexes / month</Label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                className="bg-secondary border-0"
-                value={photoGalleryAddon.includedFaceIndexesPerMonth}
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10)
-                  if (e.target.value === "" || Number.isNaN(n)) return
-                  setPhotoGalleryAddon((p) => ({ ...p, includedFaceIndexesPerMonth: Math.max(0, n) }))
-                }}
-              />
             </div>
           </div>
 

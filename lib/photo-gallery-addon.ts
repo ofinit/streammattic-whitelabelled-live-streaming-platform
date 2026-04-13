@@ -27,8 +27,6 @@ export type PhotoGalleryAddonSettings = {
   monthlyPricePaisa: number
   /** Wallet debit per face-index job when AI search is enabled (future gallery service). */
   faceIndexCreditPricePaisa: number
-  /** Included face indexes per month before overage (0 = none). */
-  includedFaceIndexesPerMonth: number
   /**
    * Planned OpenRouter model for gallery vision jobs (tags/captions per image). Admin shows list pricing from OpenRouter;
    * core does not debit the wallet until a worker implements jobs.
@@ -47,7 +45,6 @@ export function getDefaultPhotoGalleryAddonSettings(): PhotoGalleryAddonSettings
     galleryServiceBaseUrl: "",
     monthlyPricePaisa: 0,
     faceIndexCreditPricePaisa: 500,
-    includedFaceIndexesPerMonth: 0,
     faceIndexOpenRouterModelId: defaultVisionId,
   }
 }
@@ -113,9 +110,6 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
   const faceIndexCreditPricePaisa = isFiniteNonNeg(o.faceIndexCreditPricePaisa)
     ? Math.round(o.faceIndexCreditPricePaisa)
     : d.faceIndexCreditPricePaisa
-  const includedFaceIndexesPerMonth = isFiniteNonNeg(o.includedFaceIndexesPerMonth)
-    ? Math.round(o.includedFaceIndexesPerMonth)
-    : d.includedFaceIndexesPerMonth
 
   let faceIndexOpenRouterModelId = d.faceIndexOpenRouterModelId
   if (typeof o.faceIndexOpenRouterModelId === "string") {
@@ -130,7 +124,6 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     galleryServiceBaseUrl,
     monthlyPricePaisa,
     faceIndexCreditPricePaisa,
-    includedFaceIndexesPerMonth,
     faceIndexOpenRouterModelId,
   }
 }

@@ -15,14 +15,13 @@ When the legacy URL is **empty**, Packages links to **`/client-gallery`** (or yo
 
 **Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
 
-## Face index credit & “included face indexes / month”
+## Face index credit
 
 | Field | Meaning |
 | --- | --- |
-| **Face index credit (₹)** | Intended **retail** price per vision-analysis / indexing job (or per batch) once billing exists; charged from the customer’s **wallet** when that path is implemented. |
-| **Included face indexes / month** | Intended **allowance** before overage billing; `0` means “no included quota” in the product design. |
+| **Face index credit (₹)** | **Retail** price per vision/index job once billing exists — **no free quota**; each job is intended to debit the wallet at this rate. |
 
-Today these values are **admin configuration only**. They do **not** trigger API calls, wallet debits, or an AI service inside this repository until you implement the gallery worker and hook it to `wallet_transactions` (or equivalent).
+This value is **admin configuration only** until a gallery worker debits `wallet_transactions` (or equivalent).
 
 ## OpenRouter (vision) vs biometric face search
 

@@ -30,15 +30,9 @@ Today these values are **admin configuration only**. They do **not** trigger API
 
 **Biometric** same-person search across large libraries (embeddings, face-ID style) is **not** what chat/vision routes are for; industry norm is **AWS Rekognition**, **Azure Face**, **Google Vision** face features, or **self-hosted** stacks (e.g. InsightFace).
 
-**Admin → Packages** mirrors **AI Image Generation**: you pick a **planned OpenRouter vision model** from a catalog, set an **estimated API cost per job** (paise), and see **margin** vs **Face index credit** (retail). Those fields are for planning until a gallery worker calls OpenRouter and debits the wallet. For true biometric search, budget Rekognition/Azure/self-hosted instead.
+**Admin → Packages** loads OpenRouter list pricing (`GET /api/v1/models`) and shows **all amounts in INR** (OpenRouter quotes USD; the app converts with **`USD_INR_REFERENCE`** or **`OPENROUTER_USD_INR`**, default 83). The **illustrative per-job** cost uses fixed token assumptions in `lib/openrouter-model-pricing.ts`. **Margin** compares **Face index credit** (retail INR) to that estimate. **`OPENROUTER_API_KEY`** is recommended if OpenRouter requires auth for your account.
 
-Adjust estimates against [OpenRouter models pricing](https://openrouter.ai/models); catalog defaults are rough per-job guesses.
-
-### Quick sanity check (vision on OpenRouter)
-
-1. Pick a vision-capable model and note price per 1M input/output tokens.
-2. Estimate tokens per image in dev (prompt + image + JSON output).
-3. Set **Face index credit** above your expected per-job cost if you want positive margin.
+For true biometric search, budget Rekognition/Azure/self-hosted instead of chat vision models.
 
 ---
 

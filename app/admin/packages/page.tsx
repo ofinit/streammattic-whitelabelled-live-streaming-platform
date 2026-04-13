@@ -54,10 +54,8 @@ import {
   parsePhotoGalleryAddon,
   type PhotoGalleryAddonSettings,
 } from "@/lib/photo-gallery-addon"
-import {
-  getGalleryVisionCatalogReferenceCostPaise,
-  OPENROUTER_GALLERY_VISION_MODEL_OPTIONS,
-} from "@/lib/photo-gallery-vision-model-catalog"
+import { OPENROUTER_GALLERY_VISION_MODEL_OPTIONS } from "@/lib/photo-gallery-vision-model-catalog"
+import type { OpenRouterGalleryJobPricing } from "@/lib/openrouter-model-pricing"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -138,6 +136,11 @@ export default function AdminPricingPage() {
     getDefaultPhotoGalleryAddonSettings(),
   )
   const [savingPhotoGallery, setSavingPhotoGallery] = useState(false)
+  const [galleryOpenRouterPricing, setGalleryOpenRouterPricing] = useState<OpenRouterGalleryJobPricing | null>(null)
+  const [galleryOpenRouterPricingState, setGalleryOpenRouterPricingState] = useState<"idle" | "loading" | "ok" | "error">(
+    "idle",
+  )
+  const [galleryOpenRouterPricingError, setGalleryOpenRouterPricingError] = useState<string | null>(null)
 
   const loadSettings = useCallback(async () => {
     setSettingsLoadState("loading")
@@ -200,6 +203,43 @@ export default function AdminPricingPage() {
   useEffect(() => {
     void loadSettings()
   }, [loadSettings])
+
+  useEffect(() => {
+    if (settingsLoadState !== "ready") return
+    const id = photoGalleryAddon.faceIndexOpenRouterModelId?.trim()
+    if (!id) {
+      setGalleryOpenRouterPricing(null)
+      setGalleryOpenRouterPricingState("idle")
+      setGalleryOpenRouterPricingError(null)
+      return
+    }
+    let cancelled = false
+    setGalleryOpenRouterPricingState("loading")
+    setGalleryOpenRouterPricingError(null)
+    void fetch(`/api/admin/openrouter-model-pricing?modelId=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => ({}))) as { error?: string } & Partial<OpenRouterGalleryJobPricing>
+        if (!res.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`)
+        }
+        if (!cancelled) {
+          setGalleryOpenRouterPricing(data as OpenRouterGalleryJobPricing)
+          setGalleryOpenRouterPricingState("ok")
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setGalleryOpenRouterPricing(null)
+          setGalleryOpenRouterPricingState("error")
+          setGalleryOpenRouterPricingError(e instanceof Error ? e.message : "Failed to load pricing")
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [settingsLoadState, photoGalleryAddon.faceIndexOpenRouterModelId])
 
   // Stream type pricing updates
   const updateBasePrice = (key: keyof StreamTypePricing, value: number) => {
@@ -1075,15 +1115,13 @@ export default function AdminPricingPage() {
                   </ul>
                 </section>
                 <section>
-                  <p className="font-medium text-foreground">OpenRouter model + est. cost (same pattern as AI images)</p>
+                  <p className="font-medium text-foreground">OpenRouter list price (live API)</p>
                   <p className="mt-2 text-xs leading-relaxed">
-                    Pick the OpenRouter vision model you plan to use for per-photo jobs and an <strong className="text-foreground">
-                      estimated API cost per job
-                    </strong>{" "}
-                    (adjust from your bill). Stream-Livee core does <strong className="text-foreground">not</strong> call this
-                    API for gallery yet — this is for admin margin visibility, like Fal/OpenRouter under AI Image Generation.
-                    True <strong className="text-foreground">biometric</strong> face-ID search is a different product path
-                    (Rekognition, Azure Face, etc.). See{" "}
+                    List rates come from OpenRouter&apos;s <code className="text-foreground">/api/v1/models</code> (USD) and
+                    are shown in <strong className="text-foreground">INR</strong> using{" "}
+                    <code className="text-foreground">USD_INR_REFERENCE</code> or{" "}
+                    <code className="text-foreground">OPENROUTER_USD_INR</code> (default 83). Stream-Livee does not debit wallets
+                    for gallery jobs until implemented. Biometric face-ID search is a different stack. See{" "}
                     <a
                       href="https://openrouter.ai/models"
                       target="_blank"
@@ -1091,8 +1129,8 @@ export default function AdminPricingPage() {
                       className="text-primary underline-offset-4 hover:underline"
                     >
                       openrouter.ai/models
-                    </a>{" "}
-                    for live pricing.
+                    </a>
+                    .
                   </p>
                 </section>
               </div>
@@ -1183,12 +1221,7 @@ export default function AdminPricingPage() {
             <Select
               value={photoGalleryAddon.faceIndexOpenRouterModelId}
               onValueChange={(id) => {
-                const ref = getGalleryVisionCatalogReferenceCostPaise(id)
-                setPhotoGalleryAddon((prev) => ({
-                  ...prev,
-                  faceIndexOpenRouterModelId: id,
-                  faceIndexProviderReferenceCostPaise: ref ?? prev.faceIndexProviderReferenceCostPaise,
-                }))
+                setPhotoGalleryAddon((prev) => ({ ...prev, faceIndexOpenRouterModelId: id }))
               }}
             >
               <SelectTrigger className="border-0 bg-background">
@@ -1202,43 +1235,67 @@ export default function AdminPricingPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">
-                Est. API cost (OpenRouter) per job — adjust to match your bill
-              </Label>
-              <div className="relative max-w-[12rem]">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
-                <Input
-                  type="number"
-                  step={0.01}
-                  min={0}
-                  className="border-0 bg-background pl-7"
-                  value={photoGalleryAddon.faceIndexProviderReferenceCostPaise / 100}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    const n = parseFloat(v)
-                    if (v === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({
-                      ...p,
-                      faceIndexProviderReferenceCostPaise: Math.round(n * 100),
-                    }))
-                  }}
-                />
-              </div>
+
+            <div className="space-y-2 rounded-md border border-border/50 bg-background/80 p-3 text-xs">
+              <p className="font-medium text-foreground">OpenRouter list price (read-only)</p>
+              {galleryOpenRouterPricingState === "loading" && (
+                <p className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                  Loading pricing from OpenRouter…
+                </p>
+              )}
+              {galleryOpenRouterPricingState === "error" && (
+                <p className="text-destructive">{galleryOpenRouterPricingError ?? "Could not load pricing"}</p>
+              )}
+              {galleryOpenRouterPricingState === "ok" && galleryOpenRouterPricing && (
+                <div className="space-y-1.5 text-muted-foreground">
+                  <p>
+                    <span className="text-foreground">{galleryOpenRouterPricing.name}</span>{" "}
+                    <code className="text-[10px] text-foreground">({galleryOpenRouterPricing.modelId})</code>
+                  </p>
+                  <p>
+                    List (INR):{" "}
+                    <strong className="text-foreground">
+                      ₹{galleryOpenRouterPricing.promptInrPer1M.toFixed(2)}
+                    </strong>{" "}
+                    / 1M prompt tokens,{" "}
+                    <strong className="text-foreground">
+                      ₹{galleryOpenRouterPricing.completionInrPer1M.toFixed(2)}
+                    </strong>{" "}
+                    / 1M completion tokens
+                  </p>
+                  <p>
+                    Illustrative job (~{galleryOpenRouterPricing.promptTokensAssumed} + ~{galleryOpenRouterPricing.completionTokensAssumed}{" "}
+                    tokens):{" "}
+                    <strong className="text-foreground">
+                      ₹{(galleryOpenRouterPricing.estimatedJobPaisa / 100).toFixed(2)}
+                    </strong>{" "}
+                    <span className="text-muted-foreground">
+                      (FX {galleryOpenRouterPricing.usdInrRate} ₹ per $ OpenRouter list)
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
+
             <p className="text-xs text-muted-foreground">
-              Margin (planned):{" "}
-              <span className="font-medium text-foreground">
-                ₹
-                {Math.max(
-                  0,
-                  (photoGalleryAddon.faceIndexCreditPricePaisa - photoGalleryAddon.faceIndexProviderReferenceCostPaise) / 100,
-                ).toFixed(2)}
-              </span>{" "}
-              per job (face index credit − est. OpenRouter cost)
+              Margin (illustrative):{" "}
+              {galleryOpenRouterPricingState === "ok" && galleryOpenRouterPricing ? (
+                <span className="font-medium text-foreground">
+                  ₹
+                  {Math.max(
+                    0,
+                    (photoGalleryAddon.faceIndexCreditPricePaisa - galleryOpenRouterPricing.estimatedJobPaisa) / 100,
+                  ).toFixed(2)}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}{" "}
+              per job (face index credit − OpenRouter-derived est.)
             </p>
             <p className="text-[10px] text-muted-foreground">
-              Catalog defaults are rough; charged amount will be the retail &quot;face index credit&quot; once debits exist.
+              Set <code className="text-foreground">OPENROUTER_API_KEY</code> on the server if OpenRouter returns 401 for
+              models. Charged amount (future) remains the retail face index credit.
             </p>
           </div>
 

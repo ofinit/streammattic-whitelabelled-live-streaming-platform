@@ -802,7 +802,7 @@ INSERT INTO platform_settings (key, value) VALUES
   ('studio_subscription', '{"enabled":true,"annualPrice":1800000,"label":"Studio Annual Subscription","description":"White-label platform access and hosting"}'::jsonb),
   ('gst_config', '{"enabled":true,"percentage":18,"gstin":"","companyName":"StreamLivee","companyAddress":""}'::jsonb),
   ('payment_gateways', '{"razorpay":{"enabled":true,"label":"Razorpay"},"instamojo":{"enabled":true,"label":"Instamojo"}}'::jsonb),
-  ('photo_gallery_addon', '{"listingEnabled":false,"productName":"Client photo gallery","galleryPath":"/client-gallery","galleryServiceBaseUrl":"","monthlyPricePaisa":0,"faceIndexCreditPricePaisa":500,"includedFaceIndexesPerMonth":0,"faceIndexOpenRouterModelId":"google/gemini-2.0-flash-001","faceIndexProviderReferenceCostPaise":100}'::jsonb)
+  ('photo_gallery_addon', '{"listingEnabled":false,"productName":"Client photo gallery","galleryPath":"/client-gallery","galleryServiceBaseUrl":"","monthlyPricePaisa":0,"faceIndexCreditPricePaisa":500,"includedFaceIndexesPerMonth":0,"faceIndexOpenRouterModelId":"google/gemini-2.0-flash-001"}'::jsonb)
 -- Do not overwrite existing keys: same behavior as scripts/run-migration.js (preserve admin pricing/GST/gateways).
 ON CONFLICT (key) DO NOTHING;
 

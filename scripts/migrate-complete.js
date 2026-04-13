@@ -807,7 +807,6 @@ async function step13_seed_settings(c) {
         faceIndexCreditPricePaisa: 500,
         includedFaceIndexesPerMonth: 0,
         faceIndexOpenRouterModelId: "google/gemini-2.0-flash-001",
-        faceIndexProviderReferenceCostPaise: 100,
       },
     },
   ];

@@ -84,6 +84,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/integrations/route.ts` | `/api/admin/integrations` |
 | `app/api/admin/invoices/zip/route.ts` | `/api/admin/invoices/zip` |
 | `app/api/admin/maintenance/fix-validity/route.ts` | `/api/admin/maintenance/fix-validity` |
+| `app/api/admin/openrouter-model-pricing/route.ts` | `/api/admin/openrouter-model-pricing` |
 | `app/api/admin/orders/route.ts` | `/api/admin/orders` |
 | `app/api/admin/photo-gallery-addon/route.ts` | `/api/admin/photo-gallery-addon` |
 | `app/api/admin/pricing/route.ts` | `/api/admin/pricing` |

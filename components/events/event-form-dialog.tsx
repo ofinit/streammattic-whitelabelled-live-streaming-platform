@@ -2,7 +2,8 @@
 
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
-import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { createPortal } from "react-dom"
 import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -817,8 +818,8 @@ export function EventFormDialog({
     total: number
   } | null>(null)
   const [galleryDragOver, setGalleryDragOver] = useState(false)
-  /** Colons in React useId() can break label[htmlFor] matching in some browsers — sanitize. */
-  const photoGalleryInputId = `photo-gallery-${useId().replace(/:/g, "")}`
+  /** File input mounted on document.body so Radix Dialog focus-trap does not block programmatic open. */
+  const galleryFileInputRef = useRef<HTMLInputElement>(null)
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -2032,6 +2033,7 @@ export function EventFormDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border"
@@ -3460,7 +3462,7 @@ export function EventFormDialog({
                         ))}
                       </div>
                     )}
-                    {/* Drop zone: sibling input + label htmlFor (same pattern as photographer logo); drag on wrapper */}
+                    {/* Drop zone: input portaled to body; click opens picker outside Radix focus-trap */}
                     <div
                       className={`w-full rounded-lg border-2 border-dashed p-6 transition-colors ${
                         galleryDragOver
@@ -3478,19 +3480,21 @@ export function EventFormDialog({
                       }}
                       onDrop={handlePhotoGalleryDrop}
                     >
-                      <input
-                        id={photoGalleryInputId}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePhotoGalleryFilesChange}
-                        disabled={!!standardUploading || !!galleryUploadProgress}
-                        className="hidden"
-                        aria-label="Add photos to gallery"
-                      />
-                      <label
-                        htmlFor={photoGalleryInputId}
-                        className={`flex w-full flex-col items-center justify-center ${standardUploading || galleryUploadProgress ? "cursor-not-allowed" : "cursor-pointer"}`}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className={`flex w-full flex-col items-center justify-center outline-none ${standardUploading || galleryUploadProgress ? "cursor-not-allowed" : "cursor-pointer"}`}
+                        onClick={() => {
+                          if (standardUploading || galleryUploadProgress) return
+                          galleryFileInputRef.current?.click()
+                        }}
+                        onKeyDown={(e) => {
+                          if (standardUploading || galleryUploadProgress) return
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            galleryFileInputRef.current?.click()
+                          }
+                        }}
                       >
                         {galleryUploadProgress ? (
                           <>
@@ -3512,7 +3516,7 @@ export function EventFormDialog({
                             </p>
                           </>
                         )}
-                      </label>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -3827,5 +3831,21 @@ export function EventFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+    {open && typeof window !== "undefined"
+      ? createPortal(
+          <input
+            ref={galleryFileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handlePhotoGalleryFilesChange}
+            disabled={!!standardUploading || !!galleryUploadProgress}
+            aria-label="Add photos to gallery"
+          />,
+          document.body,
+        )
+      : null}
+    </>
   )
 }

@@ -818,6 +818,7 @@ export function EventFormDialog({
   } | null>(null)
   /** Programmatic open for file picker — more reliable than <label> inside Radix Dialog. */
   const photoGalleryInputRef = useRef<HTMLInputElement>(null)
+  const [galleryDragOver, setGalleryDragOver] = useState(false)
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -1636,23 +1637,28 @@ export function EventFormDialog({
     return data.url
   }
 
-  /**
-   * Gallery uploads: one POST per file (same as hero/player). Avoids batch multipart edge cases behind proxies.
-   */
+  /** Upload many gallery files in parallel (chunked) — fast multi-select / drag-drop without batch multipart. */
+  const GALLERY_UPLOAD_CONCURRENCY = 5
   const postGalleryFilesBatch = async (filesToUpload: File[]): Promise<{ urls: string[]; partialErrors?: string[] }> => {
     if (filesToUpload.length === 0) return { urls: [] }
     const urls: string[] = []
     const partialErrors: string[] = []
-    for (const f of filesToUpload) {
-      try {
-        urls.push(await postEventUpload("event-gallery", f))
-      } catch (e) {
-        console.error(e)
-        partialErrors.push(f.name)
-      }
+    for (let i = 0; i < filesToUpload.length; i += GALLERY_UPLOAD_CONCURRENCY) {
+      const chunk = filesToUpload.slice(i, i + GALLERY_UPLOAD_CONCURRENCY)
+      const results = await Promise.allSettled(chunk.map((f) => postEventUpload("event-gallery", f)))
+      results.forEach((r, j) => {
+        const file = chunk[j]!
+        if (r.status === "fulfilled") urls.push(r.value)
+        else {
+          console.error(r.reason)
+          partialErrors.push(file.name)
+        }
+      })
     }
     if (urls.length === 0) {
-      throw new Error(partialErrors.length ? `Could not upload: ${partialErrors.slice(0, 3).join(", ")}` : "No files could be uploaded")
+      throw new Error(
+        partialErrors.length ? `Could not upload: ${partialErrors.slice(0, 3).join(", ")}` : "No files could be uploaded",
+      )
     }
     return { urls, partialErrors: partialErrors.length > 0 ? partialErrors : undefined }
   }
@@ -1677,19 +1683,14 @@ export function EventFormDialog({
     }
   }
 
-  const handlePhotoGalleryFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const list = e.target.files
-    e.target.value = ""
-    if (!list?.length) return
-
+  const runPhotoGalleryUpload = async (rawFiles: File[]) => {
     const looksLikeImageByName = (name: string) => /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif|tiff?)$/i.test(name)
 
-    // Accept by MIME or by extension (many mobile browsers use empty or generic MIME)
-    const images = Array.from(list).filter(
+    const images = rawFiles.filter(
       (f) => Boolean(f.type?.startsWith("image/")) || looksLikeImageByName(f.name),
     )
     if (images.length === 0) {
-      if (list.length > 0) {
+      if (rawFiles.length > 0) {
         toast({
           variant: "destructive",
           title: "No images to upload",
@@ -1712,7 +1713,6 @@ export function EventFormDialog({
           filesToUpload.push(await compressImageFileToWebp(src))
         } catch (oneErr) {
           console.error(oneErr)
-          // WebP/canvas can fail (HEIC, Safari). Upload original if it looks like an image and fits API limit.
           if (
             src.size > 0 &&
             src.size <= maxBytes &&
@@ -1753,6 +1753,11 @@ export function EventFormDialog({
           description: parts.slice(0, 4).join("; ") + (parts.length > 4 ? "…" : ""),
           variant: "destructive",
         })
+      } else if (urls.length > 1) {
+        toast({
+          title: "Photos added",
+          description: `${urls.length} images uploaded to the gallery.`,
+        })
       }
     } catch (err) {
       console.error(err)
@@ -1765,6 +1770,22 @@ export function EventFormDialog({
     } finally {
       setGalleryUploadProgress(null)
     }
+  }
+
+  const handlePhotoGalleryFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const list = e.target.files
+    e.target.value = ""
+    if (!list?.length) return
+    await runPhotoGalleryUpload(Array.from(list))
+  }
+
+  const handlePhotoGalleryDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setGalleryDragOver(false)
+    if (standardUploading || galleryUploadProgress) return
+    const files = Array.from(e.dataTransfer?.files || [])
+    if (files.length) void runPhotoGalleryUpload(files)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -3415,9 +3436,30 @@ export function EventFormDialog({
                   <div className="space-y-2">
                     <Label>Photo gallery</Label>
                     <p className="text-xs text-muted-foreground">
-                      Select one or more images — they are compressed and saved as WebP before upload.
+                      Add <strong className="text-foreground">many images at once</strong>: use the + button and multi-select in
+                      the file dialog, or drag and drop images onto the area below. Files are compressed to WebP before
+                      upload.
                     </p>
-                    <div className="relative rounded-lg border border-border/60 p-2">
+                    <div
+                      className={`relative rounded-lg border border-border/60 p-2 transition-colors ${
+                        galleryDragOver ? "border-primary bg-primary/5 ring-2 ring-primary/25" : ""
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onDragEnter={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (!standardUploading && !galleryUploadProgress) setGalleryDragOver(true)
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
+                      }}
+                      onDrop={handlePhotoGalleryDrop}
+                    >
                       <div
                         className={`flex flex-wrap gap-2 ${galleryUploadProgress ? "pointer-events-none opacity-60" : ""}`}
                         aria-busy={!!galleryUploadProgress}
@@ -3446,6 +3488,7 @@ export function EventFormDialog({
                             className="sr-only"
                             tabIndex={-1}
                             aria-hidden
+                            title="Choose one or more images"
                             onChange={handlePhotoGalleryFilesChange}
                             disabled={!!standardUploading || !!galleryUploadProgress}
                           />
@@ -3455,7 +3498,8 @@ export function EventFormDialog({
                               standardUploading || galleryUploadProgress ? "cursor-not-allowed opacity-50" : ""
                             }`}
                             disabled={!!standardUploading || !!galleryUploadProgress}
-                            aria-label="Add photos to gallery"
+                            aria-label="Add photos to gallery — you can select multiple files"
+                            title="Select multiple images in the file picker"
                             onClick={() => {
                               if (standardUploading || galleryUploadProgress) return
                               photoGalleryInputRef.current?.click()

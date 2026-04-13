@@ -1083,54 +1083,12 @@ export default function AdminPricingPage() {
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
             <div className="flex gap-3">
               <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" aria-hidden />
-              <div className="min-w-0 space-y-4 text-muted-foreground">
-                <section>
-                  <p className="font-medium text-foreground">Same app — gallery path, not a second hostname</p>
-                  <p className="mt-2 text-xs leading-relaxed">
-                    The client gallery screen is part of <strong className="text-foreground">this</strong> Stream-Livee app. Set
-                    the path below (default <code className="text-foreground">{DEFAULT_CLIENT_GALLERY_PATH}</code>); guests and
-                    customers use that URL on the <strong className="text-foreground">platform domain</strong> and on each{" "}
-                    <strong className="text-foreground">studio custom domain</strong> (example:{" "}
-                    <code className="text-foreground">https://studio.example.com{DEFAULT_CLIENT_GALLERY_PATH}</code>). You do{" "}
-                    <strong className="text-foreground">not</strong> deploy a separate gallery app or add DNS records just for
-                    the gallery — existing A/CNAME to Coolify already covers it.
-                  </p>
-                </section>
-                <section>
-                  <p className="font-medium text-foreground">What the pricing fields mean</p>
-                  <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-relaxed">
-                    <li>
-                      <strong className="text-foreground">Monthly price</strong> — reference amount on Packages; use{" "}
-                      <code className="text-foreground">0</code> if you sell this as contact admin / custom.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Face index credit</strong> —{" "}
-                      <strong className="text-foreground">Retail</strong> price per vision/index job (wallet debit when
-                      implemented). No free quota — every job debits at this rate once billing exists. Compare to the OpenRouter
-                      estimate below for margin.
-                    </li>
-                  </ul>
-                </section>
-                <section>
-                  <p className="font-medium text-foreground">OpenRouter list price (live API)</p>
-                  <p className="mt-2 text-xs leading-relaxed">
-                    List rates come from OpenRouter&apos;s <code className="text-foreground">/api/v1/models</code> (USD) and
-                    are shown in <strong className="text-foreground">INR</strong> using{" "}
-                    <code className="text-foreground">USD_INR_REFERENCE</code> or{" "}
-                    <code className="text-foreground">OPENROUTER_USD_INR</code> (default 83). Stream-Livee does not debit wallets
-                    for gallery jobs until implemented. Biometric face-ID search is a different stack. See{" "}
-                    <a
-                      href="https://openrouter.ai/models"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      openrouter.ai/models
-                    </a>
-                    .
-                  </p>
-                </section>
-              </div>
+              <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
+                <strong className="text-foreground">Monthly price</strong> — reference on Packages; use{" "}
+                <code className="text-foreground">0</code> for contact admin / custom.{" "}
+                <strong className="text-foreground">Face index credit</strong> — retail per job when billing exists; no free
+                quota. Provider cost and margin for the selected model are shown below.
+              </p>
             </div>
           </div>
 

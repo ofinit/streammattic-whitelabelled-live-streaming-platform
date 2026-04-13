@@ -11,8 +11,10 @@ import {
 export const GET = withOptionalAuth(async (user, request) => {
   const url = new URL(request.url)
   const status = url.searchParams.get("status")
-  const page = parseInt(url.searchParams.get("page") || "1")
-  const limit = parseInt(url.searchParams.get("limit") || "50")
+  const rawPage = parseInt(url.searchParams.get("page") || "1", 10)
+  const rawLimit = parseInt(url.searchParams.get("limit") || "50", 10)
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1
+  const limit = Number.isFinite(rawLimit) ? Math.min(500, Math.max(1, rawLimit)) : 50
   const offset = (page - 1) * limit
   const isPublic = url.searchParams.get("public") === "true"
   const sql = getDb()
@@ -22,27 +24,35 @@ export const GET = withOptionalAuth(async (user, request) => {
   }
 
   const isAdmin = user?.role === "admin"
-  const userId = user?.id as string
+  const userId = user?.id as string | undefined
+  if (!isPublic && !isAdmin && (!userId || String(userId).trim() === "")) {
+    return jsonError("Unauthorized", 401)
+  }
 
   let rows: any[] = []
   let total = 0
 
-  if (isPublic) {
-    // Public sees all live/scheduled events
-    const filter = status ? sql`AND status = ${status}` : sql`AND status IN ('live', 'scheduled')`
-    rows = await sql`SELECT e.*, u.name as user_name FROM events e JOIN users u ON e.user_id = u.id WHERE 1=1 ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-    const count = await sql`SELECT count(*)::int as total FROM events WHERE 1=1 ${filter}`
-    total = count[0].total as number
-  } else if (isAdmin) {
-    const filter = status ? sql`WHERE e.status = ${status}` : sql``
-    rows = await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-    const count = await sql`SELECT count(*)::int as total FROM events e ${filter}`
-    total = count[0].total as number
-  } else {
-    const filter = status ? sql`AND status = ${status}` : sql``
-    rows = await sql`SELECT * FROM events WHERE user_id = ${userId} ${filter} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
-    const count = await sql`SELECT count(*)::int as total FROM events WHERE user_id = ${userId} ${filter}`
-    total = count[0].total as number
+  try {
+    if (isPublic) {
+      // Public sees all live/scheduled events
+      const filter = status ? sql`AND status = ${status}` : sql`AND status IN ('live', 'scheduled')`
+      rows = await sql`SELECT e.*, u.name as user_name FROM events e JOIN users u ON e.user_id = u.id WHERE 1=1 ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
+      const count = await sql`SELECT count(*)::int as total FROM events WHERE 1=1 ${filter}`
+      total = count[0].total as number
+    } else if (isAdmin) {
+      const filter = status ? sql`WHERE e.status = ${status}` : sql``
+      rows = await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
+      const count = await sql`SELECT count(*)::int as total FROM events e ${filter}`
+      total = count[0].total as number
+    } else {
+      const filter = status ? sql`AND status = ${status}` : sql``
+      rows = await sql`SELECT * FROM events WHERE user_id = ${userId!} ${filter} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+      const count = await sql`SELECT count(*)::int as total FROM events WHERE user_id = ${userId!} ${filter}`
+      total = count[0].total as number
+    }
+  } catch (e) {
+    console.error("[api/events GET]", e)
+    return jsonError("Failed to load events", 500)
   }
 
   return jsonOk({ events: toCamelRows(rows as Record<string, unknown>[]), total, page, limit })

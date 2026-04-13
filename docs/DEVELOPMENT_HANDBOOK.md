@@ -118,6 +118,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/auth/youtube/route.ts` | `/api/auth/youtube` |
 | `app/api/branding/lookup/route.ts` | `/api/branding/lookup` |
 | `app/api/branding/route.ts` | `/api/branding` |
+| `app/api/client-gallery/events/route.ts` | `/api/client-gallery/events` |
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
 | `app/api/credits/route.ts` | `/api/credits` |

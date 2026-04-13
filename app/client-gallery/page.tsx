@@ -47,7 +47,7 @@ export default function ClientGalleryPage() {
     setEventsLoading(true)
     setLoadError(null)
     try {
-      const res = await fetch("/api/events?limit=200", { credentials: "include" })
+      const res = await fetch("/api/client-gallery/events?limit=200", { credentials: "include" })
       const data = (await res.json().catch(() => ({}))) as { events?: GalleryEventRow[]; error?: string }
       if (!res.ok) {
         setLoadError(data.error || "Could not load your events.")

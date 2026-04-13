@@ -3,7 +3,6 @@
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { createPortal } from "react-dom"
 import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -38,7 +37,6 @@ import {
   Plus,
   Minus,
   ImageIcon,
-  Upload,
   Wand2,
   X,
   ShieldAlert,
@@ -84,7 +82,6 @@ import {
   streamTypeLabelForCredits,
   type CanonicalStreamTypeKey,
 } from "@/lib/stream-type-form"
-import { compressImageFileToWebp } from "@/lib/client-image-webp"
 import {
   thirdPartyEmbedCodeContainsYouTube,
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
@@ -812,16 +809,6 @@ export function EventFormDialog({
   const [crewPin, setCrewPin] = useState("")
   const [isCrewPinEnabled, setIsCrewPinEnabled] = useState(false)
   const [standardUploading, setStandardUploading] = useState<string | null>(null)
-  /** Photo gallery: compress → WebP → upload; null when idle */
-  const [galleryUploadProgress, setGalleryUploadProgress] = useState<{
-    phase: "compress" | "upload"
-    current: number
-    total: number
-  } | null>(null)
-  const [galleryDragOver, setGalleryDragOver] = useState(false)
-  /** File input mounted on document.body so Radix Dialog focus-trap does not block programmatic open. */
-  const galleryFileInputRef = useRef<HTMLInputElement>(null)
-
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
 
@@ -1092,7 +1079,7 @@ export function EventFormDialog({
   /**
    * Which dialog session we last hydrated from. Parent often passes a new `event` object reference
    * on SWR/mutate while the dialog stays open; re-running the full reset was clearing
-   * `photoGalleryUrls` (and other fields) after multi-file uploads, before Save.
+   * `photoGalleryUrls` (and other fields) after in-dialog edits, before Save.
    */
   const formHydratedKeyRef = useRef<string | null>(null)
   /** Keeps validity reset logic in sync with hydrate so we don’t clear DB-loaded validity on open. */
@@ -1639,32 +1626,6 @@ export function EventFormDialog({
     return data.url
   }
 
-  /** Upload many gallery files in parallel (chunked) — fast multi-select / drag-drop without batch multipart. */
-  const GALLERY_UPLOAD_CONCURRENCY = 5
-  const postGalleryFilesBatch = async (filesToUpload: File[]): Promise<{ urls: string[]; partialErrors?: string[] }> => {
-    if (filesToUpload.length === 0) return { urls: [] }
-    const urls: string[] = []
-    const partialErrors: string[] = []
-    for (let i = 0; i < filesToUpload.length; i += GALLERY_UPLOAD_CONCURRENCY) {
-      const chunk = filesToUpload.slice(i, i + GALLERY_UPLOAD_CONCURRENCY)
-      const results = await Promise.allSettled(chunk.map((f) => postEventUpload("event-gallery", f)))
-      results.forEach((r, j) => {
-        const file = chunk[j]!
-        if (r.status === "fulfilled") urls.push(r.value)
-        else {
-          console.error(r.reason)
-          partialErrors.push(file.name)
-        }
-      })
-    }
-    if (urls.length === 0) {
-      throw new Error(
-        partialErrors.length ? `Could not upload: ${partialErrors.slice(0, 3).join(", ")}` : "No files could be uploaded",
-      )
-    }
-    return { urls, partialErrors: partialErrors.length > 0 ? partialErrors : undefined }
-  }
-
   const handleStandardUpload = async (field: "event-hero" | "event-player" | "event-photographer", file: File) => {
     setStandardUploading(field)
     try {
@@ -1683,116 +1644,6 @@ export function EventFormDialog({
     } finally {
       setStandardUploading(null)
     }
-  }
-
-  const runPhotoGalleryUpload = async (rawFiles: File[]) => {
-    const looksLikeImageByName = (name: string) => /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif|tiff?)$/i.test(name)
-
-    const images = rawFiles.filter(
-      (f) => Boolean(f.type?.startsWith("image/")) || looksLikeImageByName(f.name),
-    )
-    if (images.length === 0) {
-      if (rawFiles.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "No images to upload",
-          description: "Choose image files (JPEG, PNG, WebP, or GIF).",
-        })
-      }
-      return
-    }
-
-    const compressFailures: string[] = []
-    const filesToUpload: File[] = []
-    const maxBytes = 8 * 1024 * 1024
-    const yieldPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-    try {
-      for (let i = 0; i < images.length; i++) {
-        setGalleryUploadProgress({ phase: "compress", current: i + 1, total: images.length })
-        await yieldPaint()
-        const src = images[i]!
-        try {
-          filesToUpload.push(await compressImageFileToWebp(src))
-        } catch (oneErr) {
-          console.error(oneErr)
-          if (
-            src.size > 0 &&
-            src.size <= maxBytes &&
-            (Boolean(src.type?.startsWith("image/")) || looksLikeImageByName(src.name))
-          ) {
-            filesToUpload.push(src)
-          } else {
-            compressFailures.push(src?.name || `Image ${i + 1}`)
-          }
-        }
-      }
-
-      if (filesToUpload.length === 0) {
-        toast({
-          variant: "destructive",
-          title: "Photo gallery upload failed",
-          description:
-            compressFailures.length === 1
-              ? `Could not process "${compressFailures[0]}". Try JPEG/PNG or a different browser.`
-              : `${compressFailures.length} image(s) could not be processed.`,
-        })
-        return
-      }
-
-      setGalleryUploadProgress({
-        phase: "upload",
-        current: filesToUpload.length,
-        total: filesToUpload.length,
-      })
-      await yieldPaint()
-      const { urls, partialErrors } = await postGalleryFilesBatch(filesToUpload)
-      setPhotoGalleryUrls((prev) => [...prev, ...urls])
-
-      if (compressFailures.length > 0 || (partialErrors && partialErrors.length > 0)) {
-        const parts = [...compressFailures, ...(partialErrors || [])]
-        toast({
-          title: "Some photos were skipped",
-          description: parts.slice(0, 4).join("; ") + (parts.length > 4 ? "…" : ""),
-          variant: "destructive",
-        })
-      } else if (urls.length === 1) {
-        toast({
-          title: "Photo added",
-          description: "1 image uploaded to the gallery.",
-        })
-      } else if (urls.length > 1) {
-        toast({
-          title: "Photos added",
-          description: `${urls.length} images uploaded to the gallery.`,
-        })
-      }
-    } catch (err) {
-      console.error(err)
-      const message = err instanceof Error ? err.message : "Could not upload photos"
-      toast({
-        variant: "destructive",
-        title: "Photo gallery upload failed",
-        description: message,
-      })
-    } finally {
-      setGalleryUploadProgress(null)
-    }
-  }
-
-  const handlePhotoGalleryFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const list = e.target.files
-    e.target.value = ""
-    if (!list?.length) return
-    await runPhotoGalleryUpload(Array.from(list))
-  }
-
-  const handlePhotoGalleryDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setGalleryDragOver(false)
-    if (standardUploading || galleryUploadProgress) return
-    const files = Array.from(e.dataTransfer?.files || [])
-    if (files.length) void runPhotoGalleryUpload(files)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2034,7 +1885,6 @@ export function EventFormDialog({
   }
 
   return (
-    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border"
@@ -3448,7 +3298,6 @@ export function EventFormDialog({
                         dialogTitle="Photo gallery"
                         uploadSubdir="event-gallery"
                         walletUserId={creditsUserId}
-                        disabled={!!galleryUploadProgress}
                         onImageUrl={(url) => {
                           setPhotoGalleryUrls((prev) => [...prev, url])
                           toast({
@@ -3459,10 +3308,10 @@ export function EventFormDialog({
                       >
                         <Button type="button" variant="outline" size="sm" className="gap-2 h-8">
                           <Wand2 className="h-4 w-4" />
-                          Add with AI
+                          Add image
                         </Button>
                       </AiImagePickerDialog>
-                      <span className="text-xs text-muted-foreground">Upload below or AI (wallet)</span>
+                      <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
                     </div>
                     {/* Uploaded thumbnails */}
                     {photoGalleryUrls.length > 0 && (
@@ -3476,7 +3325,6 @@ export function EventFormDialog({
                               size="icon"
                               className="absolute right-0.5 top-0.5 h-5 w-5"
                               onClick={() => setPhotoGalleryUrls((p) => p.filter((_, j) => j !== i))}
-                              disabled={!!galleryUploadProgress}
                             >
                               <X className="h-2.5 w-2.5" />
                             </Button>
@@ -3484,62 +3332,6 @@ export function EventFormDialog({
                         ))}
                       </div>
                     )}
-                    {/* Drop zone: input portaled to body; click opens picker outside Radix focus-trap */}
-                    <div
-                      className={`w-full rounded-lg border-2 border-dashed p-6 transition-colors ${
-                        galleryDragOver
-                          ? "border-primary bg-primary/5"
-                          : "border-border/50 hover:border-border"
-                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : ""}`}
-                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
-                      onDragEnter={(e) => {
-                        e.preventDefault(); e.stopPropagation()
-                        if (!standardUploading && !galleryUploadProgress) setGalleryDragOver(true)
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault(); e.stopPropagation()
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
-                      }}
-                      onDrop={handlePhotoGalleryDrop}
-                    >
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        className={`flex w-full flex-col items-center justify-center outline-none ${standardUploading || galleryUploadProgress ? "cursor-not-allowed" : "cursor-pointer"}`}
-                        onClick={() => {
-                          if (standardUploading || galleryUploadProgress) return
-                          galleryFileInputRef.current?.click()
-                        }}
-                        onKeyDown={(e) => {
-                          if (standardUploading || galleryUploadProgress) return
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            galleryFileInputRef.current?.click()
-                          }
-                        }}
-                      >
-                        {galleryUploadProgress ? (
-                          <>
-                            <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">
-                              {galleryUploadProgress.phase === "compress"
-                                ? `Compressing image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}…`
-                                : `Uploading ${galleryUploadProgress.total} file${galleryUploadProgress.total === 1 ? "" : "s"}…`}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden />
-                            <p className="text-sm font-medium text-foreground">
-                              Drop images here or click to browse
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Select multiple — JPEG, PNG, WebP, GIF up to 8 MB each
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Photographer logo</Label>
@@ -3853,21 +3645,5 @@ export function EventFormDialog({
         </form>
       </DialogContent>
     </Dialog>
-    {open && typeof window !== "undefined"
-      ? createPortal(
-          <input
-            ref={galleryFileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handlePhotoGalleryFilesChange}
-            disabled={!!standardUploading || !!galleryUploadProgress}
-            aria-label="Add photos to gallery"
-          />,
-          document.body,
-        )
-      : null}
-    </>
   )
 }

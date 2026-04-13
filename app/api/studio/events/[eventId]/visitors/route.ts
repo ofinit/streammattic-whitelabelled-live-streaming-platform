@@ -30,6 +30,9 @@ export async function GET(
 
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`.catch(() => {})
+    await sql`CREATE INDEX IF NOT EXISTS idx_events_studio_id ON events(studio_id)`.catch(() => {})
+    await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`.catch(() => {})
     await sql`
       CREATE TABLE IF NOT EXISTS event_visitor_registrations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,16 +56,26 @@ export async function GET(
     await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS visitor_key TEXT`.catch(() => {})
     await sql`ALTER TABLE event_visitor_registrations ADD COLUMN IF NOT EXISTS session_key TEXT`.catch(() => {})
 
-    const eventRows = await sql`
-      SELECT id, user_id, studio_id FROM events
-      WHERE id::text = ${eventId} OR slug = ${eventId}
-      LIMIT 1
-    `
+    let eventRows: Record<string, unknown>[]
+    try {
+      eventRows = await sql`
+        SELECT id, user_id, studio_id FROM events
+        WHERE id::text = ${eventId} OR slug = ${eventId}
+        LIMIT 1
+      `
+    } catch {
+      eventRows = await sql`
+        SELECT id, user_id FROM events
+        WHERE id::text = ${eventId} OR slug = ${eventId}
+        LIMIT 1
+      `
+    }
     if (eventRows.length === 0) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 })
     }
     const evRaw = eventRows[0] as Record<string, unknown>
     const event = toCamel(evRaw) as { id: string; userId: string; studioId?: string | null }
+    if (event.studioId === undefined) event.studioId = null
     if (!userCanViewEventVisitors({ id: user.id as string, role }, event)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

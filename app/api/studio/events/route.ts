@@ -74,6 +74,8 @@ export async function GET(req: NextRequest) {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`.catch(() => {})
+    await sql`CREATE INDEX IF NOT EXISTS idx_events_studio_id ON events(studio_id)`.catch(() => {})
 
     const countBase = { studioId, ...(search ? { search } : {}) }
     const [events, totalCount, liveCount, scheduledCount, completedCount] = await Promise.all([

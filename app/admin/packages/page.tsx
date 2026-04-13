@@ -8,7 +8,22 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Video, Youtube, MonitorPlay, Globe, Save, IndianRupee, Plus, Trash2, Clock, CreditCard, ChevronDown, Loader2, Images } from "lucide-react"
+import {
+  Video,
+  Youtube,
+  MonitorPlay,
+  Globe,
+  Save,
+  IndianRupee,
+  Plus,
+  Trash2,
+  Clock,
+  CreditCard,
+  ChevronDown,
+  Loader2,
+  Images,
+  Info,
+} from "lucide-react"
 import type { StreamTypePriceConfig, VolumeDiscountTier, ValidityTier, StreamTypePricing } from "@/lib/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { toast } from "sonner"
@@ -1019,6 +1034,64 @@ export default function AdminPricingPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4 max-w-3xl">
+          <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
+            <div className="flex gap-3">
+              <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" aria-hidden />
+              <div className="min-w-0 space-y-4 text-muted-foreground">
+                <section>
+                  <p className="font-medium text-foreground">Gallery app base URL — DNS</p>
+                  <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed">
+                    <li>
+                      Deploy the <strong className="text-foreground">gallery application</strong> separately (not this
+                      Stream-Livee app). Give it its own hostname, e.g. <code className="text-foreground">gallery.yourdomain.com</code>.
+                    </li>
+                    <li>
+                      At your DNS provider, point that hostname to your server: an <strong className="text-foreground">A</strong>{" "}
+                      record to the public IPv4, or a <strong className="text-foreground">CNAME</strong> to the hostname your
+                      host (e.g. Coolify / Traefik) provides.
+                    </li>
+                    <li>
+                      Terminate <strong className="text-foreground">HTTPS</strong> on that hostname (Let’s Encrypt in Coolify, or
+                      your reverse proxy). Wait until the URL loads with a valid certificate.
+                    </li>
+                    <li>
+                      Paste the same origin here: <code className="text-foreground">https://…</code> with{" "}
+                      <strong className="text-foreground">no trailing slash</strong>. Stream-Livee does not create DNS or TLS for
+                      this host.
+                    </li>
+                  </ol>
+                </section>
+                <section>
+                  <p className="font-medium text-foreground">Pricing fields</p>
+                  <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-relaxed">
+                    <li>
+                      <strong className="text-foreground">Monthly price</strong> — reference amount shown on Packages; set to{" "}
+                      <code className="text-foreground">0</code> if pricing is contact admin / custom.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Face index credit</strong> — intended{" "}
+                      <strong className="text-foreground">retail</strong> price per image indexed for face search (when that
+                      billing exists). Wallet debits are not wired from this screen alone.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Included face indexes / month</strong> — included quota before
+                      overage; <code className="text-foreground">0</code> means no included allowance in the product design.
+                    </li>
+                  </ul>
+                </section>
+                <section>
+                  <p className="font-medium text-foreground">Your AI / vendor cost</p>
+                  <p className="mt-2 text-xs leading-relaxed">
+                    This dashboard does <strong className="text-foreground">not</strong> show what you pay AWS, Azure, Google,
+                    or a GPU host. Face indexing is implemented in the <strong className="text-foreground">gallery service</strong>{" "}
+                    you deploy; choose one provider (e.g. Rekognition, Azure Face) and compare their per-image pricing to your
+                    credit price so you keep margin. No model is selected inside Stream-Livee core.
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="pg-product-name">Product name (customer-facing)</Label>
             <Input
@@ -1039,7 +1112,8 @@ export default function AdminPricingPage() {
               className="bg-secondary border-0 font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Deploy the gallery service separately; this URL is shown to entitled users on Packages.
+              Must match the HTTPS origin of your deployed gallery app. Shown to entitled users on Packages as “Open gallery
+              app.”
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">

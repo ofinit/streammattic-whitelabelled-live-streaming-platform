@@ -23,6 +23,10 @@ import {
 } from "@/lib/server/event-stream-policy"
 import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
 import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
+import {
+  thirdPartyEmbedCodeContainsYouTube,
+  THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
+} from "@/lib/third-party-embed-validation"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
 
@@ -137,6 +141,15 @@ export async function POST(req: NextRequest) {
       if (streamPol) return NextResponse.json({ error: streamPol.error }, { status: streamPol.status })
       const simPol0 = assertSimulcastAllowed(simulcastPricing, simulcastConfig, insertStreamType)
       if (simPol0) return NextResponse.json({ error: simPol0.error }, { status: simPol0.status })
+    }
+
+    if (
+      insertStreamType === "third_party" &&
+      typeof embedCode === "string" &&
+      embedCode.trim() &&
+      thirdPartyEmbedCodeContainsYouTube(embedCode)
+    ) {
+      return NextResponse.json({ error: THIRD_PARTY_YOUTUBE_IFRAME_ERROR }, { status: 400 })
     }
 
     // Resolve slug: use provided (validate) or auto-generate unique one
@@ -451,6 +464,14 @@ export async function PUT(req: NextRequest) {
     if (streamPolPut) return NextResponse.json({ error: streamPolPut.error }, { status: streamPolPut.status })
     const simPolPut = assertSimulcastAllowed(simulcastPricingPut, simulcastForPolicy, resolvedStreamType)
     if (simPolPut) return NextResponse.json({ error: simPolPut.error }, { status: simPolPut.status })
+
+    if (resolvedStreamType === "third_party") {
+      const effectiveEmbed =
+        embedCode !== undefined ? String(embedCode ?? "") : String((existingRow.embed_code as string) || "")
+      if (effectiveEmbed.trim() && thirdPartyEmbedCodeContainsYouTube(effectiveEmbed)) {
+        return NextResponse.json({ error: THIRD_PARTY_YOUTUBE_IFRAME_ERROR }, { status: 400 })
+      }
+    }
 
     const storedSimulcastJson =
       resolvedStreamType === "rtmp"

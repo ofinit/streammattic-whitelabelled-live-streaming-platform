@@ -83,6 +83,10 @@ import {
   type CanonicalStreamTypeKey,
 } from "@/lib/stream-type-form"
 import { compressImageFileToWebp } from "@/lib/client-image-webp"
+import {
+  thirdPartyEmbedCodeContainsYouTube,
+  THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
+} from "@/lib/third-party-embed-validation"
 import { toast } from "@/hooks/use-toast"
 
 /** Validity + distinct extra event days — must stay in sync with the credit-check effect. */
@@ -543,7 +547,12 @@ export function EventFormDialog({
       : ""
 
   // Field-level errors for mandatory fields
-  const [fieldErrors, setFieldErrors] = useState<{ title?: string; slug?: string; scheduledAt?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string
+    slug?: string
+    scheduledAt?: string
+    embedCode?: string
+  }>({})
 
   // Multi-date state
   type ExtraDate = { id: string; label: string; scheduledAt: string; timezone?: string }
@@ -1782,7 +1791,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1796,9 +1805,22 @@ export function EventFormDialog({
     if (!skipCreditsValidation && creditStatus === "insufficient") {
       errors.scheduledAt = `Insufficient credits: need ${creditInfo?.need} for this event (validity + extra event days), have ${creditInfo?.have}.`
     }
+    if (
+      isThirdPartyEmbedFormType(formData.streamType) &&
+      formData.embedCode.trim() &&
+      thirdPartyEmbedCodeContainsYouTube(formData.embedCode)
+    ) {
+      errors.embedCode = THIRD_PARTY_YOUTUBE_IFRAME_ERROR
+    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
-      setActiveTab("details")
+      if (errors.title || errors.slug || errors.scheduledAt) {
+        setActiveTab("details")
+      } else if (errors.embedCode) {
+        setActiveTab("stream")
+      } else {
+        setActiveTab("details")
+      }
       return
     }
     setFieldErrors({})
@@ -3253,13 +3275,30 @@ export function EventFormDialog({
               {isThirdPartyEmbedFormType(formData.streamType) && (
                 <div className="space-y-2">
                   <Label htmlFor="embedCode">Embed Code *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Use HLS (.m3u8) or other non-YouTube embeds. For YouTube, switch stream type to{" "}
+                    <span className="text-foreground/90">YouTube Embed</span> or{" "}
+                    <span className="text-foreground/90">YouTube API</span>.
+                  </p>
                   <Textarea
                     id="embedCode"
                     value={formData.embedCode}
-                    onChange={(e) => setFormData({ ...formData, embedCode: e.target.value })}
-                    placeholder="<iframe src=..."
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setFormData({ ...formData, embedCode: v })
+                      setFieldErrors((prev) => (prev.embedCode ? { ...prev, embedCode: undefined } : prev))
+                    }}
+                    placeholder="HLS player iframe or provider embed (not YouTube)"
                     rows={4}
+                    aria-invalid={!!fieldErrors.embedCode}
+                    className={fieldErrors.embedCode ? "border-destructive bg-destructive/5" : undefined}
                   />
+                  {fieldErrors.embedCode && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3 shrink-0" />
+                      {fieldErrors.embedCode}
+                    </p>
+                  )}
                 </div>
               )}
             </TabsContent>

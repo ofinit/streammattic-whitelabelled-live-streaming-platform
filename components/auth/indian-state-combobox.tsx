@@ -19,10 +19,15 @@ export function IndianStateCombobox({
   value,
   onValueChange,
   required: requiredProp,
+  invalid,
+  id,
 }: {
   value: string
   onValueChange: (code: string) => void
   required?: boolean
+  /** Show error border (e.g. after submit attempt without selection). */
+  invalid?: boolean
+  id?: string
 }) {
   const [open, setOpen] = useState(false)
   const selected = INDIAN_STATES_AND_UT.find((s) => s.code === value)
@@ -31,12 +36,17 @@ export function IndianStateCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
           role="combobox"
           aria-expanded={open}
           aria-required={requiredProp}
-          className="w-full justify-between bg-secondary border-border font-normal"
+          aria-invalid={invalid ? true : undefined}
+          className={cn(
+            "w-full justify-between bg-secondary border-border font-normal",
+            invalid && "border-destructive text-destructive ring-1 ring-destructive/30",
+          )}
         >
           <span className="truncate">{selected ? selected.name : "Select state / UT"}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

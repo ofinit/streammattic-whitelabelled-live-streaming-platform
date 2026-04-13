@@ -46,7 +46,6 @@ export const PUT = withAuth(async (user, request) => {
   const uid = user.id as string
   const body = (await request.json()) as Record<string, unknown>
 
-  const phoneRaw = body.phone
   const billingStateCode = body.billingState
   const gstType = body.gstType
   const gstNumber = typeof body.gstNumber === "string" ? body.gstNumber.trim().toUpperCase() : ""
@@ -55,12 +54,15 @@ export const PUT = withAuth(async (user, request) => {
   const city = typeof body.city === "string" ? body.city.trim() : ""
   const pincode = typeof body.pincode === "string" ? body.pincode.trim() : ""
 
-  if (typeof phoneRaw !== "string" || !phoneRaw.trim()) {
-    return jsonError("Mobile number is required", 400)
-  }
-  const mobileNorm = normalizeIndianMobile(phoneRaw)
+  const sql = getDb()
+  const urow = await sql`SELECT phone FROM users WHERE id = ${uid} LIMIT 1`
+  const storedPhone = (urow[0] as Record<string, unknown> | undefined)?.phone as string | null | undefined
+  const mobileNorm = normalizeIndianMobile(String(storedPhone ?? "").trim())
   if (!mobileNorm) {
-    return jsonError("Enter a valid 10-digit Indian mobile number", 400)
+    return jsonError(
+      "Add a valid 10-digit mobile number in Profile (above) before saving billing details.",
+      400,
+    )
   }
 
   if (typeof billingStateCode !== "string" || !isValidIndianStateCode(billingStateCode)) {
@@ -76,8 +78,6 @@ export const PUT = withAuth(async (user, request) => {
   if (gstNumber && !isValidGstinFormat(gstNumber)) {
     return jsonError("Invalid GSTIN format (15 characters)", 400)
   }
-
-  const sql = getDb()
 
   await sql`
     UPDATE users

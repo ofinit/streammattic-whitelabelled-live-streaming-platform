@@ -28,7 +28,8 @@ export function BillingGstSection() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
-  const [phone, setPhone] = useState("")
+  /** Mirrors `users.phone` from Profile — not edited here. */
+  const [profilePhoneDisplay, setProfilePhoneDisplay] = useState<string | null>(null)
   const [billingState, setBillingState] = useState("")
   const [gstType, setGstType] = useState<GstProfileType>("individual")
   const [businessName, setBusinessName] = useState("")
@@ -47,7 +48,7 @@ export function BillingGstSection() {
         setMessage({ type: "error", text: (data.error as string) || "Failed to load billing" })
         return
       }
-      setPhone((data.phone as string) ?? "")
+      setProfilePhoneDisplay(typeof data.phone === "string" && data.phone.trim() ? data.phone.trim() : null)
       setBillingState((data.billingState as string) ?? "")
       setGstType((data.gstType as GstProfileType) || "individual")
       setBusinessName((data.businessName as string) ?? "")
@@ -76,7 +77,6 @@ export function BillingGstSection() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone,
           billingState,
           gstType,
           businessName,
@@ -121,24 +121,26 @@ export function BillingGstSection() {
           <div>
             <CardTitle>Billing and GST</CardTitle>
             <CardDescription>
-              Used for tax invoices (B2B when GSTIN is provided, otherwise B2C). Business name and GSTIN are
-              optional.
+              Used for tax invoices (B2B when GSTIN is provided, otherwise B2C). Mobile number is taken from your
+              profile above. Business name and GSTIN are optional.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSave} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bill-phone">Mobile number</Label>
-            <Input
-              id="bill-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="bg-secondary border-0"
-              required
-            />
+          <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            {profilePhoneDisplay ? (
+              <p>
+                <span className="font-medium text-foreground">Mobile for invoices:</span> {profilePhoneDisplay}{" "}
+                <span className="text-xs">(from Profile)</span>
+              </p>
+            ) : (
+              <p className="text-amber-600 dark:text-amber-400">
+                Add a valid mobile number in <span className="font-medium">Profile information</span> above, then
+                save billing here.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>State (GST)</Label>
@@ -236,7 +238,7 @@ export function BillingGstSection() {
               {message.text}
             </p>
           )}
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" disabled={saving || !profilePhoneDisplay}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save billing details
           </Button>

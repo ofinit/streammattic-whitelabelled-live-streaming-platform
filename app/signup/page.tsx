@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BrandedLogo } from "@/components/branding/branded-logo"
 import { useBranding } from "@/lib/branding-context"
@@ -24,7 +24,9 @@ import { IndianStateCombobox } from "@/components/auth/indian-state-combobox"
 import {
   PHONE_DIAL_OPTIONS,
   flagEmojiFromIso,
+  normalizeSignupPhoneStorage,
 } from "@/lib/phone-country-codes"
+import { isValidIndianStateCode } from "@/lib/indian-states"
 import { cn } from "@/lib/utils"
 
 const DEFAULT_CALLBACK = "/streamer"
@@ -55,25 +57,61 @@ export default function SignupPage() {
   const [password, setPassword] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [loading, setLoading] = useState(false)
+  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   const selectedDial = useMemo(
     () => PHONE_DIAL_OPTIONS.find((o) => o.dial === phoneDial) ?? PHONE_DIAL_OPTIONS[0],
     [phoneDial],
   )
 
+  const canSubmit = useMemo(() => {
+    if (!fullName.trim()) return false
+    if (!normalizeSignupPhoneStorage(phoneDial, phoneLocal)) return false
+    if (!billingState || !isValidIndianStateCode(billingState)) return false
+    const em = email.trim()
+    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return false
+    if (password.length < 8) return false
+    if (password !== passwordConfirm) return false
+    return true
+  }, [fullName, phoneDial, phoneLocal, billingState, email, password, passwordConfirm])
+
+  useEffect(() => {
+    if (billingState && isValidIndianStateCode(billingState)) {
+      setSubmitAttempted(false)
+    }
+  }, [billingState])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setSubmitAttempted(true)
+    if (!fullName.trim()) {
+      setError("Full name is required")
+      return
+    }
+    if (!normalizeSignupPhoneStorage(phoneDial, phoneLocal)) {
+      setError("Enter a valid mobile number for the selected country")
+      return
+    }
+    if (!billingState || !isValidIndianStateCode(billingState)) {
+      setError("State / UT is required — select from the list")
+      return
+    }
+    if (!email.trim()) {
+      setError("Email is required")
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      setError("Invalid email format")
+      return
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters")
       return
     }
     if (password !== passwordConfirm) {
       setError("Passwords do not match")
-      return
-    }
-    if (!billingState) {
-      setError("Please select your state")
       return
     }
     setLoading(true)
@@ -140,13 +178,15 @@ export default function SignupPage() {
             <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle>Create an account</CardTitle>
-                <CardDescription>Enter your details to get started.</CardDescription>
+                <CardDescription>All fields are required. Your state is used for GST billing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <form onSubmit={handleSubmit} className="space-y-3">
+                <form onSubmit={handleSubmit} className="space-y-3" noValidate>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full name</Label>
+                    <Label htmlFor="fullName">
+                      Full name <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="fullName"
                       type="text"
@@ -154,12 +194,13 @@ export default function SignupPage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="bg-secondary border-border"
-                      required
                       autoComplete="name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Mobile number</Label>
+                    <Label>
+                      Mobile number <span className="text-destructive">*</span>
+                    </Label>
                     <div className="flex gap-2">
                       <Popover open={dialOpen} onOpenChange={setDialOpen}>
                         <PopoverTrigger asChild>
@@ -216,7 +257,6 @@ export default function SignupPage() {
                         value={phoneLocal}
                         onChange={(e) => setPhoneLocal(e.target.value)}
                         className="min-w-0 flex-1 bg-secondary border-border"
-                        required
                         autoComplete="tel-national"
                       />
                     </div>
@@ -225,15 +265,21 @@ export default function SignupPage() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label id="signup-state-label">State (for GST billing)</Label>
+                    <Label htmlFor="signup-billing-state" id="signup-state-label">
+                      State / UT (GST billing) <span className="text-destructive">*</span>
+                    </Label>
                     <IndianStateCombobox
+                      id="signup-billing-state"
                       value={billingState}
                       onValueChange={setBillingState}
                       required
+                      invalid={submitAttempted && (!billingState || !isValidIndianStateCode(billingState))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">
+                      Email <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -241,11 +287,12 @@ export default function SignupPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="bg-secondary border-border"
-                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">
+                      Password <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -253,13 +300,14 @@ export default function SignupPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="bg-secondary border-border"
-                      required
                       minLength={8}
                     />
                     <p className="text-xs text-muted-foreground">At least 8 characters</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password-confirm">Confirm password</Label>
+                    <Label htmlFor="signup-password-confirm">
+                      Confirm password <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="signup-password-confirm"
                       type="password"
@@ -267,11 +315,10 @@ export default function SignupPage() {
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
                       className="bg-secondary border-border"
-                      required
                       minLength={8}
                     />
                   </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  <Button type="submit" className="w-full" size="lg" disabled={loading || !canSubmit}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
                   </Button>
                 </form>

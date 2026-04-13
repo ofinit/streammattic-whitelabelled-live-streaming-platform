@@ -323,6 +323,12 @@ function isYoutubeEmbedFormType(streamType: string | undefined | null): boolean 
   return t === "youtube_embed" || t === "youtube"
 }
 
+/** Stream tab cards use legacy form values; canonical API key is `third_party`. */
+function isThirdPartyEmbedFormType(streamType: string | undefined | null): boolean {
+  const t = String(streamType || "")
+  return t === "third_party" || t === "embedded"
+}
+
 /** Admin may return an empty tier list; fall back so 90d default can still resolve. */
 function validityExtendedTiersWithFallback(settings: ParsedValidityExtensions) {
   return settings.extendedTiers.length > 0 ? settings.extendedTiers : parseValidityExtensionsSetting(null).extendedTiers
@@ -334,7 +340,7 @@ function hasEnabled90DayTier(settings: ParsedValidityExtensions): boolean {
 
 function streamValidityGroup(streamType: string): ValidityStreamGroup {
   const t = streamType || ""
-  if (t === "youtube_api" || isYoutubeEmbedFormType(t) || t === "third_party") return "embed"
+  if (t === "youtube_api" || isYoutubeEmbedFormType(t) || isThirdPartyEmbedFormType(t)) return "embed"
   return "ingest"
 }
 
@@ -344,7 +350,7 @@ function streamTypeLabelForSettings(streamType: string): string {
   if (t === "rtmp") return "RTMP / OBS encoder"
   if (t === "youtube_api") return "YouTube API (ingest)"
   if (isYoutubeEmbedFormType(t)) return "YouTube embed (URL)"
-  if (t === "third_party") return "Third-party embed"
+  if (isThirdPartyEmbedFormType(t)) return "Third-party embed"
   if (t === "hls") return "HLS"
   return "Stream"
 }
@@ -1822,8 +1828,11 @@ export function EventFormDialog({
       slug: slug || undefined,
       scheduledAt: scheduledAtUtc,
       timezone: formData.scheduledAt ? timezone : undefined,
-      youtubeUrl: (formData.streamType === "youtube_api" || formData.streamType === "youtube_embed") ? formData.youtubeUrl : undefined,
-      embedCode: formData.streamType === "third_party" ? formData.embedCode : undefined,
+      youtubeUrl:
+        formData.streamType === "youtube_api" || isYoutubeEmbedFormType(formData.streamType)
+          ? formData.youtubeUrl
+          : undefined,
+      embedCode: isThirdPartyEmbedFormType(formData.streamType) ? formData.embedCode : undefined,
       isPasswordProtected: formData.isPasswordProtected,
       password: formData.isPasswordProtected ? formData.password : undefined,
       captureVisitorData: formData.captureVisitorData,
@@ -3229,7 +3238,7 @@ export function EventFormDialog({
                 </>
               )}
 
-              {formData.streamType === "youtube_embed" && (
+              {isYoutubeEmbedFormType(formData.streamType) && (
                 <div className="space-y-2">
                   <Label htmlFor="youtubeUrl">YouTube Live URL *</Label>
                   <Input
@@ -3241,7 +3250,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {formData.streamType === "third_party" && (
+              {isThirdPartyEmbedFormType(formData.streamType) && (
                 <div className="space-y-2">
                   <Label htmlFor="embedCode">Embed Code *</Label>
                   <Textarea

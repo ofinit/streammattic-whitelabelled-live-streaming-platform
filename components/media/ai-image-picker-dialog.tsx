@@ -76,8 +76,6 @@ export function AiImagePickerDialog({
   const [error, setError] = useState("")
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const fileInputId = useId()
-  const [fileInputPortalReady, setFileInputPortalReady] = useState(false)
   const [aiPrice, setAiPrice] = useState<number | null>(null)
   const [aiEnabled, setAiEnabled] = useState(true)
   const [aiBackendReady, setAiBackendReady] = useState(false)

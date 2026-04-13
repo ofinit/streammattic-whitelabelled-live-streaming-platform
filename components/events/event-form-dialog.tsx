@@ -323,6 +323,15 @@ function isYoutubeEmbedFormType(streamType: string | undefined | null): boolean 
   return t === "youtube_embed" || t === "youtube"
 }
 
+/** Admin may return an empty tier list; fall back so 90d default can still resolve. */
+function validityExtendedTiersWithFallback(settings: ParsedValidityExtensions) {
+  return settings.extendedTiers.length > 0 ? settings.extendedTiers : parseValidityExtensionsSetting(null).extendedTiers
+}
+
+function hasEnabled90DayTier(settings: ParsedValidityExtensions): boolean {
+  return validityExtendedTiersWithFallback(settings).some((t) => t.days === 90 && t.enabled)
+}
+
 function streamValidityGroup(streamType: string): ValidityStreamGroup {
   const t = streamType || ""
   if (t === "youtube_api" || isYoutubeEmbedFormType(t) || t === "third_party") return "embed"
@@ -1160,11 +1169,7 @@ export function EventFormDialog({
         setPhotographerLogoUrl("")
         setPhotographerContact({})
         {
-          const tierSource =
-            validityExtSettings.extendedTiers.length > 0
-              ? validityExtSettings.extendedTiers
-              : parseValidityExtensionsSetting(null).extendedTiers
-          const hasTier90 = tierSource.some((t) => t.days === 90 && t.enabled)
+          const hasTier90 = hasEnabled90DayTier(validityExtSettings)
           if (isYoutubeEmbedFormType(initialStreamType) && hasTier90) {
             setValidityChoiceKey("tier:90")
           } else {
@@ -1235,7 +1240,7 @@ export function EventFormDialog({
       if (
         !event &&
         isYoutubeEmbedFormType(formData.streamType) &&
-        validityExtSettings.extendedTiers.some((t) => t.days === 90 && t.enabled)
+        hasEnabled90DayTier(validityExtSettings)
       ) {
         setValidityChoiceKey("tier:90")
       } else {
@@ -1267,7 +1272,7 @@ export function EventFormDialog({
       return
     }
 
-    const has90 = validityExtSettings.extendedTiers.some((t) => t.days === 90 && t.enabled)
+    const has90 = hasEnabled90DayTier(validityExtSettings)
     if (!has90) {
       prevStreamTypeForYtEmbedDefaultRef.current = cur
       return
@@ -1328,7 +1333,8 @@ export function EventFormDialog({
     if (!event?.id) return
 
     const tierFp = validityExtSettings.extendedTiers.map((t) => `${t.days}:${t.enabled ? 1 : 0}`).join(",")
-    const fp = `${String(event.id)}|${editEventSchedKey}|${editEventExpKey}|${validityExtSettings.defaultDays}|${tierFp}`
+    const streamT = String(formData.streamType || "")
+    const fp = `${String(event.id)}|${editEventSchedKey}|${editEventExpKey}|${validityExtSettings.defaultDays}|${tierFp}|${streamT}`
     if (lastValidityInferenceFingerprintRef.current === fp) return
     lastValidityInferenceFingerprintRef.current = fp
 
@@ -1339,9 +1345,25 @@ export function EventFormDialog({
       },
       validityExtSettings,
     )
-    setValidityChoiceKey(inferred.choiceKey)
-    setValidityExpiresAt(inferred.expiresAt)
-  }, [open, event, event?.id, editEventSchedKey, editEventExpKey, validityExtSettings])
+    const evRow = event as unknown as Record<string, unknown>
+    const rawExp = evRow.validityExpiresAt ?? evRow.validity_expires_at
+    const noStoredExpiry =
+      rawExp == null || (typeof rawExp === "string" && rawExp.trim() === "")
+
+    let choiceKey = inferred.choiceKey
+    let expiresAt = inferred.expiresAt
+    if (
+      isYoutubeEmbedFormType(streamT) &&
+      choiceKey === "included" &&
+      !expiresAt &&
+      noStoredExpiry &&
+      hasEnabled90DayTier(validityExtSettings)
+    ) {
+      choiceKey = "tier:90"
+    }
+    setValidityChoiceKey(choiceKey)
+    setValidityExpiresAt(expiresAt)
+  }, [open, event, event?.id, editEventSchedKey, editEventExpKey, validityExtSettings, formData.streamType])
 
   const validityStreamGroup = useMemo(() => streamValidityGroup(formData.streamType), [formData.streamType])
   const validityStreamTypeLabel = useMemo(() => streamTypeLabelForSettings(formData.streamType), [formData.streamType])

@@ -816,6 +816,8 @@ export function EventFormDialog({
     current: number
     total: number
   } | null>(null)
+  /** Programmatic open for file picker — more reliable than <label> inside Radix Dialog. */
+  const photoGalleryInputRef = useRef<HTMLInputElement>(null)
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -1622,7 +1624,7 @@ export function EventFormDialog({
     const form = new FormData()
     form.append("file", file)
     form.append("subdir", subdir)
-    const res = await fetch("/api/upload", { method: "POST", body: form })
+    const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || "Upload failed")
     return data.url as string
@@ -1650,7 +1652,7 @@ export function EventFormDialog({
     const form = new FormData()
     filesToUpload.forEach((f) => form.append("files", f))
     form.append("subdir", "event-gallery")
-    const res = await fetch("/api/upload", { method: "POST", body: form })
+    const res = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" })
     const data = await parseUploadJson(res)
     if (res.ok) {
       const urls = "urls" in data && Array.isArray(data.urls)
@@ -2027,7 +2029,10 @@ export function EventFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border">
+      <DialogContent
+        className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="p-4 sm:p-6 border-b shrink-0">
           <DialogTitle>{isEditing ? "Edit Event" : "Create New Event"}</DialogTitle>
         </DialogHeader>
@@ -3454,21 +3459,33 @@ export function EventFormDialog({
                             </Button>
                           </div>
                         ))}
-                        <label
-                          className={`flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
-                            standardUploading || galleryUploadProgress ? "cursor-not-allowed opacity-50" : ""
-                          }`}
-                        >
+                        <div className="relative h-20 w-20 shrink-0">
                           <input
+                            ref={photoGalleryInputRef}
                             type="file"
                             accept="image/*"
                             multiple
-                            className="hidden"
+                            className="sr-only"
+                            tabIndex={-1}
+                            aria-hidden
                             onChange={handlePhotoGalleryFilesChange}
                             disabled={!!standardUploading || !!galleryUploadProgress}
                           />
-                          <Plus className="h-5 w-5 text-muted-foreground" />
-                        </label>
+                          <button
+                            type="button"
+                            className={`flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
+                              standardUploading || galleryUploadProgress ? "cursor-not-allowed opacity-50" : ""
+                            }`}
+                            disabled={!!standardUploading || !!galleryUploadProgress}
+                            aria-label="Add photos to gallery"
+                            onClick={() => {
+                              if (standardUploading || galleryUploadProgress) return
+                              photoGalleryInputRef.current?.click()
+                            }}
+                          >
+                            <Plus className="h-5 w-5 text-muted-foreground" />
+                          </button>
+                        </div>
                       </div>
                       {galleryUploadProgress ? (
                         <div

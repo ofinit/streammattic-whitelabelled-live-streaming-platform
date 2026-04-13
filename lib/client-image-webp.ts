@@ -33,16 +33,24 @@ export async function compressImageFileToWebp(
     }
     ctx.drawImage(bitmap, 0, 0, w, h)
 
-    const blob = await new Promise<Blob | null>((resolve) => {
+    let blob: Blob | null = await new Promise((resolve) => {
       canvas.toBlob((b) => resolve(b), "image/webp", quality)
     })
+    // Safari and some older browsers may not support WebP export from canvas (blob is null).
     if (!blob || blob.size === 0) {
-      throw new Error("WebP encoding failed. Try a different image or browser.")
+      blob = await new Promise((resolve) => {
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.88)
+      })
+    }
+    if (!blob || blob.size === 0) {
+      throw new Error("Could not encode this image. Try JPEG or PNG.")
     }
 
     const base = file.name.replace(/\.[^.]+$/i, "") || "photo"
     const safeBase = base.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80)
-    return new File([blob], `${safeBase}.webp`, { type: "image/webp", lastModified: Date.now() })
+    const ext = blob.type === "image/jpeg" ? "jpg" : "webp"
+    const mime = blob.type === "image/jpeg" ? "image/jpeg" : "image/webp"
+    return new File([blob], `${safeBase}.${ext}`, { type: mime, lastModified: Date.now() })
   } finally {
     bitmap.close()
   }

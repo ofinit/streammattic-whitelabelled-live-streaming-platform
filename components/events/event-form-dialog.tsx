@@ -2,7 +2,7 @@
 
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
-import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -816,7 +816,6 @@ export function EventFormDialog({
     current: number
     total: number
   } | null>(null)
-  const photoGalleryInputId = useId()
   const [galleryDragOver, setGalleryDragOver] = useState(false)
 
   // State for template category filter
@@ -3473,29 +3472,30 @@ export function EventFormDialog({
                             </Button>
                           </div>
                         ))}
-                        <div className="relative h-20 w-20 shrink-0">
+                        {/*
+                          The input sits as a transparent overlay on top of the visible + button.
+                          This is the only pattern that reliably opens the file picker inside Radix Dialog
+                          without needing programmatic .click() (which is treated as untrusted) or
+                          label+htmlFor (which Radix's focus trap can intercept).
+                        */}
+                        <div
+                          className={`relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
+                            standardUploading || galleryUploadProgress ? "pointer-events-none cursor-not-allowed opacity-50" : ""
+                          }`}
+                          aria-label="Add photos to gallery"
+                        >
+                          <Plus className="h-5 w-5 text-muted-foreground pointer-events-none" aria-hidden />
                           <input
-                            id={photoGalleryInputId}
                             type="file"
                             accept="image/*"
                             multiple
-                            className="sr-only"
+                            tabIndex={0}
                             onChange={handlePhotoGalleryFilesChange}
                             disabled={!!standardUploading || !!galleryUploadProgress}
+                            className="absolute inset-0 cursor-pointer opacity-0"
+                            title="Select images"
+                            aria-label="Add photos to gallery"
                           />
-                          {/*
-                            Use label+htmlFor (not programmatic input.click()) so the file dialog opens reliably
-                            inside Radix Dialog — same pattern as native forms; click() is often blocked as untrusted.
-                          */}
-                          <label
-                            htmlFor={photoGalleryInputId}
-                            className={`flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-muted/50 ${
-                              standardUploading || galleryUploadProgress ? "pointer-events-none cursor-not-allowed opacity-50" : ""
-                            }`}
-                            aria-label="Add photos to gallery — you can select multiple files"
-                          >
-                            <Plus className="h-5 w-5 text-muted-foreground" />
-                          </label>
                         </div>
                       </div>
                       {galleryUploadProgress ? (

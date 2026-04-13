@@ -20,16 +20,21 @@ export const GET = withAuth(async (user) => {
     })
   }
 
+  // Default-on: when the add-on is listed, every studio/streamer is entitled unless an admin explicitly opts them out
+  // (user_addon_entitlements.photo_gallery_enabled = false).
   let entitled = false
-  try {
-    const sql = getDb()
-    const rows = await sql`
-      SELECT photo_gallery_enabled FROM user_addon_entitlements WHERE user_id = ${user.id} LIMIT 1
-    `
-    const row = rows[0] as { photo_gallery_enabled?: boolean } | undefined
-    entitled = row?.photo_gallery_enabled === true
-  } catch (e) {
-    console.warn("[photo-gallery-addon/status] entitlements lookup failed (run DB migration?)", e)
+  if (catalog.listingEnabled === true) {
+    try {
+      const sql = getDb()
+      const rows = await sql`
+        SELECT photo_gallery_enabled FROM user_addon_entitlements WHERE user_id = ${user.id} LIMIT 1
+      `
+      const row = rows[0] as { photo_gallery_enabled?: boolean } | undefined
+      entitled = row?.photo_gallery_enabled !== false
+    } catch (e) {
+      console.warn("[photo-gallery-addon/status] entitlements lookup failed (run DB migration?)", e)
+      entitled = true
+    }
   }
 
   return jsonOk({

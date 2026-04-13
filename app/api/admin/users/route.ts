@@ -36,7 +36,7 @@ export async function GET(req: Request) {
       role === "all"
         ? await sql(`
           SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
-                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
+                 COALESCE(uae.photo_gallery_enabled, true) AS photo_gallery_enabled
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
           LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         : await sql(
             `
           SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
-                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
+                 COALESCE(uae.photo_gallery_enabled, true) AS photo_gallery_enabled
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
           LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id

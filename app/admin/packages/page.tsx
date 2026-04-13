@@ -1060,8 +1060,9 @@ export default function AdminPricingPage() {
                 <CardTitle>Client photo gallery (BYOS)</CardTitle>
                 <CardDescription>
                   Optional add-on: studios bring their own S3 storage; the gallery UI opens on this app at the path below (default{" "}
-                  <code className="text-foreground">{DEFAULT_CLIENT_GALLERY_PATH}</code>). Grant access per account under
-                  Streamers / Studios.
+                  <code className="text-foreground">{DEFAULT_CLIENT_GALLERY_PATH}</code>). When &quot;List in Packages&quot; is on,
+                  all studios and streamers are included by default — use Streamers / Studios only to revoke access for a
+                  specific account.
                 </CardDescription>
               </div>
             </div>

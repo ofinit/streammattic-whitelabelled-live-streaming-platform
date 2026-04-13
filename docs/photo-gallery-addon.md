@@ -1,6 +1,8 @@
 # Client photo gallery add-on (BYOS)
 
-Stream-Livee stores **catalog settings** and **per-user entitlements** in Postgres. The **gallery UI** for clients is served by **this** Next.js app at a configurable path (default **`/client-gallery`**), on the platform domain and on each studio’s custom domain. **Presigned S3 uploads**, thumbnails, and heavy processing can still live in workers or a future service; **same-origin routing** avoids a separate deploy just to host the gallery shell.
+Stream-Livee stores **catalog settings** and optional **per-user opt-outs** in Postgres. The **gallery UI** for clients is served by **this** Next.js app at a configurable path (default **`/client-gallery`**), on the platform domain and on each studio’s custom domain. **Presigned S3 uploads**, thumbnails, and heavy processing can still live in workers or a future service; **same-origin routing** avoids a separate deploy just to host the gallery shell.
+
+When **List in Packages** is on, **all** studio and streamer accounts are **entitled by default**. An admin can **revoke** a specific user under **Admin → Streamers** or **Admin → Studios** (sets `user_addon_entitlements.photo_gallery_enabled` to `false`).
 
 ## Same-origin gallery path (default)
 

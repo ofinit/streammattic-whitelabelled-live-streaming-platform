@@ -102,13 +102,58 @@ async function saveOneFileWebp(file: File, subdir: string, baseUrl: string): Pro
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // #region agent log
+    if (!user) {
+      fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+        body: JSON.stringify({
+          sessionId: "522636",
+          runId: "post-fix",
+          hypothesisId: "H5",
+          location: "api/upload/route.ts:POST",
+          message: "upload rejected no session",
+          data: { hasUser: false },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    // #endregion
 
     const formData = await request.formData()
     const subdirRaw = (formData.get("subdir") as string) || LANDING_SUBDIR
     const subdir = ALLOWED_SUBDIRS.includes(subdirRaw) ? subdirRaw : "event-hero"
 
     const batchFiles = filesFromFormData(formData)
+
+    // #region agent log
+    const singleFile = formData.get("file")
+    const hasSingleFile =
+      singleFile &&
+      typeof singleFile === "object" &&
+      "arrayBuffer" in singleFile &&
+      typeof (singleFile as File).name === "string"
+    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+      body: JSON.stringify({
+        sessionId: "522636",
+        runId: "post-fix",
+        hypothesisId: "H5",
+        location: "api/upload/route.ts:POST",
+        message: "upload request parsed",
+        data: {
+          hasUser: true,
+          subdir,
+          subdirRaw,
+          batchFilesLen: batchFiles.length,
+          hasSingleFile: Boolean(hasSingleFile),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
 
     const baseUrl = getPublicBaseUrl(request)
 

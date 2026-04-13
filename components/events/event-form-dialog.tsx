@@ -2,7 +2,7 @@
 
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
-import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react"
 import useSWR from "swr"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -817,6 +817,7 @@ export function EventFormDialog({
     total: number
   } | null>(null)
   const [galleryDragOver, setGalleryDragOver] = useState(false)
+  const photoGalleryInputId = useId()
 
   // State for template category filter
   const [templateCategory, setTemplateCategory] = useState<string>("all")
@@ -1630,6 +1631,28 @@ export function EventFormDialog({
     } catch {
       throw new Error(res.status === 413 ? "File too large for server" : `Upload failed (${res.status})`)
     }
+    // #region agent log
+    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+      body: JSON.stringify({
+        sessionId: "522636",
+        runId: "post-fix",
+        hypothesisId: "H3",
+        location: "event-form-dialog.tsx:postEventUpload",
+        message: "gallery upload API response",
+        data: {
+          subdir,
+          status: res.status,
+          ok: res.ok,
+          hasUrl: Boolean(data.url),
+          errSnippet: data.error ? String(data.error).slice(0, 120) : undefined,
+          fileNameLen: file.name?.length ?? 0,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
     if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
     if (!data.url) throw new Error("Upload did not return a URL")
     return data.url
@@ -1687,6 +1710,21 @@ export function EventFormDialog({
     const images = rawFiles.filter(
       (f) => Boolean(f.type?.startsWith("image/")) || looksLikeImageByName(f.name),
     )
+    // #region agent log
+    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+      body: JSON.stringify({
+        sessionId: "522636",
+        runId: "post-fix",
+        hypothesisId: "H2",
+        location: "event-form-dialog.tsx:runPhotoGalleryUpload",
+        message: "after image filter",
+        data: { rawCount: rawFiles.length, imagesCount: images.length },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
     if (images.length === 0) {
       if (rawFiles.length > 0) {
         toast({
@@ -1724,6 +1762,21 @@ export function EventFormDialog({
       }
 
       if (filesToUpload.length === 0) {
+        // #region agent log
+        fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+          body: JSON.stringify({
+            sessionId: "522636",
+            runId: "post-fix",
+            hypothesisId: "H2",
+            location: "event-form-dialog.tsx:runPhotoGalleryUpload",
+            message: "compress left zero files",
+            data: { compressFailuresCount: compressFailures.length },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {})
+        // #endregion
         toast({
           variant: "destructive",
           title: "Photo gallery upload failed",
@@ -1751,6 +1804,11 @@ export function EventFormDialog({
           description: parts.slice(0, 4).join("; ") + (parts.length > 4 ? "…" : ""),
           variant: "destructive",
         })
+      } else if (urls.length === 1) {
+        toast({
+          title: "Photo added",
+          description: "1 image uploaded to the gallery.",
+        })
       } else if (urls.length > 1) {
         toast({
           title: "Photos added",
@@ -1760,6 +1818,21 @@ export function EventFormDialog({
     } catch (err) {
       console.error(err)
       const message = err instanceof Error ? err.message : "Could not upload photos"
+      // #region agent log
+      fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+        body: JSON.stringify({
+          sessionId: "522636",
+          runId: "post-fix",
+          hypothesisId: "H4",
+          location: "event-form-dialog.tsx:runPhotoGalleryUpload",
+          message: "runPhotoGalleryUpload catch",
+          data: { message: message.slice(0, 200) },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
       toast({
         variant: "destructive",
         title: "Photo gallery upload failed",
@@ -1772,6 +1845,21 @@ export function EventFormDialog({
 
   const handlePhotoGalleryFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const list = e.target.files
+    // #region agent log
+    fetch("http://127.0.0.1:7417/ingest/9c126106-837e-4095-b2a5-27d83bcdb018", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "522636" },
+      body: JSON.stringify({
+        sessionId: "522636",
+        runId: "post-fix",
+        hypothesisId: "H1",
+        location: "event-form-dialog.tsx:handlePhotoGalleryFilesChange",
+        message: "file input change",
+        data: { fileCount: list?.length ?? 0 },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
     e.target.value = ""
     if (!list?.length) return
     await runPhotoGalleryUpload(Array.from(list))
@@ -3453,13 +3541,13 @@ export function EventFormDialog({
                         ))}
                       </div>
                     )}
-                    {/* Drop zone — label wraps hidden input; pure HTML, bypasses Radix focus-trap */}
-                    <label
-                      className={`w-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+                    {/* Drop zone: sibling input + label htmlFor (same pattern as photographer logo); drag on wrapper */}
+                    <div
+                      className={`w-full rounded-lg border-2 border-dashed p-6 transition-colors ${
                         galleryDragOver
                           ? "border-primary bg-primary/5"
                           : "border-border/50 hover:border-border"
-                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
+                      } ${standardUploading || galleryUploadProgress ? "pointer-events-none opacity-60" : ""}`}
                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
                       onDragEnter={(e) => {
                         e.preventDefault(); e.stopPropagation()
@@ -3470,38 +3558,44 @@ export function EventFormDialog({
                         if (!e.currentTarget.contains(e.relatedTarget as Node)) setGalleryDragOver(false)
                       }}
                       onDrop={handlePhotoGalleryDrop}
-                      aria-label="Drop images here or click to browse"
                     >
-                      {galleryUploadProgress ? (
-                        <>
-                          <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            {galleryUploadProgress.phase === "compress"
-                              ? `Compressing image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}…`
-                              : `Uploading ${galleryUploadProgress.total} file${galleryUploadProgress.total === 1 ? "" : "s"}…`}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden />
-                          <p className="text-sm font-medium text-foreground">
-                            Drop images here or click to browse
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Select multiple — JPEG, PNG, WebP, GIF up to 8 MB each
-                          </p>
-                        </>
-                      )}
                       <input
+                        id={photoGalleryInputId}
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handlePhotoGalleryFilesChange}
                         disabled={!!standardUploading || !!galleryUploadProgress}
-                        className="hidden"
+                        className="sr-only"
+                        tabIndex={-1}
                         aria-label="Add photos to gallery"
                       />
-                    </label>
+                      <label
+                        htmlFor={photoGalleryInputId}
+                        className={`flex w-full flex-col items-center justify-center ${standardUploading || galleryUploadProgress ? "cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {galleryUploadProgress ? (
+                          <>
+                            <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">
+                              {galleryUploadProgress.phase === "compress"
+                                ? `Compressing image ${galleryUploadProgress.current} of ${galleryUploadProgress.total}…`
+                                : `Uploading ${galleryUploadProgress.total} file${galleryUploadProgress.total === 1 ? "" : "s"}…`}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" aria-hidden />
+                            <p className="text-sm font-medium text-foreground">
+                              Drop images here or click to browse
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Select multiple — JPEG, PNG, WebP, GIF up to 8 MB each
+                            </p>
+                          </>
+                        )}
+                      </label>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Photographer logo</Label>

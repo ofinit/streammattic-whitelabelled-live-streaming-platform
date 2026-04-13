@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db"
 import {
   parseValidityExtensionsSetting,
-  validityCreditsForDuration,
+  validityCreditsForStreamAndDuration,
 } from "@/lib/validity-extensions"
 
 /**
@@ -57,13 +57,13 @@ export async function calculateTotalCreditsRequired(input: CreditNeedInput) {
 
   let validityCredits = 1
   if (typeof validityDays === "number" && validityDays > 0) {
-    validityCredits = validityCreditsForDuration(validityDays, defaultDays)
+    validityCredits = validityCreditsForStreamAndDuration(streamType, validityDays, defaultDays)
   } else if (validityExpiresAt && scheduledAt) {
     const expMs = new Date(validityExpiresAt).getTime()
     const startMs = new Date(scheduledAt).getTime()
     if (!Number.isNaN(expMs) && !Number.isNaN(startMs)) {
       const d = Math.round((expMs - startMs) / 86_400_000)
-      if (d > 0) validityCredits = validityCreditsForDuration(d, defaultDays)
+      if (d > 0) validityCredits = validityCreditsForStreamAndDuration(streamType, d, defaultDays)
     }
   }
 

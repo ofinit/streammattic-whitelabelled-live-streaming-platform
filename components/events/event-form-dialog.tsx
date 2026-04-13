@@ -56,7 +56,9 @@ import type {
 import {
   inferValidityChoiceFromEvent,
   parseValidityExtensionsSetting,
-  validityCreditsForDuration,
+  validityCreditsForStreamAndDuration,
+  formatValidityTierLabelForStreamType,
+  YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS,
   type ParsedValidityExtensions,
 } from "@/lib/validity-extensions"
 import { EVENT_TEMPLATES, SELECTABLE_EVENT_TEMPLATES } from "@/lib/template-registry"
@@ -113,7 +115,9 @@ function computeCreditPreviewNeed(
       validityDaysChosen = Math.max(1, d)
     }
   }
-  const validityCreditTotal = validityCreditsForDuration(
+  const canonical = formStreamTypeToCanonical(formStreamType)
+  const validityCreditTotal = validityCreditsForStreamAndDuration(
+    canonical,
     validityDaysChosen,
     validityExtSettings.defaultDays,
   )
@@ -1060,6 +1064,10 @@ export function EventFormDialog({
   /** Keeps validity reset logic in sync with hydrate so we don’t clear DB-loaded validity on open. */
   const prevValidityStreamGroupRef = useRef<ValidityStreamGroup | null>(null)
   const lastValidityInferenceFingerprintRef = useRef<string>("")
+  /** Create flow: detect stream-type transitions for YouTube Embed default validity. */
+  const prevStreamTypeForYtEmbedDefaultRef = useRef<string | null>(null)
+  /** Fingerprint of extended tiers when we last auto-applied 90d default for YouTube Embed. */
+  const youtubeEmbedDefaultAppliedFpRef = useRef<string>("")
 
   // Reset form when dialog opens with new event or fresh (not on every `event` reference change)
   useEffect(() => {
@@ -1208,11 +1216,62 @@ export function EventFormDialog({
       return
     }
     if (prev !== group) {
-      setValidityChoiceKey("included")
+      if (
+        !event &&
+        formData.streamType === "youtube_embed" &&
+        validityExtSettings.extendedTiers.some((t) => t.days === 90 && t.enabled)
+      ) {
+        setValidityChoiceKey("tier:90")
+      } else {
+        setValidityChoiceKey("included")
+      }
       setValidityExpiresAt("")
       prevValidityStreamGroupRef.current = group
     }
-  }, [open, formData.streamType])
+  }, [open, formData.streamType, event, validityExtSettings.extendedTiers])
+
+  /** New events only: default validity to 90 days when stream type is YouTube Embed (admin tier must exist). */
+  useEffect(() => {
+    if (!open) {
+      prevStreamTypeForYtEmbedDefaultRef.current = null
+      youtubeEmbedDefaultAppliedFpRef.current = ""
+      return
+    }
+    if (event) {
+      prevStreamTypeForYtEmbedDefaultRef.current = formData.streamType
+      return
+    }
+
+    const cur = formData.streamType
+    const prev = prevStreamTypeForYtEmbedDefaultRef.current
+
+    if (cur !== "youtube_embed") {
+      prevStreamTypeForYtEmbedDefaultRef.current = cur
+      youtubeEmbedDefaultAppliedFpRef.current = ""
+      return
+    }
+
+    const has90 = validityExtSettings.extendedTiers.some((t) => t.days === 90 && t.enabled)
+    if (!has90) {
+      prevStreamTypeForYtEmbedDefaultRef.current = cur
+      return
+    }
+
+    const tierFp = validityExtSettings.extendedTiers.map((t) => `${t.days}:${t.enabled ? 1 : 0}`).join(",")
+    const transitionedFromNonYoutubeEmbed = prev !== "youtube_embed"
+
+    if (transitionedFromNonYoutubeEmbed) {
+      setValidityChoiceKey("tier:90")
+      youtubeEmbedDefaultAppliedFpRef.current = tierFp
+    } else if (youtubeEmbedDefaultAppliedFpRef.current === "") {
+      setValidityChoiceKey("tier:90")
+      youtubeEmbedDefaultAppliedFpRef.current = tierFp
+    } else if (youtubeEmbedDefaultAppliedFpRef.current !== tierFp) {
+      youtubeEmbedDefaultAppliedFpRef.current = tierFp
+    }
+
+    prevStreamTypeForYtEmbedDefaultRef.current = cur
+  }, [open, event, formData.streamType, validityExtSettings.extendedTiers])
 
   useEffect(() => {
     if (!open) return
@@ -1320,8 +1379,18 @@ export function EventFormDialog({
       const bucket = creditPreviewBucketLabel
       return `Default tier is a free draft (about ${d} days from creation, no credits). When you pick a longer validity option below, we check ${bucket ?? "enabled stream type"} credits for planning only—the saved event still uses the draft window until you choose a stream type on the Stream tab.`
     }
-    return eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays)
-  }, [hasConcreteStreamType, validityStreamGroup, validityExtSettings.defaultDays, creditPreviewBucketLabel])
+    const base = eventValidityHelpForStreamGroup(validityStreamGroup, validityExtSettings.defaultDays)
+    if (formData.streamType === "youtube_embed" || formData.streamType === "youtube") {
+      return `${base} YouTube Embed’s default ${YOUTUBE_EMBED_BASE_RATE_VALIDITY_DAYS}-day window is billed as 1 credit (same as the standard single block).`
+    }
+    return base
+  }, [
+    hasConcreteStreamType,
+    validityStreamGroup,
+    validityExtSettings.defaultDays,
+    creditPreviewBucketLabel,
+    formData.streamType,
+  ])
 
   useEffect(() => {
     if (!isEditing) {
@@ -3537,7 +3606,12 @@ export function EventFormDialog({
                         .filter((t) => t.enabled)
                         .map((t) => (
                           <SelectItem key={t.days} value={`tier:${t.days}`}>
-                            {t.label}
+                            {formatValidityTierLabelForStreamType(
+                              formStreamTypeToCanonical(formData.streamType),
+                              t.days,
+                              validityExtSettings.defaultDays,
+                              t.label,
+                            )}
                           </SelectItem>
                         ))}
                     </SelectContent>

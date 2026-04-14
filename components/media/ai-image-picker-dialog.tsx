@@ -489,10 +489,6 @@ export function AiImagePickerDialog({
                       "flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors",
                       dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border",
                     )}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      fileInputRef.current?.click()
-                    }}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -502,7 +498,7 @@ export function AiImagePickerDialog({
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
                       multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-                      className="sr-only"
+                      className="hidden"
                       aria-label={
                         allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"
                       }

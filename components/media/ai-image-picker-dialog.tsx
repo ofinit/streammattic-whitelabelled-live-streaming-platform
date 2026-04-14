@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
+import React, { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,25 @@ import { Loader2, Wand2, Upload, Wallet, X } from "lucide-react"
 import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { useAuth } from "@/lib/auth-context"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
 import { cn } from "@/lib/utils"
+
+/** Merge click so "Add image" opens the portaled picker (no nested Radix Dialog/Popover). */
+function mergeNestedTrigger(
+  children: ReactNode,
+  disabled: boolean | undefined,
+  onOpen: () => void,
+): ReactNode {
+  if (!React.isValidElement(children)) return children
+  const el = children as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void; disabled?: boolean }>
+  return React.cloneElement(el, {
+    onClick: (e: React.MouseEvent) => {
+      el.props.onClick?.(e)
+      if (!disabled) onOpen()
+    },
+    disabled: disabled ?? el.props.disabled,
+  })
+}
 
 async function fetchJson(url: string) {
   const res = await fetch(url)
@@ -81,6 +98,7 @@ export function AiImagePickerDialog({
   const cropObjectUrlRef = useRef<string | null>(null)
   const [prompt, setPrompt] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
   const [error, setError] = useState("")
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -115,6 +133,33 @@ export function AiImagePickerDialog({
   const isPlatformAdminFreeAi =
     user?.role === "admin" && !!user?.id && effectiveWalletUserId === user.id
   const showAiProviderNamesToUser = user?.role === "admin"
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!nestedInDialog || !dialogOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        e.stopPropagation()
+        setDialogOpen(false)
+        setError("")
+      }
+    }
+    document.addEventListener("keydown", onKey, true)
+    return () => document.removeEventListener("keydown", onKey, true)
+  }, [nestedInDialog, dialogOpen])
+
+  useEffect(() => {
+    if (!nestedInDialog || !dialogOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [nestedInDialog, dialogOpen])
 
   useEffect(() => {
     if (disabled) {
@@ -601,37 +646,56 @@ export function AiImagePickerDialog({
   return (
     <>
       {nestedInDialog ? (
-        <Popover open={dialogOpen} onOpenChange={onOpenChangePicker} modal={false}>
-          <PopoverTrigger asChild disabled={disabled}>
-            {children}
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            side="bottom"
-            sideOffset={8}
-            collisionPadding={16}
-            className={cn(
-              "z-[100] w-[min(calc(100vw-1.5rem),28rem)] max-h-[min(90dvh,640px)] overflow-y-auto border bg-popover p-0 text-popover-foreground shadow-lg",
-            )}
-            onCloseAutoFocus={(e) => e.preventDefault()}
-          >
-            <div className="relative p-6 pt-4">
-              <button
-                type="button"
-                className="ring-offset-background focus:ring-ring absolute right-3 top-3 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
-                onClick={() => onOpenChangePicker(false)}
-                aria-label="Close"
+        <>
+          {mergeNestedTrigger(children, disabled, () => onOpenChangePicker(true))}
+          {portalReady &&
+            dialogOpen &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                className="fixed inset-0 z-[200] flex items-center justify-center px-3 py-4 sm:px-4"
+                style={{
+                  paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
+                  paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
+                }}
               >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex flex-col gap-2 pr-8 text-left">
-                <h2 className="text-lg font-semibold leading-none">{dialogTitle}</h2>
-                <p className="text-muted-foreground text-sm">{descriptionText}</p>
-              </div>
-              {renderPickerForm()}
-            </div>
-          </PopoverContent>
-        </Popover>
+                <button
+                  type="button"
+                  className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"
+                  onClick={() => onOpenChangePicker(false)}
+                  aria-label="Close"
+                />
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="ai-image-picker-title"
+                  className="relative z-[1] flex max-h-[min(90dvh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-background text-foreground shadow-2xl"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+                    <div className="min-w-0 flex-1">
+                      <h2 id="ai-image-picker-title" className="text-lg font-semibold leading-tight">
+                        {dialogTitle}
+                      </h2>
+                      <p className="mt-1 text-sm text-muted-foreground">{descriptionText}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ring-offset-background focus:ring-ring shrink-0 rounded-md p-2 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                      onClick={() => onOpenChangePicker(false)}
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1 sm:px-6 sm:pb-6">
+                    {renderPickerForm()}
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )}
+        </>
       ) : (
         <Dialog open={dialogOpen} onOpenChange={onOpenChangePicker}>
           <DialogTrigger asChild disabled={disabled}>

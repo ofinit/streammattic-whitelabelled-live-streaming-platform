@@ -116,6 +116,29 @@ In Coolify, attach your domain to the application resource and enable HTTPS. Ens
 
 Use the admin user seeded by migrations (see handbook security notes for the default dev email), or run `npm run seed:admin` if your deployment process uses that script. Sign in at **`/admin/login`** with email and password. If a copied SQL password hash fails to verify, reset the password using the app’s change-password flow after a successful login, or update the hash via a controlled migration/script.
 
+## 7. Coolify: successful deployment log vs “Exited” in the UI
+
+A **Deployments** transcript can show *Rolling update completed* and *New container is healthy* while Coolify still shows **Exited** somewhere in the UI. Usually that is **not** a contradiction.
+
+### What a healthy rollout log means
+
+- Coolify built the image and started a new container.
+- After the **start period**, it probed **`GET http://localhost:3000/api/health`** inside the container (matches the [`Dockerfile`](../Dockerfile) `HEALTHCHECK` and [`app/api/health`](../app/api/health/route.ts)).
+- **Old containers were removed** after the new one passed — traffic should be on the new image.
+
+### Why you might still see “Exited”
+
+1. **Wrong resource** — The **build/helper** container (e.g. the artifact that ran `docker build`) **exits on purpose** after the build. Logs often end with *Gracefully shutting down build container …*. If that row is selected, the UI shows **Exited** even when the **runtime** app container is **running**.
+2. **Runtime actually stopped** — Less common if Docker’s recurring `HEALTHCHECK` is still passing; if the app process crashes after deploy, open **Logs** on the **long-running application** (not only the deployment job) and look for OOM, missing env (e.g. `DATABASE_URL`), or exit codes.
+3. **Stale UI** — Refresh the application page or open **Logs** / **Terminal** for the app service.
+
+### Verification checklist (operators)
+
+1. In Coolify, select the **application** that runs **`npm start`** / port **3000**, not a one-off build job.
+2. Confirm the runtime service shows **Running** (or equivalent) and inspect **Logs** for `Next.js` / `ready` and any crash lines.
+3. From a browser or `curl`: **`GET https://<your-domain>/api/health`** should return **`200`** with body **`OK`**.
+4. When validating UI changes after deploy, use a **hard refresh** or a **private window** to avoid a cached old JavaScript bundle.
+
 ## Related docs
 
 - [README.md](../README.md) — overview and other deploy paths  

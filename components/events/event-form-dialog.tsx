@@ -3181,7 +3181,7 @@ export function EventFormDialog({
                         <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeaderImageUrl("")}>
                           <X className="h-3 w-3" />
                         </Button>
-                        <AiImagePickerDialog
+                        <AiImagePickerDialog nestedInDialog
                           dialogTitle="Header image"
                           uploadSubdir="event-header"
                           walletUserId={creditsUserId}
@@ -3194,7 +3194,7 @@ export function EventFormDialog({
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2">
-                        <AiImagePickerDialog
+                        <AiImagePickerDialog nestedInDialog
                           dialogTitle="Header image"
                           uploadSubdir="event-header"
                           walletUserId={creditsUserId}
@@ -3218,7 +3218,7 @@ export function EventFormDialog({
                           <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setPlayerImageUrl("")}>
                             <X className="h-3 w-3" />
                           </Button>
-                          <AiImagePickerDialog
+                          <AiImagePickerDialog nestedInDialog
                             dialogTitle="Player image"
                             uploadSubdir="event-player"
                             walletUserId={creditsUserId}
@@ -3231,7 +3231,7 @@ export function EventFormDialog({
                         </div>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <AiImagePickerDialog
+                          <AiImagePickerDialog nestedInDialog
                             dialogTitle="Player image"
                             uploadSubdir="event-player"
                             walletUserId={creditsUserId}
@@ -3260,7 +3260,7 @@ export function EventFormDialog({
                           <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeroImageUrl("")}>
                             <X className="h-3 w-3" />
                           </Button>
-                          <AiImagePickerDialog
+                          <AiImagePickerDialog nestedInDialog
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
@@ -3274,7 +3274,7 @@ export function EventFormDialog({
                         </div>
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
-                          <AiImagePickerDialog
+                          <AiImagePickerDialog nestedInDialog
                             dialogTitle="Hero image (OG share)"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
@@ -3294,7 +3294,7 @@ export function EventFormDialog({
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <Label className="shrink-0">Photo gallery</Label>
-                      <AiImagePickerDialog
+                      <AiImagePickerDialog nestedInDialog
                         dialogTitle="Photo gallery"
                         uploadSubdir="event-gallery"
                         walletUserId={creditsUserId}

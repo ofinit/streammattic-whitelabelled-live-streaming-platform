@@ -6,11 +6,13 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Wand2, Upload, Wallet } from "lucide-react"
+import { Loader2, Wand2, Upload, Wallet, X } from "lucide-react"
 import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { useAuth } from "@/lib/auth-context"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
+import { cn } from "@/lib/utils"
 
 async function fetchJson(url: string) {
   const res = await fetch(url)
@@ -51,6 +53,11 @@ export type AiImagePickerDialogProps = {
    * Uses 8MB per file to match POST /api/upload. Incompatible with `circularHeroCrop` (crop flow stays single-file).
    */
   allowMultipleUpload?: boolean
+  /**
+   * Set when this picker is rendered inside another Radix Dialog (e.g. Create/Edit Event → Template).
+   * Uses a Popover instead of a second Dialog so the browser file picker works on click (nested modals break native file input).
+   */
+  nestedInDialog?: boolean
 }
 
 /**
@@ -65,6 +72,7 @@ export function AiImagePickerDialog({
   uploadSubdir,
   circularHeroCrop,
   allowMultipleUpload = false,
+  nestedInDialog = false,
 }: AiImagePickerDialogProps) {
   const { user } = useAuth()
   const [generating, setGenerating] = useState(false)
@@ -402,40 +410,21 @@ export function AiImagePickerDialog({
     setDragActive(false)
   }, [])
 
-  return (
-    <>
-    <Dialog
-      open={dialogOpen}
-      onOpenChange={(open) => {
-        setDialogOpen(open)
-        setError("")
-      }}
-      modal={false}
-    >
-      <DialogTrigger asChild disabled={disabled}>
-        {children}
-      </DialogTrigger>
+  const descriptionText =
+    !disabled && aiMetaLoading
+      ? "Upload your own image or generate one with AI"
+      : showAiSection || showAiServerMisconfigured
+        ? "Upload your own image or generate one with AI"
+        : showAiBlockedByAdmin
+          ? "Upload an image for this slot (AI generation is disabled by administrators)."
+          : "Upload an image for this slot."
 
-      {dialogOpen ? (
-        <>
-          <DialogContent
-            className="max-h-[90vh] overflow-y-auto"
-            onEscapeKeyDown={() => { setDialogOpen(false); setError("") }}
-            onInteractOutside={() => { setDialogOpen(false); setError("") }}
-          >
-            <DialogHeader>
-              <DialogTitle>{dialogTitle}</DialogTitle>
-              <DialogDescription>
-                {!disabled && aiMetaLoading
-                  ? "Upload your own image or generate one with AI"
-                  : showAiSection || showAiServerMisconfigured
-                    ? "Upload your own image or generate one with AI"
-                    : showAiBlockedByAdmin
-                      ? "Upload an image for this slot (AI generation is disabled by administrators)."
-                      : "Upload an image for this slot."}
-              </DialogDescription>
-            </DialogHeader>
+  const onOpenChangePicker = (next: boolean) => {
+    setDialogOpen(next)
+    setError("")
+  }
 
+  const renderPickerForm = () => (
             <div className="space-y-6 pt-2">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
@@ -604,22 +593,68 @@ export function AiImagePickerDialog({
 
               {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
             </div>
-          </DialogContent>
-        </>
-      ) : null}
-    </Dialog>
+  )
 
-    {cropImageSrc ? (
-      <CircularProfileCropDialog
-        open
-        imageSrc={cropImageSrc}
-        onOpenChange={(open) => {
-          if (!open) endCircularCrop()
-        }}
-        onConfirm={handleCroppedBlob}
-        title="Position photo in circle"
-      />
-    ) : null}
+  return (
+    <>
+      {nestedInDialog ? (
+        <Popover open={dialogOpen} onOpenChange={onOpenChangePicker} modal={false}>
+          <PopoverTrigger asChild disabled={disabled}>
+            {children}
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="bottom"
+            sideOffset={8}
+            collisionPadding={16}
+            className={cn(
+              "z-[100] w-[min(calc(100vw-1.5rem),28rem)] max-h-[min(90dvh,640px)] overflow-y-auto border bg-popover p-0 text-popover-foreground shadow-lg",
+            )}
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
+            <div className="relative p-6 pt-4">
+              <button
+                type="button"
+                className="ring-offset-background focus:ring-ring absolute right-3 top-3 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                onClick={() => onOpenChangePicker(false)}
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex flex-col gap-2 pr-8 text-left">
+                <h2 className="text-lg font-semibold leading-none">{dialogTitle}</h2>
+                <p className="text-muted-foreground text-sm">{descriptionText}</p>
+              </div>
+              {renderPickerForm()}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <Dialog open={dialogOpen} onOpenChange={onOpenChangePicker}>
+          <DialogTrigger asChild disabled={disabled}>
+            {children}
+          </DialogTrigger>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>{descriptionText}</DialogDescription>
+            </DialogHeader>
+            {renderPickerForm()}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {cropImageSrc ? (
+        <CircularProfileCropDialog
+          open
+          imageSrc={cropImageSrc}
+          onOpenChange={(open) => {
+            if (!open) endCircularCrop()
+          }}
+          onConfirm={handleCroppedBlob}
+          title="Position photo in circle"
+        />
+      ) : null}
     </>
   )
 }

@@ -12,6 +12,7 @@ import { AI_IMAGE_PROMPT_MAX_LENGTH } from "@/lib/ai-image-generation"
 import { useAuth } from "@/lib/auth-context"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { CircularProfileCropDialog } from "@/components/media/circular-profile-crop-dialog"
+import { useEventFormDialogContentElement } from "@/components/events/event-form-dialog-portal-context"
 import { cn } from "@/lib/utils"
 
 /** Merge click so "Add image" opens the portaled picker (no nested Radix Dialog/Popover). */
@@ -99,6 +100,7 @@ export function AiImagePickerDialog({
   const [prompt, setPrompt] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
+  const eventFormContentEl = useEventFormDialogContentElement()
   const [error, setError] = useState("")
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -150,15 +152,6 @@ export function AiImagePickerDialog({
     }
     document.addEventListener("keydown", onKey, true)
     return () => document.removeEventListener("keydown", onKey, true)
-  }, [nestedInDialog, dialogOpen])
-
-  useEffect(() => {
-    if (!nestedInDialog || !dialogOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = prev
-    }
   }, [nestedInDialog, dialogOpen])
 
   useEffect(() => {
@@ -651,9 +644,11 @@ export function AiImagePickerDialog({
           {portalReady &&
             dialogOpen &&
             typeof document !== "undefined" &&
+            nestedInDialog &&
+            eventFormContentEl &&
             createPortal(
               <div
-                className="fixed inset-0 z-[200] flex items-center justify-center px-3 py-4 sm:px-4"
+                className="absolute inset-0 z-[200] flex items-center justify-center px-3 py-4 sm:px-4"
                 style={{
                   paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
                   paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))",
@@ -693,7 +688,7 @@ export function AiImagePickerDialog({
                   </div>
                 </div>
               </div>,
-              document.body,
+              eventFormContentEl,
             )}
         </>
       ) : (

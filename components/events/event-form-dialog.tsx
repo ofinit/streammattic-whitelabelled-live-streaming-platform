@@ -4,7 +4,8 @@ import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import useSWR from "swr"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EventFormDialogContentElementContext } from "@/components/events/event-form-dialog-portal-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -416,6 +417,8 @@ export function EventFormDialog({
   }, [externalSlugError])
 
   const [activeTab, setActiveTab] = useState(initialTab ?? "details")
+  /** Radix modal marks `document.body` siblings `inert`; image picker portal must mount inside this node. */
+  const [eventFormDialogContentEl, setEventFormDialogContentEl] = useState<HTMLElement | null>(null)
   const [showCredentialsScreen, setShowCredentialsScreen] = useState(false)
   const [credentials, setCredentials] = useState<{
     rtmpUrl: string
@@ -1887,11 +1890,17 @@ export function EventFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        ref={(el) => setEventFormDialogContentEl(el)}
         className="max-h-[100dvh] h-[100dvh] sm:h-auto sm:max-h-[min(90vh,90dvh)] w-full max-w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col border-none sm:border"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
+        <EventFormDialogContentElementContext.Provider value={eventFormDialogContentEl}>
         <DialogHeader className="p-4 sm:p-6 border-b shrink-0">
           <DialogTitle>{isEditing ? "Edit Event" : "Create New Event"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure event details, streaming destinations, watch page template, and settings. Fields marked required must be
+            filled before saving.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
@@ -3638,6 +3647,7 @@ export function EventFormDialog({
             </DialogFooter>
           </div>
         </form>
+        </EventFormDialogContentElementContext.Provider>
       </DialogContent>
     </Dialog>
   )

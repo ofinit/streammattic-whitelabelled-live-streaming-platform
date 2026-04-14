@@ -436,44 +436,34 @@ export function AiImagePickerDialog({
                     align the image inside the circle before uploading.
                   </p>
                 ) : null}
-                <div
-                  className={`relative flex min-h-[140px] flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors ${
-                    dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border"
-                  }`}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                >
-                  <div className="pointer-events-none flex flex-col items-center justify-center p-6">
-                    {uploading ? (
-                      <>
-                        <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Uploading...</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
-                        <p className="text-sm font-medium text-foreground">
-                          {allowMultipleUpload && !circularHeroCrop
-                            ? "Drop images here or click to browse"
-                            : "Drop an image here or click to browse"}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {allowMultipleUpload && !circularHeroCrop
-                            ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
-                            : "JPG, PNG, WebP, GIF up to 4MB"}
-                        </p>
-                      </>
-                    )}
+                {uploading ? (
+                  <div
+                    className={`flex min-h-[140px] flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 ${
+                      dragActive ? "border-primary bg-primary/5" : "border-border/50"
+                    }`}
+                  >
+                    <Loader2 className="mb-2 h-8 w-8 animate-spin text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
                   </div>
-                  {!uploading ? (
+                ) : (
+                  <label
+                    className={cn(
+                      "flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors",
+                      dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border",
+                    )}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                  >
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
                       multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-                      className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                      aria-label={allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"}
+                      className="hidden"
+                      aria-label={
+                        allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"
+                      }
                       onChange={(e) => {
                         const list = e.target.files
                         e.target.value = ""
@@ -486,8 +476,21 @@ export function AiImagePickerDialog({
                         }
                       }}
                     />
-                  ) : null}
-                </div>
+                    <div className="flex flex-col items-center justify-center p-6">
+                      <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
+                      <p className="text-sm font-medium text-foreground">
+                        {allowMultipleUpload && !circularHeroCrop
+                          ? "Drop images here or click to browse"
+                          : "Drop an image here or click to browse"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {allowMultipleUpload && !circularHeroCrop
+                          ? "JPG, PNG, WebP, GIF up to 8MB each — select multiple"
+                          : "JPG, PNG, WebP, GIF up to 4MB"}
+                      </p>
+                    </div>
+                  </label>
+                )}
               </div>
 
               {showAiSection ? (

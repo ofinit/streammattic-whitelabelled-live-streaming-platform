@@ -1,8 +1,8 @@
 "use client"
 
-import { Search, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DashboardThemeDropdown } from "@/components/settings/theme-toggle"
 
 interface HeaderProps {
   title: string
@@ -24,12 +24,7 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input type="search" placeholder="Search..." className="w-64 pl-9 bg-secondary border-0" />
-        </div>
-
+        <DashboardThemeDropdown />
       </div>
     </header>
   )

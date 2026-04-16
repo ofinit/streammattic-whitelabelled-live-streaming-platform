@@ -76,6 +76,8 @@ export type AiImagePickerDialogProps = {
    * Uses a Popover instead of a second Dialog so the browser file picker works on click (nested modals break native file input).
    */
   nestedInDialog?: boolean
+  /** When true, only the free upload UI is shown (no wallet fetch, no `/api/generate-image` meta, no AI block). */
+  hideAiSection?: boolean
 }
 
 /**
@@ -111,7 +113,7 @@ export function AiImagePickerDialog({
   const [aiMetaLoading, setAiMetaLoading] = useState(true)
 
   const walletUrl =
-    disabled
+    disabled || hideAiSection
       ? null
       : walletUserId && walletUserId.trim() !== ""
         ? `/api/wallets?userId=${encodeURIComponent(walletUserId)}`
@@ -155,7 +157,7 @@ export function AiImagePickerDialog({
   }, [nestedInDialog, dialogOpen])
 
   useEffect(() => {
-    if (disabled) {
+    if (disabled || hideAiSection) {
       setAiMetaLoading(false)
       return
     }
@@ -176,7 +178,7 @@ export function AiImagePickerDialog({
         setAiBackend(null)
       })
       .finally(() => setAiMetaLoading(false))
-  }, [disabled])
+  }, [disabled, hideAiSection])
 
   const showAiSection = !disabled && !aiMetaLoading && aiEnabled && aiBackendReady
   const showAiBlockedByAdmin = !disabled && !aiMetaLoading && !aiEnabled
@@ -448,8 +450,11 @@ export function AiImagePickerDialog({
     setDragActive(false)
   }, [])
 
-  const descriptionText =
-    !disabled && aiMetaLoading
+  const descriptionText = hideAiSection
+    ? allowMultipleUpload && !circularHeroCrop
+      ? "Upload images for the gallery (JPG, PNG, WebP, GIF)."
+      : "Upload an image for this slot (JPG, PNG, WebP, GIF)."
+    : !disabled && aiMetaLoading
       ? "Upload your own image or generate one with AI"
       : showAiSection || showAiServerMisconfigured
         ? "Upload your own image or generate one with AI"
@@ -533,7 +538,7 @@ export function AiImagePickerDialog({
                 )}
               </div>
 
-              {showAiSection ? (
+              {!hideAiSection && showAiSection ? (
                 <>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -608,7 +613,7 @@ export function AiImagePickerDialog({
                     </Button>
                   </div>
                 </>
-              ) : showAiServerMisconfigured ? (
+              ) : !hideAiSection && showAiServerMisconfigured ? (
                 <>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">

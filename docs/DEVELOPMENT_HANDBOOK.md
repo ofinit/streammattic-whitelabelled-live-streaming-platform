@@ -32,6 +32,16 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 - Do not commit `.env.local`, `.env.production`, or real credentials.
 - Do not rely on a template admin email in production; create or promote admins deliberately (e.g. `scripts/seed-production-admin.js` or database role update).
 
+## UI: `AiImagePickerDialog` inside the event form (nested Radix Dialog)
+
+Create/Edit Event → template **Event media & info** uses [`components/media/ai-image-picker-dialog.tsx`](../components/media/ai-image-picker-dialog.tsx) with **`nestedInDialog`**. A second Radix `Dialog` broke native **file input** (click to browse). The stable pattern is:
+
+1. **Portal into the event dialog content** — [`EventFormDialogContentElementContext`](../components/events/event-form-dialog-portal-context.tsx) + `ref` on `DialogContent` in [`event-form-dialog.tsx`](../components/events/event-form-dialog.tsx) so the picker mounts **inside** the same Radix content node (avoids `inert` / focus-trap issues on `document.body`).
+2. **Full-area transparent `<input type="file">`** — `absolute inset-0`, `opacity-0`, `z-10`; hint copy sits in a sibling with **`pointer-events-none`**. Do **not** rely on `<label>` + **`display: none`** (`hidden`) for the file control in this context; activation is unreliable when nested.
+3. **`onChange` must snapshot files before reset** — `const files = Array.from(e.target.files ?? [])` then `e.target.value = ""`. Clearing the input first empties the **live** `FileList`, so uploads from the picker silently see no files (drag-and-drop uses `dataTransfer` and was unaffected).
+
+**Photo gallery** passes **`hideAiSection`** so that slot is upload-only (no wallet / AI prompt); other slots keep upload + optional AI.
+
 ## Regenerating the snapshot below
 
 The following block is **machine-generated**. Refresh it after API or dependency changes:

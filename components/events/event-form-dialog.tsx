@@ -3304,18 +3304,18 @@ export function EventFormDialog({
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <Label className="shrink-0">Photo gallery</Label>
                       <AiImagePickerDialog nestedInDialog
+                        hideAiSection
                         dialogTitle="Photo gallery"
                         uploadSubdir="event-gallery"
-                        walletUserId={creditsUserId}
                         allowMultipleUpload
                         onImageUrl={(url) => setPhotoGalleryUrls((prev) => [...prev, url])}
                       >
                         <Button type="button" variant="outline" size="sm" className="gap-2 h-8">
-                          <Wand2 className="h-4 w-4" />
+                          <ImageIcon className="h-4 w-4" />
                           Add image
                         </Button>
                       </AiImagePickerDialog>
-                      <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
+                      <span className="text-xs text-muted-foreground">Upload images (free)</span>
                     </div>
                     {/* Uploaded thumbnails */}
                     {photoGalleryUrls.length > 0 && (

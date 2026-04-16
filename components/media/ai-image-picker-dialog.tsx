@@ -93,6 +93,7 @@ export function AiImagePickerDialog({
   circularHeroCrop,
   allowMultipleUpload = false,
   nestedInDialog = false,
+  hideAiSection = false,
 }: AiImagePickerDialogProps) {
   const { user } = useAuth()
   const [generating, setGenerating] = useState(false)

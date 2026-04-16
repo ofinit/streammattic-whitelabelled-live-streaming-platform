@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { resolveGalleryHref, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
+import { ThemePreferenceMenu } from "@/components/settings/theme-toggle"
 
 interface NavItem {
   title: string
@@ -326,7 +327,7 @@ function AccountBlock({
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          <ThemePreferenceMenu />
           <DropdownMenuItem onClick={logout} className="text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Log out

@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
+import { useTheme } from "next-themes"
 import type { UserRole } from "./types"
 
 export interface AuthUser {
@@ -13,6 +14,8 @@ export interface AuthUser {
   role: UserRole
   status: string
   avatar?: string | null
+  /** Per-account theme preference saved in DB. */
+  themePreference?: "system" | "dark" | "light" | null
   emailVerified?: boolean
   createdAt?: string
   updatedAt?: string
@@ -59,11 +62,23 @@ function getRouteForRole(role: UserRole): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { setTheme } = useTheme()
   const [user, setUser] = useState<AuthUser | null>(null)
   const [originalUser, setOriginalUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isImpersonating, setIsImpersonating] = useState(false)
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null)
+
+  const applyThemePreference = useCallback(
+    (raw: AuthUser["themePreference"]) => {
+      if (raw === "dark" || raw === "light" || raw === "system") {
+        setTheme(raw)
+      } else {
+        setTheme("system")
+      }
+    },
+    [setTheme],
+  )
 
   // Fetch current user from session cookie on mount
   const fetchCurrentUser = useCallback(async () => {
@@ -76,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setOriginalUser(null)
           setIsImpersonating(false)
           setImpersonatedBy(null)
+          applyThemePreference("system")
           return
         }
 
@@ -98,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setIsImpersonating(true)
                 setImpersonatedBy(imp.impersonatedBy ?? null)
                 setUser(api)
+                applyThemePreference(api.themePreference)
                 return
               }
 
@@ -107,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setIsImpersonating(true)
                 setImpersonatedBy(imp.impersonatedBy ?? null)
                 setUser(target)
+                applyThemePreference(target.themePreference)
                 return
               }
 
@@ -121,13 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOriginalUser(null)
         setIsImpersonating(false)
         setImpersonatedBy(null)
+        applyThemePreference(api.themePreference)
         return
       }
       setUser(null)
+      applyThemePreference("system")
     } catch {
       setUser(null)
+      applyThemePreference("system")
     }
-  }, [])
+  }, [applyThemePreference])
 
   useEffect(() => {
     fetchCurrentUser().finally(() => setIsLoading(false))
@@ -168,10 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOriginalUser(null)
     setIsImpersonating(false)
     setImpersonatedBy(null)
+    applyThemePreference("system")
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(IMPERSONATE_KEY)
     }
-  }, [])
+  }, [applyThemePreference])
 
   const register = useCallback(
     async (data: {
@@ -192,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const result = await res.json()
         setUser(result.user)
+        applyThemePreference((result.user as AuthUser | undefined)?.themePreference ?? "system")
         setIsLoading(false)
         return true
       }
@@ -202,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return false
     }
-  }, [])
+  }, [applyThemePreference])
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<boolean> => {
     setIsLoading(true)
@@ -240,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOriginalUser(user)
         setImpersonatedBy(user.id)
         setUser(targetUser)
+        applyThemePreference((targetUser as AuthUser | undefined)?.themePreference ?? "system")
         setIsImpersonating(true)
 
         if (typeof window !== "undefined") {
@@ -255,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
 
     return null
-  }, [user])
+  }, [applyThemePreference, user])
 
   const stopImpersonating = useCallback(async (): Promise<string | null> => {
     if (!originalUser) return null

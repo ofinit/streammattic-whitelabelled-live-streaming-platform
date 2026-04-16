@@ -100,6 +100,7 @@ async function step3_core_tables(c) {
       role            user_role   NOT NULL DEFAULT 'streamer',
       status          user_status NOT NULL DEFAULT 'active',
       avatar          TEXT,
+      theme_preference TEXT       NOT NULL DEFAULT 'system',
       email_verified  BOOLEAN     NOT NULL DEFAULT false,
       last_login_at   TIMESTAMPTZ,
       created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -109,6 +110,11 @@ async function step3_core_tables(c) {
   await tryExec(c, "IDX users email", `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
   await tryExec(c, "IDX users role", `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
   await tryExec(c, "IDX users status", `CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)`);
+  await tryExec(
+    c,
+    "ALTER users theme_preference",
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT NOT NULL DEFAULT 'system'`,
+  );
 
   // 2. sessions
   await tryExec(c, "TABLE sessions", `

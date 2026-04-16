@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS users (
   role            user_role   NOT NULL DEFAULT 'streamer',
   status          user_status NOT NULL DEFAULT 'active',
   avatar          TEXT,
+  theme_preference TEXT       NOT NULL DEFAULT 'system',
   email_verified  BOOLEAN     NOT NULL DEFAULT false,
   last_login_at   TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_email  ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role   ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT NOT NULL DEFAULT 'system';
 
 -- =============================================================
 -- TABLE: sessions  (custom sm_session cookie auth)

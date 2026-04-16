@@ -79,7 +79,7 @@ export async function POST(req: Request) {
 
   // Tables
   const tables: [string, string][] = [
-    ["TABLE users", `CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, phone TEXT, password_hash TEXT NOT NULL, role user_role NOT NULL DEFAULT 'streamer', status user_status NOT NULL DEFAULT 'active', avatar TEXT, email_verified BOOLEAN NOT NULL DEFAULT false, last_login_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`],
+    ["TABLE users", `CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, phone TEXT, password_hash TEXT NOT NULL, role user_role NOT NULL DEFAULT 'streamer', status user_status NOT NULL DEFAULT 'active', avatar TEXT, theme_preference TEXT NOT NULL DEFAULT 'system', email_verified BOOLEAN NOT NULL DEFAULT false, last_login_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`],
     ["IDX users_email", `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`],
     ["IDX users_role", `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`],
     ["TABLE sessions", `CREATE TABLE IF NOT EXISTS sessions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, ip_address TEXT, user_agent TEXT, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`],
@@ -137,6 +137,7 @@ export async function POST(req: Request) {
 
   const columnAlters: [string, string][] = [
     ["ALTER users billing_state", `ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_state TEXT`],
+    ["ALTER users theme_preference", `ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT NOT NULL DEFAULT 'system'`],
     ["ALTER gst_configurations gst_type", `ALTER TABLE gst_configurations ADD COLUMN IF NOT EXISTS gst_type TEXT NOT NULL DEFAULT 'individual'`],
     ["ALTER invoices recipient_gst_number", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_gst_number TEXT`],
     ["ALTER invoices recipient_address", `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS recipient_address TEXT`],

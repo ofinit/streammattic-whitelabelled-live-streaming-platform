@@ -21,6 +21,7 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { BrandingProvider } from "@/lib/branding-context"
 import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
@@ -193,17 +194,20 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${playfair.variable} ${lato.variable} ${cormorantGarden.variable} ${montserratGarden.variable} ${greatVibesChristianRose.variable} ${italianaMidnight.variable} ${rajdhaniMidnight.variable} ${pacificoCoastal.variable} ${quicksandCoastal.variable} ${spaceGroteskCorporate.variable} ${amiriNikah.variable} ${ralewayNikah.variable} ${fredokaBirthday.variable} ${poppinsBirthday.variable}`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${playfair.variable} ${lato.variable} ${cormorantGarden.variable} ${montserratGarden.variable} ${greatVibesChristianRose.variable} ${italianaMidnight.variable} ${rajdhaniMidnight.variable} ${pacificoCoastal.variable} ${quicksandCoastal.variable} ${spaceGroteskCorporate.variable} ${amiriNikah.variable} ${ralewayNikah.variable} ${fredokaBirthday.variable} ${poppinsBirthday.variable}`}
     >
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
-        <BrandingProvider>
-          <AuthProvider>
-            <DynamicFavicon />
-            {children}
-            <Toaster />
-            <SonnerToaster richColors closeButton position="top-center" />
-          </AuthProvider>
-        </BrandingProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <BrandingProvider>
+            <AuthProvider>
+              <DynamicFavicon />
+              {children}
+              <Toaster />
+              <SonnerToaster richColors closeButton position="top-center" />
+            </AuthProvider>
+          </BrandingProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

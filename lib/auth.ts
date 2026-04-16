@@ -92,7 +92,7 @@ export async function createSession(userId: string, ip?: string, userAgent?: str
 export async function getSessionUser(token: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT u.id, u.email, u.name, u.phone, u.billing_state, u.role, u.status, u.avatar, u.email_verified, u.mock_data_cleared,
+    SELECT u.id, u.email, u.name, u.phone, u.billing_state, u.role, u.status, u.avatar, u.theme_preference, u.email_verified, u.mock_data_cleared,
            u.studio_subscription_expires_at, u.created_at, u.updated_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
@@ -203,7 +203,7 @@ export async function createUser(data: {
   const rows = await sql`
     INSERT INTO users (email, password_hash, name, phone, billing_state, role)
     VALUES (${data.email}, ${passwordHash}, ${data.name}, ${data.phone ?? null}, ${billingStateCode}, ${role})
-    RETURNING id, email, name, phone, billing_state, role, status, avatar, email_verified, mock_data_cleared, created_at, updated_at
+    RETURNING id, email, name, phone, billing_state, role, status, avatar, theme_preference, email_verified, mock_data_cleared, created_at, updated_at
   `
 
   const user = toCamel(rows[0] as Record<string, unknown>)

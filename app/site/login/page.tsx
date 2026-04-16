@@ -43,7 +43,7 @@ export default function SiteLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="dark flex min-h-screen flex-col bg-background">
       {/* Back to site link */}
       <div className="px-6 py-4">
         <Link href="/site" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">

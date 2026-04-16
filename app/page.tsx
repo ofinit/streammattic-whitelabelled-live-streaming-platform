@@ -8,9 +8,9 @@ export default function RootPage() {
     const { isWhiteLabel } = useBranding()
 
     if (isWhiteLabel) {
-        return <StudioLandingPage />
+        return <div className="dark"><StudioLandingPage /></div>
     }
 
     // If viewing from the default platform domain, show the SaaS Homepage
-    return <PlatformLandingPage />
+    return <div className="dark"><PlatformLandingPage /></div>
 }

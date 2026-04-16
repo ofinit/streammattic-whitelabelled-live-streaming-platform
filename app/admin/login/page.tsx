@@ -46,7 +46,7 @@ function AdminLoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
+    <div className="dark min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Link href="/" className="text-lg font-semibold text-primary">
@@ -114,7 +114,7 @@ function AdminLoginContent() {
 
 export default function AdminLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+    <Suspense fallback={<div className="dark min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
       <AdminLoginContent />
     </Suspense>
   )

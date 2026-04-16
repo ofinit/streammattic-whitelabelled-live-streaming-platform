@@ -175,8 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsImpersonating(false)
         setImpersonatedBy(null)
         applyThemePreference(data.user.themePreference)
-        // Re-sync from server session in background to keep state canonical.
-        void fetchCurrentUser()
         setIsLoading(false)
         return data.user
       }
@@ -186,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return null
     }
-  }, [applyThemePreference, fetchCurrentUser])
+  }, [applyThemePreference])
 
   const logout = useCallback(async () => {
     try {

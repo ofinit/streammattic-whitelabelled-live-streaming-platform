@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb } from "@/lib/db"
+import { ensureUsersThemePreferenceColumn } from "@/lib/ensure-users-schema"
 
 type ThemePreference = "system" | "dark" | "light"
 
@@ -11,6 +12,7 @@ function normalizeThemePreference(raw: unknown): ThemePreference | null {
 
 export async function PUT(req: Request) {
   try {
+    await ensureUsersThemePreferenceColumn()
     const user = await getCurrentUser()
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

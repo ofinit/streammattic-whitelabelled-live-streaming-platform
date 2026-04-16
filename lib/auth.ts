@@ -2,6 +2,7 @@ import { compare as bcryptCompare } from "bcryptjs"
 import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 import { getIndianStateName } from "@/lib/indian-states"
+import { ensureUsersThemePreferenceColumn } from "@/lib/ensure-users-schema"
 
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
@@ -90,6 +91,7 @@ export async function createSession(userId: string, ip?: string, userAgent?: str
 }
 
 export async function getSessionUser(token: string) {
+  await ensureUsersThemePreferenceColumn()
   const sql = getDb()
   const rows = await sql`
     SELECT u.id, u.email, u.name, u.phone, u.billing_state, u.role, u.status, u.avatar, u.theme_preference, u.email_verified, u.mock_data_cleared,
@@ -191,6 +193,7 @@ export async function createUser(data: {
   billingState?: string | null
   role?: "admin" | "studio" | "streamer"
 }) {
+  await ensureUsersThemePreferenceColumn()
   const sql = getDb()
   const passwordHash = await hashPassword(data.password)
   const role = data.role ?? "streamer"

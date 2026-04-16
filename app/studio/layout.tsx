@@ -1,21 +1,15 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
-import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
-import { cn } from "@/lib/utils"
-import type { Studio } from "@/lib/types"
-
+import { DashboardWithSidebar } from "@/components/dashboard/dashboard-with-sidebar"
+import { SidebarProvider } from "@/lib/sidebar-context"
 function StudioLayoutInner({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const { isCollapsed } = useSidebar()
-  const [hasCompletedSetup, setHasCompletedSetup] = useState(true)
 
   useEffect(() => {
     if (isLoading) return
@@ -41,14 +35,6 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, user?.role, pathname, router])
 
-  useEffect(() => {
-    if (user?.role === "studio") {
-      const studio = user as Studio
-      const needsSetup = !studio.branding?.platformName || studio.branding.platformName === ""
-      setHasCompletedSetup(true)
-    }
-  }, [user, pathname, router])
-
   if (isLoading) return null
 
   if (!isAuthenticated) {
@@ -66,23 +52,7 @@ function StudioLayoutInner({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <ImpersonationBanner />
-      <Sidebar />
-      <main
-        className={cn(
-          "min-w-0 transition-all duration-300 pl-0 md:pt-0",
-          isImpersonating
-            ? "pt-[6.75rem] md:pt-0"
-            : "pt-[calc(3.5rem+env(safe-area-inset-top,0px))] md:pt-0",
-          isCollapsed ? "md:pl-16" : "md:pl-64",
-        )}
-      >
-        <div className="p-4 sm:p-6">{children}</div>
-      </main>
-    </div>
-  )
+  return <DashboardWithSidebar>{children}</DashboardWithSidebar>
 }
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {

@@ -504,13 +504,14 @@ export function AiImagePickerDialog({
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
                       onChange={(e) => {
-                        const list = e.target.files
+                        // Copy File[] before clearing input — clearing value resets the live FileList in browsers.
+                        const files = e.target.files ? Array.from(e.target.files) : []
                         e.target.value = ""
-                        if (!list?.length) return
+                        if (files.length === 0) return
                         if (allowMultipleUpload && !circularHeroCrop) {
-                          void handleMultipleFileUpload(Array.from(list))
+                          void handleMultipleFileUpload(files)
                         } else {
-                          const file = list[0]
+                          const file = files[0]
                           if (file) void handleFileUpload(file)
                         }
                       }}

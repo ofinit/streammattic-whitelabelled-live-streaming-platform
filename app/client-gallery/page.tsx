@@ -2,49 +2,30 @@
 
 import Link from "next/link"
 import { BrandedLogo } from "@/components/branding/branded-logo"
-import { DashboardWithSidebar } from "@/components/dashboard/dashboard-with-sidebar"
 import { ClientGalleryDashboard, ClientGalleryLightHeader } from "@/components/client-gallery/client-gallery-dashboard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { useBranding } from "@/lib/branding-context"
-import { SidebarProvider } from "@/lib/sidebar-context"
 
 /**
- * Client photo gallery add-on (BYOS) — uses app theme (same tokens as streamer/studio pages).
- * Signed-in streamers/studios use the same sidebar as the rest of the app (this route is outside /streamer layout).
+ * Client photo gallery add-on (BYOS) — streamer/studio shell is provided by `layout.tsx`.
  */
 export default function ClientGalleryPage() {
   const { branding } = useBranding()
-  const { user, isLoading: authLoading } = useAuth()
+  const { user } = useAuth()
 
   const dashboardHref = user?.role === "studio" ? "/studio" : "/streamer"
   const packagesHref = user?.role === "studio" ? "/studio/packages" : "/streamer/packages"
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background px-4 py-10 text-center text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-
   if (user && (user.role === "streamer" || user.role === "studio")) {
     return (
-      <SidebarProvider>
-        <DashboardWithSidebar>
-          <div className="-mx-4 min-h-[calc(100dvh-5rem)] bg-background px-4 py-8 text-foreground sm:-mx-6 sm:px-6 sm:py-10">
-            <div className="mx-auto max-w-6xl">
-              <ClientGalleryDashboard
-                user={user}
-                brandName={branding.brandName}
-                dashboardHref={dashboardHref}
-                packagesHref={packagesHref}
-              />
-            </div>
-          </div>
-        </DashboardWithSidebar>
-      </SidebarProvider>
+      <ClientGalleryDashboard
+        user={user}
+        brandName={branding.brandName}
+        dashboardHref={dashboardHref}
+        packagesHref={packagesHref}
+      />
     )
   }
 

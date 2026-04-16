@@ -20,7 +20,7 @@ export default function ClientGalleryLayout({ children }: { children: ReactNode 
   if (user?.role === "streamer" || user?.role === "studio") {
     return (
       <SidebarProvider>
-        <DashboardWithSidebar>
+        <DashboardWithSidebar hidePrimarySidebar>
           <div className="-mx-4 flex min-h-[calc(100dvh-5rem)] flex-col gap-6 bg-background px-4 py-6 text-foreground sm:-mx-6 sm:px-6 sm:py-8 lg:flex-row lg:gap-8">
             <ClientGallerySubNav />
             <div className="min-w-0 flex-1">

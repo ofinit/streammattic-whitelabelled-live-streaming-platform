@@ -20,8 +20,8 @@ export const GET = withAuth(async (user) => {
     })
   }
 
-  // Default-on: when the add-on is listed, every studio/streamer is entitled unless an admin explicitly opts them out
-  // (user_addon_entitlements.photo_gallery_enabled = false).
+  // Opt-in: when the add-on is listed, studio/streamer accounts are entitled only if an admin set
+  // user_addon_entitlements.photo_gallery_enabled = true (no row or false = no access).
   let entitled = false
   if (catalog.listingEnabled === true) {
     try {
@@ -30,10 +30,10 @@ export const GET = withAuth(async (user) => {
         SELECT photo_gallery_enabled FROM user_addon_entitlements WHERE user_id = ${user.id} LIMIT 1
       `
       const row = rows[0] as { photo_gallery_enabled?: boolean } | undefined
-      entitled = row?.photo_gallery_enabled !== false
+      entitled = row?.photo_gallery_enabled === true
     } catch (e) {
       console.warn("[photo-gallery-addon/status] entitlements lookup failed (run DB migration?)", e)
-      entitled = true
+      entitled = false
     }
   }
 

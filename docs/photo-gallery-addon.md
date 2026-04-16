@@ -4,7 +4,7 @@ Stream-Livee stores **catalog settings** and optional **per-user opt-outs** in P
 
 **Not the same as event “Photo gallery”:** The template field in the event editor (images on the public watch page) is separate. The add-on is for **client-delivered** albums and uploads against **your** object storage (BYOS), not for reusing those template gallery images as the client gallery product.
 
-When **List in Packages** is on, **all** studio and streamer accounts are **entitled by default**. An admin can **revoke** a specific user under **Admin → Streamers** or **Admin → Studios** (sets `user_addon_entitlements.photo_gallery_enabled` to `false`).
+When **List in Packages** is on, the add-on is **visible** in Packages for studios and streamers, but access is **off until an admin enables it** per account under **Admin → Streamers** or **Admin → Studios** (`user_addon_entitlements.photo_gallery_enabled = true`). Missing row or `false` means no entitlement.
 
 ## Same-origin gallery path (default)
 

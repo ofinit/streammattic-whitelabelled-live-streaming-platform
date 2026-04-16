@@ -544,8 +544,8 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
               <CardTitle className="text-base">{photoGalleryCatalog.productName}</CardTitle>
             </div>
             <CardDescription>
-              Bring your own S3 storage for client photo delivery. When listed in Packages, access is on by default; admins
-              can revoke per account under Streamers / Studios.
+              Bring your own S3 storage for client photo delivery. If this add-on is listed, your administrator must enable
+              access for your account under Admin → Streamers or Studios before you can use it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

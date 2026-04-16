@@ -17,7 +17,7 @@ When **List in Packages** is on, the add-on is **visible** in Packages for studi
 
 When the legacy URL is **empty**, that link opens **`/client-gallery`** (or your custom path) on the **current** origin — platform domain or studio custom domain.
 
-**Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). The page uses a **light dashboard shell** (welcome, stat placeholders, activity placeholders, help accordion); signed-in streamers/studios see add-on status from `/api/photo-gallery-addon/status` and the **same app sidebar** as `/streamer/*` and `/studio/*` (this path is not nested under those layouts, so the page wraps the gallery content with the shared sidebar shell). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
+**Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). The page uses the **same theme tokens** as the rest of the app (welcome hero, stat placeholders, activity placeholders, help accordion); signed-in streamers/studios see add-on status from `/api/photo-gallery-addon/status` and the **same app sidebar** as `/streamer/*` and `/studio/*` (this path is not nested under those layouts, so the page wraps the gallery content with the shared sidebar shell). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
 
 ## Face index credit
 

@@ -43,9 +43,9 @@ function StatCard({
   className?: string
 }) {
   return (
-    <Card className={cn("border-zinc-200 bg-white shadow-sm", className)}>
+    <Card className={cn("border-border bg-card shadow-sm", className)}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-600">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">{children}</CardContent>
     </Card>
@@ -76,7 +76,7 @@ export function ClientGalleryDashboard({
   return (
     <div className="space-y-6">
       <section
-        className="relative overflow-hidden rounded-2xl border border-sky-900/20 bg-gradient-to-br from-sky-800 via-indigo-900 to-slate-900 px-6 py-8 text-white shadow-lg sm:px-8"
+        className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-900/90 via-indigo-950 to-background px-6 py-8 text-white shadow-lg sm:px-8"
         aria-labelledby="client-gallery-welcome"
       >
         <div className="relative z-10 max-w-3xl">
@@ -96,14 +96,14 @@ export function ClientGalleryDashboard({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard title="Add-on status">
-          <p className="text-lg font-semibold text-zinc-900">
+          <p className="text-lg font-semibold text-foreground">
             {entitled ? (
-              <span className="text-emerald-700">Active</span>
+              <span className="text-emerald-500">Active</span>
             ) : (
-              <span className="text-amber-700">Not enabled</span>
+              <span className="text-amber-500">Not enabled</span>
             )}
           </p>
-          <p className="mt-1 text-xs text-zinc-500">{productLabel}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{productLabel}</p>
           {!entitled ? (
             <Button asChild size="sm" className="mt-3" variant="outline">
               <Link href={packagesHref}>Enable in Packages</Link>
@@ -113,17 +113,19 @@ export function ClientGalleryDashboard({
 
         <StatCard title="Photos in gallery">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tabular-nums text-zinc-900">0</span>
-            <span className="text-sm text-zinc-500">photos</span>
+            <span className="text-3xl font-bold tabular-nums text-foreground">0</span>
+            <span className="text-sm text-muted-foreground">photos</span>
           </div>
-          <p className="mt-2 text-xs text-zinc-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             Totals will appear when the BYOS upload pipeline is connected to your storage.
           </p>
         </StatCard>
 
         <StatCard title="Help &amp; setup" className="sm:col-span-2 lg:col-span-1">
-          <p className="text-sm text-zinc-600">Path, pricing, and face-index credits are configured in Admin → Packages.</p>
-          <Button asChild size="sm" variant="secondary" className="mt-3 bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
+          <p className="text-sm text-muted-foreground">
+            Path, pricing, and face-index credits are configured in Admin → Packages.
+          </p>
+          <Button asChild size="sm" variant="secondary" className="mt-3">
             <Link href={packagesHref}>
               <HelpCircle className="mr-2 h-4 w-4" />
               Open Packages
@@ -132,27 +134,27 @@ export function ClientGalleryDashboard({
         </StatCard>
       </div>
 
-      <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-sky-50 px-4 py-3 text-sm text-indigo-950 sm:px-6">
+      <div className="rounded-xl border border-primary/25 bg-muted/40 px-4 py-3 text-sm text-foreground sm:px-6">
         <p className="font-medium">Same-origin gallery on every domain</p>
-        <p className="mt-1 text-indigo-900/80">
-          You are on <span className="font-mono font-semibold">{brandName}</span> — guests can reach this route without a
-          separate gallery host once your storage and workers are wired up.
+        <p className="mt-1 text-muted-foreground">
+          You are on <span className="font-mono font-semibold text-foreground">{brandName}</span> — guests can reach this
+          route without a separate gallery host once your storage and workers are wired up.
         </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-zinc-200 bg-white shadow-sm">
+        <Card className="border-border bg-card shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <LayoutGrid className="h-5 w-5 text-sky-700" />
-              <CardTitle className="text-lg text-zinc-900">Your albums</CardTitle>
+              <LayoutGrid className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg text-card-foreground">Your albums</CardTitle>
             </div>
-            <CardDescription className="text-zinc-600">
+            <CardDescription>
               When the BYOS pipeline lists buckets and prefixes for your account, client albums will show here.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-600">
+            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
               No client albums yet — create events and connect storage from your dashboard when ready.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -166,32 +168,32 @@ export function ClientGalleryDashboard({
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-200 bg-white shadow-sm">
+        <Card className="border-border bg-card shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-600" />
-              <CardTitle className="text-lg text-zinc-900">AI-assisted gallery</CardTitle>
+              <Sparkles className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg text-card-foreground">AI-assisted gallery</CardTitle>
             </div>
-            <CardDescription className="text-zinc-600">
+            <CardDescription>
               Face search, tags, and vision jobs can debit your wallet per your platform pricing once workers are deployed.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-zinc-600">
-              This is separate from <strong className="text-zinc-900">event image generation</strong> in the editor — that
+            <p className="text-sm text-muted-foreground">
+              This is separate from <strong className="text-foreground">event image generation</strong> in the editor — that
               uses your wallet per image; gallery AI jobs are configured under Admin → Packages (face index credits).
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-zinc-200 bg-white shadow-sm">
+      <Card className="border-border bg-card shadow-sm">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-zinc-700" />
-            <CardTitle className="text-lg text-zinc-900">Gallery activity (last 7 days)</CardTitle>
+            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg text-card-foreground">Gallery activity (last 7 days)</CardTitle>
           </div>
-          <CardDescription className="text-zinc-600">Metrics will populate when tracking is connected.</CardDescription>
+          <CardDescription>Metrics will populate when tracking is connected.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -203,48 +205,48 @@ export function ClientGalleryDashboard({
             ].map(({ label, value, icon: Icon }) => (
               <div
                 key={label}
-                className="rounded-xl border border-zinc-100 bg-zinc-50/80 px-3 py-4 text-center"
+                className="rounded-xl border border-border bg-muted/30 px-3 py-4 text-center"
               >
-                <Icon className="mx-auto mb-2 h-5 w-5 text-zinc-400" aria-hidden />
-                <p className="text-2xl font-bold tabular-nums text-zinc-900">{value}</p>
-                <p className="text-xs text-zinc-500">{label}</p>
+                <Icon className="mx-auto mb-2 h-5 w-5 text-muted-foreground" aria-hidden />
+                <p className="text-2xl font-bold tabular-nums text-foreground">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200 bg-white shadow-sm">
+      <Card className="border-border bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg text-zinc-900">Help &amp; overview</CardTitle>
-          <CardDescription className="text-zinc-600">How this page fits into your platform.</CardDescription>
+          <CardTitle className="text-lg text-card-foreground">Help &amp; overview</CardTitle>
+          <CardDescription>How this page fits into your platform.</CardDescription>
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="what" className="border-zinc-200">
-              <AccordionTrigger className="text-zinc-900 hover:no-underline">
+            <AccordionItem value="what" className="border-border">
+              <AccordionTrigger className="text-foreground hover:no-underline">
                 What is the client photo gallery?
               </AccordionTrigger>
-              <AccordionContent className="text-zinc-600">
-                It is a same-origin route for <strong className="text-zinc-800">client-delivered albums</strong> using
+              <AccordionContent className="text-muted-foreground">
+                It is a same-origin route for <strong className="text-foreground">client-delivered albums</strong> using
                 storage you provide (e.g. S3). Presigned uploads and processing can live in workers; this app hosts the
                 shell URL on your domain.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="diff" className="border-zinc-200">
-              <AccordionTrigger className="text-zinc-900 hover:no-underline">
+            <AccordionItem value="diff" className="border-border">
+              <AccordionTrigger className="text-foreground hover:no-underline">
                 Different from the event &quot;Photo gallery&quot; field?
               </AccordionTrigger>
-              <AccordionContent className="text-zinc-600">
+              <AccordionContent className="text-muted-foreground">
                 Yes. The event editor &quot;Photo gallery&quot; only shows images on each event&apos;s public watch page.
                 This BYOS gallery is for separate client delivery workflows and your own bucket — not the same data path.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="enable" className="border-zinc-200">
-              <AccordionTrigger className="text-zinc-900 hover:no-underline">
+            <AccordionItem value="enable" className="border-border">
+              <AccordionTrigger className="text-foreground hover:no-underline">
                 How do I get access?
               </AccordionTrigger>
-              <AccordionContent className="text-zinc-600">
+              <AccordionContent className="text-muted-foreground">
                 Your administrator lists the add-on under Packages and can enable your account under Admin → Streamers or
                 Studios. Then use the sidebar link (opens in a new tab) or this page anytime.
               </AccordionContent>
@@ -264,18 +266,18 @@ export function ClientGalleryLightHeader({
   signedIn: boolean
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 shadow-sm backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 text-zinc-900">
+        <Link href="/" className="flex items-center gap-2 text-foreground">
           <BrandedLogo size="sm" />
         </Link>
         <div className="flex items-center gap-2">
           {signedIn ? (
-            <Button variant="outline" size="sm" className="border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50" asChild>
+            <Button variant="outline" size="sm" asChild>
               <Link href={dashboardHref}>Dashboard</Link>
             </Button>
           ) : (
-            <Button variant="outline" size="sm" className="border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50" asChild>
+            <Button variant="outline" size="sm" asChild>
               <Link href="/site/login">Sign in</Link>
             </Button>
           )}

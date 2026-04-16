@@ -11,7 +11,7 @@ import { useBranding } from "@/lib/branding-context"
 import { SidebarProvider } from "@/lib/sidebar-context"
 
 /**
- * Client photo gallery add-on (BYOS) — light dashboard per docs/photo-gallery-addon.md.
+ * Client photo gallery add-on (BYOS) — uses app theme (same tokens as streamer/studio pages).
  * Signed-in streamers/studios use the same sidebar as the rest of the app (this route is outside /streamer layout).
  */
 export default function ClientGalleryPage() {
@@ -23,7 +23,7 @@ export default function ClientGalleryPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-500 antialiased">
+      <div className="min-h-screen bg-background px-4 py-10 text-center text-sm text-muted-foreground">
         Loading…
       </div>
     )
@@ -33,7 +33,7 @@ export default function ClientGalleryPage() {
     return (
       <SidebarProvider>
         <DashboardWithSidebar>
-          <div className="-mx-4 min-h-[calc(100dvh-5rem)] bg-zinc-50 px-4 py-8 text-zinc-900 antialiased sm:-mx-6 sm:px-6 sm:py-10">
+          <div className="-mx-4 min-h-[calc(100dvh-5rem)] bg-background px-4 py-8 text-foreground sm:-mx-6 sm:px-6 sm:py-10">
             <div className="mx-auto max-w-6xl">
               <ClientGalleryDashboard
                 user={user}
@@ -49,39 +49,39 @@ export default function ClientGalleryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
+    <div className="min-h-screen bg-background text-foreground">
       <ClientGalleryLightHeader dashboardHref={dashboardHref} signedIn={!!user} />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {!user ? (
           <div className="mx-auto max-w-lg">
-            <Card className="border-zinc-200 bg-white shadow-md">
+            <Card className="border-border bg-card shadow-md">
               <CardHeader>
                 <div className="mb-2 flex justify-center">
                   <BrandedLogo size="md" />
                 </div>
-                <CardTitle className="text-center text-xl text-zinc-900">Client photo gallery</CardTitle>
-                <CardDescription className="text-center text-zinc-600">
+                <CardTitle className="text-center text-xl">Client photo gallery</CardTitle>
+                <CardDescription className="text-center">
                   Sign in as a streamer or studio to view your dashboard and add-on status.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex justify-center">
-                <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
+                <Button asChild>
                   <Link href="/site/login">Sign in</Link>
                 </Button>
               </CardContent>
             </Card>
           </div>
         ) : user.role === "admin" ? (
-          <Card className="mx-auto max-w-2xl border-zinc-200 bg-white shadow-sm">
+          <Card className="mx-auto max-w-2xl border-border bg-card shadow-sm">
             <CardHeader>
-              <CardTitle className="text-zinc-900">Administrator</CardTitle>
-              <CardDescription className="text-zinc-600">
+              <CardTitle>Administrator</CardTitle>
+              <CardDescription>
                 Configure the client gallery add-on, path, and pricing under Admin → Packages.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild variant="outline" className="border-zinc-300">
+              <Button asChild variant="outline">
                 <Link href="/admin/packages">Open Admin → Packages</Link>
               </Button>
             </CardContent>

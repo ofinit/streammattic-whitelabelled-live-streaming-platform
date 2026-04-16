@@ -34,6 +34,8 @@ import {
   Zap,
   ClipboardList,
   Database,
+  Images,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,6 +50,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { resolveGalleryHref, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 
 interface NavItem {
   title: string
@@ -109,12 +112,14 @@ function NavLinks({
   isCollapsed,
   isMobileSheet,
   onNavigate,
+  trailing,
 }: {
   navItems: NavItem[]
   pathname: string | null
   isCollapsed: boolean
   isMobileSheet: boolean
   onNavigate?: () => void
+  trailing?: React.ReactNode
 }) {
   const effectiveCollapsed = isCollapsed && !isMobileSheet
 
@@ -187,8 +192,81 @@ function NavLinks({
           </Fragment>
         )
       })}
+      {trailing}
     </nav>
   )
+}
+
+type PhotoGalleryStatusResponse = {
+  catalog: PhotoGalleryAddonSettings
+  entitled: boolean
+  eligible: boolean
+}
+
+/** Opens client gallery in a new tab; only when add-on is listed and user is entitled. */
+function PhotoGallerySidebarNavLink({
+  pathname,
+  isCollapsed,
+  isMobileSheet,
+  onNavigate,
+}: {
+  pathname: string | null
+  isCollapsed: boolean
+  isMobileSheet: boolean
+  onNavigate?: () => void
+}) {
+  const { data } = useSWR<PhotoGalleryStatusResponse>("/api/photo-gallery-addon/status", settingsFetcher, {
+    revalidateOnFocus: true,
+  })
+  const effectiveCollapsed = isCollapsed && !isMobileSheet
+
+  if (!data?.catalog?.listingEnabled || !data.entitled) return null
+
+  const href = resolveGalleryHref(data.catalog)
+  const title = data.catalog.productName?.trim() || "Client gallery"
+  const pathForActive = href.startsWith("/") ? href.replace(/\/$/, "") || "/" : ""
+  const isActive =
+    Boolean(pathForActive && pathname && (pathname === pathForActive || pathname.startsWith(`${pathForActive}/`)))
+
+  const linkBody = (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${title} (opens in new tab)`}
+      onClick={() => onNavigate?.()}
+      className={cn(
+        "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors min-h-11",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-primary"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+        effectiveCollapsed && "justify-center px-2",
+      )}
+    >
+      <Images className="h-5 w-5 shrink-0" aria-hidden />
+      {!effectiveCollapsed && (
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+          <span className="truncate">{title}</span>
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+        </span>
+      )}
+    </a>
+  )
+
+  if (effectiveCollapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="relative">{linkBody}</div>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="max-w-[16rem]">
+          {title} (opens in new tab)
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return <Fragment key="photo-gallery-addon-nav">{linkBody}</Fragment>
 }
 
 function AccountBlock({
@@ -297,6 +375,20 @@ export function Sidebar() {
   }
 
   const navItems = getNavItems()
+  const closeMobileNav = () => setMobileNavOpen(false)
+  const galleryNavTrailing =
+    user?.role === "streamer" || user?.role === "studio" ? (
+      <PhotoGallerySidebarNavLink pathname={pathname} isCollapsed={isCollapsed} isMobileSheet={false} />
+    ) : null
+  const galleryNavTrailingMobile =
+    user?.role === "streamer" || user?.role === "studio" ? (
+      <PhotoGallerySidebarNavLink
+        pathname={pathname}
+        isCollapsed={false}
+        isMobileSheet
+        onNavigate={closeMobileNav}
+      />
+    ) : null
   const initials = user?.name
     ?.split(" ")
     .map((n) => n[0])
@@ -306,8 +398,6 @@ export function Sidebar() {
   useEffect(() => {
     setMobileNavOpen(false)
   }, [pathname, setMobileNavOpen])
-
-  const closeMobileNav = () => setMobileNavOpen(false)
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -401,6 +491,7 @@ export function Sidebar() {
             pathname={pathname}
             isCollapsed={isCollapsed}
             isMobileSheet={false}
+            trailing={galleryNavTrailing}
           />
 
           <AccountBlock

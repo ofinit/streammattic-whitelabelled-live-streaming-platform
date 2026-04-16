@@ -12,10 +12,10 @@ When **List in Packages** is on, the add-on is **visible** in Packages for studi
 
 | Field | Meaning |
 | --- | --- |
-| **Gallery path (same origin)** | Must start with `/`. Default `/client-gallery`. Entitled users see **Open gallery app** → this path on whatever origin they are on. |
-| **Legacy external gallery URL (optional)** | If you still run a separate gallery app, set its full `https://…` origin here; **Open gallery** uses that instead of the path. |
+| **Gallery path (same origin)** | Must start with `/`. Default `/client-gallery`. Entitled studios/streamers get a **sidebar link** (new tab) to this path on whatever origin they are on. |
+| **Legacy external gallery URL (optional)** | If you still run a separate gallery app, set its full `https://…` origin here; the sidebar link uses that instead of the path. |
 
-When the legacy URL is **empty**, Packages links to **`/client-gallery`** (or your custom path) on the **current** origin — platform domain or studio custom domain.
+When the legacy URL is **empty**, that link opens **`/client-gallery`** (or your custom path) on the **current** origin — platform domain or studio custom domain.
 
 **Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
 

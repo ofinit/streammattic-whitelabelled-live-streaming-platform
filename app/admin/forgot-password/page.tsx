@@ -41,7 +41,7 @@ export default function AdminForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
+    <div className="dark min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Link href="/" className="text-lg font-semibold text-primary">

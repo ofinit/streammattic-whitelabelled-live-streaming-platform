@@ -169,7 +169,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       const data = (await res.json().catch(() => ({}))) as { user?: AuthUser; error?: string }
       if (res.ok && data.user) {
-        await fetchCurrentUser()
+        // Commit auth state immediately so route guards don't briefly treat user as anonymous.
+        setUser(data.user)
+        setOriginalUser(null)
+        setIsImpersonating(false)
+        setImpersonatedBy(null)
+        applyThemePreference(data.user.themePreference)
+        // Re-sync from server session in background to keep state canonical.
+        void fetchCurrentUser()
         setIsLoading(false)
         return data.user
       }
@@ -179,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return null
     }
-  }, [fetchCurrentUser])
+  }, [applyThemePreference, fetchCurrentUser])
 
   const logout = useCallback(async () => {
     try {

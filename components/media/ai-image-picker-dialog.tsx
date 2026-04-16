@@ -484,24 +484,25 @@ export function AiImagePickerDialog({
                     <p className="text-sm text-muted-foreground">Uploading...</p>
                   </div>
                 ) : (
-                  <label
+                  <div
                     className={cn(
-                      "flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors",
+                      "relative flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed transition-colors",
                       dragActive ? "border-primary bg-primary/5" : "border-border/50 hover:border-border",
                     )}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
                   >
+                    {/* Full-area opacity-0 file input: direct click opens picker reliably inside nested Radix (label + hidden does not). */}
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
                       multiple={Boolean(allowMultipleUpload && !circularHeroCrop)}
-                      className="hidden"
+                      className="absolute inset-0 z-10 h-full min-h-[140px] w-full cursor-pointer opacity-0"
                       aria-label={
                         allowMultipleUpload && !circularHeroCrop ? "Choose images to upload" : "Choose image to upload"
                       }
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
                       onChange={(e) => {
                         const list = e.target.files
                         e.target.value = ""
@@ -514,7 +515,7 @@ export function AiImagePickerDialog({
                         }
                       }}
                     />
-                    <div className="flex flex-col items-center justify-center p-6">
+                    <div className="pointer-events-none flex flex-col items-center justify-center p-6">
                       <Upload className="mb-2 h-8 w-8 text-muted-foreground/60" />
                       <p className="text-sm font-medium text-foreground">
                         {allowMultipleUpload && !circularHeroCrop
@@ -527,7 +528,7 @@ export function AiImagePickerDialog({
                           : "JPG, PNG, WebP, GIF up to 4MB"}
                       </p>
                     </div>
-                  </label>
+                  </div>
                 )}
               </div>
 

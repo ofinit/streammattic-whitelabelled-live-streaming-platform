@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ExternalLink, Loader2, Save, TestTube2 } from "lucide-react"
+import { ExternalLink, Eye, EyeOff, Loader2, Save, TestTube2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -57,7 +57,7 @@ const PROVIDER_GUIDES: ProviderGuide[] = [
     name: "Wasabi",
     docsUrl: "https://docs.wasabi.com/docs/how-do-i-use-aws-sdk-for-javascript-v3-with-wasabi",
     endpoint:
-      "Required: https://s3.<region>.wasabisys.com (use your bucket’s region — see Wasabi “service URLs for storage regions”).",
+      "Required: enter host only after the fixed https:// prefix, e.g. s3.ap-southeast-1.wasabisys.com (see Docs for your region).",
     region: "Must match the region in the endpoint (e.g. us-east-1). Do not use auto.",
     forcePathStyle: "Off",
   },
@@ -84,12 +84,28 @@ const PROVIDER_GUIDES: ProviderGuide[] = [
   },
 ]
 
+/** Strip scheme for display in the host-only field (prefix shows https://). */
+function stripEndpointSchemeForInput(url: string): string {
+  const t = url.trim()
+  if (!t) return ""
+  if (t.startsWith("https://")) return t.slice(8)
+  if (t.startsWith("http://")) return t.slice(7)
+  return t
+}
+
+/** Build full URL for API; empty host means AWS default (null). */
+function endpointRestToApiValue(rest: string): string | null {
+  const host = rest.trim().replace(/^\/+/, "")
+  if (!host) return null
+  return `https://${host}`
+}
+
 export function ClientGalleryStorageSettings() {
   const { data, isLoading, mutate } = useSWR<StoragePayload>("/api/client-gallery/storage", fetcher, {
     revalidateOnFocus: true,
   })
 
-  const [endpoint, setEndpoint] = useState("")
+  const [endpointRest, setEndpointRest] = useState("")
   const [region, setRegion] = useState("auto")
   const [bucket, setBucket] = useState("")
   const [accessKeyId, setAccessKeyId] = useState("")
@@ -97,10 +113,12 @@ export function ClientGalleryStorageSettings() {
   const [forcePathStyle, setForcePathStyle] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [showAccessKey, setShowAccessKey] = useState(false)
+  const [showSecretKey, setShowSecretKey] = useState(false)
 
   useEffect(() => {
     if (!data) return
-    setEndpoint(data.endpoint ?? "")
+    setEndpointRest(stripEndpointSchemeForInput(data.endpoint ?? ""))
     setRegion(data.region ?? "auto")
     setBucket(data.bucket ?? "")
     setAccessKeyId(data.accessKeyId ?? "")
@@ -112,7 +130,7 @@ export function ClientGalleryStorageSettings() {
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
-        endpoint: endpoint.trim() || null,
+        endpoint: endpointRestToApiValue(endpointRest),
         region: region.trim() || "auto",
         bucket: bucket.trim(),
         accessKeyId: accessKeyId.trim(),
@@ -183,23 +201,52 @@ export function ClientGalleryStorageSettings() {
         <CardHeader>
           <CardTitle className="text-lg">S3-compatible endpoint</CardTitle>
           <CardDescription>
-            Leave endpoint empty for AWS default. For R2, use your account endpoint (e.g.{" "}
-            <code className="text-xs">https://&lt;account-id&gt;.r2.cloudflarestorage.com</code>
-            ). With an empty endpoint, set <span className="font-medium">Region</span> to your real AWS region (for
-            example <code className="text-xs">us-east-1</code>) — not <code className="text-xs">auto</code> (use{" "}
+            Leave the host empty for AWS default. For R2, enter only the host after <code className="text-xs">https://</code>{" "}
+            (e.g. <code className="text-xs">&lt;account-id&gt;.r2.cloudflarestorage.com</code>). For Wasabi, pick the S3
+            service URL for your bucket region from{" "}
+            <Link
+              href="https://docs.wasabi.com/docs/what-are-the-service-urls-for-wasabi-s-different-storage-regions"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Wasabi service URLs
+            </Link>{" "}
+            (e.g. <code className="text-xs">s3.ap-southeast-1.wasabisys.com</code>). With an empty host, set{" "}
+            <span className="font-medium">Region</span> to your real AWS region (for example{" "}
+            <code className="text-xs">us-east-1</code>) — not <code className="text-xs">auto</code> (use{" "}
             <code className="text-xs">auto</code> only with a custom endpoint, such as R2).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="cg-endpoint">Endpoint URL (optional)</Label>
-            <Input
-              id="cg-endpoint"
-              value={endpoint}
-              onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://..."
-              autoComplete="off"
-            />
+            <div className="flex min-w-0 rounded-md border border-input bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              <span
+                className="flex shrink-0 items-center border-r border-input bg-muted/50 px-3 text-sm text-muted-foreground"
+                aria-hidden
+              >
+                https://
+              </span>
+              <Input
+                id="cg-endpoint"
+                value={endpointRest}
+                onChange={(e) => {
+                  let v = e.target.value
+                  if (v.includes("://")) {
+                    v = stripEndpointSchemeForInput(v)
+                  }
+                  setEndpointRest(v)
+                }}
+                placeholder="s3.ap-southeast-1.wasabisys.com"
+                className="border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                autoComplete="off"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Only the hostname goes on the right (scheme is fixed). Paste a full URL if you like —{" "}
+              <code className="text-xs">https://</code> is stripped automatically.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="cg-region">Region</Label>
@@ -223,23 +270,50 @@ export function ClientGalleryStorageSettings() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="cg-access-key">Access key ID</Label>
-            <Input
-              id="cg-access-key"
-              value={accessKeyId}
-              onChange={(e) => setAccessKeyId(e.target.value)}
-              autoComplete="off"
-            />
+            <div className="relative">
+              <Input
+                id="cg-access-key"
+                type={showAccessKey ? "text" : "password"}
+                value={accessKeyId}
+                onChange={(e) => setAccessKeyId(e.target.value)}
+                className="pr-10 font-mono text-sm"
+                autoComplete="off"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full"
+                onClick={() => setShowAccessKey((s) => !s)}
+                aria-label={showAccessKey ? "Hide access key ID" : "Show access key ID"}
+              >
+                {showAccessKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="cg-secret">Secret access key</Label>
-            <Input
-              id="cg-secret"
-              type="password"
-              value={secretAccessKey}
-              onChange={(e) => setSecretAccessKey(e.target.value)}
-              placeholder={data?.configured ? "Leave blank to keep current secret" : "Required"}
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <Input
+                id="cg-secret"
+                type={showSecretKey ? "text" : "password"}
+                value={secretAccessKey}
+                onChange={(e) => setSecretAccessKey(e.target.value)}
+                placeholder={data?.configured ? "Leave blank to keep current secret" : "Required"}
+                className="pr-10 font-mono text-sm"
+                autoComplete="new-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full"
+                onClick={() => setShowSecretKey((s) => !s)}
+                aria-label={showSecretKey ? "Hide secret access key" : "Show secret access key"}
+              >
+                {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-2">
             <div className="space-y-0.5">

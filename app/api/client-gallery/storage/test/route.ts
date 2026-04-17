@@ -36,7 +36,14 @@ export const POST = withAuth(async (user) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[client-gallery storage test]", e)
-    return jsonError(`Connection failed: ${msg}`, 502)
+    let detail = `Connection failed: ${msg}`
+    const noEndpoint = !config.endpoint || String(config.endpoint).trim() === ""
+    const looksUnknown = /unknown/i.test(msg) || msg === ""
+    if (noEndpoint && looksUnknown) {
+      detail +=
+        " With an empty Endpoint, the app talks to AWS S3 only. For Wasabi, set Endpoint to your region URL (e.g. https://s3.ap-southeast-1.wasabisys.com for region ap-southeast-1), then Save and test again."
+    }
+    return jsonError(detail, 502)
   }
 
   return jsonOk({ ok: true })

@@ -17,9 +17,11 @@ export function withAuth(
     try {
       const user = await getCurrentUser()
       if (!user) return jsonError("Unauthorized", 401)
-      return handler(user as Record<string, unknown>, request)
-    } catch {
-      return jsonError("Unauthorized", 401)
+      // Must await: otherwise handler rejections (e.g. DB errors) become unhandled and surface as opaque 500s.
+      return await handler(user as Record<string, unknown>, request)
+    } catch (e) {
+      console.error("[withAuth]", e)
+      return jsonError("Internal server error", 500)
     }
   }
 }
@@ -31,9 +33,15 @@ export function withOptionalAuth(
   return async (request: Request) => {
     try {
       const user = await getCurrentUser()
-      return handler(user as Record<string, unknown> | null, request)
-    } catch {
-      return handler(null, request)
+      return await handler(user as Record<string, unknown> | null, request)
+    } catch (e) {
+      console.error("[withOptionalAuth]", e)
+      try {
+        return await handler(null, request)
+      } catch (e2) {
+        console.error("[withOptionalAuth] fallback handler", e2)
+        return jsonError("Internal server error", 500)
+      }
     }
   }
 }

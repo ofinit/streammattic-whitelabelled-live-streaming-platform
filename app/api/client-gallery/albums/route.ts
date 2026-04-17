@@ -7,6 +7,15 @@ import { listAlbumsForUser } from "@/lib/client-gallery-album-service"
 
 export const dynamic = "force-dynamic"
 
+/** Postgres undefined_table — migration not applied */
+function missingGalleryTablesMessage(e: unknown): string | null {
+  const code = (e as { code?: string })?.code
+  if (code === "42P01") {
+    return "Photo gallery tables are missing. On the server, run: psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f scripts/ensure-client-gallery-albums-schema.sql (or your usual migration process)."
+  }
+  return null
+}
+
 export const GET = withAuth(async (user) => {
   const role = user.role as string
   if (role !== "studio" && role !== "streamer") {
@@ -17,8 +26,14 @@ export const GET = withAuth(async (user) => {
   if (!entitled) {
     return jsonError("Photo gallery add-on is not enabled for your account", 403)
   }
-  const albums = await listAlbumsForUser(uid)
-  return jsonOk({ albums })
+  try {
+    const albums = await listAlbumsForUser(uid)
+    return jsonOk({ albums })
+  } catch (e) {
+    console.error("[client-gallery/albums GET]", e)
+    const hint = missingGalleryTablesMessage(e)
+    return jsonError(hint ?? "Could not load albums", hint ? 503 : 500)
+  }
 })
 
 export const POST = withAuth(async (user, request: Request) => {
@@ -76,7 +91,8 @@ export const POST = withAuth(async (user, request: Request) => {
       const code = (e as { code?: string })?.code
       if (code === "23505") continue
       console.error("[client-gallery/albums POST]", e)
-      return jsonError("Could not create album", 500)
+      const hint = missingGalleryTablesMessage(e)
+      return jsonError(hint ?? "Could not create album", hint ? 503 : 500)
     }
   }
   console.error("[client-gallery/albums POST] token collision", lastErr)

@@ -1,0 +1,33 @@
+# Dependencies and build outputs (reinstalled / produced inside the image)
+node_modules
+.next
+out
+build
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+docs
+scripts/README-*.md
+
+# Env and secrets (Coolify injects env at build/runtime; do not bake local .env)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Local data
+uploads
+backups
+
+# Tests and misc
+coverage
+.nyc_output
+playwright-report
+test-results
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db

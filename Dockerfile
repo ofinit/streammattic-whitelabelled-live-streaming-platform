@@ -13,6 +13,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Coolify/small VPS: avoid OOM during `next build` (exit 137 / killed)
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN npm run build
 
 # Production image: production deps only (no Tailwind/PostCSS in final node_modules)

@@ -2,7 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { clientGalleryNavItems, isGalleryNavActive } from "@/lib/client-gallery-nav-items"
+import { BrandedLogo } from "@/components/branding/branded-logo"
+import {
+  CLIENT_GALLERY_BASE,
+  clientGalleryNavItems,
+  isGalleryNavActive,
+} from "@/lib/client-gallery-nav-items"
 import { cn } from "@/lib/utils"
 
 export { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
@@ -15,6 +20,15 @@ export function ClientGallerySubNav() {
       aria-label="AI Client Photo Gallery"
       className="shrink-0 lg:w-52"
     >
+      <div className="mb-3 px-1 lg:mb-4">
+        <Link
+          href={CLIENT_GALLERY_BASE}
+          className="inline-flex w-full min-w-0 items-center rounded-md outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Gallery home"
+        >
+          <BrandedLogo size="sm" className="min-w-0 max-w-full [&_span]:truncate" />
+        </Link>
+      </div>
       <p className="mb-2 hidden px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:block">
         Gallery
       </p>

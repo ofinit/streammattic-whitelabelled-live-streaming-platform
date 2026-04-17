@@ -22,8 +22,22 @@ export type PaymentGateway = "razorpay" | "instamojo" | "cashfree" | "manual"
 // DNS Status
 export type DNSStatus = "pending" | "verified" | "failed"
 
-// Landing Themes
-export type LandingTheme = "modern_emerald" | "midnight_royal" | "rosewood_elegance" | "nordic_slate" | "sunset_orchard"
+// Landing Themes (stored in studio_branding.selected_theme)
+export type LandingThemeCategory = "wedding" | "events" | "sports" | "custom"
+
+export type LandingTheme =
+  | "modern_emerald"
+  | "midnight_royal"
+  | "rosewood_elegance"
+  | "nordic_slate"
+  | "sunset_orchard"
+  | "lavender_veil"
+  | "ivory_gold"
+  | "graphite_pulse"
+  | "arena_night"
+  | "velocity_teal"
+  | "stadium_amber"
+  | "mono_editorial"
 
 // Base User
   export interface User {

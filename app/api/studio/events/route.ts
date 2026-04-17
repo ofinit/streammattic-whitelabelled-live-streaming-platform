@@ -74,6 +74,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "studioId is required" }, { status: 400 })
   }
 
+  const sessionUser = await getCurrentUser()
+  if (!sessionUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  const role = sessionUser.role as string
+  if (role !== "admin" && studioId !== sessionUser.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})

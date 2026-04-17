@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react"
 import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { LANDING_THEMES, getThemeConfig } from "@/lib/landing-themes"
+import {
+  LANDING_THEME_CATEGORY_TABS,
+  categoryForTheme,
+  themesForCategory,
+} from "@/lib/landing-themes"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Branding, LandingTheme } from "@/lib/types"
+import type { Branding, LandingTheme, LandingThemeCategory } from "@/lib/types"
 
 interface BrandingFormProps {
   branding: Branding
@@ -20,6 +24,7 @@ interface BrandingFormProps {
 }
 
 export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) {
+  const [themeCategoryTab, setThemeCategoryTab] = useState<LandingThemeCategory>("events")
   const [formData, setFormData] = useState<Branding>(branding || {
     brandName: "",
     themeColor: "#10b981",
@@ -35,6 +40,11 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
       setFormData(branding)
     }
   }, [branding])
+
+  useEffect(() => {
+    const c = categoryForTheme(formData.selectedTheme as LandingTheme | undefined)
+    if (c) setThemeCategoryTab(c)
+  }, [formData.selectedTheme])
 
   useEffect(() => {
     onChange?.(formData)
@@ -457,61 +467,110 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
               <CardDescription>Choose an elegant theme for your public landing page</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {LANDING_THEMES.map((theme) => {
-                  const isSelected = formData.selectedTheme === theme.id || (!formData.selectedTheme && theme.id === "modern_emerald")
-                  return (
-                    <div
-                      key={theme.id}
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          selectedTheme: theme.id,
-                          themeColor: theme.primaryColor,
-                          accentColor: theme.accentColor,
-                        })
-                      }}
-                      className={cn(
-                        "group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all hover:shadow-md",
-                        isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      {isSelected && (
-                        <div className="absolute right-2 top-2 z-10">
-                          <CheckCircle2 className="h-5 w-5 text-primary fill-background" />
-                        </div>
-                      )}
-                      
-                      <div className="mb-4 flex h-32 flex-col gap-2 rounded-lg p-3 bg-zinc-900 overflow-hidden relative">
-                         {/* Mini Preview mock */}
-                         <div className="h-4 w-2/3 rounded bg-white/20" />
-                         <div className="flex gap-2">
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: theme.primaryColor }} />
-                            <div className="flex-1 space-y-2">
-                               <div className="h-3 w-full rounded bg-white/10" />
-                               <div className="h-3 w-3/4 rounded bg-white/10" />
-                            </div>
-                         </div>
-                         <div className="mt-auto h-8 w-full rounded" style={{ backgroundColor: theme.accentColor }} />
-                         <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
-                      </div>
+              <Tabs
+                value={themeCategoryTab}
+                onValueChange={(v) => setThemeCategoryTab(v as LandingThemeCategory)}
+                className="w-full"
+              >
+                <TabsList className="mb-6 grid h-auto w-full grid-cols-2 gap-1 p-1 sm:grid-cols-4">
+                  {LANDING_THEME_CATEGORY_TABS.map(({ id, label }) => (
+                    <TabsTrigger key={id} value={id} className="text-xs sm:text-sm">
+                      {label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {LANDING_THEME_CATEGORY_TABS.map(({ id }) => (
+                  <TabsContent key={id} value={id} className="mt-0">
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {themesForCategory(id).map((theme) => {
+                        const isSelected =
+                          formData.selectedTheme === theme.id ||
+                          (!formData.selectedTheme && theme.id === "modern_emerald")
+                        return (
+                          <div
+                            key={theme.id}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault()
+                                setFormData({
+                                  ...formData,
+                                  selectedTheme: theme.id,
+                                  themeColor: theme.primaryColor,
+                                  accentColor: theme.accentColor,
+                                })
+                              }
+                            }}
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                selectedTheme: theme.id,
+                                themeColor: theme.primaryColor,
+                                accentColor: theme.accentColor,
+                              })
+                            }}
+                            className={cn(
+                              "group relative cursor-pointer overflow-hidden rounded-xl border-2 p-4 transition-all hover:shadow-md",
+                              isSelected
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : "border-border hover:border-primary/50",
+                            )}
+                          >
+                            {isSelected && (
+                              <div className="absolute right-2 top-2 z-10">
+                                <CheckCircle2 className="h-5 w-5 fill-background text-primary" />
+                              </div>
+                            )}
 
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-foreground">{theme.name}</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{theme.description}</p>
-                      </div>
-                      
-                      <div className="mt-4 flex items-center gap-3">
-                         <div className="flex gap-1">
-                            <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: theme.primaryColor }} />
-                            <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: theme.accentColor }} />
-                         </div>
-                         <span className="text-[10px] font-medium text-muted-foreground uppercase">{theme.fontFamily.split(",")[0].replace(/'/g, "")}</span>
-                      </div>
+                            <div className="relative mb-4 flex h-32 flex-col gap-2 overflow-hidden rounded-lg bg-zinc-900 p-3">
+                              <div className="h-4 w-2/3 rounded bg-white/20" />
+                              <div className="flex gap-2">
+                                <div
+                                  className="h-8 w-8 rounded-full"
+                                  style={{ backgroundColor: theme.primaryColor }}
+                                />
+                                <div className="flex-1 space-y-2">
+                                  <div className="h-3 w-full rounded bg-white/10" />
+                                  <div className="h-3 w-3/4 rounded bg-white/10" />
+                                </div>
+                              </div>
+                              <div
+                                className="mt-auto h-8 w-full rounded"
+                                style={{ backgroundColor: theme.accentColor }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-foreground">{theme.name}</h4>
+                              <p className="text-xs leading-relaxed text-muted-foreground">
+                                {theme.description}
+                              </p>
+                            </div>
+
+                            <div className="mt-4 flex items-center gap-3">
+                              <div className="flex gap-1">
+                                <div
+                                  className="h-4 w-4 rounded-full border border-border"
+                                  style={{ backgroundColor: theme.primaryColor }}
+                                />
+                                <div
+                                  className="h-4 w-4 rounded-full border border-border"
+                                  style={{ backgroundColor: theme.accentColor }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-medium uppercase text-muted-foreground">
+                                {theme.fontFamily.split(",")[0]?.replace(/'/g, "") ?? ""}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
-              </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>

@@ -93,20 +93,25 @@ export default function StudioEventsPage() {
     timezone?: string
   } | undefined>()
 
-  // Open dialog when arriving from /studio/control-center/new (after auth user is available)
+  // Open dialog when arriving from /studio/control-center/new (optional tab=details|stream|template|settings)
   useEffect(() => {
     if (typeof window === "undefined" || !user) return
     const params = new URLSearchParams(window.location.search)
     if (params.get("openModal") !== "1") return
     const url = new URL(window.location.href)
     url.searchParams.delete("openModal")
+    const tabParam = params.get("tab")
+    url.searchParams.delete("tab")
     window.history.replaceState({}, "", url.toString())
     if (user.role === "studio" && studioSubscriptionExpiredForEvents(user.studioSubscriptionExpiresAt)) {
       toast.error("Renew your Studio subscription in Settings to create events.")
       return
     }
+    const validTabs = ["details", "stream", "template", "settings"] as const
+    const initialTab =
+      tabParam && (validTabs as readonly string[]).includes(tabParam) ? tabParam : undefined
     setEditingEvent(undefined)
-    setEventDialogInitialTab(undefined)
+    setEventDialogInitialTab(initialTab)
     setEventDialogInitialStreamType(undefined)
     setEventDialogInitialDraft(undefined)
     setShowEventDialog(true)

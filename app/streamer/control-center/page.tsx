@@ -86,16 +86,23 @@ export default function StreamerEventsPage() {
     timezone?: string
   } | undefined>()
 
-  // Open dialog when arriving from /streamer/control-center/new
+  // Open dialog when arriving from /streamer/control-center/new (optional tab=details|stream|template|settings)
   useEffect(() => {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     if (params.get("openModal") === "1") {
       const url = new URL(window.location.href)
       url.searchParams.delete("openModal")
+      const tabParam = params.get("tab")
+      url.searchParams.delete("tab")
       window.history.replaceState({}, "", url.toString())
+      const validTabs = ["details", "stream", "template", "settings"] as const
+      const initialTab =
+        tabParam && (validTabs as readonly string[]).includes(tabParam)
+          ? tabParam
+          : undefined
       setEditingEvent(undefined)
-      setEventDialogInitialTab(undefined)
+      setEventDialogInitialTab(initialTab)
       setEventDialogInitialStreamType(undefined)
       setEventDialogInitialDraft(undefined)
       setShowEventDialog(true)

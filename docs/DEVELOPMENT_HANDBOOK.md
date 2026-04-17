@@ -134,6 +134,8 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/client-gallery/albums/[id]/upload/route.ts` | `/api/client-gallery/albums/[id]/upload` |
 | `app/api/client-gallery/albums/route.ts` | `/api/client-gallery/albums` |
 | `app/api/client-gallery/public/[token]/route.ts` | `/api/client-gallery/public/[token]` |
+| `app/api/client-gallery/storage/route.ts` | `/api/client-gallery/storage` |
+| `app/api/client-gallery/storage/test/route.ts` | `/api/client-gallery/storage/test` |
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
 | `app/api/credits/route.ts` | `/api/credits` |

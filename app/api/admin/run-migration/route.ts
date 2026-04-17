@@ -219,6 +219,20 @@ export async function POST(req: Request) {
       "IDX client_gallery_assets album_id",
       `CREATE INDEX IF NOT EXISTS idx_client_gallery_assets_album_id ON client_gallery_assets(album_id)`,
     ],
+    [
+      "TABLE client_gallery_storage_settings",
+      `CREATE TABLE IF NOT EXISTS client_gallery_storage_settings (
+        user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        s3_endpoint TEXT,
+        s3_region TEXT NOT NULL DEFAULT 'auto',
+        s3_bucket TEXT NOT NULL,
+        s3_access_key_id TEXT NOT NULL,
+        s3_secret_access_key_encrypted TEXT NOT NULL,
+        s3_force_path_style BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+    ],
   ]
   for (const [label, stmt] of clientGalleryMigrations) {
     await tryExec(label, stmt)

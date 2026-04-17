@@ -33,7 +33,8 @@ export default async function PublicClientGalleryPage({
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">{payload.title}</h1>
       {!payload.storageConfigured ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          This gallery is temporarily unavailable (object storage is not configured on the server).
+          This gallery cannot load photos yet — the owner needs to connect S3-compatible storage under Client gallery →
+          Settings.
         </p>
       ) : payload.images.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">No photos uploaded yet.</p>

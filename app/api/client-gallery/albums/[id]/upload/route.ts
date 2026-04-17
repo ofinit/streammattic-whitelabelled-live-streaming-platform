@@ -1,8 +1,9 @@
 import { getCurrentUser } from "@/lib/auth"
 import { jsonError, jsonOk } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
+import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { getDb } from "@/lib/db"
-import { isClientGalleryS3Configured, presignPutObject } from "@/lib/s3-client-gallery"
+import { presignPutObjectForOwner } from "@/lib/s3-client-gallery"
 import { isUuid, MAX_CLIENT_GALLERY_UPLOAD_BYTES, safeGalleryObjectFilename } from "@/lib/client-gallery-utils"
 
 export const dynamic = "force-dynamic"
@@ -21,8 +22,8 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     return jsonError("Photo gallery add-on is not enabled for your account", 403)
   }
 
-  if (!isClientGalleryS3Configured()) {
-    return jsonError("Object storage is not configured (set CLIENT_GALLERY_S3_* env vars)", 503)
+  if (!(await isStorageConfiguredForUser(uid))) {
+    return jsonError("Configure S3 storage under Client gallery → Settings before uploading.", 503)
   }
 
   const { id: albumId } = await props.params
@@ -70,7 +71,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   let presignedUrl: string
   try {
-    presignedUrl = await presignPutObject(objectKey, contentType)
+    presignedUrl = await presignPutObjectForOwner(uid, objectKey, contentType)
   } catch (e) {
     console.error("[client-gallery upload presign]", e)
     return jsonError("Could not create upload URL", 500)

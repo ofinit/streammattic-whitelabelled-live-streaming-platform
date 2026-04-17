@@ -162,8 +162,11 @@ export function ClientGalleryDashboard({
               <CardTitle className="text-lg text-card-foreground">Your albums</CardTitle>
             </div>
             <CardDescription>
-              Standalone photographer albums (not tied to live events). Configure <code className="text-xs">CLIENT_GALLERY_S3_*</code>{" "}
-              on the server for uploads.
+              Standalone photographer albums (not tied to live events). Connect your bucket under{" "}
+              <Link href={`${CLIENT_GALLERY_BASE}/settings`} className="font-medium text-primary underline-offset-4 hover:underline">
+                Settings
+              </Link>{" "}
+              before uploading.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

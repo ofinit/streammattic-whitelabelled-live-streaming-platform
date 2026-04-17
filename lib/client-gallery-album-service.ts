@@ -1,5 +1,6 @@
 import { getDb, toCamel } from "@/lib/db"
-import { isClientGalleryS3Configured, presignGetObject } from "@/lib/s3-client-gallery"
+import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
+import { presignGetObjectForOwner } from "@/lib/s3-client-gallery"
 
 export type AlbumRow = {
   id: string
@@ -109,13 +110,14 @@ export type PublicAlbumPayload = {
 export async function buildPublicAlbumPayload(publicToken: string): Promise<PublicAlbumPayload | null> {
   const sql = getDb()
   const rows = await sql`
-    SELECT id, title FROM client_gallery_albums WHERE public_token = ${publicToken} LIMIT 1
+    SELECT id, title, user_id FROM client_gallery_albums WHERE public_token = ${publicToken} LIMIT 1
   `
-  const album = rows[0] as { id?: string; title?: string } | undefined
+  const album = rows[0] as { id?: string; title?: string; user_id?: string } | undefined
   if (!album?.id) return null
 
   const title = String(album.title ?? "Album")
-  if (!isClientGalleryS3Configured()) {
+  const ownerId = String(album.user_id ?? "")
+  if (!ownerId || !(await isStorageConfiguredForUser(ownerId))) {
     return { title, storageConfigured: false, images: [] }
   }
 
@@ -130,7 +132,12 @@ export async function buildPublicAlbumPayload(publicToken: string): Promise<Publ
     const id = String(a.id)
     const key = String(a.s3_key ?? "")
     const contentType = a.content_type != null ? String(a.content_type) : null
-    const url = await presignGetObject(key, 3600)
+    let url: string
+    try {
+      url = await presignGetObjectForOwner(ownerId, key, 3600)
+    } catch {
+      continue
+    }
     images.push({ id, url, contentType })
   }
   return { title, storageConfigured: true, images }
@@ -150,7 +157,7 @@ export async function buildOwnerAlbumWithUrls(albumId: string, userId: string) {
       url: null as string | null,
     }))
 
-  if (!isClientGalleryS3Configured()) {
+  if (!(await isStorageConfiguredForUser(albumMeta.userId))) {
     return {
       ...albumMeta,
       storageConfigured: false as const,
@@ -167,7 +174,7 @@ export async function buildOwnerAlbumWithUrls(albumId: string, userId: string) {
     url: string | null
   }[] = []
   for (const asset of rawAssets) {
-    const url = await presignGetObject(asset.s3Key, 3600)
+    const url = await presignGetObjectForOwner(albumMeta.userId, asset.s3Key, 3600)
     assets.push({
       id: asset.id,
       s3Key: asset.s3Key,

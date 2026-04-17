@@ -158,9 +158,15 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
 
       {!album.storageConfigured ? (
         <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="py-4 text-sm text-foreground">
-            Object storage is not configured on the server. Set <code className="rounded bg-muted px-1">CLIENT_GALLERY_S3_*</code>{" "}
-            environment variables, then uploads will work.
+          <CardContent className="flex flex-col gap-3 py-4 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Connect your S3-compatible bucket (R2, Wasabi, AWS, etc.) under{" "}
+              <strong className="text-foreground">Client gallery → Settings</strong> to enable uploads and guest image
+              previews.
+            </p>
+            <Button type="button" variant="secondary" className="shrink-0" asChild>
+              <Link href={`${CLIENT_GALLERY_BASE}/settings`}>Open Settings</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : null}

@@ -1,54 +1,57 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import type { DecryptedStorageConfig } from "@/lib/client-gallery-storage"
+import { getDecryptedStorageForUser } from "@/lib/client-gallery-storage"
 
-let cached: S3Client | null = null
-
-export function isClientGalleryS3Configured(): boolean {
-  return Boolean(
-    process.env.CLIENT_GALLERY_S3_BUCKET?.trim() &&
-      process.env.CLIENT_GALLERY_S3_REGION?.trim() &&
-      process.env.CLIENT_GALLERY_S3_ACCESS_KEY_ID?.trim() &&
-      process.env.CLIENT_GALLERY_S3_SECRET_ACCESS_KEY?.trim(),
-  )
+export function createS3ClientFromConfig(config: DecryptedStorageConfig): S3Client {
+  return new S3Client({
+    region: config.region,
+    endpoint: config.endpoint ?? undefined,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+    forcePathStyle: config.forcePathStyle,
+  })
 }
 
-export function getClientGalleryBucket(): string {
-  return process.env.CLIENT_GALLERY_S3_BUCKET?.trim() || ""
-}
-
-export function getClientGalleryS3Client(): S3Client {
-  if (!isClientGalleryS3Configured()) {
-    throw new Error("CLIENT_GALLERY_S3_* environment variables are not fully configured")
+/**
+ * Presigned PUT for an object key using the album owner's saved S3 credentials (BYOS — no platform env fallback).
+ */
+export async function presignPutObjectForOwner(
+  ownerUserId: string,
+  key: string,
+  contentType: string,
+  expiresIn = 3600,
+): Promise<string> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
   }
-  if (!cached) {
-    const endpoint = process.env.CLIENT_GALLERY_S3_ENDPOINT?.trim()
-    cached = new S3Client({
-      region: process.env.CLIENT_GALLERY_S3_REGION!,
-      endpoint: endpoint && endpoint.length > 0 ? endpoint : undefined,
-      credentials: {
-        accessKeyId: process.env.CLIENT_GALLERY_S3_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.CLIENT_GALLERY_S3_SECRET_ACCESS_KEY!,
-      },
-      forcePathStyle: process.env.CLIENT_GALLERY_S3_FORCE_PATH_STYLE === "true",
-    })
-  }
-  return cached
-}
-
-export async function presignPutObject(key: string, contentType: string, expiresIn = 3600): Promise<string> {
-  const client = getClientGalleryS3Client()
+  const client = createS3ClientFromConfig(config)
   const cmd = new PutObjectCommand({
-    Bucket: getClientGalleryBucket(),
+    Bucket: config.bucket,
     Key: key,
     ContentType: contentType,
   })
   return getSignedUrl(client, cmd, { expiresIn })
 }
 
-export async function presignGetObject(key: string, expiresIn = 3600): Promise<string> {
-  const client = getClientGalleryS3Client()
+/**
+ * Presigned GET for guest / owner previews using the album owner's credentials.
+ */
+export async function presignGetObjectForOwner(
+  ownerUserId: string,
+  key: string,
+  expiresIn = 3600,
+): Promise<string> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
+  }
+  const client = createS3ClientFromConfig(config)
   const cmd = new GetObjectCommand({
-    Bucket: getClientGalleryBucket(),
+    Bucket: config.bucket,
     Key: key,
   })
   return getSignedUrl(client, cmd, { expiresIn })

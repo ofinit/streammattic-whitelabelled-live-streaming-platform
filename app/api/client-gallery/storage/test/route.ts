@@ -1,7 +1,7 @@
-import { HeadBucketCommand } from "@aws-sdk/client-s3"
+import { HeadBucketCommand, type S3Client } from "@aws-sdk/client-s3"
 import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
-import { getDecryptedStorageForUser } from "@/lib/client-gallery-storage"
+import { getDecryptedStorageForUser, StorageConfigError } from "@/lib/client-gallery-storage"
 import { createS3ClientFromConfig } from "@/lib/s3-client-gallery"
 
 export const dynamic = "force-dynamic"
@@ -22,7 +22,15 @@ export const POST = withAuth(async (user) => {
     return jsonError("Save storage settings first, then test the connection.", 400)
   }
 
-  const client = createS3ClientFromConfig(config)
+  let client: S3Client
+  try {
+    client = createS3ClientFromConfig(config)
+  } catch (e) {
+    if (e instanceof StorageConfigError) {
+      return jsonError(e.message, 400)
+    }
+    throw e
+  }
   try {
     await client.send(new HeadBucketCommand({ Bucket: config.bucket }))
   } catch (e) {

@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth"
 import { jsonError, jsonOk } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
-import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
+import { isStorageConfiguredForUser, StorageConfigError } from "@/lib/client-gallery-storage"
 import { getDb } from "@/lib/db"
 import { presignPutObjectForOwner } from "@/lib/s3-client-gallery"
 import { isUuid, MAX_CLIENT_GALLERY_UPLOAD_BYTES, safeGalleryObjectFilename } from "@/lib/client-gallery-utils"
@@ -73,6 +73,9 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
   try {
     presignedUrl = await presignPutObjectForOwner(uid, objectKey, contentType)
   } catch (e) {
+    if (e instanceof StorageConfigError) {
+      return jsonError(e.message, 400)
+    }
     console.error("[client-gallery upload presign]", e)
     return jsonError("Could not create upload URL", 500)
   }

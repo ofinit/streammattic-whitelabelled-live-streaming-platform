@@ -43,7 +43,7 @@ const PROVIDER_GUIDES: ProviderGuide[] = [
     name: "AWS S3",
     docsUrl: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html",
     endpoint: "Leave blank (AWS default endpoint routing).",
-    region: "Use your bucket region (e.g. us-east-1).",
+    region: "Use your bucket region (e.g. us-east-1), not auto.",
     forcePathStyle: "Off",
   },
   {
@@ -55,14 +55,15 @@ const PROVIDER_GUIDES: ProviderGuide[] = [
   },
   {
     name: "Wasabi",
-    docsUrl: "https://docs.wasabi.com/docs/how-do-i-use-aws-sdks-with-wasabi",
-    endpoint: "https://s3.<region>.wasabisys.com",
-    region: "Use your Wasabi region (e.g. us-east-1).",
+    docsUrl: "https://docs.wasabi.com/docs/how-do-i-use-aws-sdk-for-javascript-v3-with-wasabi",
+    endpoint:
+      "Required: https://s3.<region>.wasabisys.com (use your bucket’s region — see Wasabi “service URLs for storage regions”).",
+    region: "Must match the region in the endpoint (e.g. us-east-1). Do not use auto.",
     forcePathStyle: "Off",
   },
   {
     name: "MinIO",
-    docsUrl: "https://min.io/docs/minio/linux/developers/javascript/minio-javascript.html",
+    docsUrl: "https://min.io/docs/minio/linux/administration/object-management.html",
     endpoint: "https://<your-minio-host>",
     region: "auto or your custom server region.",
     forcePathStyle: "On (recommended for MinIO).",
@@ -183,7 +184,10 @@ export function ClientGalleryStorageSettings() {
           <CardTitle className="text-lg">S3-compatible endpoint</CardTitle>
           <CardDescription>
             Leave endpoint empty for AWS default. For R2, use your account endpoint (e.g.{" "}
-            <code className="text-xs">https://&lt;account-id&gt;.r2.cloudflarestorage.com</code>).
+            <code className="text-xs">https://&lt;account-id&gt;.r2.cloudflarestorage.com</code>
+            ). With an empty endpoint, set <span className="font-medium">Region</span> to your real AWS region (for
+            example <code className="text-xs">us-east-1</code>) — not <code className="text-xs">auto</code> (use{" "}
+            <code className="text-xs">auto</code> only with a custom endpoint, such as R2).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

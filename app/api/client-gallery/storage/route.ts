@@ -2,6 +2,7 @@ import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
 import {
   getPublicStorageSettingsForUser,
+  getStorageConfigS3InvalidReason,
   upsertStorageSettings,
 } from "@/lib/client-gallery-storage"
 
@@ -58,6 +59,11 @@ export const PUT = withAuth(async (user, request: Request) => {
   }
   if (!bucket.trim() || !accessKeyId.trim()) {
     return jsonError("Bucket and access key are required", 400)
+  }
+
+  const configInvalid = getStorageConfigS3InvalidReason({ endpoint, region })
+  if (configInvalid) {
+    return jsonError(configInvalid, 400)
   }
 
   try {

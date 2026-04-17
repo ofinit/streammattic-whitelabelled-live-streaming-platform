@@ -11,6 +11,37 @@ export type DecryptedStorageConfig = {
   forcePathStyle: boolean
 }
 
+/** Thrown when endpoint/region cannot be used with the AWS S3 client (invalid DNS or signing). */
+export class StorageConfigError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "StorageConfigError"
+  }
+}
+
+function isAutoRegionPlaceholder(region: string): boolean {
+  return region.trim().toLowerCase() === "auto"
+}
+
+function hasCustomEndpoint(endpoint: string | null | undefined): boolean {
+  return endpoint != null && String(endpoint).trim() !== ""
+}
+
+/**
+ * When Endpoint is empty, the AWS SDK uses Region in the hostname (e.g. bucket.s3.us-east-1.amazonaws.com).
+ * Region "auto" is only valid with a custom Endpoint (e.g. Cloudflare R2); otherwise DNS fails (…s3.auto.amazonaws.com).
+ */
+export function getStorageConfigS3InvalidReason(
+  config: Pick<DecryptedStorageConfig, "endpoint" | "region">,
+): string | null {
+  if (hasCustomEndpoint(config.endpoint)) return null
+  if (!isAutoRegionPlaceholder(config.region)) return null
+  return (
+    'Region cannot be "auto" when Endpoint is empty — the AWS SDK would use an invalid host (bucket.s3.auto.amazonaws.com). ' +
+    "For AWS S3, set Region to your bucket region (for example us-east-1). For Cloudflare R2, set your R2 Endpoint URL and keep Region as auto."
+  )
+}
+
 /** Safe fields for GET /api/client-gallery/storage (secret never returned; access key id shown for editing). */
 export type PublicStorageSettings = {
   configured: boolean

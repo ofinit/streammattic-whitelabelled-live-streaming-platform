@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { AuthUser } from "@/lib/auth-context"
 
-const DEFAULT_SECTION_TITLE = "My Events Photos"
+const DEFAULT_SECTION_TITLE = "Client gallery"
 const DEFAULT_UNSUPPORTED_DESCRIPTION =
-  "This gallery section is available to streamer and studio accounts. Sign in with a creator account to list events and gallery photos."
+  "This section is available to streamer and studio accounts with the client gallery add-on enabled."
 
 /**
  * Access states for client-gallery routes when the user is not a streamer/studio (or signed out).

@@ -85,6 +85,8 @@ export function middleware(request: NextRequest) {
      * POST /api/upload remains authenticated in the route handler.
      */
     pathname.startsWith("/api/uploads") ||
+    /** Guest viewer: album by public token (no session) */
+    pathname.startsWith("/api/client-gallery/public") ||
     pathname.startsWith("/api/auth") ||
     /** Admin APIs enforce role in route handlers */
     pathname.startsWith("/api/admin") ||

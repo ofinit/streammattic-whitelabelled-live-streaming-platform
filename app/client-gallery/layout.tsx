@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import { DashboardWithSidebar } from "@/components/dashboard/dashboard-with-sidebar"
 import { ClientGallerySubNav } from "@/components/client-gallery/client-gallery-sub-nav"
 import { useAuth } from "@/lib/auth-context"
@@ -8,6 +9,8 @@ import { SidebarProvider } from "@/lib/sidebar-context"
 
 export default function ClientGalleryLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth()
+  const pathname = usePathname()
+  const isPublicViewerToken = pathname?.startsWith("/client-gallery/v/") ?? false
 
   if (isLoading) {
     return (
@@ -15,6 +18,10 @@ export default function ClientGalleryLayout({ children }: { children: ReactNode 
         Loading…
       </div>
     )
+  }
+
+  if (isPublicViewerToken) {
+    return <div className="min-h-screen bg-background text-foreground">{children}</div>
   }
 
   if (user?.role === "streamer" || user?.role === "studio") {

@@ -124,10 +124,16 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/auth/profile/route.ts` | `/api/auth/profile` |
 | `app/api/auth/register/route.ts` | `/api/auth/register` |
 | `app/api/auth/reset-password/route.ts` | `/api/auth/reset-password` |
+| `app/api/auth/theme/route.ts` | `/api/auth/theme` |
 | `app/api/auth/youtube/callback/route.ts` | `/api/auth/youtube/callback` |
 | `app/api/auth/youtube/route.ts` | `/api/auth/youtube` |
 | `app/api/branding/lookup/route.ts` | `/api/branding/lookup` |
 | `app/api/branding/route.ts` | `/api/branding` |
+| `app/api/client-gallery/albums/[id]/assets/route.ts` | `/api/client-gallery/albums/[id]/assets` |
+| `app/api/client-gallery/albums/[id]/route.ts` | `/api/client-gallery/albums/[id]` |
+| `app/api/client-gallery/albums/[id]/upload/route.ts` | `/api/client-gallery/albums/[id]/upload` |
+| `app/api/client-gallery/albums/route.ts` | `/api/client-gallery/albums` |
+| `app/api/client-gallery/public/[token]/route.ts` | `/api/client-gallery/public/[token]` |
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
 | `app/api/credits/route.ts` | `/api/credits` |

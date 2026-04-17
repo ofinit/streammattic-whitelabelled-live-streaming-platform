@@ -23,9 +23,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import type { AuthUser } from "@/lib/auth-context"
+import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
 import { cn } from "@/lib/utils"
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r) => r.json())
 
 type PgStatus = {
   catalog?: { productName?: string; listingEnabled?: boolean }
@@ -69,9 +70,18 @@ export function ClientGalleryDashboard({
     { revalidateOnFocus: true },
   )
 
+  const entitled = pg?.entitled === true
+  const { data: albumsRes } = useSWR<{ albums?: { assetCount?: number }[] }>(
+    entitled && (user.role === "streamer" || user.role === "studio") ? "/api/client-gallery/albums" : null,
+    fetcher,
+    { revalidateOnFocus: true },
+  )
+
   const firstName = user.name?.trim().split(/\s+/)[0] ?? ""
   const productLabel = pg?.catalog?.productName?.trim() || "Client photo gallery"
-  const entitled = pg?.entitled === true
+  type AlbumLite = { id: string; title?: string; assetCount?: number }
+  const albums: AlbumLite[] = Array.isArray(albumsRes?.albums) ? (albumsRes.albums as AlbumLite[]) : []
+  const totalPhotos = albums.reduce((sum, a) => sum + (typeof a.assetCount === "number" ? a.assetCount : 0), 0)
 
   return (
     <div className="space-y-6">
@@ -113,11 +123,13 @@ export function ClientGalleryDashboard({
 
         <StatCard title="Photos in gallery">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tabular-nums text-foreground">0</span>
+            <span className="text-3xl font-bold tabular-nums text-foreground">{entitled ? totalPhotos : "—"}</span>
             <span className="text-sm text-muted-foreground">photos</span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Totals will appear when the BYOS upload pipeline is connected to your storage.
+            {entitled
+              ? "Uploaded to your S3-compatible bucket via client gallery albums."
+              : "Enable the add-on to upload photos to your bucket."}
           </p>
         </StatCard>
 
@@ -150,19 +162,33 @@ export function ClientGalleryDashboard({
               <CardTitle className="text-lg text-card-foreground">Your albums</CardTitle>
             </div>
             <CardDescription>
-              When the BYOS pipeline lists buckets and prefixes for your account, client albums will show here.
+              Standalone photographer albums (not tied to live events). Configure <code className="text-xs">CLIENT_GALLERY_S3_*</code>{" "}
+              on the server for uploads.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
-              No client albums yet — create events and connect storage from your dashboard when ready.
-            </p>
+            {entitled && albums.length > 0 ? (
+              <ul className="space-y-2 text-sm text-foreground">
+                {albums.slice(0, 5).map((a) => (
+                  <li key={a.id} className="flex justify-between gap-2">
+                    <span className="truncate font-medium">{a.title || "Untitled album"}</span>
+                    <span className="shrink-0 text-muted-foreground">{a.assetCount ?? 0} photos</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="rounded-lg border border-dashed border-border bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+                {entitled
+                  ? "No albums yet — create one and upload to your bucket."
+                  : "Enable the add-on, then create albums from the sidebar."}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm">
-                <Link href={dashboardHref}>Go to dashboard</Link>
+                <Link href={`${CLIENT_GALLERY_BASE}/my-albums`}>My albums</Link>
               </Button>
               <Button asChild size="sm" variant="outline">
-                <Link href={packagesHref}>Packages</Link>
+                <Link href={`${CLIENT_GALLERY_BASE}/new-album`}>New album</Link>
               </Button>
             </div>
           </CardContent>

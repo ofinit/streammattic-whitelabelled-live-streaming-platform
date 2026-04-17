@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { Loader2, Save, TestTube2 } from "lucide-react"
+import { ExternalLink, Loader2, Save, TestTube2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +29,59 @@ type StoragePayload = {
   accessKeyId?: string
   forcePathStyle?: boolean
 }
+
+type ProviderGuide = {
+  name: string
+  docsUrl: string
+  endpoint: string
+  region: string
+  forcePathStyle: string
+}
+
+const PROVIDER_GUIDES: ProviderGuide[] = [
+  {
+    name: "AWS S3",
+    docsUrl: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html",
+    endpoint: "Leave blank (AWS default endpoint routing).",
+    region: "Use your bucket region (e.g. us-east-1).",
+    forcePathStyle: "Off",
+  },
+  {
+    name: "Cloudflare R2",
+    docsUrl: "https://developers.cloudflare.com/r2/api/s3/api/",
+    endpoint: "https://<account-id>.r2.cloudflarestorage.com",
+    region: "auto",
+    forcePathStyle: "Off",
+  },
+  {
+    name: "Wasabi",
+    docsUrl: "https://docs.wasabi.com/docs/how-do-i-use-aws-sdks-with-wasabi",
+    endpoint: "https://s3.<region>.wasabisys.com",
+    region: "Use your Wasabi region (e.g. us-east-1).",
+    forcePathStyle: "Off",
+  },
+  {
+    name: "MinIO",
+    docsUrl: "https://min.io/docs/minio/linux/developers/javascript/minio-javascript.html",
+    endpoint: "https://<your-minio-host>",
+    region: "auto or your custom server region.",
+    forcePathStyle: "On (recommended for MinIO).",
+  },
+  {
+    name: "DigitalOcean Spaces",
+    docsUrl: "https://docs.digitalocean.com/products/spaces/how-to/use-aws-sdks/",
+    endpoint: "https://<region>.digitaloceanspaces.com",
+    region: "Use your Space region (e.g. nyc3).",
+    forcePathStyle: "Off",
+  },
+  {
+    name: "Backblaze B2 (S3)",
+    docsUrl: "https://www.backblaze.com/docs/cloud-storage-use-the-aws-sdk-for-javascript-v3-with-backblaze-b2",
+    endpoint: "https://s3.<region>.backblazeb2.com",
+    region: "Use your B2 region code.",
+    forcePathStyle: "Off",
+  },
+]
 
 export function ClientGalleryStorageSettings() {
   const { data, isLoading, mutate } = useSWR<StoragePayload>("/api/client-gallery/storage", fetcher, {
@@ -212,9 +265,63 @@ export function ClientGalleryStorageSettings() {
         </CardContent>
       </Card>
 
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <CardTitle className="text-lg">Provider quick-start</CardTitle>
+          <CardDescription>
+            Use these references to map each provider into this form. Create an API key with read/write/list bucket access,
+            then run <span className="font-medium">Test connection</span>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-3">
+            {PROVIDER_GUIDES.map((provider) => (
+              <div key={provider.name} className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-medium text-foreground">{provider.name}</h3>
+                  <Link
+                    href={provider.docsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Docs
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <p>
+                    <span className="font-medium text-foreground">Endpoint:</span> {provider.endpoint}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Region:</span> {provider.region}
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Force path style:</span> {provider.forcePathStyle}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">Before saving</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              <li>Confirm the bucket already exists and is in the region you entered.</li>
+              <li>Grant key permissions for list, read, and write objects in that bucket.</li>
+              <li>Set bucket CORS/policies if your provider requires them for uploads.</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
       <p className="text-xs text-muted-foreground">
         The platform uses <code className="rounded bg-muted px-1">ENCRYPTION_SECRET</code> (server-only) to encrypt your
         secret key in the database — set once by your host, not per user.
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Full auto-configuration is not available yet. It requires provider OAuth/API integrations with account-level
+        permissions. Today this page supports manual credentials, encrypted server-side storage, and one-click connection
+        testing.
       </p>
 
       <Button variant="ghost" asChild>

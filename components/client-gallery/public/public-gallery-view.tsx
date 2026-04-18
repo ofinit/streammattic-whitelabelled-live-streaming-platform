@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import type { PublicAlbumPayload } from "@/lib/client-gallery-album-service"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryLightbox } from "./gallery-lightbox"
-import { Calendar, MapPin, Clock, Play, X } from "lucide-react"
+import { Calendar, MapPin, Play } from "lucide-react"
 
 function formatRange(startsAt: string | null, endsAt: string | null): string | null {
   const a = startsAt ? new Date(startsAt) : null
@@ -37,8 +37,8 @@ function PhotoTile({ img, index, onClick, className, aspect = "square" }: PhotoT
     <button
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-lg bg-muted transition-all duration-300",
-        "hover:shadow-lg hover:shadow-black/20",
+        "group relative overflow-hidden rounded-lg bg-zinc-100 transition-all duration-300",
+        "hover:shadow-lg hover:shadow-zinc-400/35",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         aspectClasses[aspect],
         className
@@ -261,15 +261,15 @@ function WeddingSoft({ payload, onImageClick }: GalleryLayoutProps) {
   const [hero, ...rest] = payload.images
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 via-background to-background dark:from-rose-950/20">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-zinc-50/80">
       {/* Decorative header */}
       <header className="relative overflow-hidden px-4 py-12 text-center sm:px-8 sm:py-16">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-rose-200/40 blur-3xl dark:bg-rose-800/20" />
-          <div className="absolute -bottom-20 -right-20 h-60 w-60 rounded-full bg-violet-200/40 blur-3xl dark:bg-violet-800/20" />
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-rose-200/60 blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 h-60 w-60 rounded-full bg-violet-200/50 blur-3xl" />
         </div>
         <div className="relative mx-auto max-w-4xl">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-rose-600/80 dark:text-rose-300/80">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-rose-600">
             Wedding Gallery
           </p>
           <h1 className="mt-4 font-serif text-3xl font-light italic tracking-tight text-foreground sm:text-4xl md:text-5xl">
@@ -323,20 +323,20 @@ function LavenderDream({ payload, onImageClick }: GalleryLayoutProps) {
   const [hero, ...rest] = payload.images
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50/30 via-background to-fuchsia-50/20 dark:from-violet-950/20 dark:via-background dark:to-fuchsia-950/10">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50/90 via-white to-fuchsia-50/70">
       {/* Header Card */}
       <header className="px-4 py-8 sm:px-8 sm:py-12">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-violet-200/50 bg-white/60 px-6 py-8 text-center shadow-lg backdrop-blur-sm dark:border-violet-800/30 dark:bg-zinc-900/60 sm:px-12 sm:py-10">
-          <h1 className="text-2xl font-semibold text-violet-950 dark:text-violet-100 sm:text-3xl md:text-4xl">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-violet-200/80 bg-white px-6 py-8 text-center shadow-md sm:px-12 sm:py-10">
+          <h1 className="text-2xl font-semibold text-violet-950 sm:text-3xl md:text-4xl">
             {payload.title}
           </h1>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-violet-800/70 dark:text-violet-300/70">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-violet-800/85">
             {payload.eventType && <span className="capitalize">{payload.eventType}</span>}
             {payload.location && <span>· {payload.location}</span>}
             {formatRange(payload.startsAt, payload.endsAt) && <span>· {formatRange(payload.startsAt, payload.endsAt)}</span>}
           </div>
           {payload.description && (
-            <p className="mx-auto mt-4 max-w-xl text-sm text-violet-700/60 dark:text-violet-400/60">{payload.description}</p>
+            <p className="mx-auto mt-4 max-w-xl text-sm text-violet-700/80">{payload.description}</p>
           )}
         </div>
       </header>
@@ -364,23 +364,29 @@ function LavenderDream({ payload, onImageClick }: GalleryLayoutProps) {
   )
 }
 
-// Sports Bold - High contrast dynamic
+// Sports Bold - energetic light palette
 function SportsBold({ payload, onImageClick }: GalleryLayoutProps) {
   const [hero, ...rest] = payload.images
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/90 via-white to-slate-50 text-slate-900">
       {/* Bold Header */}
-      <header className="bg-gradient-to-r from-primary via-primary/90 to-orange-500/80 px-4 py-8 sm:px-8 sm:py-10">
+      <header className="border-b border-amber-200/80 bg-gradient-to-r from-amber-100 via-orange-50 to-amber-50 px-4 py-8 sm:px-8 sm:py-10">
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/80">
-            {payload.eventType && <span className="rounded bg-white/20 px-2 py-1">{payload.eventType}</span>}
-            <span className="hidden sm:inline">·</span>
-            {formatRange(payload.startsAt, payload.endsAt) && <span>{formatRange(payload.startsAt, payload.endsAt)}</span>}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900/70">
+            {payload.eventType && (
+              <span className="rounded-md border border-amber-300/80 bg-white/80 px-2 py-1 text-amber-950 shadow-sm">
+                {payload.eventType}
+              </span>
+            )}
+            <span className="hidden sm:inline text-amber-800/50">·</span>
+            {formatRange(payload.startsAt, payload.endsAt) && (
+              <span className="text-amber-900/80">{formatRange(payload.startsAt, payload.endsAt)}</span>
+            )}
           </div>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">{payload.title}</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-amber-950 sm:text-4xl md:text-5xl">{payload.title}</h1>
           {payload.location && (
-            <p className="mt-2 flex items-center gap-1 text-sm font-medium text-white/80">
+            <p className="mt-2 flex items-center gap-1 text-sm font-medium text-amber-900/75">
               <MapPin className="h-4 w-4" /> {payload.location}
             </p>
           )}
@@ -417,20 +423,20 @@ function SportsBold({ payload, onImageClick }: GalleryLayoutProps) {
       </main>
 
       {/* Footer accent */}
-      <div className="h-2 bg-gradient-to-r from-primary to-orange-500" />
+      <div className="h-1.5 bg-gradient-to-r from-amber-300 via-orange-200 to-amber-200" />
     </div>
   )
 }
 
-// Minimal Dark - Dark theme focus
+// Obsidian frame — clean light gallery (minimal borders, bright canvas)
 function MinimalDark({ payload, onImageClick }: GalleryLayoutProps) {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-white text-zinc-800">
       {/* Minimal Header */}
-      <header className="border-b border-zinc-800 px-4 py-8 sm:px-8 sm:py-10">
+      <header className="border-b border-zinc-200 bg-zinc-50/90 px-4 py-8 sm:px-8 sm:py-10">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-2xl font-light tracking-wide text-zinc-100 sm:text-3xl">{payload.title}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-light tracking-wide text-zinc-900 sm:text-3xl">{payload.title}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600">
             {payload.eventType && <span>{payload.eventType}</span>}
             {payload.location && <span>· {payload.location}</span>}
             {formatRange(payload.startsAt, payload.endsAt) && <span>· {formatRange(payload.startsAt, payload.endsAt)}</span>}
@@ -438,23 +444,23 @@ function MinimalDark({ payload, onImageClick }: GalleryLayoutProps) {
         </div>
       </header>
 
-      {/* Dark Gallery */}
+      {/* Gallery */}
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
           {payload.images.map((img, idx) => (
             <button
               key={img.id}
               onClick={() => onImageClick(idx)}
-              className="group relative aspect-square overflow-hidden rounded bg-zinc-900 transition-all duration-300 hover:shadow-lg hover:shadow-black/50"
+              className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-50 transition-all duration-300 hover:border-zinc-300 hover:shadow-md hover:shadow-zinc-300/40"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
                 alt={`Photo ${idx + 1}`}
-                className="h-full w-full object-cover opacity-90 transition-all duration-500 group-hover:scale-105 group-hover:opacity-100"
+                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+              <div className="absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/10" />
             </button>
           ))}
         </div>

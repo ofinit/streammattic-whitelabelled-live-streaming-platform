@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
 import { DashboardWithSidebar } from "@/components/dashboard/dashboard-with-sidebar"
 import { ClientGallerySubNav } from "@/components/client-gallery/client-gallery-sub-nav"
 import { useAuth } from "@/lib/auth-context"
@@ -14,14 +15,22 @@ export default function ClientGalleryLayout({ children }: { children: ReactNode 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "min-h-screen px-4 py-10 text-center text-sm text-muted-foreground",
+          isPublicViewerToken && "client-gallery-public bg-background text-foreground",
+          !isPublicViewerToken && "bg-background",
+        )}
+      >
         Loading…
       </div>
     )
   }
 
   if (isPublicViewerToken) {
-    return <div className="min-h-screen bg-background text-foreground">{children}</div>
+    return (
+      <div className="client-gallery-public min-h-screen bg-background text-foreground">{children}</div>
+    )
   }
 
   if (user?.role === "streamer" || user?.role === "studio") {

@@ -205,7 +205,83 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
   const sql = getDb()
   const pinFieldsInPatch = p.guestPinRequired !== undefined || p.regenerateGuestPin === true
 
+  type MetadataRow = { id?: string; gallery_template_id?: string; updated_at?: unknown }
+  type FullRow = MetadataRow & {
+    guest_pin_required?: boolean
+    guest_pin?: string | null
+  }
+
+  const respondMetadataOk = (row: MetadataRow | undefined, pinRequired: boolean, pin: string | null) => {
+    if (!row?.id) {
+      return jsonError("Not found", 404)
+    }
+    return jsonOk({
+      album: {
+        id: String(row.id),
+        title,
+        description,
+        location,
+        eventType,
+        startsAt,
+        endsAt,
+        expiresAt,
+        notes,
+        galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
+        guestPinRequired: pinRequired,
+        guestPin: pin,
+        updatedAt: row.updated_at,
+      },
+    })
+  }
+
+  const respondFullOk = (row: FullRow | undefined) => {
+    if (!row?.id) {
+      return jsonError("Not found", 404)
+    }
+    return jsonOk({
+      album: {
+        id: String(row.id),
+        title,
+        description,
+        location,
+        eventType,
+        startsAt,
+        endsAt,
+        expiresAt,
+        notes,
+        galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
+        guestPinRequired: Boolean(row.guest_pin_required),
+        guestPin: row.guest_pin != null ? String(row.guest_pin) : null,
+        updatedAt: row.updated_at,
+      },
+    })
+  }
+
   try {
+    if (!pinFieldsInPatch) {
+      const rows = await sql`
+        UPDATE client_gallery_albums
+        SET
+          title = ${tTitle},
+          description = ${tDescription},
+          location = ${tLocation},
+          event_type = ${tEventType},
+          starts_at = ${tStartsAt},
+          ends_at = ${tEndsAt},
+          expires_at = ${tExpiresAt},
+          notes = ${tNotes},
+          gallery_template_id = ${galleryTemplateId},
+          updated_at = NOW()
+        WHERE id = ${id} AND user_id = ${uid}
+        RETURNING id, gallery_template_id, updated_at
+      `
+      return respondMetadataOk(
+        rows[0] as MetadataRow | undefined,
+        Boolean(current.guestPinRequired),
+        current.guestPin ?? null,
+      )
+    }
+
     const rows = await sql`
       UPDATE client_gallery_albums
       SET
@@ -229,35 +305,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         guest_pin,
         updated_at
     `
-    const row = rows[0] as
-      | {
-          id?: string
-          gallery_template_id?: string
-          guest_pin_required?: boolean
-          guest_pin?: string | null
-          updated_at?: unknown
-        }
-      | undefined
-    if (!row?.id) {
-      return jsonError("Not found", 404)
-    }
-    return jsonOk({
-      album: {
-        id: String(row.id),
-        title,
-        description,
-        location,
-        eventType,
-        startsAt,
-        endsAt,
-        expiresAt,
-        notes,
-        galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
-        guestPinRequired: Boolean(row.guest_pin_required),
-        guestPin: row.guest_pin != null ? String(row.guest_pin) : null,
-        updatedAt: row.updated_at,
-      },
-    })
+    return respondFullOk(rows[0] as FullRow | undefined)
   } catch (e) {
     if (isPgUndefinedColumnError(e) && pinFieldsInPatch) {
       const hint = clientGallerySchemaErrorMessage(e)
@@ -269,46 +317,24 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
           UPDATE client_gallery_albums
           SET
             title = ${tTitle},
-            description = ${tDescription},
-            location = ${tLocation},
-            event_type = ${tEventType},
-            starts_at = ${tStartsAt},
-            ends_at = ${tEndsAt},
-            expires_at = ${tExpiresAt},
-            notes = ${tNotes},
             gallery_template_id = ${galleryTemplateId},
             updated_at = NOW()
           WHERE id = ${id} AND user_id = ${uid}
           RETURNING id, gallery_template_id, updated_at
         `
-        const row = rows[0] as { id?: string; gallery_template_id?: string; updated_at?: unknown } | undefined
-        if (!row?.id) {
-          return jsonError("Not found", 404)
-        }
-        return jsonOk({
-          album: {
-            id: String(row.id),
-            title,
-            description,
-            location,
-            eventType,
-            startsAt,
-            endsAt,
-            expiresAt,
-            notes,
-            galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
-            guestPinRequired: current.guestPinRequired,
-            guestPin: current.guestPin,
-            updatedAt: row.updated_at,
-          },
-        })
+        return respondMetadataOk(
+          rows[0] as MetadataRow | undefined,
+          Boolean(current.guestPinRequired),
+          current.guestPin ?? null,
+        )
       } catch (e2) {
-        console.error("[client-gallery/albums PATCH] legacy fallback", e2)
+        console.error("[client-gallery/albums PATCH] minimal metadata fallback", e2)
         const hint = clientGallerySchemaErrorMessage(e2)
         return jsonError(hint ?? "Could not update album", hint ? 503 : 500)
       }
     }
-    console.error("[client-gallery/albums PATCH]", e)
+    const pg = e as { code?: string; message?: string; detail?: string }
+    console.error("[client-gallery/albums PATCH]", pg.code, pg.message, pg.detail ?? "", e)
     const hint = clientGallerySchemaErrorMessage(e)
     if (hint) {
       return jsonError(hint, 503)

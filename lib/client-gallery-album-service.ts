@@ -5,7 +5,7 @@ import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { presignGetObjectForOwner } from "@/lib/s3-client-gallery"
 
 /** Postgres undefined_column — e.g. metadata migration not applied yet */
-function isPgUndefinedColumnError(e: unknown): boolean {
+export function isPgUndefinedColumnError(e: unknown): boolean {
   return (e as { code?: string })?.code === "42703"
 }
 

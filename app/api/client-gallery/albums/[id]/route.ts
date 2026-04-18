@@ -9,7 +9,7 @@ import {
   generateGuestAlbumPin,
   parseAlbumPatchBody,
 } from "@/lib/client-gallery-album-metadata"
-import { getAlbumByIdForUser } from "@/lib/client-gallery-album-service"
+import { getAlbumByIdForUser, isPgUndefinedColumnError } from "@/lib/client-gallery-album-service"
 import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { getDb } from "@/lib/db"
 import { deleteAllObjectsUnderPrefixForOwner } from "@/lib/s3-client-gallery"
@@ -175,8 +175,8 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
   let galleryTemplateId = current.galleryTemplateId
   if (p.galleryTemplateId !== undefined) galleryTemplateId = p.galleryTemplateId
 
-  let guestPinRequired = current.guestPinRequired
-  let guestPin = current.guestPin
+  let guestPinRequired = Boolean(current.guestPinRequired)
+  let guestPin = current.guestPin ?? null
 
   if (p.guestPinRequired !== undefined) {
     guestPinRequired = p.guestPinRequired
@@ -191,22 +191,35 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
     }
   }
 
+  /** node-pg: never pass undefined as a bound parameter — use null for SQL NULL. */
+  const tTitle = title
+  const tDescription = description ?? null
+  const tLocation = location ?? null
+  const tEventType = eventType ?? null
+  const tStartsAt = startsAt ?? null
+  const tEndsAt = endsAt ?? null
+  const tExpiresAt = expiresAt ?? null
+  const tNotes = notes ?? null
+  const tGuestPin = guestPin ?? null
+
   const sql = getDb()
+  const pinFieldsInPatch = p.guestPinRequired !== undefined || p.regenerateGuestPin === true
+
   try {
     const rows = await sql`
       UPDATE client_gallery_albums
       SET
-        title = ${title},
-        description = ${description},
-        location = ${location},
-        event_type = ${eventType},
-        starts_at = ${startsAt},
-        ends_at = ${endsAt},
-        expires_at = ${expiresAt},
-        notes = ${notes},
+        title = ${tTitle},
+        description = ${tDescription},
+        location = ${tLocation},
+        event_type = ${tEventType},
+        starts_at = ${tStartsAt},
+        ends_at = ${tEndsAt},
+        expires_at = ${tExpiresAt},
+        notes = ${tNotes},
         gallery_template_id = ${galleryTemplateId},
         guest_pin_required = ${guestPinRequired},
-        guest_pin = ${guestPin},
+        guest_pin = ${tGuestPin},
         updated_at = NOW()
       WHERE id = ${id} AND user_id = ${uid}
       RETURNING
@@ -246,8 +259,64 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
       },
     })
   } catch (e) {
+    if (isPgUndefinedColumnError(e) && pinFieldsInPatch) {
+      const hint = clientGallerySchemaErrorMessage(e)
+      return jsonError(hint ?? "Photo gallery columns are missing on the server database.", 503)
+    }
+    if (isPgUndefinedColumnError(e) && !pinFieldsInPatch) {
+      try {
+        const rows = await sql`
+          UPDATE client_gallery_albums
+          SET
+            title = ${tTitle},
+            description = ${tDescription},
+            location = ${tLocation},
+            event_type = ${tEventType},
+            starts_at = ${tStartsAt},
+            ends_at = ${tEndsAt},
+            expires_at = ${tExpiresAt},
+            notes = ${tNotes},
+            gallery_template_id = ${galleryTemplateId},
+            updated_at = NOW()
+          WHERE id = ${id} AND user_id = ${uid}
+          RETURNING id, gallery_template_id, updated_at
+        `
+        const row = rows[0] as { id?: string; gallery_template_id?: string; updated_at?: unknown } | undefined
+        if (!row?.id) {
+          return jsonError("Not found", 404)
+        }
+        return jsonOk({
+          album: {
+            id: String(row.id),
+            title,
+            description,
+            location,
+            eventType,
+            startsAt,
+            endsAt,
+            expiresAt,
+            notes,
+            galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
+            guestPinRequired: current.guestPinRequired,
+            guestPin: current.guestPin,
+            updatedAt: row.updated_at,
+          },
+        })
+      } catch (e2) {
+        console.error("[client-gallery/albums PATCH] legacy fallback", e2)
+        const hint = clientGallerySchemaErrorMessage(e2)
+        return jsonError(hint ?? "Could not update album", hint ? 503 : 500)
+      }
+    }
     console.error("[client-gallery/albums PATCH]", e)
     const hint = clientGallerySchemaErrorMessage(e)
-    return jsonError(hint ?? "Could not update album", hint ? 503 : 500)
+    if (hint) {
+      return jsonError(hint, 503)
+    }
+    const msg = e instanceof Error ? e.message : "Unknown error"
+    return jsonError(
+      process.env.NODE_ENV === "development" ? `Could not update album: ${msg}` : "Could not update album",
+      500,
+    )
   }
 }

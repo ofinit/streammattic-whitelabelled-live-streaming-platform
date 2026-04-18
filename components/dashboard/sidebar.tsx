@@ -204,7 +204,25 @@ type PhotoGalleryStatusResponse = {
   eligible: boolean
 }
 
-/** Opens client gallery in a new tab; only when add-on is listed and user is entitled. */
+/** Short sidebar label; full product name from catalog in tooltip / aria. */
+const PHOTO_GALLERY_MENU_SHORT = "AI photo gallery"
+
+function PhotoGalleryMenuBadge({ collapsed }: { collapsed: boolean }) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "shrink-0 border-emerald-500/45 px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400",
+        collapsed &&
+          "absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center border-emerald-500/50 px-0.5 text-[9px] leading-none",
+      )}
+    >
+      {collapsed ? "AI" : "Add-on"}
+    </Badge>
+  )
+}
+
+/** Same-origin dashboard link when no legacy external URL; listed add-on visible to all streamers/studios. */
 function PhotoGallerySidebarNavLink({
   pathname,
   isCollapsed,
@@ -221,37 +239,59 @@ function PhotoGallerySidebarNavLink({
   })
   const effectiveCollapsed = isCollapsed && !isMobileSheet
 
-  if (!data?.catalog?.listingEnabled || !data.entitled) return null
+  if (!data?.eligible) return null
 
   const href = resolveGalleryHref(data.catalog)
-  const title = data.catalog.productName?.trim() || "Client gallery"
+  const titleFull = data.catalog.productName?.trim() || "AI Client Photo Gallery"
+  const isExternal = /^https?:\/\//i.test(href)
   const pathForActive = href.startsWith("/") ? href.replace(/\/$/, "") || "/" : ""
   const isActive =
     Boolean(pathForActive && pathname && (pathname === pathForActive || pathname.startsWith(`${pathForActive}/`)))
 
-  const linkBody = (
+  const linkClassName = cn(
+    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors min-h-11",
+    isActive
+      ? "bg-sidebar-accent text-sidebar-primary"
+      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+    effectiveCollapsed && "justify-center px-2",
+  )
+
+  const linkBody = isExternal ? (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`${title} (opens in new tab)`}
+      aria-label={`${titleFull} (opens in new tab)`}
       onClick={() => onNavigate?.()}
-      className={cn(
-        "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors min-h-11",
-        isActive
-          ? "bg-sidebar-accent text-sidebar-primary"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        effectiveCollapsed && "justify-center px-2",
-      )}
+      className={linkClassName}
     >
       <Images className="h-5 w-5 shrink-0" aria-hidden />
+      {effectiveCollapsed ? <PhotoGalleryMenuBadge collapsed /> : null}
       {!effectiveCollapsed && (
-        <span className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="truncate">{title}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="min-w-0 truncate">{PHOTO_GALLERY_MENU_SHORT}</span>
+          <PhotoGalleryMenuBadge collapsed={false} />
           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
         </span>
       )}
     </a>
+  ) : (
+    <Link
+      href={href}
+      aria-label={titleFull}
+      title={titleFull}
+      onClick={() => onNavigate?.()}
+      className={linkClassName}
+    >
+      <Images className="h-5 w-5 shrink-0" aria-hidden />
+      {effectiveCollapsed ? <PhotoGalleryMenuBadge collapsed /> : null}
+      {!effectiveCollapsed && (
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="min-w-0 truncate">{PHOTO_GALLERY_MENU_SHORT}</span>
+          <PhotoGalleryMenuBadge collapsed={false} />
+        </span>
+      )}
+    </Link>
   )
 
   if (effectiveCollapsed) {
@@ -261,7 +301,13 @@ function PhotoGallerySidebarNavLink({
           <div className="relative">{linkBody}</div>
         </TooltipTrigger>
         <TooltipContent side="right" className="max-w-[16rem]">
-          {title} (opens in new tab)
+          <span className="flex flex-wrap items-center gap-2">
+            <span>
+              {titleFull}
+              {isExternal ? " (opens in new tab)" : ""}
+            </span>
+            <PhotoGalleryMenuBadge collapsed={false} />
+          </span>
         </TooltipContent>
       </Tooltip>
     )

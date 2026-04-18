@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import QRCode from "react-qr-code"
@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
+import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
+import { GalleryTemplatePicker } from "@/components/client-gallery/gallery-template-picker"
 
 async function fetcher(url: string) {
   const res = await fetch(url, { credentials: "include" })
@@ -53,6 +55,13 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
   const [deletingAsset, setDeletingAsset] = useState(false)
   const [deleteAlbumOpen, setDeleteAlbumOpen] = useState(false)
   const [deletingAlbum, setDeletingAlbum] = useState(false)
+  const [designTemplateId, setDesignTemplateId] = useState(DEFAULT_GALLERY_TEMPLATE_ID)
+  const [savingDesign, setSavingDesign] = useState(false)
+
+  const serverTemplateId = (data?.album as { galleryTemplateId?: string } | undefined)?.galleryTemplateId
+  useEffect(() => {
+    setDesignTemplateId(serverTemplateId ?? DEFAULT_GALLERY_TEMPLATE_ID)
+  }, [serverTemplateId])
 
   const album = data?.album as
     | {
@@ -169,6 +178,23 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
     }
   }, [albumId, router])
 
+  const saveGuestDesign = useCallback(async () => {
+    setSavingDesign(true)
+    try {
+      await fetchJson<{ album?: { galleryTemplateId?: string } }>(`/api/client-gallery/albums/${albumId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ galleryTemplateId: designTemplateId }),
+      })
+      toast.success("Guest page design saved")
+      await mutate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save design")
+    } finally {
+      setSavingDesign(false)
+    }
+  }, [albumId, designTemplateId, mutate])
+
   const copyLink = useCallback(async () => {
     const text =
       album?.viewerUrl ||
@@ -227,19 +253,13 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           album.startsAt ||
           album.endsAt ||
           album.expiresAt ||
-          album.notes ||
-          album.galleryTemplateId) && (
+          album.notes) && (
           <Card className="mt-4 border-border bg-muted/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Album details</CardTitle>
               <CardDescription>Shown on the guest page where applicable. Notes stay private.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              {album.galleryTemplateId ? (
-                <p>
-                  <span className="font-medium text-foreground">Layout:</span> {album.galleryTemplateId}
-                </p>
-              ) : null}
               {album.description ? <p className="text-foreground/90">{album.description}</p> : null}
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 {album.location ? <span>{album.location}</span> : null}
@@ -267,6 +287,43 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           </Card>
         )}
       </div>
+
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <CardTitle className="text-lg">Guest page design</CardTitle>
+          <CardDescription>
+            How the public gallery looks for visitors (lightbox, slideshow, and layout). Open guest view to preview.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <GalleryTemplatePicker
+            value={designTemplateId}
+            onChange={setDesignTemplateId}
+            disabled={savingDesign}
+            compact
+          />
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              type="button"
+              disabled={
+                savingDesign ||
+                designTemplateId === (album.galleryTemplateId ?? DEFAULT_GALLERY_TEMPLATE_ID)
+              }
+              onClick={() => void saveGuestDesign()}
+            >
+              {savingDesign ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save design
+            </Button>
+            {album.viewerPath ? (
+              <Button type="button" variant="outline" asChild>
+                <a href={album.viewerPath} target="_blank" rel="noopener noreferrer">
+                  Preview guest page
+                </a>
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
       {!album.storageConfigured ? (
         <Card className="border-amber-500/40 bg-amber-500/5">

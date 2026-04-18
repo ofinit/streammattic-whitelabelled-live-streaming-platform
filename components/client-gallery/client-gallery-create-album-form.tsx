@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight, FolderPlus, Loader2 } from "lucide-react"
@@ -54,13 +54,7 @@ export function ClientGalleryCreateAlbumForm() {
   const [notes, setNotes] = useState("")
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
-  const [category, setCategory] = useState<GalleryTemplateCategory>("events")
   const [galleryTemplateId, setGalleryTemplateId] = useState(DEFAULT_GALLERY_TEMPLATE_ID)
-
-  const filteredTemplates = useMemo(
-    () => CLIENT_GALLERY_TEMPLATES.filter((t) => t.category === category),
-    [category],
-  )
 
   function goNext() {
     const t = title.trim()
@@ -253,46 +247,11 @@ export function ClientGalleryCreateAlbumForm() {
             <CardDescription>Choose how the public guest gallery looks. You can change branding later in manage.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-wrap gap-2 border-b border-border pb-3">
-              {CATEGORY_ORDER.map((cat) => (
-                <Button
-                  key={cat}
-                  type="button"
-                  variant={category === cat ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    setCategory(cat)
-                    const first = CLIENT_GALLERY_TEMPLATES.find((t) => t.category === cat)
-                    if (first) setGalleryTemplateId(first.id)
-                  }}
-                >
-                  {CATEGORY_LABEL[cat]}
-                </Button>
-              ))}
-            </div>
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTemplates.map((t) => {
-                const selected = galleryTemplateId === t.id
-                return (
-                  <li key={t.id}>
-                    <button
-                      type="button"
-                      onClick={() => setGalleryTemplateId(t.id)}
-                      className={cn(
-                        "w-full rounded-xl border-2 p-4 text-left transition-colors",
-                        selected
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border bg-card hover:border-primary/40",
-                      )}
-                    >
-                      <GalleryTemplatePreview templateId={t.id} />
-                      <p className="font-medium text-foreground">{t.name}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+            <GalleryTemplatePicker
+              value={galleryTemplateId}
+              onChange={setGalleryTemplateId}
+              disabled={creating}
+            />
             <div className="flex flex-wrap gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={creating}>
                 <ChevronLeft className="mr-1 h-4 w-4" />

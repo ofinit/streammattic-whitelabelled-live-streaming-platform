@@ -17,4 +17,19 @@ export function safeGalleryObjectFilename(name: string): string {
   return t.length > 0 ? t : "image"
 }
 
+/**
+ * Folder name under cg/{userId}/ — human-readable slug from title plus album id for uniqueness.
+ * S3 "folders" are key prefixes; only [a-z0-9-] for broad compatibility.
+ */
+export function albumTitleToS3FolderSegment(title: string, albumId: string): string {
+  const slug = title
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80)
+  const base = slug.length > 0 ? slug : "album"
+  return `${base}-${albumId}`
+}
+
 export const MAX_CLIENT_GALLERY_UPLOAD_BYTES = 50 * 1024 * 1024

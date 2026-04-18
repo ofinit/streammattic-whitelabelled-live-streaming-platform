@@ -2,10 +2,20 @@
 
 import { useCallback, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import QRCode from "react-qr-code"
 import useSWR from "swr"
-import { Copy, Loader2, Upload } from "lucide-react"
+import { Copy, Loader2, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,6 +40,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
+  const router = useRouter()
   const { data, error, isLoading, mutate } = useSWR(
     `/api/client-gallery/albums/${albumId}`,
     fetcher,
@@ -38,6 +49,10 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
 
   const [uploading, setUploading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null)
+  const [deletingAsset, setDeletingAsset] = useState(false)
+  const [deleteAlbumOpen, setDeleteAlbumOpen] = useState(false)
+  const [deletingAlbum, setDeletingAlbum] = useState(false)
 
   const album = data?.album as
     | {
@@ -101,6 +116,50 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
     },
     [albumId, mutate],
   )
+
+  const deleteAsset = useCallback(async () => {
+    if (!deleteAssetId) return
+    setDeletingAsset(true)
+    try {
+      const res = await fetch(`/api/client-gallery/albums/${albumId}/assets/${deleteAssetId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const out = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error((out as { error?: string }).error || "Could not delete photo")
+      }
+      toast.success("Photo deleted")
+      setDeleteAssetId(null)
+      await mutate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed")
+    } finally {
+      setDeletingAsset(false)
+    }
+  }, [albumId, deleteAssetId, mutate])
+
+  const deleteAlbum = useCallback(async () => {
+    setDeletingAlbum(true)
+    try {
+      const res = await fetch(`/api/client-gallery/albums/${albumId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const out = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error((out as { error?: string }).error || "Could not delete album")
+      }
+      toast.success("Album deleted")
+      setDeleteAlbumOpen(false)
+      router.push(`${CLIENT_GALLERY_BASE}/my-albums`)
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed")
+    } finally {
+      setDeletingAlbum(false)
+    }
+  }, [albumId, router])
 
   const copyLink = useCallback(async () => {
     const text =
@@ -234,18 +293,45 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           <h2 className="mb-3 text-lg font-medium text-foreground">Photos</h2>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {assets.map((a) => (
-              <li key={a.id} className="aspect-square overflow-hidden rounded-lg bg-muted">
+              <li key={a.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
                 {a.url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={a.url} alt="" className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No preview</div>
                 )}
+                <div className="absolute right-1 top-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    className="h-8 w-8 bg-background/90 text-destructive shadow-sm hover:bg-destructive/10"
+                    title="Delete photo"
+                    onClick={() => setDeleteAssetId(a.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
+
+      <Card className="border-destructive/30 bg-card">
+        <CardHeader>
+          <CardTitle className="text-lg text-destructive">Delete album</CardTitle>
+          <CardDescription>
+            Removes this album and deletes the album folder (and all objects inside it) in your S3-compatible bucket.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button type="button" variant="destructive" onClick={() => setDeleteAlbumOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete entire album
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" asChild>
@@ -255,6 +341,41 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           <Link href={CLIENT_GALLERY_BASE}>Gallery dashboard</Link>
         </Button>
       </div>
+
+      <AlertDialog open={deleteAssetId != null} onOpenChange={(open) => !open && !deletingAsset && setDeleteAssetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the image from your album and deletes the file from your bucket. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAsset}>Cancel</AlertDialogCancel>
+            <Button type="button" variant="destructive" disabled={deletingAsset} onClick={() => void deleteAsset()}>
+              {deletingAsset ? "Deleting…" : "Delete photo"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAlbumOpen} onOpenChange={(open) => !open && !deletingAlbum && setDeleteAlbumOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this entire album?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All photos will be removed from the app and deleted from your S3-compatible storage. Guest links will stop
+              working.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAlbum}>Cancel</AlertDialogCancel>
+            <Button type="button" variant="destructive" disabled={deletingAlbum} onClick={() => void deleteAlbum()}>
+              {deletingAlbum ? "Deleting…" : "Delete album"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

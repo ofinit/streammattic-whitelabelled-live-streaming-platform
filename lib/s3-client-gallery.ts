@@ -1,4 +1,11 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import {
   type DecryptedStorageConfig,
@@ -63,4 +70,46 @@ export async function presignGetObjectForOwner(
     Key: key,
   })
   return getSignedUrl(client, cmd, { expiresIn })
+}
+
+export async function deleteObjectForOwner(ownerUserId: string, key: string): Promise<void> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
+  }
+  const client = createS3ClientFromConfig(config)
+  await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }))
+}
+
+/** Deletes all objects whose keys start with `prefix` (album s3_prefix, e.g. cg/user/slug-uuid/). */
+export async function deleteAllObjectsUnderPrefixForOwner(ownerUserId: string, prefix: string): Promise<void> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
+  }
+  const client = createS3ClientFromConfig(config)
+  const bucket = config.bucket
+  let continuationToken: string | undefined
+  do {
+    const list = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    )
+    const keys = (list.Contents ?? []).map((o) => o.Key).filter((k): k is string => Boolean(k))
+    if (keys.length > 0) {
+      for (let i = 0; i < keys.length; i += 1000) {
+        const batch = keys.slice(i, i + 1000)
+        await client.send(
+          new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+          }),
+        )
+      }
+    }
+    continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined
+  } while (continuationToken)
 }

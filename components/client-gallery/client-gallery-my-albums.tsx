@@ -1,9 +1,19 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ExternalLink, ImageIcon, Loader2, Plus } from "lucide-react"
+import { ExternalLink, ImageIcon, Loader2, Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
@@ -26,13 +36,37 @@ type AlbumRow = {
 }
 
 export function ClientGalleryMyAlbums() {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     "/api/client-gallery/albums",
     fetcher,
     { revalidateOnFocus: true },
   )
 
   const albums = useMemo(() => (Array.isArray(data?.albums) ? (data.albums as AlbumRow[]) : []), [data])
+  const [deleteTarget, setDeleteTarget] = useState<AlbumRow | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  async function confirmDeleteAlbum() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/client-gallery/albums/${deleteTarget.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const out = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error((out as { error?: string }).error || "Could not delete album")
+      }
+      toast.success("Album deleted")
+      setDeleteTarget(null)
+      await mutate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed")
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-6 py-2">
@@ -115,6 +149,16 @@ export function ClientGalleryMyAlbums() {
                       <Button variant="default" size="sm" asChild>
                         <Link href={`${CLIENT_GALLERY_BASE}/album/${al.id}`}>Manage</Link>
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setDeleteTarget(al)}
+                      >
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        Delete
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -129,6 +173,35 @@ export function ClientGalleryMyAlbums() {
           <Link href={CLIENT_GALLERY_BASE}>Back to gallery dashboard</Link>
         </Button>
       </div>
+
+      <AlertDialog open={deleteTarget != null} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this album?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the album from the app and deletes all photos under its folder in your S3-compatible bucket.
+              {deleteTarget ? (
+                <>
+                  {" "}
+                  <span className="font-medium text-foreground">“{deleteTarget.title || "Untitled"}”</span> cannot be
+                  recovered.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void confirmDeleteAlbum()}
+            >
+              {deleting ? "Deleting…" : "Delete album"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

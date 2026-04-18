@@ -2,7 +2,7 @@ import { getDb } from "@/lib/db"
 import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
 import { getClientGalleryViewerAbsoluteUrl } from "@/lib/client-gallery-public-url"
-import { newPublicGalleryToken } from "@/lib/client-gallery-utils"
+import { albumTitleToS3FolderSegment, newPublicGalleryToken } from "@/lib/client-gallery-utils"
 import { listAlbumsForUser } from "@/lib/client-gallery-album-service"
 
 export const dynamic = "force-dynamic"
@@ -60,7 +60,8 @@ export const POST = withAuth(async (user, request: Request) => {
 
   const sql = getDb()
   const albumId = crypto.randomUUID()
-  const s3Prefix = `cg/${uid}/${albumId}/`
+  const folderSegment = albumTitleToS3FolderSegment(title, albumId)
+  const s3Prefix = `cg/${uid}/${folderSegment}/`
 
   let lastErr: unknown
   for (let attempt = 0; attempt < 6; attempt++) {

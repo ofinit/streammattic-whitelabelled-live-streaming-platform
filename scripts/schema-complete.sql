@@ -177,6 +177,14 @@ CREATE TABLE IF NOT EXISTS client_gallery_albums (
   title TEXT NOT NULL DEFAULT 'Untitled album',
   public_token TEXT NOT NULL,
   s3_prefix TEXT NOT NULL,
+  description TEXT,
+  location TEXT,
+  event_type TEXT,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  notes TEXT,
+  gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

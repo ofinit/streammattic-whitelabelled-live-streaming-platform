@@ -238,6 +238,27 @@ export async function POST(req: Request) {
     await tryExec(label, stmt)
   }
 
+  const clientGalleryAlbumMetadata: [string, string][] = [
+    ["COL client_gallery_albums description", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS description TEXT`],
+    ["COL client_gallery_albums location", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS location TEXT`],
+    ["COL client_gallery_albums event_type", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS event_type TEXT`],
+    ["COL client_gallery_albums starts_at", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ`],
+    ["COL client_gallery_albums ends_at", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ`],
+    ["COL client_gallery_albums expires_at", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`],
+    ["COL client_gallery_albums notes", `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS notes TEXT`],
+    [
+      "COL client_gallery_albums gallery_template_id",
+      `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid'`,
+    ],
+    [
+      "UPDATE client_gallery_albums gallery_template_id",
+      `UPDATE client_gallery_albums SET gallery_template_id = 'classic-grid' WHERE gallery_template_id IS NULL`,
+    ],
+  ]
+  for (const [label, stmt] of clientGalleryAlbumMetadata) {
+    await tryExec(label, stmt)
+  }
+
   const analyticsMigrations: [string, string][] = [
     [
       "TABLE event_visitor_sessions",

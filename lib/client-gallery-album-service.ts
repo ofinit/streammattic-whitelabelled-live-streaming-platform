@@ -1,4 +1,5 @@
 import { getDb, toCamel } from "@/lib/db"
+import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { presignGetObjectForOwner } from "@/lib/s3-client-gallery"
 
@@ -8,6 +9,14 @@ export type AlbumRow = {
   title: string
   publicToken: string
   s3Prefix: string
+  description: string | null
+  location: string | null
+  eventType: string | null
+  startsAt: string | null
+  endsAt: string | null
+  expiresAt: string | null
+  notes: string | null
+  galleryTemplateId: string
   createdAt: string
   updatedAt: string
   assetCount?: number
@@ -22,6 +31,29 @@ export type AssetRow = {
   createdAt: string
 }
 
+function mapAlbumRow(o: Record<string, unknown>, assetCount?: number): AlbumRow {
+  return {
+    id: String(o.id),
+    userId: String(o.userId),
+    title: String(o.title ?? ""),
+    publicToken: String(o.publicToken ?? ""),
+    s3Prefix: String(o.s3Prefix ?? ""),
+    description: o.description != null ? String(o.description) : null,
+    location: o.location != null ? String(o.location) : null,
+    eventType: o.eventType != null ? String(o.eventType) : null,
+    startsAt: o.startsAt != null ? String(o.startsAt) : null,
+    endsAt: o.endsAt != null ? String(o.endsAt) : null,
+    expiresAt: o.expiresAt != null ? String(o.expiresAt) : null,
+    notes: o.notes != null ? String(o.notes) : null,
+    galleryTemplateId: normalizeGalleryTemplateId(
+      o.galleryTemplateId != null ? String(o.galleryTemplateId) : null,
+    ),
+    createdAt: o.createdAt != null ? String(o.createdAt) : "",
+    updatedAt: o.updatedAt != null ? String(o.updatedAt) : "",
+    assetCount,
+  }
+}
+
 export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
   const sql = getDb()
   const rows = await sql`
@@ -31,6 +63,14 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
       a.title,
       a.public_token,
       a.s3_prefix,
+      a.description,
+      a.location,
+      a.event_type,
+      a.starts_at,
+      a.ends_at,
+      a.expires_at,
+      a.notes,
+      a.gallery_template_id,
       a.created_at,
       a.updated_at,
       COALESCE(c.cnt, 0)::int AS asset_count
@@ -45,16 +85,8 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
   `
   return rows.map((r) => {
     const o = toCamel(r) as Record<string, unknown>
-    return {
-      id: String(o.id),
-      userId: String(o.userId),
-      title: String(o.title ?? ""),
-      publicToken: String(o.publicToken ?? ""),
-      s3Prefix: String(o.s3Prefix ?? ""),
-      createdAt: o.createdAt != null ? String(o.createdAt) : "",
-      updatedAt: o.updatedAt != null ? String(o.updatedAt) : "",
-      assetCount: typeof o.assetCount === "number" ? o.assetCount : Number(o.assetCount ?? 0),
-    }
+    const ac = typeof o.assetCount === "number" ? o.assetCount : Number(o.assetCount ?? 0)
+    return mapAlbumRow(o, ac)
   })
 }
 
@@ -64,7 +96,22 @@ export async function getAlbumByIdForUser(
 ): Promise<(AlbumRow & { assets: AssetRow[] }) | null> {
   const sql = getDb()
   const rows = await sql`
-    SELECT id, user_id, title, public_token, s3_prefix, created_at, updated_at
+    SELECT
+      id,
+      user_id,
+      title,
+      public_token,
+      s3_prefix,
+      description,
+      location,
+      event_type,
+      starts_at,
+      ends_at,
+      expires_at,
+      notes,
+      gallery_template_id,
+      created_at,
+      updated_at
     FROM client_gallery_albums
     WHERE id = ${albumId} AND user_id = ${userId}
     LIMIT 1
@@ -90,13 +137,7 @@ export async function getAlbumByIdForUser(
     }
   })
   return {
-    id: String(album.id),
-    userId: String(album.userId),
-    title: String(album.title ?? ""),
-    publicToken: String(album.publicToken ?? ""),
-    s3Prefix: String(album.s3Prefix ?? ""),
-    createdAt: album.createdAt != null ? String(album.createdAt) : "",
-    updatedAt: album.updatedAt != null ? String(album.updatedAt) : "",
+    ...mapAlbumRow(album),
     assets,
   }
 }
@@ -104,21 +145,93 @@ export async function getAlbumByIdForUser(
 export type PublicAlbumPayload = {
   title: string
   storageConfigured: boolean
+  galleryTemplateId: string
+  description: string | null
+  location: string | null
+  eventType: string | null
+  startsAt: string | null
+  endsAt: string | null
+  expired: boolean
   images: { id: string; url: string; contentType: string | null }[]
 }
 
 export async function buildPublicAlbumPayload(publicToken: string): Promise<PublicAlbumPayload | null> {
   const sql = getDb()
   const rows = await sql`
-    SELECT id, title, user_id FROM client_gallery_albums WHERE public_token = ${publicToken} LIMIT 1
+    SELECT
+      id,
+      title,
+      user_id,
+      description,
+      location,
+      event_type,
+      starts_at,
+      ends_at,
+      expires_at,
+      gallery_template_id
+    FROM client_gallery_albums
+    WHERE public_token = ${publicToken}
+    LIMIT 1
   `
-  const album = rows[0] as { id?: string; title?: string; user_id?: string } | undefined
+  const album = rows[0] as {
+    id?: string
+    title?: string
+    user_id?: string
+    description?: string | null
+    location?: string | null
+    event_type?: string | null
+    starts_at?: string | null
+    ends_at?: string | null
+    expires_at?: string | null
+    gallery_template_id?: string | null
+  } | undefined
   if (!album?.id) return null
 
   const title = String(album.title ?? "Album")
   const ownerId = String(album.user_id ?? "")
+  const galleryTemplateId = normalizeGalleryTemplateId(album.gallery_template_id)
+  const description = album.description != null ? String(album.description) : null
+  const location = album.location != null ? String(album.location) : null
+  const eventType = album.event_type != null ? String(album.event_type) : null
+  const startsAt = album.starts_at != null ? String(album.starts_at) : null
+  const endsAt = album.ends_at != null ? String(album.ends_at) : null
+
+  let expired = false
+  if (album.expires_at) {
+    const exp = new Date(String(album.expires_at))
+    if (!Number.isNaN(exp.getTime()) && Date.now() > exp.getTime()) {
+      expired = true
+    }
+  }
+
   if (!ownerId || !(await isStorageConfiguredForUser(ownerId))) {
-    return { title, storageConfigured: false, images: [] }
+    return {
+      title,
+      storageConfigured: false,
+      galleryTemplateId,
+      description,
+      location,
+      eventType,
+      startsAt,
+      endsAt,
+      expired,
+      images: [],
+    }
+  }
+
+  if (expired) {
+    return {
+      title,
+      storageConfigured: true,
+      galleryTemplateId,
+      description,
+      location,
+      eventType,
+      startsAt,
+      endsAt,
+      expired: true,
+      images: [],
+    }
   }
 
   const assets = await sql`
@@ -140,7 +253,18 @@ export async function buildPublicAlbumPayload(publicToken: string): Promise<Publ
     }
     images.push({ id, url, contentType })
   }
-  return { title, storageConfigured: true, images }
+  return {
+    title,
+    storageConfigured: true,
+    galleryTemplateId,
+    description,
+    location,
+    eventType,
+    startsAt,
+    endsAt,
+    expired: false,
+    images,
+  }
 }
 
 export async function buildOwnerAlbumWithUrls(albumId: string, userId: string) {

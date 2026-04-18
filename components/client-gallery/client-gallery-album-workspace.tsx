@@ -60,6 +60,14 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
         viewerUrl?: string
         viewerPath?: string
         storageConfigured?: boolean
+        description?: string | null
+        location?: string | null
+        eventType?: string | null
+        startsAt?: string | null
+        endsAt?: string | null
+        expiresAt?: string | null
+        notes?: string | null
+        galleryTemplateId?: string
         assets?: { id: string; url: string | null; contentType?: string | null }[]
       }
     | undefined
@@ -213,6 +221,51 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Guest link and QR open a public page — separate from live events and Control Center.
         </p>
+        {(album.description ||
+          album.location ||
+          album.eventType ||
+          album.startsAt ||
+          album.endsAt ||
+          album.expiresAt ||
+          album.notes ||
+          album.galleryTemplateId) && (
+          <Card className="mt-4 border-border bg-muted/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Album details</CardTitle>
+              <CardDescription>Shown on the guest page where applicable. Notes stay private.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              {album.galleryTemplateId ? (
+                <p>
+                  <span className="font-medium text-foreground">Layout:</span> {album.galleryTemplateId}
+                </p>
+              ) : null}
+              {album.description ? <p className="text-foreground/90">{album.description}</p> : null}
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {album.location ? <span>{album.location}</span> : null}
+                {album.eventType ? <span>{album.eventType}</span> : null}
+              </div>
+              {(album.startsAt || album.endsAt) && (
+                <p>
+                  {album.startsAt ? new Date(album.startsAt).toLocaleDateString() : ""}
+                  {album.startsAt && album.endsAt ? " – " : ""}
+                  {album.endsAt ? new Date(album.endsAt).toLocaleDateString() : ""}
+                </p>
+              )}
+              {album.expiresAt ? (
+                <p>
+                  <span className="font-medium text-foreground">Guest link expires:</span>{" "}
+                  {new Date(album.expiresAt).toLocaleString()}
+                </p>
+              ) : null}
+              {album.notes ? (
+                <p className="border-t border-border pt-2">
+                  <span className="font-medium text-foreground">Notes (owner only):</span> {album.notes}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {!album.storageConfigured ? (

@@ -241,6 +241,51 @@ async function step3_core_tables(c) {
     "IDX client_gallery_albums user_id",
     `CREATE INDEX IF NOT EXISTS idx_client_gallery_albums_user_id ON client_gallery_albums(user_id)`,
   );
+  await tryExec(
+    c,
+    "COL client_gallery_albums description",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS description TEXT`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums location",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS location TEXT`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums event_type",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS event_type TEXT`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums starts_at",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums ends_at",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums expires_at",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums notes",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS notes TEXT`,
+  );
+  await tryExec(
+    c,
+    "COL client_gallery_albums gallery_template_id",
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid'`,
+  );
+  await tryExec(
+    c,
+    "UPDATE client_gallery_albums gallery_template_id",
+    `UPDATE client_gallery_albums SET gallery_template_id = 'classic-grid' WHERE gallery_template_id IS NULL`,
+  );
   await tryExec(c, "TABLE client_gallery_assets", `
     CREATE TABLE IF NOT EXISTS client_gallery_assets (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

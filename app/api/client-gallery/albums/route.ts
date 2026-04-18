@@ -2,6 +2,8 @@ import { getDb } from "@/lib/db"
 import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
 import { getClientGalleryViewerAbsoluteUrl } from "@/lib/client-gallery-public-url"
+import { parseAlbumCreateBody } from "@/lib/client-gallery-album-metadata"
+import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { albumTitleToS3FolderSegment, newPublicGalleryToken } from "@/lib/client-gallery-utils"
 import { listAlbumsForUser } from "@/lib/client-gallery-album-service"
 
@@ -47,20 +49,22 @@ export const POST = withAuth(async (user, request: Request) => {
     return jsonError("Photo gallery add-on is not enabled for your account", 403)
   }
 
-  let title = "Untitled album"
+  let bodyJson: Record<string, unknown>
   try {
-    const body = (await request.json()) as { title?: unknown }
-    if (typeof body.title === "string") {
-      const t = body.title.trim().slice(0, 200)
-      if (t.length > 0) title = t
-    }
+    bodyJson = (await request.json()) as Record<string, unknown>
   } catch {
-    /* default title */
+    return jsonError("Invalid JSON body", 400)
   }
+
+  const parsed = parseAlbumCreateBody(bodyJson, normalizeGalleryTemplateId)
+  if (!parsed.ok) {
+    return jsonError(parsed.error, 400)
+  }
+  const meta = parsed.data
 
   const sql = getDb()
   const albumId = crypto.randomUUID()
-  const folderSegment = albumTitleToS3FolderSegment(title, albumId)
+  const folderSegment = albumTitleToS3FolderSegment(meta.title, albumId)
   const s3Prefix = `cg/${uid}/${folderSegment}/`
 
   let lastErr: unknown
@@ -68,9 +72,29 @@ export const POST = withAuth(async (user, request: Request) => {
     const publicToken = newPublicGalleryToken()
     try {
       const rows = await sql`
-        INSERT INTO client_gallery_albums (id, user_id, title, public_token, s3_prefix)
-        VALUES (${albumId}, ${uid}, ${title}, ${publicToken}, ${s3Prefix})
-        RETURNING id, user_id, title, public_token, s3_prefix, created_at, updated_at
+        INSERT INTO client_gallery_albums (
+          id, user_id, title, public_token, s3_prefix,
+          description, location, event_type, starts_at, ends_at, expires_at, notes, gallery_template_id
+        )
+        VALUES (
+          ${albumId},
+          ${uid},
+          ${meta.title},
+          ${publicToken},
+          ${s3Prefix},
+          ${meta.description},
+          ${meta.location},
+          ${meta.eventType},
+          ${meta.startsAt},
+          ${meta.endsAt},
+          ${meta.expiresAt},
+          ${meta.notes},
+          ${meta.galleryTemplateId}
+        )
+        RETURNING
+          id, user_id, title, public_token, s3_prefix,
+          description, location, event_type, starts_at, ends_at, expires_at, notes, gallery_template_id,
+          created_at, updated_at
       `
       const row = rows[0] as Record<string, unknown>
       const viewerUrl = getClientGalleryViewerAbsoluteUrl(publicToken)
@@ -81,6 +105,14 @@ export const POST = withAuth(async (user, request: Request) => {
           title: String(row.title ?? ""),
           publicToken,
           s3Prefix: String(row.s3_prefix ?? ""),
+          description: row.description != null ? String(row.description) : null,
+          location: row.location != null ? String(row.location) : null,
+          eventType: row.event_type != null ? String(row.event_type) : null,
+          startsAt: row.starts_at != null ? String(row.starts_at) : null,
+          endsAt: row.ends_at != null ? String(row.ends_at) : null,
+          expiresAt: row.expires_at != null ? String(row.expires_at) : null,
+          notes: row.notes != null ? String(row.notes) : null,
+          galleryTemplateId: String(row.gallery_template_id ?? meta.galleryTemplateId),
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         },

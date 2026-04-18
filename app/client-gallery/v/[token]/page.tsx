@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import { PublicGalleryView } from "@/components/client-gallery/public/public-gallery-view"
 import { buildPublicAlbumPayload } from "@/lib/client-gallery-album-service"
 
 export const dynamic = "force-dynamic"
@@ -30,36 +31,7 @@ export default async function PublicClientGalleryPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{payload.title}</h1>
-      {!payload.storageConfigured ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          This gallery cannot load photos yet — the owner needs to connect S3-compatible storage under Client gallery →
-          Settings.
-        </p>
-      ) : payload.images.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">No photos uploaded yet.</p>
-      ) : (
-        <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {payload.images.map((img) => (
-            <li key={img.id} className="aspect-square overflow-hidden rounded-lg bg-muted">
-              <a
-                href={img.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- presigned S3 URLs */}
-                <img
-                  src={img.url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <PublicGalleryView payload={payload} />
     </main>
   )
 }

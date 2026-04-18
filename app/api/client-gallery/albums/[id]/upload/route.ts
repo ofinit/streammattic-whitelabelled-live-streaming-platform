@@ -5,6 +5,7 @@ import { isStorageConfiguredForUser, StorageConfigError } from "@/lib/client-gal
 import { getDb } from "@/lib/db"
 import { presignPutObjectForOwner } from "@/lib/s3-client-gallery"
 import { isUuid, MAX_CLIENT_GALLERY_UPLOAD_BYTES, safeGalleryObjectFilename } from "@/lib/client-gallery-utils"
+import { maybeDebitUploadPaisa } from "@/lib/photo-gallery-usage-charges"
 
 export const dynamic = "force-dynamic"
 
@@ -64,6 +65,16 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   if (byteSize > MAX_CLIENT_GALLERY_UPLOAD_BYTES) {
     return jsonError(`File too large (max ${MAX_CLIENT_GALLERY_UPLOAD_BYTES} bytes)`, 400)
+  }
+
+  const charge = await maybeDebitUploadPaisa(uid, albumId)
+  if (!charge.ok) {
+    return jsonError(
+      charge.error === "Insufficient wallet balance"
+        ? "Insufficient wallet balance for the upload fee."
+        : charge.error,
+      402,
+    )
   }
 
   const prefix = String(row.s3_prefix)

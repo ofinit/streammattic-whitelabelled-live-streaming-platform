@@ -17,13 +17,31 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     }
 
     const sql = getDb()
-    await sql`
-      INSERT INTO user_addon_entitlements (user_id, photo_gallery_enabled, updated_at)
-      VALUES (${id}, ${enabled}, NOW())
-      ON CONFLICT (user_id) DO UPDATE SET
-        photo_gallery_enabled = ${enabled},
-        updated_at = NOW()
-    `
+    try {
+      await sql`
+        INSERT INTO user_addon_entitlements (user_id, photo_gallery_enabled, updated_at)
+        VALUES (${id}, ${enabled}, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          photo_gallery_enabled = ${enabled},
+          photo_gallery_opt_in = CASE
+            WHEN ${enabled} = false THEN false
+            ELSE user_addon_entitlements.photo_gallery_opt_in
+          END,
+          photo_gallery_subscription_expires_at = CASE
+            WHEN ${enabled} = false THEN NULL
+            ELSE user_addon_entitlements.photo_gallery_subscription_expires_at
+          END,
+          updated_at = NOW()
+      `
+    } catch {
+      await sql`
+        INSERT INTO user_addon_entitlements (user_id, photo_gallery_enabled, updated_at)
+        VALUES (${id}, ${enabled}, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          photo_gallery_enabled = ${enabled},
+          updated_at = NOW()
+      `
+    }
 
     return NextResponse.json({ success: true, photoGalleryEnabled: enabled })
   } catch (error: unknown) {

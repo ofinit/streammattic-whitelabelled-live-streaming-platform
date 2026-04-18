@@ -30,7 +30,9 @@ DO $$ BEGIN CREATE TYPE order_type AS ENUM ('credit_purchase','wallet_recharge',
 DO $$ BEGIN CREATE TYPE order_status AS ENUM ('pending','completed','failed','refunded','cancelled'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE payment_gateway AS ENUM ('razorpay','instamojo','wallet','manual'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE payment_status AS ENUM ('pending','processing','completed','failed','refunded'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE txn_category AS ENUM ('top_up','credit_purchase','service_charge','order_refund','adjustment','manual_adjustment','payment_recovery','compensation','correction','goodwill','ai_image_generation','whitelabel_hosting','domain_registration','studio_upgrade','annual_subscription'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE txn_category AS ENUM ('top_up','credit_purchase','service_charge','order_refund','adjustment','manual_adjustment','payment_recovery','compensation','correction','goodwill','ai_image_generation','whitelabel_hosting','domain_registration','studio_upgrade','annual_subscription','photo_gallery_subscription','photo_gallery_usage'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TYPE txn_category ADD VALUE IF NOT EXISTS 'photo_gallery_subscription';
+ALTER TYPE txn_category ADD VALUE IF NOT EXISTS 'photo_gallery_usage';
 DO $$ BEGIN CREATE TYPE refund_status AS ENUM ('pending','approved','rejected','processing','completed','failed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE refund_type AS ENUM ('event_cancellation','payment_failure','overcharge','service_issue','manual'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE domain_verification_status AS ENUM ('pending','verified','failed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -163,10 +165,24 @@ CREATE TABLE IF NOT EXISTS user_credits (
 CREATE TABLE IF NOT EXISTS user_addon_entitlements (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   photo_gallery_enabled BOOLEAN NOT NULL DEFAULT false,
+  photo_gallery_opt_in BOOLEAN NOT NULL DEFAULT false,
+  photo_gallery_subscription_expires_at TIMESTAMPTZ,
+  photo_gallery_billing_period_start TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_user_addon_entitlements_gallery ON user_addon_entitlements(user_id)
   WHERE photo_gallery_enabled = true;
+
+CREATE TABLE IF NOT EXISTS photo_gallery_renewal_reminders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  period_end_at TIMESTAMPTZ NOT NULL,
+  reminder_key TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, period_end_at, reminder_key)
+);
+CREATE INDEX IF NOT EXISTS idx_photo_gallery_renewal_reminders_user
+  ON photo_gallery_renewal_reminders(user_id);
 
 -- =============================================================
 -- TABLE: client_gallery_albums (photographer S3 albums; not linked to events)

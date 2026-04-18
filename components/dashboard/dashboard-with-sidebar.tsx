@@ -3,6 +3,7 @@
 import type React from "react"
 import { ClientGalleryMobileChrome } from "@/components/client-gallery/client-gallery-mobile-chrome"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
+import { PhotoGalleryRenewalBanner } from "@/components/dashboard/photo-gallery-renewal-banner"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { useAuth } from "@/lib/auth-context"
 import { useSidebar } from "@/lib/sidebar-context"
@@ -31,6 +32,8 @@ export function DashboardWithSidebar({
     return null
   }
 
+  const packagesHref = user?.role === "studio" ? "/studio/packages" : "/streamer/packages"
+
   return (
     <div className="min-h-screen bg-background">
       <ImpersonationBanner />
@@ -44,7 +47,10 @@ export function DashboardWithSidebar({
           hidePrimarySidebar ? "md:pl-0" : isCollapsed ? "md:pl-16" : "md:pl-64",
         )}
       >
-        <div className="p-4 sm:p-6">{children}</div>
+        <div className="p-4 sm:p-6">
+          <PhotoGalleryRenewalBanner packagesHref={packagesHref} />
+          {children}
+        </div>
       </main>
     </div>
   )

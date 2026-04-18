@@ -38,6 +38,8 @@ import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-g
 import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 const streamTypeInfo = [
   { key: "rtmp" as StreamTypeKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video },
@@ -65,6 +67,10 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const [photoGalleryCatalog, setPhotoGalleryCatalog] = useState<PhotoGalleryAddonSettings | null>(null)
   const [photoGalleryEntitled, setPhotoGalleryEntitled] = useState(false)
   const [photoGalleryEligible, setPhotoGalleryEligible] = useState(false)
+  const [photoGalleryAdminEnabled, setPhotoGalleryAdminEnabled] = useState(false)
+  const [photoGalleryOptIn, setPhotoGalleryOptIn] = useState(false)
+  const [photoGalleryExpiresAt, setPhotoGalleryExpiresAt] = useState<string | null>(null)
+  const [photoGalleryBusy, setPhotoGalleryBusy] = useState(false)
 
   const loadAll = useCallback(async () => {
     setLoadState("loading")
@@ -121,14 +127,23 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           catalog?: unknown
           entitled?: boolean
           eligible?: boolean
+          adminEnabled?: boolean
+          optIn?: boolean
+          subscriptionExpiresAt?: string | null
         }
         setPhotoGalleryCatalog(parsePhotoGalleryAddon(pg.catalog ?? null))
         setPhotoGalleryEntitled(pg.entitled === true)
         setPhotoGalleryEligible(pg.eligible === true)
+        setPhotoGalleryAdminEnabled(pg.adminEnabled === true)
+        setPhotoGalleryOptIn(pg.optIn === true)
+        setPhotoGalleryExpiresAt(pg.subscriptionExpiresAt ?? null)
       } else {
         setPhotoGalleryCatalog(null)
         setPhotoGalleryEntitled(false)
         setPhotoGalleryEligible(false)
+        setPhotoGalleryAdminEnabled(false)
+        setPhotoGalleryOptIn(false)
+        setPhotoGalleryExpiresAt(null)
       }
 
       setLoadState("ready")
@@ -154,6 +169,31 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const setQty = (key: string, value: number) => {
     setQuantities((prev) => ({ ...prev, [key]: Math.max(1, value) }))
   }
+
+  const walletHref = variant === "studio" ? "/studio/wallet" : "/streamer/wallet"
+
+  const patchPhotoGalleryOptIn = useCallback(async (next: boolean) => {
+    setPhotoGalleryBusy(true)
+    try {
+      const res = await fetch("/api/photo-gallery-addon/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ optIn: next }),
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string; subscriptionExpiresAt?: string }
+      if (!res.ok) {
+        throw new Error(body.error || "Could not update subscription")
+      }
+      toast.success(next ? "Client photo gallery subscription enabled" : "Client photo gallery subscription disabled")
+      if (body.subscriptionExpiresAt) setPhotoGalleryExpiresAt(body.subscriptionExpiresAt)
+      await loadAll()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update")
+    } finally {
+      setPhotoGalleryBusy(false)
+    }
+  }, [loadAll])
 
   const handlePurchase = async (streamType: StreamTypeKey) => {
     if (!streamTypePricing) return
@@ -539,16 +579,17 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
               <CardTitle className="text-base">{photoGalleryCatalog.productName}</CardTitle>
             </div>
             <CardDescription>
-              Bring your own S3 storage for client photo delivery. If this add-on is listed, your administrator must enable
-              access for your account under Admin → Streamers or Studios before you can use it.
+              Bring your own S3 storage for client photo delivery. Your administrator must list this add-on and enable your
+              account (Admin → Streamers or Studios). You then subscribe here; renewal is billed from your wallet when a
+              monthly price is set.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-secondary/50 p-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Status</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">Administrator access</p>
                 <p className="text-sm text-muted-foreground">
-                  {photoGalleryEntitled ? (
+                  {photoGalleryAdminEnabled ? (
                     <span className="text-emerald-600 dark:text-emerald-400">Enabled for your account</span>
                   ) : (
                     <span>Not enabled — ask your administrator to grant access.</span>
@@ -558,10 +599,63 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
               {photoGalleryCatalog.monthlyPricePaisa > 0 ? (
                 <div className="text-right">
                   <p className="text-lg font-bold">{formatPaisa(photoGalleryCatalog.monthlyPricePaisa)}</p>
-                  <p className="text-xs text-muted-foreground">reference monthly (billing may be custom)</p>
+                  <p className="text-xs text-muted-foreground">per month (wallet)</p>
                 </div>
-              ) : null}
+              ) : (
+                <div className="text-right">
+                  <p className="text-sm font-medium text-muted-foreground">No monthly fee set</p>
+                  <p className="text-xs text-muted-foreground">Subscription still required (opt-in)</p>
+                </div>
+              )}
             </div>
+
+            {photoGalleryAdminEnabled ? (
+              <div className="flex flex-col gap-4 rounded-lg border border-border bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">Use this service</p>
+                  <p className="text-xs text-muted-foreground">
+                    {photoGalleryEntitled ? (
+                      <span className="text-emerald-600 dark:text-emerald-400">Subscription active</span>
+                    ) : photoGalleryOptIn ? (
+                      <span className="text-amber-600 dark:text-amber-400">Opted in — add wallet funds or wait for renewal</span>
+                    ) : (
+                      <span>Turn on to start your subscription period.</span>
+                    )}
+                  </p>
+                  {photoGalleryExpiresAt ? (
+                    <p className="text-xs text-muted-foreground">
+                      Current period ends:{" "}
+                      <span className="font-mono text-foreground">
+                        {new Date(photoGalleryExpiresAt).toLocaleString()}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="pg-opt-in"
+                      checked={photoGalleryOptIn}
+                      disabled={photoGalleryBusy}
+                      onCheckedChange={(c) => void patchPhotoGalleryOptIn(c)}
+                    />
+                    <Label htmlFor="pg-opt-in" className="cursor-pointer text-sm">
+                      Service enabled
+                    </Label>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <Link href={walletHref}>Wallet &amp; billing</Link>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {photoGalleryAdminEnabled && photoGalleryOptIn && !photoGalleryEntitled && photoGalleryCatalog.monthlyPricePaisa > 0 ? (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                Your subscription may be expired or renewal failed. Add funds and toggle the service off and on to pay the
+                next period.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       )}

@@ -146,6 +146,8 @@ export type TransactionCategory =
   | "ai_image_generation" // AI image generation charge
   | "whitelabel_hosting" // Annual whitelabel & hosting charge
   | "domain_registration" // Domain registration/renewal charge
+  | "photo_gallery_subscription" // Monthly client photo gallery subscription
+  | "photo_gallery_usage" // Per-album / per-upload / face-index usage
 
 // Enhanced Wallet Transaction with cascade support
 export interface WalletTransaction {

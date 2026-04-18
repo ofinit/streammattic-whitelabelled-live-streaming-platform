@@ -626,16 +626,16 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
             </div>
             <Input readOnly value={album.viewerUrl || album.viewerPath || ""} className="font-mono text-xs" />
             <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:max-w-md">
+              <div className="flex w-fit min-w-0 max-w-full flex-col gap-2">
                 <Label htmlFor="guest-pin-display" className="text-foreground">
                   PIN
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Input
                     id="guest-pin-display"
                     readOnly
                     value={album.guestPinRequired && album.guestPin ? album.guestPin : "—"}
-                    className="font-mono tracking-widest"
+                    className="w-[7.5rem] shrink-0 font-mono text-center tabular-nums tracking-widest sm:w-28"
                     placeholder="Enable PIN to generate"
                   />
                   <Button

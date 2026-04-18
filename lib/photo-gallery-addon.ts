@@ -27,6 +27,10 @@ export type PhotoGalleryAddonSettings = {
   monthlyPricePaisa: number
   /** Wallet debit per face-index job when AI search is enabled (future gallery service). */
   faceIndexCreditPricePaisa: number
+  /** Optional per-album create charge (0 = off). */
+  albumCreatePricePaisa: number
+  /** Optional per-upload presign charge (0 = off). */
+  uploadPricePaisa: number
   /**
    * Planned OpenRouter model for gallery vision jobs (tags/captions per image). Admin shows list pricing from OpenRouter;
    * core does not debit the wallet until a worker implements jobs.
@@ -46,6 +50,8 @@ export function getDefaultPhotoGalleryAddonSettings(): PhotoGalleryAddonSettings
     monthlyPricePaisa: 0,
     faceIndexCreditPricePaisa: 500,
     faceIndexOpenRouterModelId: defaultVisionId,
+    albumCreatePricePaisa: 0,
+    uploadPricePaisa: 0,
   }
 }
 
@@ -117,6 +123,11 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     if (t.length > 0) faceIndexOpenRouterModelId = t
   }
 
+  const albumCreatePricePaisa = isFiniteNonNeg(o.albumCreatePricePaisa)
+    ? Math.round(o.albumCreatePricePaisa)
+    : d.albumCreatePricePaisa
+  const uploadPricePaisa = isFiniteNonNeg(o.uploadPricePaisa) ? Math.round(o.uploadPricePaisa) : d.uploadPricePaisa
+
   return {
     listingEnabled,
     productName,
@@ -125,6 +136,8 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     monthlyPricePaisa,
     faceIndexCreditPricePaisa,
     faceIndexOpenRouterModelId,
+    albumCreatePricePaisa,
+    uploadPricePaisa,
   }
 }
 
@@ -135,6 +148,12 @@ export function assertPhotoGalleryAddonForSave(raw: unknown): PhotoGalleryAddonS
   }
   if (parsed.faceIndexCreditPricePaisa > 1e12) {
     throw new Error("faceIndexCreditPricePaisa is too large")
+  }
+  if (parsed.albumCreatePricePaisa > 1e12) {
+    throw new Error("albumCreatePricePaisa is too large")
+  }
+  if (parsed.uploadPricePaisa > 1e12) {
+    throw new Error("uploadPricePaisa is too large")
   }
   if (!parsed.galleryPath.startsWith("/")) {
     throw new Error("galleryPath must start with /")

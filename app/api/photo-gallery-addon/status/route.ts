@@ -1,7 +1,7 @@
-import { getDb } from "@/lib/db"
 import { jsonOk, withAuth } from "@/lib/api-helpers"
 import { parsePhotoGalleryAddon, PHOTO_GALLERY_PLATFORM_SETTING_KEY } from "@/lib/photo-gallery-addon"
 import { getPlatformSetting } from "@/lib/db-queries"
+import { getClientGalleryAccessState } from "@/lib/photo-gallery-subscription"
 
 export const dynamic = "force-dynamic"
 
@@ -17,29 +17,26 @@ export const GET = withAuth(async (user) => {
       catalog,
       entitled: false,
       eligible: catalog.listingEnabled === true,
+      adminEnabled: false,
+      optIn: false,
+      subscriptionExpiresAt: null as string | null,
+      accessReason: "not_streamer_or_studio" as const,
     })
   }
 
-  // Opt-in: when the add-on is listed, studio/streamer accounts are entitled only if an admin set
-  // user_addon_entitlements.photo_gallery_enabled = true (no row or false = no access).
-  let entitled = false
-  if (catalog.listingEnabled === true) {
-    try {
-      const sql = getDb()
-      const rows = await sql`
-        SELECT photo_gallery_enabled FROM user_addon_entitlements WHERE user_id = ${user.id} LIMIT 1
-      `
-      const row = rows[0] as { photo_gallery_enabled?: boolean } | undefined
-      entitled = row?.photo_gallery_enabled === true
-    } catch (e) {
-      console.warn("[photo-gallery-addon/status] entitlements lookup failed (run DB migration?)", e)
-      entitled = false
-    }
-  }
+  const { active, reason, subscriptionExpiresAt, row } = await getClientGalleryAccessState(
+    String(user.id),
+    user.role as string,
+  )
 
   return jsonOk({
     catalog,
-    entitled,
+    /** True when the user may use gallery APIs (active subscription). */
+    entitled: active,
     eligible: catalog.listingEnabled === true,
+    adminEnabled: row?.photoGalleryEnabled === true,
+    optIn: row?.photoGalleryOptIn === true,
+    subscriptionExpiresAt,
+    accessReason: reason,
   })
 })

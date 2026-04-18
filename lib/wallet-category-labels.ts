@@ -13,6 +13,8 @@ export const WALLET_TRANSACTION_CATEGORY_LABELS: Record<string, string> = {
   ai_image_generation: "AI Image Generation",
   whitelabel_hosting: "Whitelabel & Hosting",
   domain_registration: "Domain Registration",
+  photo_gallery_subscription: "Client photo gallery subscription",
+  photo_gallery_usage: "Client photo gallery usage",
 }
 
 export function formatWalletTransactionCategory(category: string): string {

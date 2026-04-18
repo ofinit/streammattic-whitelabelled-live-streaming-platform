@@ -6,6 +6,7 @@ import { parseAlbumCreateBody } from "@/lib/client-gallery-album-metadata"
 import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { albumTitleToS3FolderSegment, newPublicGalleryToken } from "@/lib/client-gallery-utils"
 import { listAlbumsForUser } from "@/lib/client-gallery-album-service"
+import { deleteAlbumByIdForUser, maybeDebitAlbumCreatePaisa } from "@/lib/photo-gallery-usage-charges"
 
 export const dynamic = "force-dynamic"
 
@@ -100,6 +101,16 @@ export const POST = withAuth(async (user, request: Request) => {
           created_at, updated_at
       `
       const row = rows[0] as Record<string, unknown>
+      const charge = await maybeDebitAlbumCreatePaisa(uid, albumId)
+      if (!charge.ok) {
+        await deleteAlbumByIdForUser(uid, albumId)
+        return jsonError(
+          charge.error === "Insufficient wallet balance"
+            ? "Insufficient wallet balance for the album creation fee."
+            : charge.error,
+          402,
+        )
+      }
       const viewerUrl = getClientGalleryViewerAbsoluteUrl(publicToken)
       return jsonOk({
         album: {
@@ -137,6 +148,16 @@ export const POST = withAuth(async (user, request: Request) => {
             RETURNING id, user_id, title, public_token, s3_prefix, created_at, updated_at
           `
           const row = rows[0] as Record<string, unknown>
+          const charge = await maybeDebitAlbumCreatePaisa(uid, albumId)
+          if (!charge.ok) {
+            await deleteAlbumByIdForUser(uid, albumId)
+            return jsonError(
+              charge.error === "Insufficient wallet balance"
+                ? "Insufficient wallet balance for the album creation fee."
+                : charge.error,
+              402,
+            )
+          }
           const viewerUrl = getClientGalleryViewerAbsoluteUrl(publicToken)
           return jsonOk({
             album: {

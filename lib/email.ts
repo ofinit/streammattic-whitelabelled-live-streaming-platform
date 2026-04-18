@@ -261,6 +261,94 @@ export async function sendStudioSubscriptionRenewalReminder(params: {
   return sendEmail(toEmail, subject, html, text)
 }
 
+export async function sendPhotoGalleryRenewalReminder(params: {
+  toEmail: string
+  name: string
+  productName: string
+  kind: "pre" | "post_week" | "long_tail"
+  daysLeft?: number
+  daysOverdue?: number
+  renewUrl: string
+}) {
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
+  const { toEmail, name, productName, kind, daysLeft, daysOverdue, renewUrl } = params
+
+  let subject: string
+  let html: string
+  const safeName = name || "there"
+
+  if (kind === "pre") {
+    const when =
+      daysLeft === 0
+        ? "today"
+        : daysLeft === 1
+          ? "tomorrow"
+          : `in ${daysLeft} days`
+    subject = `${productName} renews ${when} — ${brandName}`
+    html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${safeName},</p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        Your <strong>${productName}</strong> subscription renews <strong>${when}</strong>.
+        Ensure your wallet has enough balance for the next billing cycle.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${renewUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Open Packages &amp; wallet</a>
+      </p>
+    </div>`
+  } else if (kind === "post_week") {
+    subject = `Action needed: ${productName} subscription expired (${daysOverdue ?? ""} day(s) ago)`
+    html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${safeName},</p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        Your <strong>${productName}</strong> subscription has expired. Add wallet funds and keep the service enabled under Packages to restore access.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${renewUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Renew or manage</a>
+      </p>
+    </div>`
+  } else {
+    subject = `Reminder: ${productName} still expired — ${brandName}`
+    html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${safeName},</p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        Your <strong>${productName}</strong> subscription is still inactive. You can add funds and re-enable the service under Packages, or turn the service off if you no longer need it.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${renewUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Open Packages</a>
+      </p>
+    </div>`
+  }
+
+  const text = `${subject} ${renewUrl}`
+  return sendEmail(toEmail, subject, html, text)
+}
+
+export async function sendPhotoGalleryPaymentFailedEmail(params: {
+  toEmail: string
+  name: string
+  productName: string
+  renewUrl: string
+}) {
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
+  const { toEmail, name, productName, renewUrl } = params
+  const subject = `${productName} renewal failed — ${brandName}`
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${name || "there"},</p>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">
+        We could not renew your <strong>${productName}</strong> subscription because your wallet balance was too low.
+        The service has been turned off until you add funds and enable it again under Packages.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${renewUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Add funds &amp; manage</a>
+      </p>
+    </div>`
+  return sendEmail(toEmail, subject, html, `${subject} ${renewUrl}`)
+}
+
 /**
  * Password reset link (see /api/auth/forgot-password).
  */

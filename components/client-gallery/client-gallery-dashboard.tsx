@@ -32,6 +32,8 @@ type PgStatus = {
   catalog?: { productName?: string; listingEnabled?: boolean }
   entitled?: boolean
   eligible?: boolean
+  adminEnabled?: boolean
+  optIn?: boolean
 }
 
 function StatCard({
@@ -71,6 +73,8 @@ export function ClientGalleryDashboard({
   )
 
   const entitled = pg?.entitled === true
+  const adminOk = pg?.adminEnabled === true
+  const optedIn = pg?.optIn === true
   const { data: albumsRes } = useSWR<{ albums?: { assetCount?: number }[] }>(
     entitled && (user.role === "streamer" || user.role === "studio") ? "/api/client-gallery/albums" : null,
     fetcher,
@@ -109,14 +113,18 @@ export function ClientGalleryDashboard({
           <p className="text-lg font-semibold text-foreground">
             {entitled ? (
               <span className="text-emerald-500">Active</span>
+            ) : !adminOk ? (
+              <span className="text-amber-500">Awaiting admin access</span>
+            ) : !optedIn ? (
+              <span className="text-amber-500">Subscribe in Packages</span>
             ) : (
-              <span className="text-amber-500">Not enabled</span>
+              <span className="text-amber-500">Subscription inactive</span>
             )}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{productLabel}</p>
           {!entitled ? (
             <Button asChild size="sm" className="mt-3" variant="outline">
-              <Link href={packagesHref}>Enable in Packages</Link>
+              <Link href={packagesHref}>{adminOk ? "Open Packages" : "Enable in Packages"}</Link>
             </Button>
           ) : null}
         </StatCard>

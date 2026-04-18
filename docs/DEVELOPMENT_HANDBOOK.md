@@ -143,6 +143,8 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
 | `app/api/credits/route.ts` | `/api/credits` |
+| `app/api/cron/photo-gallery-renewal-reminders/route.ts` | `/api/cron/photo-gallery-renewal-reminders` |
+| `app/api/cron/photo-gallery-subscription/route.ts` | `/api/cron/photo-gallery-subscription` |
 | `app/api/cron/studio-subscription-reminders/route.ts` | `/api/cron/studio-subscription-reminders` |
 | `app/api/dashboard/route.ts` | `/api/dashboard` |
 | `app/api/domains/cloudflare/configure/route.ts` | `/api/domains/cloudflare/configure` |
@@ -164,6 +166,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/payments/verify/instamojo/route.ts` | `/api/payments/verify/instamojo` |
 | `app/api/payments/verify/razorpay/route.ts` | `/api/payments/verify/razorpay` |
 | `app/api/photo-gallery-addon/status/route.ts` | `/api/photo-gallery-addon/status` |
+| `app/api/photo-gallery-addon/subscription/route.ts` | `/api/photo-gallery-addon/subscription` |
 | `app/api/refunds/route.ts` | `/api/refunds` |
 | `app/api/settings/route.ts` | `/api/settings` |
 | `app/api/stream/create/route.ts` | `/api/stream/create` |

@@ -4,7 +4,17 @@ Stream-Livee stores **catalog settings** and optional **per-user opt-outs** in P
 
 **Not the same as event “Photo gallery”:** The template field in the event editor (images on the public watch page) is separate. The add-on is for **client-delivered** albums and uploads against **your** object storage (BYOS), not for reusing those template gallery images as the client gallery product.
 
-When **List in Packages** is on, the add-on is **visible** in Packages for studios and streamers, but access is **off until an admin enables it** per account under **Admin → Streamers** or **Admin → Studios** (`user_addon_entitlements.photo_gallery_enabled = true`). Missing row or `false` means no entitlement.
+When **List in Packages** is on, the add-on is **visible** in Packages for studios and streamers. **Access** requires all of:
+
+1. **Admin enabled** per account under **Admin → Streamers** or **Admin → Studios** (`user_addon_entitlements.photo_gallery_enabled = true`).
+2. **User opt-in** (`photo_gallery_opt_in = true`) via **Packages** — turning the service on debits the wallet when **Monthly price (INR)** is greater than zero (first period and renewals).
+3. **Active subscription period** (`photo_gallery_subscription_expires_at` in the future). Renewals run from a **daily cron** (`GET /api/cron/photo-gallery-subscription`) that charges `monthlyPricePaisa` from the wallet; insufficient balance turns the service off and emails the user.
+
+**Optional per-usage fees** (Admin → Packages): **Album creation fee** and **Per-upload fee** default to **0** (off). When set, the wallet is debited on album create and on each upload presign request (`photo_gallery_usage`).
+
+**Email reminders** (`GET /api/cron/photo-gallery-renewal-reminders`, same `CRON_SECRET` as other crons): pre-expiry at 7, 3, 1, and 0 days before `photo_gallery_subscription_expires_at`; daily for days 1–7 after expiry; on the **1st and 15th** (UTC) of each month while still expired and opted in. Deduped in `photo_gallery_renewal_reminders`.
+
+Apply DB changes: `scripts/ensure-photo-gallery-subscription-schema.sql` (adds columns, reminder table, `txn_category` values).
 
 ## Same-origin gallery path (default)
 

@@ -1155,6 +1155,44 @@ export default function AdminPricingPage() {
               </div>
               <p className="text-[10px] text-muted-foreground">Retail per job; wallet billing when the gallery worker ships.</p>
             </div>
+            <div className="space-y-2">
+              <Label>Album creation fee (₹)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="bg-secondary border-0 pl-7"
+                  value={photoGalleryAddon.albumCreatePricePaisa / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({ ...p, albumCreatePricePaisa: Math.round(n * 100) }))
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">0 = off. Debits wallet when a new album is created.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Per-upload fee (₹)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="bg-secondary border-0 pl-7"
+                  value={photoGalleryAddon.uploadPricePaisa / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({ ...p, uploadPricePaisa: Math.round(n * 100) }))
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">0 = off. Debits wallet per presigned upload request.</p>
+            </div>
           </div>
 
           <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">

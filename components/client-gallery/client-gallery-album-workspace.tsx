@@ -588,58 +588,6 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
 
       <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg">Guest page design</CardTitle>
-          <CardDescription>
-            How the public gallery looks for visitors (lightbox, slideshow, and layout). Open guest view to preview.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <GalleryTemplatePicker
-            value={designTemplateId}
-            onChange={setDesignTemplateId}
-            disabled={savingDesign}
-            compact
-          />
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button
-              type="button"
-              disabled={
-                savingDesign ||
-                designTemplateId === (album.galleryTemplateId ?? DEFAULT_GALLERY_TEMPLATE_ID)
-              }
-              onClick={() => void saveGuestDesign()}
-            >
-              {savingDesign ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save design
-            </Button>
-            {album.viewerPath ? (
-              <Button type="button" variant="outline" asChild>
-                <a href={album.viewerPath} target="_blank" rel="noopener noreferrer">
-                  Preview guest page
-                </a>
-              </Button>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      {!album.storageConfigured ? (
-        <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="flex flex-col gap-3 py-4 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              Connect your S3-compatible bucket (R2, Wasabi, AWS, etc.) under{" "}
-              <strong className="text-foreground">Client gallery → Settings</strong> to enable uploads and guest image
-              previews.
-            </p>
-            <Button type="button" variant="secondary" className="shrink-0" asChild>
-              <Link href={`${CLIENT_GALLERY_BASE}/settings`}>Open Settings</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card className="border-border bg-card">
-        <CardHeader>
           <CardTitle className="text-lg">Share with guests</CardTitle>
           <CardDescription>
             Anyone with the link can open the gallery (no login). Turn on a PIN so guests must enter a code after
@@ -729,6 +677,58 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <CardTitle className="text-lg">Guest page design</CardTitle>
+          <CardDescription>
+            How the public gallery looks for visitors (lightbox, slideshow, and layout). Open guest view to preview.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <GalleryTemplatePicker
+            value={designTemplateId}
+            onChange={setDesignTemplateId}
+            disabled={savingDesign}
+            compact
+          />
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              type="button"
+              disabled={
+                savingDesign ||
+                designTemplateId === (album.galleryTemplateId ?? DEFAULT_GALLERY_TEMPLATE_ID)
+              }
+              onClick={() => void saveGuestDesign()}
+            >
+              {savingDesign ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save design
+            </Button>
+            {album.viewerPath ? (
+              <Button type="button" variant="outline" asChild>
+                <a href={album.viewerPath} target="_blank" rel="noopener noreferrer">
+                  Preview guest page
+                </a>
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      {!album.storageConfigured ? (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex flex-col gap-3 py-4 text-sm text-foreground sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Connect your S3-compatible bucket (R2, Wasabi, AWS, etc.) under{" "}
+              <strong className="text-foreground">Client gallery → Settings</strong> to enable uploads and guest image
+              previews.
+            </p>
+            <Button type="button" variant="secondary" className="shrink-0" asChild>
+              <Link href={`${CLIENT_GALLERY_BASE}/settings`}>Open Settings</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="border-border bg-card">
         <CardHeader>

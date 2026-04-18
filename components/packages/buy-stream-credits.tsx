@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import {
   Video,
   Youtube,
@@ -38,8 +39,6 @@ import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-g
 import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 
 const streamTypeInfo = [
   { key: "rtmp" as StreamTypeKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video },

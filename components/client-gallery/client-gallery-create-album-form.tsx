@@ -18,6 +18,7 @@ import {
   type GalleryTemplateCategory,
 } from "@/lib/client-gallery-templates"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
+import { GalleryTemplatePicker } from "@/components/client-gallery/gallery-template-picker"
 import { GalleryTemplatePreview } from "@/components/client-gallery/gallery-template-preview"
 
 const EVENT_TYPES = ["Wedding", "Corporate", "Sports", "Party", "Other"] as const

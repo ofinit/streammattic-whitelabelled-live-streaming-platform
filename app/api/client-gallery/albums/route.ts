@@ -9,11 +9,14 @@ import { listAlbumsForUser } from "@/lib/client-gallery-album-service"
 
 export const dynamic = "force-dynamic"
 
-/** Postgres undefined_table — migration not applied */
-function missingGalleryTablesMessage(e: unknown): string | null {
+/** Postgres schema errors — migrations not applied */
+function clientGallerySchemaErrorMessage(e: unknown): string | null {
   const code = (e as { code?: string })?.code
   if (code === "42P01") {
     return "Photo gallery tables are missing. On the server, run: psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f scripts/ensure-client-gallery-albums-schema.sql (or your usual migration process)."
+  }
+  if (code === "42703") {
+    return "Photo gallery album columns are missing (outdated schema). On the server, run: psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f scripts/ensure-client-gallery-album-metadata-schema.sql (or your usual migration process)."
   }
   return null
 }
@@ -33,7 +36,7 @@ export const GET = withAuth(async (user) => {
     return jsonOk({ albums })
   } catch (e) {
     console.error("[client-gallery/albums GET]", e)
-    const hint = missingGalleryTablesMessage(e)
+    const hint = clientGallerySchemaErrorMessage(e)
     return jsonError(hint ?? "Could not load albums", hint ? 503 : 500)
   }
 })
@@ -123,8 +126,50 @@ export const POST = withAuth(async (user, request: Request) => {
       lastErr = e
       const code = (e as { code?: string })?.code
       if (code === "23505") continue
+      if (code === "42703") {
+        try {
+          console.warn(
+            "[client-gallery/albums POST] metadata columns missing; using legacy insert. Apply scripts/ensure-client-gallery-album-metadata-schema.sql so details persist in the database.",
+          )
+          const rows = await sql`
+            INSERT INTO client_gallery_albums (id, user_id, title, public_token, s3_prefix)
+            VALUES (${albumId}, ${uid}, ${meta.title}, ${publicToken}, ${s3Prefix})
+            RETURNING id, user_id, title, public_token, s3_prefix, created_at, updated_at
+          `
+          const row = rows[0] as Record<string, unknown>
+          const viewerUrl = getClientGalleryViewerAbsoluteUrl(publicToken)
+          return jsonOk({
+            album: {
+              id: String(row.id),
+              userId: String(row.user_id),
+              title: String(row.title ?? ""),
+              publicToken,
+              s3Prefix: String(row.s3_prefix ?? ""),
+              description: meta.description,
+              location: meta.location,
+              eventType: meta.eventType,
+              startsAt: meta.startsAt,
+              endsAt: meta.endsAt,
+              expiresAt: meta.expiresAt,
+              notes: meta.notes,
+              galleryTemplateId: meta.galleryTemplateId,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            },
+            viewerUrl,
+            viewerPath: `/client-gallery/v/${publicToken}`,
+          })
+        } catch (e2) {
+          lastErr = e2
+          const code2 = (e2 as { code?: string })?.code
+          if (code2 === "23505") continue
+          console.error("[client-gallery/albums POST] legacy insert", e2)
+          const hint = clientGallerySchemaErrorMessage(e2)
+          return jsonError(hint ?? "Could not create album", hint ? 503 : 500)
+        }
+      }
       console.error("[client-gallery/albums POST]", e)
-      const hint = missingGalleryTablesMessage(e)
+      const hint = clientGallerySchemaErrorMessage(e)
       return jsonError(hint ?? "Could not create album", hint ? 503 : 500)
     }
   }

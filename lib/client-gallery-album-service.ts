@@ -3,6 +3,11 @@ import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { presignGetObjectForOwner } from "@/lib/s3-client-gallery"
 
+/** Postgres undefined_column — e.g. metadata migration not applied yet */
+function isPgUndefinedColumnError(e: unknown): boolean {
+  return (e as { code?: string })?.code === "42703"
+}
+
 export type AlbumRow = {
   id: string
   userId: string
@@ -54,7 +59,7 @@ function mapAlbumRow(o: Record<string, unknown>, assetCount?: number): AlbumRow 
   }
 }
 
-export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
+async function listAlbumsForUserLegacy(userId: string): Promise<AlbumRow[]> {
   const sql = getDb()
   const rows = await sql`
     SELECT
@@ -63,14 +68,6 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
       a.title,
       a.public_token,
       a.s3_prefix,
-      a.description,
-      a.location,
-      a.event_type,
-      a.starts_at,
-      a.ends_at,
-      a.expires_at,
-      a.notes,
-      a.gallery_template_id,
       a.created_at,
       a.updated_at,
       COALESCE(c.cnt, 0)::int AS asset_count
@@ -90,33 +87,92 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
   })
 }
 
+export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
+  const sql = getDb()
+  try {
+    const rows = await sql`
+      SELECT
+        a.id,
+        a.user_id,
+        a.title,
+        a.public_token,
+        a.s3_prefix,
+        a.description,
+        a.location,
+        a.event_type,
+        a.starts_at,
+        a.ends_at,
+        a.expires_at,
+        a.notes,
+        a.gallery_template_id,
+        a.created_at,
+        a.updated_at,
+        COALESCE(c.cnt, 0)::int AS asset_count
+      FROM client_gallery_albums a
+      LEFT JOIN (
+        SELECT album_id, COUNT(*)::int AS cnt
+        FROM client_gallery_assets
+        GROUP BY album_id
+      ) c ON c.album_id = a.id
+      WHERE a.user_id = ${userId}
+      ORDER BY a.updated_at DESC
+    `
+    return rows.map((r) => {
+      const o = toCamel(r) as Record<string, unknown>
+      const ac = typeof o.assetCount === "number" ? o.assetCount : Number(o.assetCount ?? 0)
+      return mapAlbumRow(o, ac)
+    })
+  } catch (e) {
+    if (!isPgUndefinedColumnError(e)) throw e
+    console.warn(
+      "[client-gallery] listAlbumsForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+    )
+    return listAlbumsForUserLegacy(userId)
+  }
+}
+
 export async function getAlbumByIdForUser(
   albumId: string,
   userId: string,
 ): Promise<(AlbumRow & { assets: AssetRow[] }) | null> {
   const sql = getDb()
-  const rows = await sql`
-    SELECT
-      id,
-      user_id,
-      title,
-      public_token,
-      s3_prefix,
-      description,
-      location,
-      event_type,
-      starts_at,
-      ends_at,
-      expires_at,
-      notes,
-      gallery_template_id,
-      created_at,
-      updated_at
-    FROM client_gallery_albums
-    WHERE id = ${albumId} AND user_id = ${userId}
-    LIMIT 1
-  `
-  const raw = rows[0]
+  let raw: Record<string, unknown> | undefined
+  try {
+    const rows = await sql`
+      SELECT
+        id,
+        user_id,
+        title,
+        public_token,
+        s3_prefix,
+        description,
+        location,
+        event_type,
+        starts_at,
+        ends_at,
+        expires_at,
+        notes,
+        gallery_template_id,
+        created_at,
+        updated_at
+      FROM client_gallery_albums
+      WHERE id = ${albumId} AND user_id = ${userId}
+      LIMIT 1
+    `
+    raw = rows[0]
+  } catch (e) {
+    if (!isPgUndefinedColumnError(e)) throw e
+    console.warn(
+      "[client-gallery] getAlbumByIdForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+    )
+    const rows = await sql`
+      SELECT id, user_id, title, public_token, s3_prefix, created_at, updated_at
+      FROM client_gallery_albums
+      WHERE id = ${albumId} AND user_id = ${userId}
+      LIMIT 1
+    `
+    raw = rows[0]
+  }
   if (!raw) return null
   const album = toCamel(raw) as Record<string, unknown>
   const assetsRows = await sql`
@@ -155,36 +211,55 @@ export type PublicAlbumPayload = {
   images: { id: string; url: string; contentType: string | null }[]
 }
 
+type PublicAlbumDbRow = {
+  id?: string
+  title?: string
+  user_id?: string
+  description?: string | null
+  location?: string | null
+  event_type?: string | null
+  starts_at?: string | null
+  ends_at?: string | null
+  expires_at?: string | null
+  gallery_template_id?: string | null
+}
+
 export async function buildPublicAlbumPayload(publicToken: string): Promise<PublicAlbumPayload | null> {
   const sql = getDb()
-  const rows = await sql`
-    SELECT
-      id,
-      title,
-      user_id,
-      description,
-      location,
-      event_type,
-      starts_at,
-      ends_at,
-      expires_at,
-      gallery_template_id
-    FROM client_gallery_albums
-    WHERE public_token = ${publicToken}
-    LIMIT 1
-  `
-  const album = rows[0] as {
-    id?: string
-    title?: string
-    user_id?: string
-    description?: string | null
-    location?: string | null
-    event_type?: string | null
-    starts_at?: string | null
-    ends_at?: string | null
-    expires_at?: string | null
-    gallery_template_id?: string | null
-  } | undefined
+  let album: PublicAlbumDbRow | undefined
+
+  try {
+    const rows = await sql`
+      SELECT
+        id,
+        title,
+        user_id,
+        description,
+        location,
+        event_type,
+        starts_at,
+        ends_at,
+        expires_at,
+        gallery_template_id
+      FROM client_gallery_albums
+      WHERE public_token = ${publicToken}
+      LIMIT 1
+    `
+    album = rows[0] as PublicAlbumDbRow | undefined
+  } catch (e) {
+    if (!isPgUndefinedColumnError(e)) throw e
+    console.warn(
+      "[client-gallery] buildPublicAlbumPayload: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+    )
+    const rows = await sql`
+      SELECT id, title, user_id
+      FROM client_gallery_albums
+      WHERE public_token = ${publicToken}
+      LIMIT 1
+    `
+    album = rows[0] as PublicAlbumDbRow | undefined
+  }
+
   if (!album?.id) return null
 
   const title = String(album.title ?? "Album")

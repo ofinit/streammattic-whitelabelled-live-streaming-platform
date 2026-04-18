@@ -18,6 +18,7 @@ import {
   type GalleryTemplateCategory,
 } from "@/lib/client-gallery-templates"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
+import { GalleryTemplatePreview } from "@/components/client-gallery/gallery-template-preview"
 
 const EVENT_TYPES = ["Wedding", "Corporate", "Sports", "Party", "Other"] as const
 
@@ -284,19 +285,7 @@ export function ClientGalleryCreateAlbumForm() {
                           : "border-border bg-card hover:border-primary/40",
                       )}
                     >
-                      <div
-                        className={cn(
-                          "mb-3 aspect-video rounded-lg bg-gradient-to-br",
-                          t.id === "wedding-soft" && "from-rose-100 to-rose-50 dark:from-rose-950/50 dark:to-rose-900/20",
-                          t.id === "lavender-dream" && "from-violet-200 to-violet-50 dark:from-violet-950 dark:to-violet-900/30",
-                          t.id === "sports-bold" && "from-zinc-700 to-zinc-900",
-                          t.id === "minimal-dark" && "from-zinc-800 to-black",
-                          t.id === "hero-ribbon" && "from-primary/30 to-muted",
-                          t.id === "masonry-flow" && "from-amber-100/80 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/20",
-                          t.id === "bento-modern" && "from-sky-100 to-indigo-50 dark:from-sky-950/40 dark:to-indigo-950/30",
-                          t.id === "classic-grid" && "from-muted to-background",
-                        )}
-                      />
+                      <GalleryTemplatePreview templateId={t.id} />
                       <p className="font-medium text-foreground">{t.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
                     </button>

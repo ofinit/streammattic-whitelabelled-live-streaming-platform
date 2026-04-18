@@ -204,6 +204,18 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
 
   const sql = getDb()
   const pinFieldsInPatch = p.guestPinRequired !== undefined || p.regenerateGuestPin === true
+  /** Toggle PIN / regenerate only — avoid rewriting all columns (timestamps can fail to round-trip on some DB rows). */
+  const pinOnlyPatch =
+    pinFieldsInPatch &&
+    p.title === undefined &&
+    p.description === undefined &&
+    p.location === undefined &&
+    p.eventType === undefined &&
+    p.startsAt === undefined &&
+    p.endsAt === undefined &&
+    p.expiresAt === undefined &&
+    p.notes === undefined &&
+    p.galleryTemplateId === undefined
 
   type MetadataRow = { id?: string; gallery_template_id?: string; updated_at?: unknown }
   type FullRow = MetadataRow & {
@@ -280,6 +292,24 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         Boolean(current.guestPinRequired),
         current.guestPin ?? null,
       )
+    }
+
+    if (pinOnlyPatch) {
+      const rows = await sql`
+        UPDATE client_gallery_albums
+        SET
+          guest_pin_required = ${guestPinRequired},
+          guest_pin = ${tGuestPin},
+          updated_at = NOW()
+        WHERE id = ${id} AND user_id = ${uid}
+        RETURNING
+          id,
+          gallery_template_id,
+          guest_pin_required,
+          guest_pin,
+          updated_at
+      `
+      return respondFullOk(rows[0] as FullRow | undefined)
     }
 
     const rows = await sql`

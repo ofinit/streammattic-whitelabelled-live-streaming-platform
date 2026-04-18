@@ -1,11 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import QRCode from "react-qr-code"
 import useSWR from "swr"
-import { Copy, Loader2, Trash2, Upload } from "lucide-react"
+import { Copy, Download, Loader2, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -22,6 +22,12 @@ import { Input } from "@/components/ui/input"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryTemplatePicker } from "@/components/client-gallery/gallery-template-picker"
+import {
+  downloadAlbumQrPngPrint,
+  downloadAlbumQrSvg,
+} from "@/components/client-gallery/client-gallery-album-qr-download"
+import { compressImageFileToWebp } from "@/lib/client-image-webp"
+import { MAX_CLIENT_GALLERY_UPLOAD_BYTES } from "@/lib/client-gallery-utils"
 
 async function fetcher(url: string) {
   const res = await fetch(url, { credentials: "include" })
@@ -57,6 +63,7 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
   const [deletingAlbum, setDeletingAlbum] = useState(false)
   const [designTemplateId, setDesignTemplateId] = useState(DEFAULT_GALLERY_TEMPLATE_ID)
   const [savingDesign, setSavingDesign] = useState(false)
+  const qrWrapRef = useRef<HTMLDivElement>(null)
 
   const serverTemplateId = (data?.album as { galleryTemplateId?: string } | undefined)?.galleryTemplateId
   useEffect(() => {
@@ -85,9 +92,48 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
     async (files: FileList | null) => {
       if (!files?.length) return
       setUploading(true)
+      const list = Array.from(files).filter((f) => f.type.startsWith("image/"))
+      if (list.length === 0) {
+        toast.error("No image files selected")
+        setUploading(false)
+        return
+      }
+      if (list.length < files.length) {
+        toast.message("Some files were skipped (images only)")
+      }
+
+      const toastId = toast.loading(`Preparing 0/${list.length}…`)
+      const failures: string[] = []
       try {
-        const list = Array.from(files)
-        for (const file of list) {
+        for (let i = 0; i < list.length; i++) {
+          const file = list[i]
+          toast.loading(`Preparing ${i + 1}/${list.length}…`, { id: toastId })
+
+          await new Promise<void>((r) => {
+            window.setTimeout(r, 0)
+          })
+
+          let out: File
+          try {
+            out = await compressImageFileToWebp(file, {
+              maxEdge: 1920,
+              quality: 0.82,
+              strictWebp: true,
+            })
+          } catch (err) {
+            failures.push(`${file.name}: ${err instanceof Error ? err.message : "Could not process"}`)
+            continue
+          }
+
+          if (out.type !== "image/webp") {
+            failures.push(`${file.name}: Expected WebP output`)
+            continue
+          }
+          if (out.size > MAX_CLIENT_GALLERY_UPLOAD_BYTES) {
+            failures.push(`${file.name}: Compressed file still too large`)
+            continue
+          }
+
           const up = await fetchJson<{
             presignedUrl: string
             key: string
@@ -96,21 +142,24 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              filename: file.name,
-              contentType: file.type || "application/octet-stream",
-              byteSize: file.size,
+              filename: out.name,
+              contentType: out.type,
+              byteSize: out.size,
             }),
           })
 
+          toast.loading(`Uploading ${i + 1}/${list.length}…`, { id: toastId })
+
           const putRes = await fetch(up.presignedUrl, {
             method: "PUT",
-            body: file,
+            body: out,
             headers: {
-              "Content-Type": up.headers["Content-Type"] || file.type || "application/octet-stream",
+              "Content-Type": up.headers["Content-Type"] || out.type,
             },
           })
           if (!putRes.ok) {
-            throw new Error(`Upload failed for ${file.name}`)
+            failures.push(`${file.name}: Upload failed`)
+            continue
           }
 
           await fetchJson(`/api/client-gallery/albums/${albumId}/assets`, {
@@ -118,14 +167,37 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               key: up.key,
-              contentType: file.type || null,
-              byteSize: file.size,
+              contentType: out.type,
+              byteSize: out.size,
             }),
           })
+
+          await new Promise<void>((r) => {
+            window.setTimeout(r, 0)
+          })
         }
-        toast.success(list.length === 1 ? "Photo uploaded" : `${list.length} photos uploaded`)
-        await mutate()
+
+        const ok = list.length - failures.length
+        if (ok === list.length) {
+          toast.success(list.length === 1 ? "Photo uploaded" : `${list.length} photos uploaded`, { id: toastId })
+        } else if (ok > 0) {
+          toast.warning(`Uploaded ${ok} of ${list.length}. Some files failed.`, { id: toastId })
+          if (failures.length) {
+            toast.error(failures.slice(0, 5).join("\n"), { duration: 8000 })
+            if (failures.length > 5) {
+              toast.message(`…and ${failures.length - 5} more`)
+            }
+          }
+        } else {
+          toast.error(failures[0] ?? "Upload failed", { id: toastId })
+          if (failures.length > 1) {
+            toast.error(failures.slice(1, 5).join("\n"), { duration: 8000 })
+          }
+        }
+
+        if (ok > 0) await mutate()
       } catch (e) {
+        toast.dismiss(toastId)
         toast.error(e instanceof Error ? e.message : "Upload failed")
       } finally {
         setUploading(false)
@@ -211,6 +283,24 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
       toast.error("Could not copy")
     }
   }, [album?.viewerPath, album?.viewerUrl])
+
+  const downloadQrSvg = useCallback(() => {
+    try {
+      downloadAlbumQrSvg(qrWrapRef.current, "album-guest-qr")
+      toast.success("QR downloaded (SVG)")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not download QR")
+    }
+  }, [])
+
+  const downloadQrPngPrint = useCallback(async () => {
+    try {
+      await downloadAlbumQrPngPrint(qrWrapRef.current, { baseFilename: "album-guest-qr" })
+      toast.success("QR downloaded (PNG, print)")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not export PNG")
+    }
+  }, [])
 
   if (isLoading) {
     return (
@@ -346,7 +436,10 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           <CardDescription>Anyone with this link can view photos (no login).</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          <div className="flex shrink-0 flex-col items-center gap-2 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div
+            ref={qrWrapRef}
+            className="flex shrink-0 flex-col items-center gap-2 rounded-xl border border-border bg-white p-4 shadow-sm"
+          >
             <QRCode value={qrValue} size={180} level="M" />
             <span className="text-center text-xs text-neutral-600">Scan to open</span>
           </div>
@@ -363,6 +456,14 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
                   </a>
                 </Button>
               ) : null}
+              <Button type="button" variant="outline" className="gap-2" onClick={downloadQrSvg}>
+                <Download className="h-4 w-4" />
+                Download QR (SVG)
+              </Button>
+              <Button type="button" variant="outline" className="gap-2" onClick={() => void downloadQrPngPrint()}>
+                <Download className="h-4 w-4" />
+                Download QR (PNG, print)
+              </Button>
             </div>
             <Input readOnly value={album.viewerUrl || album.viewerPath || ""} className="font-mono text-xs" />
           </div>
@@ -372,7 +473,10 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
       <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle className="text-lg">Upload photos</CardTitle>
-          <CardDescription>Images go to your bucket via signed URLs.</CardDescription>
+          <CardDescription>
+            Images are resized (max 1920px long edge), compressed to WebP in your browser, then sent to your bucket via
+            signed URLs. Original files are not stored.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-10 transition-colors hover:bg-muted/50">

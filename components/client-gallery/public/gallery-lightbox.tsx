@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { X, ChevronLeft, ChevronRight, Play, Pause, Download, ZoomIn, ZoomOut } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Play, Pause, ZoomIn, ZoomOut } from "lucide-react"
 
 interface GalleryLightboxProps {
   images: { id: string; url: string; contentType: string | null }[]
@@ -132,15 +132,6 @@ export function GalleryLightbox({
           >
             {isSlideshowActive ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          {/* Download */}
-          <a
-            href={currentImage.url}
-            download
-            className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="Download image"
-          >
-            <Download className="h-5 w-5" />
-          </a>
           {/* Close */}
           <button
             onClick={onClose}

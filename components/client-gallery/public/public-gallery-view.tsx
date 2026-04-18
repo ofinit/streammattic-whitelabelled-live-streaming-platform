@@ -5,7 +5,12 @@ import { cn } from "@/lib/utils"
 import type { PublicAlbumPayload } from "@/lib/client-gallery-album-service"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryLightbox } from "./gallery-lightbox"
-import { Calendar, MapPin, Play } from "lucide-react"
+import { Calendar, MapPin, Play, ZoomIn } from "lucide-react"
+
+function isVideoContentType(contentType: string | null): boolean {
+  if (!contentType) return false
+  return contentType.toLowerCase().trim().startsWith("video/")
+}
 
 function formatRange(startsAt: string | null, endsAt: string | null): string | null {
   const a = startsAt ? new Date(startsAt) : null
@@ -26,6 +31,7 @@ interface PhotoTileProps {
 }
 
 function PhotoTile({ img, index, onClick, className, aspect = "square" }: PhotoTileProps) {
+  const isVideo = isVideoContentType(img.contentType)
   const aspectClasses = {
     square: "aspect-square",
     portrait: "aspect-[3/4]",
@@ -35,7 +41,9 @@ function PhotoTile({ img, index, onClick, className, aspect = "square" }: PhotoT
 
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-label={isVideo ? `Play video ${index + 1}` : `View image ${index + 1}`}
       className={cn(
         "group relative overflow-hidden rounded-lg bg-zinc-100 transition-all duration-300",
         "hover:shadow-lg hover:shadow-zinc-400/35",
@@ -54,7 +62,11 @@ function PhotoTile({ img, index, onClick, className, aspect = "square" }: PhotoT
       {/* Hover overlay */}
       <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/30 group-hover:opacity-100">
         <div className="rounded-full bg-white/90 p-3 text-black shadow-lg backdrop-blur-sm">
-          <Play className="h-5 w-5 fill-current" />
+          {isVideo ? (
+            <Play className="h-5 w-5 fill-current" aria-hidden />
+          ) : (
+            <ZoomIn className="h-5 w-5" strokeWidth={2} aria-hidden />
+          )}
         </div>
       </div>
     </button>
@@ -108,11 +120,17 @@ function HeroRibbon({ payload, onImageClick }: GalleryLayoutProps) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             <button
+              type="button"
               onClick={() => onImageClick(0)}
+              aria-label={isVideoContentType(featured.contentType) ? "Play featured video" : "View featured image"}
               className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100"
             >
               <div className="rounded-full bg-white/20 p-4 text-white backdrop-blur-md">
-                <Play className="h-8 w-8 fill-current" />
+                {isVideoContentType(featured.contentType) ? (
+                  <Play className="h-8 w-8 fill-current" aria-hidden />
+                ) : (
+                  <ZoomIn className="h-8 w-8" strokeWidth={2} aria-hidden />
+                )}
               </div>
             </button>
           </div>
@@ -447,22 +465,35 @@ function MinimalDark({ payload, onImageClick }: GalleryLayoutProps) {
       {/* Gallery */}
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
-          {payload.images.map((img, idx) => (
-            <button
-              key={img.id}
-              onClick={() => onImageClick(idx)}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-50 transition-all duration-300 hover:border-zinc-300 hover:shadow-md hover:shadow-zinc-300/40"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.url}
-                alt={`Photo ${idx + 1}`}
-                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/10" />
-            </button>
-          ))}
+          {payload.images.map((img, idx) => {
+            const isVideo = isVideoContentType(img.contentType)
+            return (
+              <button
+                key={img.id}
+                type="button"
+                onClick={() => onImageClick(idx)}
+                aria-label={isVideo ? `Play video ${idx + 1}` : `View image ${idx + 1}`}
+                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-50 transition-all duration-300 hover:border-zinc-300 hover:shadow-md hover:shadow-zinc-300/40"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.url}
+                  alt=""
+                  className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/25 group-hover:opacity-100">
+                  <div className="rounded-full bg-white/90 p-2.5 text-zinc-900 shadow-md">
+                    {isVideo ? (
+                      <Play className="h-5 w-5 fill-current" aria-hidden />
+                    ) : (
+                      <ZoomIn className="h-5 w-5" strokeWidth={2} aria-hidden />
+                    )}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </main>
     </div>

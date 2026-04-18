@@ -7,10 +7,11 @@ const DEFAULT_QUALITY = 0.82
 
 export async function compressImageFileToWebp(
   file: File,
-  opts?: { maxEdge?: number; quality?: number },
+  opts?: { maxEdge?: number; quality?: number; strictWebp?: boolean },
 ): Promise<File> {
   const maxEdge = opts?.maxEdge ?? DEFAULT_MAX_EDGE
   const quality = opts?.quality ?? DEFAULT_QUALITY
+  const strictWebp = opts?.strictWebp === true
 
   let bitmap: ImageBitmap
   try {
@@ -38,6 +39,11 @@ export async function compressImageFileToWebp(
     })
     // Safari and some older browsers may not support WebP export from canvas (blob is null).
     if (!blob || blob.size === 0) {
+      if (strictWebp) {
+        throw new Error(
+          "This browser cannot export WebP from the canvas. Use Chrome or Edge for client gallery uploads, or update Safari.",
+        )
+      }
       blob = await new Promise((resolve) => {
         canvas.toBlob((b) => resolve(b), "image/jpeg", 0.88)
       })

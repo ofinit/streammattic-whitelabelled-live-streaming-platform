@@ -12,6 +12,6 @@ ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ
 ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
 ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS notes TEXT;
-ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid';
+ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'midnight-elegance';
 
-UPDATE client_gallery_albums SET gallery_template_id = 'classic-grid' WHERE gallery_template_id IS NULL;
+UPDATE client_gallery_albums SET gallery_template_id = 'midnight-elegance' WHERE gallery_template_id IS NULL;

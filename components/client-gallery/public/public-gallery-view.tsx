@@ -553,14 +553,14 @@ export function PublicGalleryView({ payload }: PublicGalleryViewProps) {
   return (
     <>
       {/* Template Switch */}
-      {templateId === "hero-ribbon" && <HeroRibbon {...layoutProps} />}
-      {templateId === "masonry-flow" && <MasonryFlow {...layoutProps} />}
-      {templateId === "bento-modern" && <BentoModern {...layoutProps} />}
-      {templateId === "wedding-soft" && <WeddingSoft {...layoutProps} />}
-      {templateId === "lavender-dream" && <LavenderDream {...layoutProps} />}
-      {templateId === "sports-bold" && <SportsBold {...layoutProps} />}
-      {templateId === "minimal-dark" && <MinimalDark {...layoutProps} />}
-      {(templateId === "classic-grid" || !templateId) && <ClassicGrid {...layoutProps} />}
+      {templateId === "cinematic-hero" && <HeroRibbon {...layoutProps} />}
+      {templateId === "storyflow" && <MasonryFlow {...layoutProps} />}
+      {templateId === "artisan-bento" && <BentoModern {...layoutProps} />}
+      {templateId === "blush-serenity" && <WeddingSoft {...layoutProps} />}
+      {templateId === "amethyst-garden" && <LavenderDream {...layoutProps} />}
+      {templateId === "velocity-edge" && <SportsBold {...layoutProps} />}
+      {templateId === "obsidian-frame" && <MinimalDark {...layoutProps} />}
+      {(templateId === "midnight-elegance" || !templateId) && <ClassicGrid {...layoutProps} />}
 
       {/* Lightbox */}
       <GalleryLightbox

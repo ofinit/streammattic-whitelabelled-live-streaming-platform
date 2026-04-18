@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS client_gallery_albums (
   ends_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   notes TEXT,
-  gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid',
+  gallery_template_id TEXT NOT NULL DEFAULT 'midnight-elegance',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

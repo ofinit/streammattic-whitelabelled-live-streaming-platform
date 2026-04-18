@@ -23,7 +23,7 @@ function cell() {
 
 function mockupFor(id: string) {
   switch (id) {
-    case "classic-grid":
+    case "midnight-elegance":
       return (
         <div className="flex h-full flex-col gap-1.5">
           <div className="mb-1 h-4 w-1/2 rounded bg-foreground/20" />
@@ -34,7 +34,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "hero-ribbon":
+    case "cinematic-hero":
       return (
         <div className="flex h-full flex-col gap-1.5">
           <div className="relative h-[32%] shrink-0 overflow-hidden rounded-md bg-primary/45 ring-1 ring-primary/30">
@@ -51,7 +51,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "masonry-flow":
+    case "storyflow":
       return (
         <div className="flex h-full gap-1.5">
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -70,7 +70,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "bento-modern":
+    case "artisan-bento":
       return (
         <div className="flex h-full flex-col gap-1.5">
           <div className="mb-1 h-3 w-1/3 rounded bg-foreground/20" />
@@ -81,7 +81,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "wedding-soft":
+    case "blush-serenity":
       return (
         <div className="flex h-full flex-col gap-1.5 rounded-md bg-gradient-to-br from-rose-100/80 via-background to-violet-100/60 p-2 dark:from-rose-950/60 dark:via-background dark:to-violet-950/40">
           <div className="mx-auto h-2 w-16 rounded-full bg-rose-400/50 dark:bg-rose-500/40" />
@@ -94,7 +94,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "lavender-dream":
+    case "amethyst-garden":
       return (
         <div className="flex h-full flex-col gap-1.5 rounded-md bg-gradient-to-br from-violet-100/70 via-background to-fuchsia-100/50 p-2 dark:from-violet-950/50 dark:via-background dark:to-fuchsia-950/30">
           <div className="mx-auto h-3 w-20 rounded bg-foreground/20" />
@@ -106,7 +106,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "sports-bold":
+    case "velocity-edge":
       return (
         <div className="flex h-full flex-col gap-1">
           <div className="relative h-[26%] shrink-0 overflow-hidden rounded-sm bg-gradient-to-r from-primary to-orange-500 shadow-sm">
@@ -119,7 +119,7 @@ function mockupFor(id: string) {
           </div>
         </div>
       )
-    case "minimal-dark":
+    case "obsidian-frame":
       return (
         <div className="flex h-full flex-col rounded-md bg-zinc-900 p-2 ring-2 ring-zinc-700 dark:bg-black">
           <div className="mb-1.5 h-2 w-16 rounded bg-zinc-500/50" />

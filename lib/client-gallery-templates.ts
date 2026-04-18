@@ -7,56 +7,56 @@ export type ClientGalleryTemplateDef = {
   description: string
 }
 
-export const DEFAULT_GALLERY_TEMPLATE_ID = "classic-grid"
+export const DEFAULT_GALLERY_TEMPLATE_ID = "midnight-elegance"
 
 export const CLIENT_GALLERY_TEMPLATES: ClientGalleryTemplateDef[] = [
   {
-    id: "classic-grid",
-    name: "Classic grid",
+    id: "midnight-elegance",
+    name: "Midnight Elegance",
     category: "events",
-    description: "Even photo grid — works everywhere.",
+    description: "Clean gallery with subtle sophistication and balanced grid layout.",
   },
   {
-    id: "hero-ribbon",
-    name: "Hero ribbon",
+    id: "cinematic-hero",
+    name: "Cinematic Hero",
     category: "events",
-    description: "Bold header band with photos below.",
+    description: "Dramatic featured image with cinematic overlay and bold typography.",
   },
   {
-    id: "masonry-flow",
-    name: "Masonry flow",
+    id: "storyflow",
+    name: "Storyflow",
     category: "events",
-    description: "Pinterest-style staggered columns.",
+    description: "Dynamic masonry arrangement that tells your visual story.",
   },
   {
-    id: "bento-modern",
-    name: "Bento modern",
+    id: "artisan-bento",
+    name: "Artisan Bento",
     category: "events",
-    description: "Mixed tile sizes for variety.",
+    description: "Curated asymmetric tiles with mixed proportions and modern flair.",
   },
   {
-    id: "wedding-soft",
-    name: "Wedding soft",
+    id: "blush-serenity",
+    name: "Blush Serenity",
     category: "wedding",
-    description: "Soft gradient hero and elegant grid.",
+    description: "Romantic rose gradients with delicate typography and soft elegance.",
   },
   {
-    id: "lavender-dream",
-    name: "Lavender dream",
+    id: "amethyst-garden",
+    name: "Amethyst Garden",
     category: "wedding",
-    description: "Lavender tones and gentle spacing.",
+    description: "Dreamy violet tones with garden-inspired spacious layout.",
   },
   {
-    id: "sports-bold",
-    name: "Sports bold",
+    id: "velocity-edge",
+    name: "Velocity Edge",
     category: "sports",
-    description: "High-contrast header and dense grid.",
+    description: "High-energy gradient header with bold athletic presence.",
   },
   {
-    id: "minimal-dark",
-    name: "Minimal dark",
+    id: "obsidian-frame",
+    name: "Obsidian Frame",
     category: "custom",
-    description: "Dark frame, focus on imagery.",
+    description: "Pure dark canvas that puts your imagery center stage.",
   },
 ]
 

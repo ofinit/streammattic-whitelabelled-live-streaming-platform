@@ -279,12 +279,12 @@ async function step3_core_tables(c) {
   await tryExec(
     c,
     "COL client_gallery_albums gallery_template_id",
-    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'classic-grid'`,
+    `ALTER TABLE client_gallery_albums ADD COLUMN IF NOT EXISTS gallery_template_id TEXT NOT NULL DEFAULT 'midnight-elegance'`,
   );
   await tryExec(
     c,
     "UPDATE client_gallery_albums gallery_template_id",
-    `UPDATE client_gallery_albums SET gallery_template_id = 'classic-grid' WHERE gallery_template_id IS NULL`,
+    `UPDATE client_gallery_albums SET gallery_template_id = 'midnight-elegance' WHERE gallery_template_id IS NULL`,
   );
   await tryExec(c, "TABLE client_gallery_assets", `
     CREATE TABLE IF NOT EXISTS client_gallery_assets (

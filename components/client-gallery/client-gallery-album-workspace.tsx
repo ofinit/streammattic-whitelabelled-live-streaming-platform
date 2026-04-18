@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import QRCode from "react-qr-code"
 import useSWR from "swr"
-import { Copy, Download, Loader2, Trash2, Upload } from "lucide-react"
+import { Copy, Download, Loader2, RefreshCw, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryTemplatePicker } from "@/components/client-gallery/gallery-template-picker"
@@ -28,6 +32,23 @@ import {
 } from "@/components/client-gallery/client-gallery-album-qr-download"
 import { compressImageFileToWebp } from "@/lib/client-image-webp"
 import { MAX_CLIENT_GALLERY_UPLOAD_BYTES } from "@/lib/client-gallery-utils"
+
+const EVENT_TYPES = ["Wedding", "Corporate", "Sports", "Party", "Other"] as const
+
+function isoToDateInput(iso: string | null | undefined): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
+  return d.toISOString().slice(0, 10)
+}
+
+function dateInputToIso(dateStr: string): string | null {
+  const t = dateStr.trim()
+  if (!t) return null
+  const d = new Date(`${t}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString()
+}
 
 async function fetcher(url: string) {
   const res = await fetch(url, { credentials: "include" })
@@ -63,6 +84,18 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
   const [deletingAlbum, setDeletingAlbum] = useState(false)
   const [designTemplateId, setDesignTemplateId] = useState(DEFAULT_GALLERY_TEMPLATE_ID)
   const [savingDesign, setSavingDesign] = useState(false)
+  const [savingDetails, setSavingDetails] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [editLocation, setEditLocation] = useState("")
+  const [editEventType, setEditEventType] = useState("")
+  const [editStartsAt, setEditStartsAt] = useState("")
+  const [editEndsAt, setEditEndsAt] = useState("")
+  const [editExpiresAt, setEditExpiresAt] = useState("")
+  const [editNotes, setEditNotes] = useState("")
+  const [pinSaving, setPinSaving] = useState(false)
+  const [copiedPin, setCopiedPin] = useState(false)
   const qrWrapRef = useRef<HTMLDivElement>(null)
 
   const serverTemplateId = (data?.album as { galleryTemplateId?: string } | undefined)?.galleryTemplateId
@@ -84,9 +117,23 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
         expiresAt?: string | null
         notes?: string | null
         galleryTemplateId?: string
+        guestPinRequired?: boolean
+        guestPin?: string | null
         assets?: { id: string; url: string | null; contentType?: string | null }[]
       }
     | undefined
+
+  useEffect(() => {
+    if (!album) return
+    setEditTitle(album.title ?? "")
+    setEditDescription(album.description ?? "")
+    setEditLocation(album.location ?? "")
+    setEditEventType(album.eventType ?? "")
+    setEditStartsAt(isoToDateInput(album.startsAt))
+    setEditEndsAt(isoToDateInput(album.endsAt))
+    setEditExpiresAt(isoToDateInput(album.expiresAt))
+    setEditNotes(album.notes ?? "")
+  }, [album])
 
   const uploadFiles = useCallback(
     async (files: FileList | null) => {
@@ -267,6 +314,98 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
     }
   }, [albumId, designTemplateId, mutate])
 
+  const saveAlbumDetails = useCallback(async () => {
+    const t = editTitle.trim()
+    if (!t) {
+      toast.error("Title is required")
+      return
+    }
+    setSavingDetails(true)
+    try {
+      await fetchJson(`/api/client-gallery/albums/${albumId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: t,
+          description: editDescription.trim() || undefined,
+          location: editLocation.trim() || undefined,
+          eventType: editEventType || undefined,
+          startsAt: dateInputToIso(editStartsAt),
+          endsAt: dateInputToIso(editEndsAt),
+          expiresAt: dateInputToIso(editExpiresAt),
+          notes: editNotes.trim() || undefined,
+        }),
+      })
+      toast.success("Album details saved")
+      await mutate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save details")
+    } finally {
+      setSavingDetails(false)
+    }
+  }, [
+    albumId,
+    editTitle,
+    editDescription,
+    editLocation,
+    editEventType,
+    editStartsAt,
+    editEndsAt,
+    editExpiresAt,
+    editNotes,
+    mutate,
+  ])
+
+  const setGuestPinRequired = useCallback(
+    async (required: boolean) => {
+      setPinSaving(true)
+      try {
+        await fetchJson(`/api/client-gallery/albums/${albumId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guestPinRequired: required }),
+        })
+        toast.success(required ? "PIN enabled — share the code with guests" : "PIN disabled")
+        await mutate()
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not update PIN settings")
+      } finally {
+        setPinSaving(false)
+      }
+    },
+    [albumId, mutate],
+  )
+
+  const regenerateGuestPin = useCallback(async () => {
+    setPinSaving(true)
+    try {
+      await fetchJson(`/api/client-gallery/albums/${albumId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateGuestPin: true }),
+      })
+      toast.success("New PIN generated")
+      await mutate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not regenerate PIN")
+    } finally {
+      setPinSaving(false)
+    }
+  }, [albumId, mutate])
+
+  const copyGuestPin = useCallback(async () => {
+    const pin = album?.guestPin
+    if (!pin) return
+    try {
+      await navigator.clipboard.writeText(pin)
+      setCopiedPin(true)
+      toast.success("PIN copied")
+      window.setTimeout(() => setCopiedPin(false), 2000)
+    } catch {
+      toast.error("Could not copy")
+    }
+  }, [album?.guestPin])
+
   const copyLink = useCallback(async () => {
     const text =
       album?.viewerUrl ||
@@ -337,45 +476,114 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Guest link and QR open a public page — separate from live events and Control Center.
         </p>
-        {(album.description ||
-          album.location ||
-          album.eventType ||
-          album.startsAt ||
-          album.endsAt ||
-          album.expiresAt ||
-          album.notes) && (
-          <Card className="mt-4 border-border bg-muted/30">
+
+        <Collapsible open={editOpen} onOpenChange={setEditOpen} className="mt-4">
+          <Card className="border-border bg-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Album details</CardTitle>
-              <CardDescription>Shown on the guest page where applicable. Notes stay private.</CardDescription>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between text-left text-lg font-semibold text-foreground hover:underline"
+                >
+                  Edit album details
+                  <span className="text-sm font-normal text-muted-foreground">{editOpen ? "Hide" : "Show"}</span>
+                </button>
+              </CollapsibleTrigger>
+              <CardDescription>Same fields as when you created the album — name, dates, guest link expiry, notes.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              {album.description ? <p className="text-foreground/90">{album.description}</p> : null}
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                {album.location ? <span>{album.location}</span> : null}
-                {album.eventType ? <span>{album.eventType}</span> : null}
-              </div>
-              {(album.startsAt || album.endsAt) && (
-                <p>
-                  {album.startsAt ? new Date(album.startsAt).toLocaleDateString() : ""}
-                  {album.startsAt && album.endsAt ? " – " : ""}
-                  {album.endsAt ? new Date(album.endsAt).toLocaleDateString() : ""}
-                </p>
-              )}
-              {album.expiresAt ? (
-                <p>
-                  <span className="font-medium text-foreground">Guest link expires:</span>{" "}
-                  {new Date(album.expiresAt).toLocaleString()}
-                </p>
-              ) : null}
-              {album.notes ? (
-                <p className="border-t border-border pt-2">
-                  <span className="font-medium text-foreground">Notes (owner only):</span> {album.notes}
-                </p>
-              ) : null}
-            </CardContent>
+            <CollapsibleContent>
+              <CardContent className="space-y-4 border-t border-border pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-album-title">
+                    Album / event name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="edit-album-title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="max-w-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-album-description">Description</Label>
+                  <Textarea
+                    id="edit-album-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={3}
+                    className="max-w-xl resize-y"
+                  />
+                </div>
+                <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-album-start">Start date</Label>
+                    <Input
+                      id="edit-album-start"
+                      type="date"
+                      value={editStartsAt}
+                      onChange={(e) => setEditStartsAt(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-album-end">End date</Label>
+                    <Input id="edit-album-end" type="date" value={editEndsAt} onChange={(e) => setEditEndsAt(e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-album-type">Event type</Label>
+                    <select
+                      id="edit-album-type"
+                      value={editEventType}
+                      onChange={(e) => setEditEventType(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="">Select…</option>
+                      {EVENT_TYPES.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-album-location">Location</Label>
+                    <Input
+                      id="edit-album-location"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-album-expires">Guest link expiry</Label>
+                  <Input
+                    id="edit-album-expires"
+                    type="date"
+                    value={editExpiresAt}
+                    onChange={(e) => setEditExpiresAt(e.target.value)}
+                    className="max-w-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-album-notes">Organizer notes</Label>
+                  <Textarea
+                    id="edit-album-notes"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    rows={3}
+                    className="max-w-xl resize-y"
+                  />
+                  <p className="text-xs text-muted-foreground">Private — not shown to guests.</p>
+                </div>
+                <Button type="button" disabled={savingDetails} onClick={() => void saveAlbumDetails()}>
+                  {savingDetails ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Save details
+                </Button>
+              </CardContent>
+            </CollapsibleContent>
           </Card>
-        )}
+        </Collapsible>
       </div>
 
       <Card className="border-border bg-card">
@@ -433,7 +641,10 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
       <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle className="text-lg">Share with guests</CardTitle>
-          <CardDescription>Anyone with this link can view photos (no login).</CardDescription>
+          <CardDescription>
+            Anyone with the link can open the gallery (no login). Turn on a PIN so guests must enter a code after
+            opening the link.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <div
@@ -466,6 +677,55 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
               </Button>
             </div>
             <Input readOnly value={album.viewerUrl || album.viewerPath || ""} className="font-mono text-xs" />
+            <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:max-w-md">
+                <Label htmlFor="guest-pin-display" className="text-foreground">
+                  PIN
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="guest-pin-display"
+                    readOnly
+                    value={album.guestPinRequired && album.guestPin ? album.guestPin : "—"}
+                    className="font-mono tracking-widest"
+                    placeholder="Enable PIN to generate"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!album.guestPinRequired || !album.guestPin || pinSaving}
+                    title="Copy PIN"
+                    onClick={() => void copyGuestPin()}
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="sr-only">{copiedPin ? "Copied" : "Copy PIN"}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!album.guestPinRequired || pinSaving}
+                    title="Generate new PIN"
+                    onClick={() => void regenerateGuestPin()}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span className="sr-only">Regenerate PIN</span>
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 sm:shrink-0">
+                <Switch
+                  id="guest-pin-do-not-ask"
+                  checked={!album.guestPinRequired}
+                  disabled={pinSaving}
+                  onCheckedChange={(checked) => void setGuestPinRequired(!checked)}
+                />
+                <Label htmlFor="guest-pin-do-not-ask" className="cursor-pointer text-sm font-normal">
+                  Do not ask PIN
+                </Label>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

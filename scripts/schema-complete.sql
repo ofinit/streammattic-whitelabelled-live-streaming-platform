@@ -185,6 +185,10 @@ CREATE TABLE IF NOT EXISTS client_gallery_albums (
   expires_at TIMESTAMPTZ,
   notes TEXT,
   gallery_template_id TEXT NOT NULL DEFAULT 'midnight-elegance',
+  guest_view_count BIGINT NOT NULL DEFAULT 0,
+  last_guest_view_at TIMESTAMPTZ,
+  guest_pin_required BOOLEAN NOT NULL DEFAULT false,
+  guest_pin TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

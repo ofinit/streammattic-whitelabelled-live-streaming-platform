@@ -1,5 +1,6 @@
 import { getDb, toCamel } from "@/lib/db"
 import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
+import { verifyGalleryUnlockCookie } from "@/lib/client-gallery-unlock-cookie"
 import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { presignGetObjectForOwner } from "@/lib/s3-client-gallery"
 
@@ -22,6 +23,10 @@ export type AlbumRow = {
   expiresAt: string | null
   notes: string | null
   galleryTemplateId: string
+  guestViewCount: number
+  lastGuestViewAt: string | null
+  guestPinRequired: boolean
+  guestPin: string | null
   createdAt: string
   updatedAt: string
   assetCount?: number
@@ -37,6 +42,7 @@ export type AssetRow = {
 }
 
 function mapAlbumRow(o: Record<string, unknown>, assetCount?: number): AlbumRow {
+  const gvc = o.guestViewCount
   return {
     id: String(o.id),
     userId: String(o.userId),
@@ -53,6 +59,10 @@ function mapAlbumRow(o: Record<string, unknown>, assetCount?: number): AlbumRow 
     galleryTemplateId: normalizeGalleryTemplateId(
       o.galleryTemplateId != null ? String(o.galleryTemplateId) : null,
     ),
+    guestViewCount: typeof gvc === "number" ? gvc : Number(gvc ?? 0),
+    lastGuestViewAt: o.lastGuestViewAt != null ? String(o.lastGuestViewAt) : null,
+    guestPinRequired: Boolean(o.guestPinRequired),
+    guestPin: o.guestPin != null ? String(o.guestPin) : null,
     createdAt: o.createdAt != null ? String(o.createdAt) : "",
     updatedAt: o.updatedAt != null ? String(o.updatedAt) : "",
     assetCount,
@@ -105,6 +115,10 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
         a.expires_at,
         a.notes,
         a.gallery_template_id,
+        a.guest_view_count,
+        a.last_guest_view_at,
+        a.guest_pin_required,
+        a.guest_pin,
         a.created_at,
         a.updated_at,
         COALESCE(c.cnt, 0)::int AS asset_count
@@ -124,10 +138,46 @@ export async function listAlbumsForUser(userId: string): Promise<AlbumRow[]> {
     })
   } catch (e) {
     if (!isPgUndefinedColumnError(e)) throw e
-    console.warn(
-      "[client-gallery] listAlbumsForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
-    )
-    return listAlbumsForUserLegacy(userId)
+    try {
+      const rows = await sql`
+        SELECT
+          a.id,
+          a.user_id,
+          a.title,
+          a.public_token,
+          a.s3_prefix,
+          a.description,
+          a.location,
+          a.event_type,
+          a.starts_at,
+          a.ends_at,
+          a.expires_at,
+          a.notes,
+          a.gallery_template_id,
+          a.created_at,
+          a.updated_at,
+          COALESCE(c.cnt, 0)::int AS asset_count
+        FROM client_gallery_albums a
+        LEFT JOIN (
+          SELECT album_id, COUNT(*)::int AS cnt
+          FROM client_gallery_assets
+          GROUP BY album_id
+        ) c ON c.album_id = a.id
+        WHERE a.user_id = ${userId}
+        ORDER BY a.updated_at DESC
+      `
+      return rows.map((r) => {
+        const o = toCamel(r) as Record<string, unknown>
+        const ac = typeof o.assetCount === "number" ? o.assetCount : Number(o.assetCount ?? 0)
+        return mapAlbumRow(o, ac)
+      })
+    } catch (e2) {
+      if (!isPgUndefinedColumnError(e2)) throw e2
+      console.warn(
+        "[client-gallery] listAlbumsForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+      )
+      return listAlbumsForUserLegacy(userId)
+    }
   }
 }
 
@@ -153,6 +203,10 @@ export async function getAlbumByIdForUser(
         expires_at,
         notes,
         gallery_template_id,
+        guest_view_count,
+        last_guest_view_at,
+        guest_pin_required,
+        guest_pin,
         created_at,
         updated_at
       FROM client_gallery_albums
@@ -162,16 +216,42 @@ export async function getAlbumByIdForUser(
     raw = rows[0]
   } catch (e) {
     if (!isPgUndefinedColumnError(e)) throw e
-    console.warn(
-      "[client-gallery] getAlbumByIdForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
-    )
-    const rows = await sql`
-      SELECT id, user_id, title, public_token, s3_prefix, created_at, updated_at
-      FROM client_gallery_albums
-      WHERE id = ${albumId} AND user_id = ${userId}
-      LIMIT 1
-    `
-    raw = rows[0]
+    try {
+      const rows = await sql`
+        SELECT
+          id,
+          user_id,
+          title,
+          public_token,
+          s3_prefix,
+          description,
+          location,
+          event_type,
+          starts_at,
+          ends_at,
+          expires_at,
+          notes,
+          gallery_template_id,
+          created_at,
+          updated_at
+        FROM client_gallery_albums
+        WHERE id = ${albumId} AND user_id = ${userId}
+        LIMIT 1
+      `
+      raw = rows[0]
+    } catch (e2) {
+      if (!isPgUndefinedColumnError(e2)) throw e2
+      console.warn(
+        "[client-gallery] getAlbumByIdForUser: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+      )
+      const rows = await sql`
+        SELECT id, user_id, title, public_token, s3_prefix, created_at, updated_at
+        FROM client_gallery_albums
+        WHERE id = ${albumId} AND user_id = ${userId}
+        LIMIT 1
+      `
+      raw = rows[0]
+    }
   }
   if (!raw) return null
   const album = toCamel(raw) as Record<string, unknown>
@@ -208,6 +288,8 @@ export type PublicAlbumPayload = {
   startsAt: string | null
   endsAt: string | null
   expired: boolean
+  /** True when a guest PIN is required and the browser has not unlocked this album yet. */
+  locked?: boolean
   images: { id: string; url: string; contentType: string | null }[]
 }
 
@@ -222,9 +304,33 @@ type PublicAlbumDbRow = {
   ends_at?: string | null
   expires_at?: string | null
   gallery_template_id?: string | null
+  guest_pin_required?: boolean
+  guest_pin?: string | null
 }
 
-export async function buildPublicAlbumPayload(publicToken: string): Promise<PublicAlbumPayload | null> {
+export async function recordGuestAlbumView(publicToken: string): Promise<boolean> {
+  const sql = getDb()
+  try {
+    const rows = await sql`
+      UPDATE client_gallery_albums
+      SET
+        guest_view_count = guest_view_count + 1,
+        last_guest_view_at = NOW()
+      WHERE public_token = ${publicToken}
+        AND (expires_at IS NULL OR expires_at > NOW())
+      RETURNING id
+    `
+    return rows.length > 0
+  } catch (e) {
+    if (isPgUndefinedColumnError(e)) return false
+    throw e
+  }
+}
+
+export async function buildPublicAlbumPayload(
+  publicToken: string,
+  unlockCookie?: string | null,
+): Promise<PublicAlbumPayload | null> {
   const sql = getDb()
   let album: PublicAlbumDbRow | undefined
 
@@ -240,7 +346,9 @@ export async function buildPublicAlbumPayload(publicToken: string): Promise<Publ
         starts_at,
         ends_at,
         expires_at,
-        gallery_template_id
+        gallery_template_id,
+        guest_pin_required,
+        guest_pin
       FROM client_gallery_albums
       WHERE public_token = ${publicToken}
       LIMIT 1
@@ -248,16 +356,37 @@ export async function buildPublicAlbumPayload(publicToken: string): Promise<Publ
     album = rows[0] as PublicAlbumDbRow | undefined
   } catch (e) {
     if (!isPgUndefinedColumnError(e)) throw e
-    console.warn(
-      "[client-gallery] buildPublicAlbumPayload: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
-    )
-    const rows = await sql`
-      SELECT id, title, user_id
-      FROM client_gallery_albums
-      WHERE public_token = ${publicToken}
-      LIMIT 1
-    `
-    album = rows[0] as PublicAlbumDbRow | undefined
+    try {
+      const rows = await sql`
+        SELECT
+          id,
+          title,
+          user_id,
+          description,
+          location,
+          event_type,
+          starts_at,
+          ends_at,
+          expires_at,
+          gallery_template_id
+        FROM client_gallery_albums
+        WHERE public_token = ${publicToken}
+        LIMIT 1
+      `
+      album = rows[0] as PublicAlbumDbRow | undefined
+    } catch (e2) {
+      if (!isPgUndefinedColumnError(e2)) throw e2
+      console.warn(
+        "[client-gallery] buildPublicAlbumPayload: metadata columns missing; using legacy query. Apply scripts/ensure-client-gallery-album-metadata-schema.sql when possible.",
+      )
+      const rows = await sql`
+        SELECT id, title, user_id
+        FROM client_gallery_albums
+        WHERE public_token = ${publicToken}
+        LIMIT 1
+      `
+      album = rows[0] as PublicAlbumDbRow | undefined
+    }
   }
 
   if (!album?.id) return null
@@ -276,6 +405,23 @@ export async function buildPublicAlbumPayload(publicToken: string): Promise<Publ
     const exp = new Date(String(album.expires_at))
     if (!Number.isNaN(exp.getTime()) && Date.now() > exp.getTime()) {
       expired = true
+    }
+  }
+
+  const pinRequired = Boolean(album.guest_pin_required)
+  if (pinRequired && !expired && !verifyGalleryUnlockCookie(unlockCookie ?? undefined, publicToken)) {
+    return {
+      title,
+      storageConfigured: true,
+      galleryTemplateId,
+      description,
+      location,
+      eventType,
+      startsAt,
+      endsAt,
+      expired: false,
+      locked: true,
+      images: [],
     }
   }
 

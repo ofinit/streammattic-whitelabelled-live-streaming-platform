@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { PublicAlbumPayload } from "@/lib/client-gallery-album-service"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryLightbox } from "./gallery-lightbox"
+import { PublicGalleryPinGate } from "./public-gallery-pin-gate"
 import { Calendar, MapPin, Play, ZoomIn } from "lucide-react"
 
 function isVideoContentType(contentType: string | null): boolean {
@@ -530,10 +531,29 @@ function AlbumMeta({
 
 interface PublicGalleryViewProps {
   payload: PublicAlbumPayload
+  /** Public URL token segment; used for PIN unlock and view analytics. */
+  publicToken?: string
 }
 
-export function PublicGalleryView({ payload }: PublicGalleryViewProps) {
+export function PublicGalleryView({ payload, publicToken }: PublicGalleryViewProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!publicToken || payload.locked || payload.expired || !payload.storageConfigured) return
+    const key = `cg_view_${publicToken}`
+    try {
+      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(key)) return
+    } catch {
+      /* ignore */
+    }
+    void fetch(`/api/client-gallery/public/${encodeURIComponent(publicToken)}/view`, { method: "POST" }).finally(() => {
+      try {
+        sessionStorage.setItem(key, "1")
+      } catch {
+        /* ignore */
+      }
+    })
+  }, [publicToken, payload.locked, payload.expired, payload.storageConfigured])
 
   const handleImageClick = (index: number) => {
     setLightboxIndex(index)
@@ -545,6 +565,19 @@ export function PublicGalleryView({ payload }: PublicGalleryViewProps) {
 
   const handleNavigate = (index: number) => {
     setLightboxIndex(index)
+  }
+
+  if (payload.locked && publicToken) {
+    return <PublicGalleryPinGate publicToken={publicToken} albumTitle={payload.title} />
+  }
+
+  if (payload.locked && !publicToken) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold text-foreground">{payload.title}</h1>
+        <p className="mt-4 text-muted-foreground">This gallery is protected.</p>
+      </div>
+    )
   }
 
   // Error states

@@ -5,14 +5,19 @@ import { getClientGalleryViewerAbsoluteUrl } from "@/lib/client-gallery-public-u
 import { isUuid } from "@/lib/client-gallery-utils"
 import { buildOwnerAlbumWithUrls } from "@/lib/client-gallery-album-service"
 import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
-import { isValidGalleryTemplateId } from "@/lib/client-gallery-templates"
+import {
+  generateGuestAlbumPin,
+  parseAlbumPatchBody,
+} from "@/lib/client-gallery-album-metadata"
+import { getAlbumByIdForUser } from "@/lib/client-gallery-album-service"
+import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { getDb } from "@/lib/db"
 import { deleteAllObjectsUnderPrefixForOwner } from "@/lib/s3-client-gallery"
 
 function clientGallerySchemaErrorMessage(e: unknown): string | null {
   const code = (e as { code?: string })?.code
   if (code === "42703") {
-    return "Photo gallery album columns are missing (outdated schema). Apply scripts/ensure-client-gallery-album-metadata-schema.sql on the server."
+    return "Photo gallery album columns are missing (outdated schema). Apply scripts/ensure-client-gallery-album-metadata-schema.sql and scripts/ensure-client-gallery-album-analytics-pin-schema.sql on the server."
   }
   return null
 }
@@ -62,6 +67,10 @@ export async function GET(_request: Request, props: { params: Promise<{ id: stri
       expiresAt: data.expiresAt,
       notes: data.notes,
       galleryTemplateId: data.galleryTemplateId,
+      guestViewCount: data.guestViewCount,
+      lastGuestViewAt: data.lastGuestViewAt,
+      guestPinRequired: data.guestPinRequired,
+      guestPin: data.guestPin,
       assets: data.assets,
     },
   })
@@ -136,31 +145,103 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
     return jsonError("Invalid JSON body", 400)
   }
 
-  const raw = bodyJson.galleryTemplateId ?? bodyJson.gallery_template_id
-  if (typeof raw !== "string" || !raw.trim()) {
-    return jsonError("galleryTemplateId is required", 400)
+  const parsed = parseAlbumPatchBody(bodyJson, normalizeGalleryTemplateId)
+  if (!parsed.ok) {
+    return jsonError(parsed.error, 400)
   }
-  const galleryTemplateId = raw.trim()
-  if (!isValidGalleryTemplateId(galleryTemplateId)) {
-    return jsonError("Invalid gallery template", 400)
+
+  const current = await getAlbumByIdForUser(id, uid)
+  if (!current) {
+    return jsonError("Not found", 404)
+  }
+
+  const p = parsed.data
+  let title = current.title
+  if (p.title !== undefined) title = p.title
+  let description = current.description
+  if (p.description !== undefined) description = p.description
+  let location = current.location
+  if (p.location !== undefined) location = p.location
+  let eventType = current.eventType
+  if (p.eventType !== undefined) eventType = p.eventType
+  let startsAt = current.startsAt
+  if (p.startsAt !== undefined) startsAt = p.startsAt
+  let endsAt = current.endsAt
+  if (p.endsAt !== undefined) endsAt = p.endsAt
+  let expiresAt = current.expiresAt
+  if (p.expiresAt !== undefined) expiresAt = p.expiresAt
+  let notes = current.notes
+  if (p.notes !== undefined) notes = p.notes
+  let galleryTemplateId = current.galleryTemplateId
+  if (p.galleryTemplateId !== undefined) galleryTemplateId = p.galleryTemplateId
+
+  let guestPinRequired = current.guestPinRequired
+  let guestPin = current.guestPin
+
+  if (p.guestPinRequired !== undefined) {
+    guestPinRequired = p.guestPinRequired
+    if (!guestPinRequired) {
+      guestPin = null
+    } else if (!guestPin || p.regenerateGuestPin) {
+      guestPin = generateGuestAlbumPin()
+    }
+  } else if (p.regenerateGuestPin === true) {
+    if (current.guestPinRequired) {
+      guestPin = generateGuestAlbumPin()
+    }
   }
 
   const sql = getDb()
   try {
     const rows = await sql`
       UPDATE client_gallery_albums
-      SET gallery_template_id = ${galleryTemplateId}, updated_at = NOW()
+      SET
+        title = ${title},
+        description = ${description},
+        location = ${location},
+        event_type = ${eventType},
+        starts_at = ${startsAt},
+        ends_at = ${endsAt},
+        expires_at = ${expiresAt},
+        notes = ${notes},
+        gallery_template_id = ${galleryTemplateId},
+        guest_pin_required = ${guestPinRequired},
+        guest_pin = ${guestPin},
+        updated_at = NOW()
       WHERE id = ${id} AND user_id = ${uid}
-      RETURNING id, gallery_template_id, updated_at
+      RETURNING
+        id,
+        gallery_template_id,
+        guest_pin_required,
+        guest_pin,
+        updated_at
     `
-    const row = rows[0] as { id?: string; gallery_template_id?: string; updated_at?: unknown } | undefined
+    const row = rows[0] as
+      | {
+          id?: string
+          gallery_template_id?: string
+          guest_pin_required?: boolean
+          guest_pin?: string | null
+          updated_at?: unknown
+        }
+      | undefined
     if (!row?.id) {
       return jsonError("Not found", 404)
     }
     return jsonOk({
       album: {
         id: String(row.id),
+        title,
+        description,
+        location,
+        eventType,
+        startsAt,
+        endsAt,
+        expiresAt,
+        notes,
         galleryTemplateId: String(row.gallery_template_id ?? galleryTemplateId),
+        guestPinRequired: Boolean(row.guest_pin_required),
+        guestPin: row.guest_pin != null ? String(row.guest_pin) : null,
         updatedAt: row.updated_at,
       },
     })

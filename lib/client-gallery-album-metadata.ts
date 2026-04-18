@@ -61,3 +61,94 @@ export function parseAlbumCreateBody(
     },
   }
 }
+
+/** Partial update for PATCH /albums/[id]. Only include keys present in the request body. */
+export type ParsedAlbumPatch = {
+  title?: string
+  description?: string | null
+  location?: string | null
+  eventType?: string | null
+  startsAt?: string | null
+  endsAt?: string | null
+  expiresAt?: string | null
+  notes?: string | null
+  galleryTemplateId?: string
+  guestPinRequired?: boolean
+  /** When true, generate a new numeric PIN (owner action). */
+  regenerateGuestPin?: boolean
+}
+
+export function parseAlbumPatchBody(
+  body: Record<string, unknown>,
+  normalizeTemplateId: (id: string | undefined | null) => string,
+): { ok: true; data: ParsedAlbumPatch } | { ok: false; error: string } {
+  const data: ParsedAlbumPatch = {}
+
+  if ("title" in body) {
+    if (typeof body.title !== "string") {
+      return { ok: false, error: "Invalid title" }
+    }
+    const titleRaw = body.title.trim().slice(0, MAX_TITLE)
+    if (titleRaw.length === 0) {
+      return { ok: false, error: "Title cannot be empty" }
+    }
+    data.title = titleRaw
+  }
+
+  if ("description" in body) {
+    data.description = trimOrNull(body.description, MAX_DESCRIPTION)
+  }
+  if ("location" in body) {
+    data.location = trimOrNull(body.location, MAX_LOCATION)
+  }
+  if ("eventType" in body || "event_type" in body) {
+    data.eventType =
+      trimOrNull(body.eventType, MAX_EVENT_TYPE) ?? trimOrNull(body.event_type, MAX_EVENT_TYPE)
+  }
+  if ("startsAt" in body || "starts_at" in body) {
+    data.startsAt = parseOptionalIso(body.startsAt ?? body.starts_at)
+  }
+  if ("endsAt" in body || "ends_at" in body) {
+    data.endsAt = parseOptionalIso(body.endsAt ?? body.ends_at)
+  }
+  if ("expiresAt" in body || "expires_at" in body) {
+    data.expiresAt = parseOptionalIso(body.expiresAt ?? body.expires_at)
+  }
+  if ("notes" in body) {
+    data.notes = trimOrNull(body.notes, MAX_NOTES)
+  }
+  if ("galleryTemplateId" in body || "gallery_template_id" in body) {
+    const raw =
+      typeof body.galleryTemplateId === "string"
+        ? body.galleryTemplateId
+        : typeof body.gallery_template_id === "string"
+          ? body.gallery_template_id
+          : null
+    if (typeof raw !== "string" || !raw.trim()) {
+      return { ok: false, error: "Invalid galleryTemplateId" }
+    }
+    data.galleryTemplateId = normalizeTemplateId(raw)
+  }
+  if ("guestPinRequired" in body) {
+    if (typeof body.guestPinRequired !== "boolean") {
+      return { ok: false, error: "guestPinRequired must be a boolean" }
+    }
+    data.guestPinRequired = body.guestPinRequired
+  }
+  if ("regenerateGuestPin" in body) {
+    if (typeof body.regenerateGuestPin !== "boolean") {
+      return { ok: false, error: "regenerateGuestPin must be a boolean" }
+    }
+    data.regenerateGuestPin = body.regenerateGuestPin
+  }
+
+  if (Object.keys(data).length === 0) {
+    return { ok: false, error: "No fields to update" }
+  }
+
+  return { ok: true, data }
+}
+
+export function generateGuestAlbumPin(): string {
+  return String(1000 + Math.floor(Math.random() * 9000))
+}

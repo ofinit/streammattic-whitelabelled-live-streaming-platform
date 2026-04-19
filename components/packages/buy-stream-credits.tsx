@@ -615,40 +615,18 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
 
             {faceRecognitionPricing && photoGalleryCatalog && photoGalleryCatalog.faceIndexCreditPricePaisa > 0 ? (
               <div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground space-y-2">
-                <p className="text-sm font-medium text-foreground">Face recognition (AWS Rekognition)</p>
+                <p className="text-sm font-medium text-foreground">Face recognition</p>
                 <p className="text-base text-foreground">
                   <strong>{formatPaisa(faceRecognitionPricing.retailPaisaPerProcessedImage)}</strong>{" "}
                   <span className="text-sm font-normal text-muted-foreground">
-                    per image when faces are detected and stored — one price, not per API call.
+                    per image when faces are detected and stored — one wallet price.
                   </span>
                 </p>
-                <p>
-                  Opening the public gallery or filtering by person is not charged. There are no separate line items for
-                  IndexFaces, SearchFaces, etc.; your administrator may publish reference cost scenarios for transparency.
-                </p>
-                <details className="rounded border border-border/50 bg-background/60 p-2">
-                  <summary className="cursor-pointer text-foreground select-none">
-                    Optional: illustrative platform reference scenarios (margin transparency)
-                  </summary>
-                  <ul className="mt-2 list-inside list-disc space-y-0.5">
-                    <li>
-                      First image in album, 1 face: {formatPaisa(faceRecognitionPricing.referencePaisaFirstImageOneFace)}{" "}
-                      reference → margin {formatPaisa(faceRecognitionPricing.marginPaisaFirstImageOneFace)}
-                    </li>
-                    <li>
-                      Later image, 1 face: {formatPaisa(faceRecognitionPricing.referencePaisaLaterImageOneFace)} reference →
-                      margin {formatPaisa(faceRecognitionPricing.marginPaisaLaterImageOneFace)}
-                    </li>
-                    <li>
-                      Later image, 5 faces: {formatPaisa(faceRecognitionPricing.referencePaisaLaterImageFiveFaces)} reference
-                      → margin {formatPaisa(faceRecognitionPricing.marginPaisaLaterImageFiveFaces)}
-                    </li>
-                  </ul>
-                </details>
+                <p>Opening the public gallery or filtering by person is not charged again.</p>
               </div>
             ) : faceRecognitionPricing && photoGalleryCatalog && photoGalleryCatalog.faceIndexCreditPricePaisa === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Face recognition wallet billing is off (retail ₹0). Your administrator sets reference AWS costs under Admin →
+                Face recognition wallet billing is off (retail ₹0). Your administrator sets the per-image price under Admin →
                 Packages.
               </p>
             ) : null}

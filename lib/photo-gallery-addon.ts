@@ -30,20 +30,17 @@ export type PhotoGalleryAddonSettings = {
    * Public gallery views / person filter clicks are not billed.
    */
   faceIndexCreditPricePaisa: number
-  /** Admin reference: illustrative AWS cost for CreateCollection (paise), margin planning only. */
+  /** Legacy JSON field; admin save forces 0 (not used). */
   rekognitionReferencePaisaPerCreateCollection: number
-  /** Admin reference: illustrative AWS cost per IndexFaces call (paise). */
+  /** Legacy JSON field; admin save forces 0 (not used). */
   rekognitionReferencePaisaPerIndexFaces: number
-  /** Admin reference: illustrative AWS cost per SearchFaces call (paise). */
+  /** Legacy JSON field; admin save forces 0 (not used). */
   rekognitionReferencePaisaPerSearchFaces: number
-  /** Optional per-album create charge (0 = off). */
+  /** Legacy JSON field; admin save forces 0 — album creation is not billed. */
   albumCreatePricePaisa: number
-  /** Optional per-upload presign charge (0 = off). */
+  /** Legacy JSON field; admin save forces 0 — presigned upload is not billed. */
   uploadPricePaisa: number
-  /**
-   * Planned OpenRouter model for gallery vision jobs (tags/captions per image). Admin shows list pricing from OpenRouter;
-   * core does not debit the wallet until a worker implements jobs.
-   */
+  /** Legacy JSON field; admin save resets to default model id (unused for face identity). */
   faceIndexOpenRouterModelId: string
 }
 

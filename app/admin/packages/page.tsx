@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -54,9 +54,7 @@ import {
   parsePhotoGalleryAddon,
   type PhotoGalleryAddonSettings,
 } from "@/lib/photo-gallery-addon"
-import { OPENROUTER_GALLERY_VISION_MODEL_OPTIONS } from "@/lib/photo-gallery-vision-model-catalog"
-import type { OpenRouterGalleryJobPricing } from "@/lib/openrouter-model-pricing"
-import { buildFaceRecognitionPricingPayload } from "@/lib/rekognition-reference-pricing"
+import { getDefaultGalleryVisionModelId } from "@/lib/photo-gallery-vision-model-catalog"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -137,16 +135,6 @@ export default function AdminPricingPage() {
     getDefaultPhotoGalleryAddonSettings(),
   )
   const [savingPhotoGallery, setSavingPhotoGallery] = useState(false)
-  const [galleryOpenRouterPricing, setGalleryOpenRouterPricing] = useState<OpenRouterGalleryJobPricing | null>(null)
-  const [galleryOpenRouterPricingState, setGalleryOpenRouterPricingState] = useState<"idle" | "loading" | "ok" | "error">(
-    "idle",
-  )
-  const [galleryOpenRouterPricingError, setGalleryOpenRouterPricingError] = useState<string | null>(null)
-
-  const rekognitionPricingPreview = useMemo(
-    () => buildFaceRecognitionPricingPayload(photoGalleryAddon),
-    [photoGalleryAddon],
-  )
 
   const loadSettings = useCallback(async () => {
     setSettingsLoadState("loading")
@@ -209,43 +197,6 @@ export default function AdminPricingPage() {
   useEffect(() => {
     void loadSettings()
   }, [loadSettings])
-
-  useEffect(() => {
-    if (settingsLoadState !== "ready") return
-    const id = photoGalleryAddon.faceIndexOpenRouterModelId?.trim()
-    if (!id) {
-      setGalleryOpenRouterPricing(null)
-      setGalleryOpenRouterPricingState("idle")
-      setGalleryOpenRouterPricingError(null)
-      return
-    }
-    let cancelled = false
-    setGalleryOpenRouterPricingState("loading")
-    setGalleryOpenRouterPricingError(null)
-    void fetch(`/api/admin/openrouter-model-pricing?modelId=${encodeURIComponent(id)}`, {
-      credentials: "include",
-    })
-      .then(async (res) => {
-        const data = (await res.json().catch(() => ({}))) as { error?: string } & Partial<OpenRouterGalleryJobPricing>
-        if (!res.ok) {
-          throw new Error(data.error || `HTTP ${res.status}`)
-        }
-        if (!cancelled) {
-          setGalleryOpenRouterPricing(data as OpenRouterGalleryJobPricing)
-          setGalleryOpenRouterPricingState("ok")
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setGalleryOpenRouterPricing(null)
-          setGalleryOpenRouterPricingState("error")
-          setGalleryOpenRouterPricingError(e instanceof Error ? e.message : "Failed to load pricing")
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [settingsLoadState, photoGalleryAddon.faceIndexOpenRouterModelId])
 
   // Stream type pricing updates
   const updateBasePrice = (key: keyof StreamTypePricing, value: number) => {
@@ -357,11 +308,21 @@ export default function AdminPricingPage() {
   const handleSavePhotoGallery = async () => {
     setSavingPhotoGallery(true)
     try {
+      const defaultVision = getDefaultGalleryVisionModelId()
+      const payload: PhotoGalleryAddonSettings = {
+        ...photoGalleryAddon,
+        albumCreatePricePaisa: 0,
+        uploadPricePaisa: 0,
+        rekognitionReferencePaisaPerCreateCollection: 0,
+        rekognitionReferencePaisaPerIndexFaces: 0,
+        rekognitionReferencePaisaPerSearchFaces: 0,
+        faceIndexOpenRouterModelId: defaultVision,
+      }
       const res = await fetch("/api/admin/photo-gallery-addon", {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(photoGalleryAddon),
+        body: JSON.stringify(payload),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {
@@ -369,6 +330,7 @@ export default function AdminPricingPage() {
         return
       }
       toast.success("Photo gallery add-on settings saved")
+      setPhotoGalleryAddon(payload)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed")
     } finally {
@@ -1093,13 +1055,11 @@ export default function AdminPricingPage() {
               <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
                 <strong className="text-foreground">Monthly price</strong> — reference on Packages; use{" "}
                 <code className="text-foreground">0</code> for contact admin / custom.{" "}
-                <strong className="text-foreground">Face recognition</strong> — one customer-facing wallet price per
-                processed image (field below). When <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code>,
-                AWS Rekognition runs on your account; you do not set separate per-API prices for streamers. The{" "}
-                <strong className="text-foreground">AWS Rekognition</strong> block is only your optional internal reference
-                for margin math; the <strong className="text-foreground">OpenRouter</strong> block is a separate planned path.{" "}
-                Album and per-upload fees are optional non-AI charges — leave at <code className="text-foreground">0</code>{" "}
-                if you do not want them.
+                <strong className="text-foreground">Face recognition</strong> — one wallet price per processed image (field
+                below). Face identity in this app is implemented with{" "}
+                <strong className="text-foreground">AWS Rekognition</strong> when{" "}
+                <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code> and AWS credentials are configured;
+                AWS bills your account for those API calls. OpenRouter is not used for face recognition here.
               </p>
             </div>
           </div>
@@ -1165,250 +1125,10 @@ export default function AdminPricingPage() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">
-                <strong className="text-foreground">This is the only per-image face-AI price</strong> debited from the
-                streamer wallet (once per image after at least one face is stored). The per-API fields in the AWS block below
-                do not add extra customer charges—they help you estimate your AWS cost vs this price. Public gallery views and
-                person filters are not billed.
+                <strong className="text-foreground">Only price debited for face processing</strong> — once per image after at
+                least one face is stored (when processing is enabled). Public gallery views and person filters are not billed.
               </p>
             </div>
-            <div className="space-y-2">
-              <Label>Album creation fee (₹)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  className="bg-secondary border-0 pl-7"
-                  value={photoGalleryAddon.albumCreatePricePaisa / 100}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value)
-                    if (e.target.value === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({ ...p, albumCreatePricePaisa: Math.round(n * 100) }))
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Optional platform fee — not AI. <code className="text-foreground">0</code> = no charge. Debits wallet when a
-                new album is created.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Per-upload fee (₹)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  className="bg-secondary border-0 pl-7"
-                  value={photoGalleryAddon.uploadPricePaisa / 100}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value)
-                    if (e.target.value === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({ ...p, uploadPricePaisa: Math.round(n * 100) }))
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                Optional platform fee — not AI (presigned URL only). <code className="text-foreground">0</code> = no charge.
-                Debits wallet per presigned upload request.
-              </p>
-            </div>
-          </div>
-
-          <div className="max-w-xl space-y-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
-            <Label className="text-sm font-semibold">AWS Rekognition — your cost reference (admin only)</Label>
-            <p className="text-[10px] text-muted-foreground">
-              Live when <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code>. Streamers pay only the
-              customer price field above — not per API. Enter <strong className="text-foreground">illustrative</strong> AWS
-              prices per call (INR; stored as paise) so you can compare your AWS bill to retail; actual AWS billing is on your
-              account.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-xs">CreateCollection (reference ₹)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.0001}
-                  className="bg-background border-border"
-                  value={photoGalleryAddon.rekognitionReferencePaisaPerCreateCollection / 100}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value)
-                    if (e.target.value === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({
-                      ...p,
-                      rekognitionReferencePaisaPerCreateCollection: Math.round(n * 100),
-                    }))
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">IndexFaces (reference ₹)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.0001}
-                  className="bg-background border-border"
-                  value={photoGalleryAddon.rekognitionReferencePaisaPerIndexFaces / 100}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value)
-                    if (e.target.value === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({
-                      ...p,
-                      rekognitionReferencePaisaPerIndexFaces: Math.round(n * 100),
-                    }))
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">SearchFaces (reference ₹)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.0001}
-                  className="bg-background border-border"
-                  value={photoGalleryAddon.rekognitionReferencePaisaPerSearchFaces / 100}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value)
-                    if (e.target.value === "" || Number.isNaN(n)) return
-                    setPhotoGalleryAddon((p) => ({
-                      ...p,
-                      rekognitionReferencePaisaPerSearchFaces: Math.round(n * 100),
-                    }))
-                  }}
-                />
-              </div>
-            </div>
-            {photoGalleryAddon.rekognitionReferencePaisaPerCreateCollection === 0 &&
-              photoGalleryAddon.rekognitionReferencePaisaPerIndexFaces === 0 &&
-              photoGalleryAddon.rekognitionReferencePaisaPerSearchFaces === 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  Reference costs not set (all ₹0). Margins below equal retail until you enter illustrative per-call AWS
-                  costs.
-                </p>
-              )}
-            <div className="space-y-2 rounded-md border border-border/50 bg-background/80 p-3 text-xs text-muted-foreground">
-              <p>
-                <span className="font-medium text-foreground">Customer price (fixed):</span>{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.retailPaisaPerProcessedImage / 100).toFixed(2)}</strong>{" "}
-                per processed image — same wallet debit in all cases.
-              </p>
-              <details className="group rounded border border-border/40 bg-muted/30 p-2">
-                <summary className="cursor-pointer font-medium text-foreground select-none">
-                  Scenario breakdown (your AWS reference vs that price — optional detail)
-                </summary>
-                <div className="mt-2 space-y-1 border-t border-border/40 pt-2">
-                  <p>
-                    First image in album, 1 face:{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaFirstImageOneFace / 100).toFixed(4)}</strong>{" "}
-                    reference → margin vs retail{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaFirstImageOneFace / 100).toFixed(4)}</strong>
-                  </p>
-                  <p>
-                    Later image, 1 face:{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageOneFace / 100).toFixed(4)}</strong>{" "}
-                    → margin{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageOneFace / 100).toFixed(4)}</strong>
-                  </p>
-                  <p>
-                    Later image, 5 faces:{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>{" "}
-                    → margin{" "}
-                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>
-                  </p>
-                </div>
-              </details>
-            </div>
-          </div>
-
-          <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
-            <Label className="text-sm font-semibold">Planned OpenRouter model (gallery vision / index jobs)</Label>
-            <p className="text-[10px] text-muted-foreground">
-              Does not add a second wallet price for streamers unless you ship this path separately. Margin below applies to a
-              planned OpenRouter vision job only. When live face identity runs on AWS Rekognition (section above), use that
-              block for provider-cost planning—not this OpenRouter estimate.
-            </p>
-            <Select
-              value={photoGalleryAddon.faceIndexOpenRouterModelId}
-              onValueChange={(id) => {
-                setPhotoGalleryAddon((prev) => ({ ...prev, faceIndexOpenRouterModelId: id }))
-              }}
-            >
-              <SelectTrigger className="border-0 bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OPENROUTER_GALLERY_VISION_MODEL_OPTIONS.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="space-y-2 rounded-md border border-border/50 bg-background/80 p-3 text-xs">
-              <p className="font-medium text-foreground">OpenRouter list price (read-only)</p>
-              {galleryOpenRouterPricingState === "loading" && (
-                <p className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                  Loading pricing from OpenRouter…
-                </p>
-              )}
-              {galleryOpenRouterPricingState === "error" && (
-                <p className="text-destructive">{galleryOpenRouterPricingError ?? "Could not load pricing"}</p>
-              )}
-              {galleryOpenRouterPricingState === "ok" && galleryOpenRouterPricing && (
-                <div className="space-y-1.5 text-muted-foreground">
-                  <p>
-                    <span className="text-foreground">{galleryOpenRouterPricing.name}</span>{" "}
-                    <code className="text-[10px] text-foreground">({galleryOpenRouterPricing.modelId})</code>
-                  </p>
-                  <p>
-                    List (INR):{" "}
-                    <strong className="text-foreground">
-                      ₹{galleryOpenRouterPricing.promptInrPer1M.toFixed(2)}
-                    </strong>{" "}
-                    / 1M prompt tokens,{" "}
-                    <strong className="text-foreground">
-                      ₹{galleryOpenRouterPricing.completionInrPer1M.toFixed(2)}
-                    </strong>{" "}
-                    / 1M completion tokens
-                  </p>
-                  <p>
-                    Illustrative job (~{galleryOpenRouterPricing.promptTokensAssumed} + ~{galleryOpenRouterPricing.completionTokensAssumed}{" "}
-                    tokens):{" "}
-                    <strong className="text-foreground">
-                      ₹{(galleryOpenRouterPricing.estimatedJobPaisa / 100).toFixed(2)}
-                    </strong>{" "}
-                    <span className="text-muted-foreground">
-                      (FX {galleryOpenRouterPricing.usdInrRate} ₹ per $ OpenRouter list)
-                    </span>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Margin (illustrative):{" "}
-              {galleryOpenRouterPricingState === "ok" && galleryOpenRouterPricing ? (
-                <span className="font-medium text-foreground">
-                  ₹
-                  {Math.max(
-                    0,
-                    (photoGalleryAddon.faceIndexCreditPricePaisa - galleryOpenRouterPricing.estimatedJobPaisa) / 100,
-                  ).toFixed(2)}
-                </span>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}{" "}
-              per job (face index credit − OpenRouter-derived est.)
-            </p>
-            <p className="text-[10px] text-muted-foreground">
-              Set <code className="text-foreground">OPENROUTER_API_KEY</code> on the server if OpenRouter returns 401 for
-              models. Charged amount (future) remains the retail face index credit.
-            </p>
           </div>
 
           <Button type="button" onClick={() => void handleSavePhotoGallery()} disabled={savingPhotoGallery}>

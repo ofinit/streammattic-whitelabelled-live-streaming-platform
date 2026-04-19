@@ -61,7 +61,7 @@ When enabled, new **image** uploads trigger **IndexFaces** into a per-album Reko
 
 Apply tables: `scripts/ensure-client-gallery-face-identity-schema.sql` (also merged into `scripts/schema-complete.sql`).
 
-**Wallet (streamer/studio):** **Retail** per processed image (`faceIndexCreditPricePaisa` in `photo_gallery_addon`) is debited **once per asset** after at least one face is stored, if retail > 0. The same public URL and person-filter UI do **not** trigger extra debits. **Admin reference** fields (`rekognitionReferencePaisaPerCreateCollection`, `rekognitionReferencePaisaPerIndexFaces`, `rekognitionReferencePaisaPerSearchFaces`) are for **margin estimates** only; set them from current AWS list pricing for your region.
+**Wallet (streamer/studio):** **Retail** per processed image (`faceIndexCreditPricePaisa` in `photo_gallery_addon`) is debited **once per asset** after at least one face is stored, if retail > 0. The same public URL and person-filter UI do **not** trigger extra debits. Album-creation and per-upload wallet fees are disabled (stored as 0). Face processing uses **AWS Rekognition** when `CLIENT_GALLERY_FACE_RECOGNITION=1`; OpenRouter is not used for face identity in this app.
 
 ---
 

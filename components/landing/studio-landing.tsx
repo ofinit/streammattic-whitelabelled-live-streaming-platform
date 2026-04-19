@@ -37,8 +37,15 @@ import {
   Heart,
   Share2,
   ChevronDown,
+  Award,
+  Zap,
+  Shield,
+  Users,
+  CheckCircle2,
+  X as XIcon,
+  Maximize2,
 } from "lucide-react"
-import type { Branding, BrandingService } from "@/lib/types"
+import type { Branding, BrandingService, BrandingGalleryImage, BrandingDifferentiator } from "@/lib/types"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -405,7 +412,7 @@ function HeroSection({ branding }: { branding: Branding }) {
 
 function ServicesSection({ branding }: { branding: Branding }) {
   const services = (branding.services || []).filter((s: BrandingService) => s.enabled)
-  if (services.length === 0) return null
+  const hasServices = services.length > 0
 
   return (
     <section id="services" className="relative py-20 sm:py-32 bg-slate-950">
@@ -435,43 +442,58 @@ function ServicesSection({ branding }: { branding: Branding }) {
           </p>
         </div>
 
-        {/* Services Grid */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {services.map((service: BrandingService) => {
-            const Icon = getServiceIcon(service.icon)
-            return (
-              <div
-                key={service.id}
-                className="group relative rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6 sm:p-8 transition-all duration-300 hover:border-slate-700 hover:bg-slate-900 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
-              >
-                {/* Icon */}
+        {/* Services Grid or Placeholder */}
+        {hasServices ? (
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {services.map((service: BrandingService) => {
+              const Icon = getServiceIcon(service.icon)
+              return (
                 <div
-                  className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl transition-transform group-hover:scale-110"
-                  style={{ backgroundColor: `${branding.themeColor}15` }}
+                  key={service.id}
+                  className="group relative rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6 sm:p-8 transition-all duration-300 hover:border-slate-700 hover:bg-slate-900 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
                 >
-                  <Icon
-                    className="h-6 w-6 sm:h-7 sm:w-7"
-                    style={{ color: branding.themeColor }}
+                  {/* Icon */}
+                  <div
+                    className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: `${branding.themeColor}15` }}
+                  >
+                    <Icon
+                      className="h-6 w-6 sm:h-7 sm:w-7"
+                      style={{ color: branding.themeColor }}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-semibold text-white">
+                    {service.title}
+                  </h3>
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-400">
+                    {service.description}
+                  </p>
+
+                  {/* Hover Accent Line */}
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl sm:rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundColor: branding.themeColor }}
                   />
                 </div>
-
-                {/* Content */}
-                <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-semibold text-white">
-                  {service.title}
-                </h3>
-                <p className="text-sm sm:text-base leading-relaxed text-slate-400">
-                  {service.description}
-                </p>
-
-                {/* Hover Accent Line */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl sm:rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ backgroundColor: branding.themeColor }}
-                />
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-4">
+            <div
+              className="inline-flex items-center justify-center h-16 w-16 rounded-full mb-4"
+              style={{ backgroundColor: `${branding.themeColor}15` }}
+            >
+              <Sparkles className="h-8 w-8" style={{ color: branding.themeColor }} />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Services Coming Soon</h3>
+            <p className="text-slate-400 max-w-md mx-auto">
+              We&apos;re currently updating our services. Contact us directly to learn about what we offer.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   )
@@ -538,15 +560,185 @@ function EventTypesSection({ branding }: { branding: Branding }) {
   )
 }
 
+function WhyChooseUsSection({ branding }: { branding: Branding }) {
+  const differentiators = (branding.differentiators || []).filter((d) => d.enabled)
+  const hasDifferentiators = differentiators.length > 0
+
+  // Default differentiators if none configured
+  const defaultDifferentiators = [
+    { id: "1", title: "Professional Team", description: "Experienced photographers & videographers", icon: "Users", enabled: true },
+    { id: "2", title: "Latest Equipment", description: "4K cameras, drones & professional lighting", icon: "Award", enabled: true },
+    { id: "3", title: "Quick Delivery", description: "Get your photos within 48 hours", icon: "Clock", enabled: true },
+    { id: "4", title: "24/7 Support", description: "Always here when you need us", icon: "Shield", enabled: true },
+  ]
+
+  const displayDifferentiators = hasDifferentiators ? differentiators : defaultDifferentiators
+
+  const getDiffIcon = (iconName: string) => {
+    const icons: Record<string, React.ComponentType<{ className?: string }>> = {
+      Users, Award, Clock, Shield, Zap, Heart, Star, Camera
+    }
+    return icons[iconName] || Award
+  }
+
+  return (
+    <section className="relative py-20 sm:py-32 bg-slate-900 overflow-hidden">
+      {/* Background */}
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{
+          background: `radial-gradient(ellipse at 50% 50%, ${branding.themeColor}20, transparent 70%)`,
+        }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="mb-12 sm:mb-16 text-center">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
+            Why Choose Us
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+            What Makes Us Different
+          </h2>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-400 leading-relaxed">
+            We go above and beyond to ensure your special moments are captured perfectly.
+          </p>
+        </div>
+
+        {/* Differentiators Grid */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {displayDifferentiators.map((diff) => {
+            const Icon = getDiffIcon(diff.icon)
+            return (
+              <div
+                key={diff.id}
+                className="group relative rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 backdrop-blur-sm p-6 sm:p-8 transition-all duration-300 hover:border-slate-700 hover:bg-slate-900 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
+              >
+                {/* Icon */}
+                <div
+                  className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: `${branding.themeColor}15` }}
+                >
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: branding.themeColor }} />
+                </div>
+
+                {/* Content */}
+                <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-semibold text-white">
+                  {diff.title}
+                </h3>
+                <p className="text-sm sm:text-base leading-relaxed text-slate-400">
+                  {diff.description}
+                </p>
+
+                {/* Hover Accent Line */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl sm:rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: branding.themeColor }}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function CTABanner({ 
+  branding, 
+  title, 
+  subtitle, 
+  buttonText, 
+  buttonUrl 
+}: { 
+  branding: Branding
+  title?: string
+  subtitle?: string
+  buttonText?: string
+  buttonUrl?: string
+}) {
+  const bannerTitle = title || branding.ctaBannerTitle || "Ready to capture your moments?"
+  const bannerSubtitle = subtitle || branding.ctaBannerSubtitle || "Contact us today to book your event"
+  const btnText = buttonText || branding.ctaBannerButtonText || "Get In Touch"
+  const btnUrl = buttonUrl || branding.ctaBannerButtonUrl || "#contact"
+
+  return (
+    <section className="relative py-16 sm:py-20 overflow-hidden">
+      {/* Background Gradient */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(135deg, ${branding.themeColor}20, ${branding.themeColor}10)`,
+        }}
+      />
+      
+      {/* Pattern Overlay */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, ${branding.themeColor} 1px, transparent 0)`,
+            backgroundSize: "20px 20px",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 text-center">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
+          {bannerTitle}
+        </h2>
+        <p className="text-base sm:text-lg text-slate-300 mb-8">
+          {bannerSubtitle}
+        </p>
+        <a href={btnUrl}>
+          <Button
+            size="lg"
+            style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+            className="font-semibold px-8 h-12 sm:h-14 text-base group"
+          >
+            {btnText}
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </a>
+      </div>
+    </section>
+  )
+}
+
 function GallerySection({ branding }: { branding: Branding }) {
   const allImages = branding.galleryImages || []
   const [activeFilter, setActiveFilter] = useState("All")
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const hasImages = allImages.length > 0
 
-  if (allImages.length === 0) return null
-
-  const categories = ["All", ...Array.from(new Set(allImages.map((img) => img.category)))]
+  const categories = hasImages 
+    ? ["All", ...Array.from(new Set(allImages.map((img) => img.category)))]
+    : ["All"]
   const filteredImages =
     activeFilter === "All" ? allImages : allImages.filter((img) => img.category === activeFilter)
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index)
+    setLightboxOpen(true)
+    document.body.style.overflow = "hidden"
+  }
+
+  const closeLightbox = () => {
+    setLightboxOpen(false)
+    document.body.style.overflow = "unset"
+  }
+
+  const nextImage = () => {
+    setLightboxIndex((prev) => (prev === filteredImages.length - 1 ? 0 : prev + 1))
+  }
+
+  const prevImage = () => {
+    setLightboxIndex((prev) => (prev === 0 ? filteredImages.length - 1 : prev - 1))
+  }
 
   return (
     <section id="gallery" className="relative py-20 sm:py-32 bg-slate-950">
@@ -573,61 +765,135 @@ function GallerySection({ branding }: { branding: Branding }) {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 sm:mb-12 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-300 ${
-                activeFilter === cat
-                  ? "text-white shadow-lg"
-                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700"
-              }`}
-              style={
-                activeFilter === cat ? { backgroundColor: branding.themeColor } : undefined
-              }
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {hasImages && (
+          <div className="mb-8 sm:mb-12 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-300 ${
+                  activeFilter === cat
+                    ? "text-white shadow-lg"
+                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700"
+                }`}
+                style={
+                  activeFilter === cat ? { backgroundColor: branding.themeColor } : undefined
+                }
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Gallery Grid - Masonry-like */}
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredImages.map((image, index) => (
-            <div
-              key={image.id}
-              className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 cursor-pointer ${
-                index % 3 === 0 ? "aspect-[3/4]" : "aspect-[3/2]"
-              }`}
-            >
-              <img
-                src={image.src}
-                alt={image.title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                crossOrigin="anonymous"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
-                  {image.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400">{image.category}</p>
-              </div>
+        {hasImages ? (
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredImages.map((image, index) => (
+              <div
+                key={image.id}
+                onClick={() => openLightbox(index)}
+                className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 cursor-pointer ${
+                  index % 3 === 0 ? "aspect-[3/4]" : "aspect-[3/2]"
+                }`}
+              >
+                <img
+                  src={image.src}
+                  alt={image.title}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  crossOrigin="anonymous"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                    {image.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400">{image.category}</p>
+                </div>
 
-              {/* Hover Actions */}
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors">
-                  <Heart className="h-4 w-4" />
-                </button>
-                <button className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors">
-                  <Share2 className="h-4 w-4" />
-                </button>
+                {/* Hover Actions */}
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 px-4">
+            <div
+              className="inline-flex items-center justify-center h-16 w-16 rounded-full mb-4"
+              style={{ backgroundColor: `${branding.themeColor}15` }}
+            >
+              <ImageIcon className="h-8 w-8" style={{ color: branding.themeColor }} />
             </div>
-          ))}
-        </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Gallery Coming Soon</h3>
+            <p className="text-slate-400 max-w-md mx-auto">
+              We&apos;re curating our best work. Check back soon to see our portfolio.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && hasImages && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 z-10 h-12 w-12 rounded-full bg-slate-900/80 flex items-center justify-center text-white hover:bg-slate-800 transition-colors"
+          >
+            <XIcon className="h-6 w-6" />
+          </button>
+
+          {/* Navigation */}
+          {filteredImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                className="absolute left-4 z-10 h-12 w-12 rounded-full bg-slate-900/80 flex items-center justify-center text-white hover:bg-slate-800 transition-colors"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                className="absolute right-4 z-10 h-12 w-12 rounded-full bg-slate-900/80 flex items-center justify-center text-white hover:bg-slate-800 transition-colors"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          {/* Image */}
+          <div 
+            className="max-w-5xl max-h-[80vh] px-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={filteredImages[lightboxIndex]?.src}
+              alt={filteredImages[lightboxIndex]?.title}
+              className="max-w-full max-h-[70vh] object-contain rounded-lg"
+            />
+            <div className="text-center mt-4">
+              <h3 className="text-xl font-semibold text-white">
+                {filteredImages[lightboxIndex]?.title}
+              </h3>
+              <p className="text-slate-400">{filteredImages[lightboxIndex]?.category}</p>
+              <p className="text-slate-500 text-sm mt-2">
+                {lightboxIndex + 1} / {filteredImages.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -740,7 +1006,7 @@ function TestimonialsSection({ branding }: { branding: Branding }) {
 }
 
 function AboutSection({ branding }: { branding: Branding }) {
-  if (!branding.aboutUs) return null
+  const hasAboutContent = branding.aboutUs && branding.aboutUs.trim().length > 0
 
   return (
     <section id="about" className="relative py-20 sm:py-32 bg-slate-950">
@@ -765,24 +1031,49 @@ function AboutSection({ branding }: { branding: Branding }) {
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               About {branding.brandName}
             </h2>
-            <p className="text-base sm:text-lg leading-relaxed text-slate-400 mb-6 sm:mb-8">
-              {branding.aboutUs}
-            </p>
+            
+            {hasAboutContent ? (
+              <>
+                <p className="text-base sm:text-lg leading-relaxed text-slate-400 mb-6 sm:mb-8">
+                  {branding.aboutUs}
+                </p>
 
-            {/* Feature Pills */}
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              {["Professional Team", "Latest Equipment", "Quick Delivery", "24/7 Support"].map(
-                (feature) => (
-                  <span
-                    key={feature}
-                    className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-800 bg-slate-900/50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-300"
-                  >
-                    <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: branding.themeColor }} />
-                    {feature}
-                  </span>
-                )
-              )}
-            </div>
+                {/* Feature Pills */}
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  {["Professional Team", "Latest Equipment", "Quick Delivery", "24/7 Support"].map(
+                    (feature) => (
+                      <span
+                        key={feature}
+                        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-800 bg-slate-900/50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-300"
+                      >
+                        <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: branding.themeColor }} />
+                        {feature}
+                      </span>
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-slate-400">
+                  We are a professional photography and videography studio dedicated to capturing your most precious moments.
+                </p>
+                {/* Feature Pills */}
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  {["Professional Team", "Latest Equipment", "Quick Delivery", "24/7 Support"].map(
+                    (feature) => (
+                      <span
+                        key={feature}
+                        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-800 bg-slate-900/50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-300"
+                      >
+                        <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: branding.themeColor }} />
+                        {feature}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Image */}
@@ -1182,11 +1473,33 @@ export function StudioLandingPage({
       <SiteHeader branding={branding} />
       <main>
         <HeroSection branding={branding} />
+        <CTABanner 
+          branding={branding} 
+          title="Ready to capture your moments?"
+          subtitle="Professional photography and videography services for all your special events"
+          buttonText="Explore Our Services"
+          buttonUrl="#services"
+        />
         <ServicesSection branding={branding} />
+        <WhyChooseUsSection branding={branding} />
         <EventTypesSection branding={branding} />
+        <CTABanner 
+          branding={branding} 
+          title="View Our Portfolio"
+          subtitle="See our recent work and imagine what we can create for you"
+          buttonText="View Gallery"
+          buttonUrl="#gallery"
+        />
         <GallerySection branding={branding} />
         <TestimonialsSection branding={branding} />
         <AboutSection branding={branding} />
+        <CTABanner 
+          branding={branding} 
+          title="Book Your Event Today"
+          subtitle="Don't miss out on capturing your precious moments. Limited slots available."
+          buttonText="Contact Us Now"
+          buttonUrl="#contact"
+        />
         <ContactSection branding={branding} />
       </main>
       <SiteFooter branding={branding} />

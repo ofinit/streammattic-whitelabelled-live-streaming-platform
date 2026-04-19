@@ -625,6 +625,13 @@ export interface Branding {
   testimonials?: BrandingTestimonial[]
   galleryImages?: BrandingGalleryImage[]
   selectedTheme?: LandingTheme
+  // New content sections
+  differentiators?: BrandingDifferentiator[]
+  ctaBannerTitle?: string
+  ctaBannerSubtitle?: string
+  ctaBannerButtonText?: string
+  ctaBannerButtonUrl?: string
+  // SMTP settings
   smtpHost?: string
   smtpPort?: number
   smtpUser?: string
@@ -670,6 +677,14 @@ export interface BrandingGalleryImage {
   src: string
   title: string
   category: string
+}
+
+export interface BrandingDifferentiator {
+  id: string
+  title: string
+  description: string
+  icon: string // lucide icon name
+  enabled: boolean
 }
 
 // Email Template Type

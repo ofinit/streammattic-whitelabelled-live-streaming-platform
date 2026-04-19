@@ -93,6 +93,16 @@ export function mapBrandingPutBody(body: Record<string, unknown>): {
   smtpFromName: unknown
   smtpSecure: unknown
   selectedTheme: unknown
+  services: unknown
+  eventTypes: unknown
+  stats: unknown
+  testimonials: unknown
+  galleryImages: unknown
+  differentiators: unknown
+  ctaBannerTitle: unknown
+  ctaBannerSubtitle: unknown
+  ctaBannerButtonText: unknown
+  ctaBannerButtonUrl: unknown
 } {
   const companyLogo = body.companyLogo ?? body.logo
   const primaryColor = body.primaryColor ?? body.themeColor
@@ -140,5 +150,15 @@ export function mapBrandingPutBody(body: Record<string, unknown>): {
     smtpFromName: body.smtpFromName,
     smtpSecure: body.smtpSecure,
     selectedTheme: body.selectedTheme,
+    services: body.services,
+    eventTypes: body.eventTypes,
+    stats: body.stats,
+    testimonials: body.testimonials,
+    galleryImages: body.galleryImages,
+    differentiators: body.differentiators,
+    ctaBannerTitle: body.ctaBannerTitle,
+    ctaBannerSubtitle: body.ctaBannerSubtitle,
+    ctaBannerButtonText: body.ctaBannerButtonText,
+    ctaBannerButtonUrl: body.ctaBannerButtonUrl,
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2 } from "lucide-react"
+import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2, Image, Layers, Sparkles, Megaphone, Plus, Trash2, Camera, Film, Radio, Plane, Music, Mic2, Star, Award, Clock, Users, Zap, Heart, Shield, Gift, Truck, Headphones } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LANDING_THEME_CATEGORY_TABS,
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Branding, LandingTheme, LandingThemeCategory } from "@/lib/types"
+import type { Branding, LandingTheme, LandingThemeCategory, BrandingService, BrandingGalleryImage, BrandingDifferentiator } from "@/lib/types"
 
 interface BrandingFormProps {
   branding: Branding
@@ -90,10 +90,14 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Layout className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
+          </TabsTrigger>
+          <TabsTrigger value="content" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">Content</span>
           </TabsTrigger>
           <TabsTrigger value="themes" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
@@ -297,6 +301,171 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
                 />
               </div>
 
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="content" className="mt-6 space-y-6">
+          {/* Hero Image */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5" />
+                Hero Section
+              </CardTitle>
+              <CardDescription>Upload a hero background image for your landing page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Hero Background Image</Label>
+                <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-6">
+                  {formData.heroImage ? (
+                    <img
+                      src={formData.heroImage}
+                      alt="Hero"
+                      className="h-40 w-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="h-40 w-full rounded-lg bg-muted flex items-center justify-center">
+                      <span className="text-muted-foreground">No hero image uploaded</span>
+                    </div>
+                  )}
+                  <Input
+                    type="file"
+                    id="hero-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUpload(file, "heroImage")
+                    }}
+                  />
+                  <Button variant="outline" size="sm" asChild>
+                    <label htmlFor="hero-upload" className="cursor-pointer">
+                      <Upload className="mr-2 h-4 w-4" />
+                      {formData.heroImage ? "Change Image" : "Upload Image"}
+                    </label>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1920x1080px or larger for best quality
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* About Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                About Section
+              </CardTitle>
+              <CardDescription>Tell visitors about your studio</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="aboutUs">About Us Text</Label>
+                <Textarea
+                  id="aboutUs"
+                  value={formData.aboutUs || ""}
+                  onChange={(e) => setFormData({ ...formData, aboutUs: e.target.value })}
+                  placeholder="Tell your story. How long have you been in business? What makes you special?"
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>About Section Image</Label>
+                <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-6">
+                  {formData.aboutImage ? (
+                    <img
+                      src={formData.aboutImage}
+                      alt="About"
+                      className="h-40 w-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="h-40 w-full rounded-lg bg-muted flex items-center justify-center">
+                      <span className="text-muted-foreground">No about image uploaded</span>
+                    </div>
+                  )}
+                  <Input
+                    type="file"
+                    id="about-image-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUpload(file, "aboutImage")
+                    }}
+                  />
+                  <Button variant="outline" size="sm" asChild>
+                    <label htmlFor="about-image-upload" className="cursor-pointer">
+                      <Upload className="mr-2 h-4 w-4" />
+                      {formData.aboutImage ? "Change Image" : "Upload Image"}
+                    </label>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Services Section */}
+          <ServicesEditor formData={formData} setFormData={setFormData} />
+
+          {/* Gallery Section */}
+          <GalleryEditor formData={formData} setFormData={setFormData} handleUpload={handleUpload} />
+
+          {/* Why Choose Us / Differentiators */}
+          <DifferentiatorsEditor formData={formData} setFormData={setFormData} />
+
+          {/* CTA Banner */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5" />
+                CTA Banner
+              </CardTitle>
+              <CardDescription>Call-to-action banner shown between sections</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ctaBannerTitle">Banner Title</Label>
+                <Input
+                  id="ctaBannerTitle"
+                  value={formData.ctaBannerTitle || ""}
+                  onChange={(e) => setFormData({ ...formData, ctaBannerTitle: e.target.value })}
+                  placeholder="Ready to capture your moments?"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ctaBannerSubtitle">Banner Subtitle</Label>
+                <Input
+                  id="ctaBannerSubtitle"
+                  value={formData.ctaBannerSubtitle || ""}
+                  onChange={(e) => setFormData({ ...formData, ctaBannerSubtitle: e.target.value })}
+                  placeholder="Contact us today to book your event"
+                />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="ctaBannerButtonText">Button Text</Label>
+                  <Input
+                    id="ctaBannerButtonText"
+                    value={formData.ctaBannerButtonText || ""}
+                    onChange={(e) => setFormData({ ...formData, ctaBannerButtonText: e.target.value })}
+                    placeholder="Get In Touch"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ctaBannerButtonUrl">Button URL</Label>
+                  <Input
+                    id="ctaBannerButtonUrl"
+                    value={formData.ctaBannerButtonUrl || ""}
+                    onChange={(e) => setFormData({ ...formData, ctaBannerButtonUrl: e.target.value })}
+                    placeholder="#contact or https://..."
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -673,5 +842,393 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
         </Button>
       </div>
     </div>
+  )
+}
+
+// Available icons for services and differentiators
+const AVAILABLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Camera, Film, Radio, Plane, Music, Mic2, Star, Award, Clock, Users, Zap, Heart, Shield, Gift, Truck, Headphones
+}
+
+// Services Editor Component
+function ServicesEditor({ formData, setFormData }: { formData: Branding; setFormData: (data: Branding) => void }) {
+  const services = formData.services || []
+
+  const addService = () => {
+    const newService: BrandingService = {
+      id: `svc-${Date.now()}`,
+      title: "New Service",
+      description: "Describe your service here...",
+      icon: "Camera",
+      enabled: true,
+    }
+    setFormData({ ...formData, services: [...services, newService] })
+  }
+
+  const updateService = (id: string, updates: Partial<BrandingService>) => {
+    setFormData({
+      ...formData,
+      services: services.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+    })
+  }
+
+  const removeService = (id: string) => {
+    setFormData({
+      ...formData,
+      services: services.filter((s) => s.id !== id),
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Services
+          </CardTitle>
+          <CardDescription>Manage the services displayed on your landing page</CardDescription>
+        </div>
+        <Button onClick={addService} size="sm" variant="outline">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Service
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {services.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            No services added yet. Click "Add Service" to get started.
+          </div>
+        )}
+        {services.map((service, index) => (
+          <div key={service.id} className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Service #{index + 1}</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={service.enabled}
+                  onChange={(e) => updateService(service.id, { enabled: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label className="text-sm">Enabled</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeService(service.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs">Title</Label>
+                <Input
+                  value={service.title}
+                  onChange={(e) => updateService(service.id, { title: e.target.value })}
+                  placeholder="Service title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Icon</Label>
+                <Select
+                  value={service.icon}
+                  onValueChange={(value) => updateService(service.id, { icon: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(AVAILABLE_ICONS).map((iconName) => (
+                      <SelectItem key={iconName} value={iconName}>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const Icon = AVAILABLE_ICONS[iconName]
+                            return <Icon className="h-4 w-4" />
+                          })()}
+                          {iconName}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                value={service.description}
+                onChange={(e) => updateService(service.id, { description: e.target.value })}
+                placeholder="Describe this service..."
+                rows={2}
+              />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Gallery Editor Component
+function GalleryEditor({ formData, setFormData, handleUpload }: { 
+  formData: Branding; 
+  setFormData: (data: Branding) => void;
+  handleUpload: (file: File, field: keyof Branding) => void;
+}) {
+  const images = formData.galleryImages || []
+  const [newImageTitle, setNewImageTitle] = useState("")
+  const [newImageCategory, setNewImageCategory] = useState("Wedding")
+  const [uploadingField, setUploadingField] = useState<string | null>(null)
+
+  const categories = ["Wedding", "Corporate", "Birthday", "Engagement", "Religious", "Cultural", "Live Stream", "Other"]
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingField("gallery")
+    const formDataUpload = new FormData()
+    formDataUpload.append("file", file)
+    formDataUpload.append("subdir", "gallery")
+    
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const newImage: BrandingGalleryImage = {
+          id: `img-${Date.now()}`,
+          src: data.url,
+          title: newImageTitle || file.name,
+          category: newImageCategory,
+        }
+        setFormData({ ...formData, galleryImages: [...images, newImage] })
+        setNewImageTitle("")
+      }
+    } catch (err) {
+      console.error("Upload failed", err)
+    } finally {
+      setUploadingField(null)
+    }
+  }
+
+  const removeImage = (id: string) => {
+    setFormData({
+      ...formData,
+      galleryImages: images.filter((img) => img.id !== id),
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Image className="h-5 w-5" />
+          Gallery
+        </CardTitle>
+        <CardDescription>Manage portfolio images displayed on your landing page</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Add New Image */}
+        <div className="rounded-lg border p-4 space-y-3">
+          <h4 className="font-medium text-sm">Add New Image</h4>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-xs">Image Title</Label>
+              <Input
+                value={newImageTitle}
+                onChange={(e) => setNewImageTitle(e.target.value)}
+                placeholder="e.g., Smith Wedding"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Category</Label>
+              <Select value={newImageCategory} onValueChange={setNewImageCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Input
+            type="file"
+            id="gallery-upload"
+            className="hidden"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleImageUpload(file)
+            }}
+          />
+          <Button variant="outline" size="sm" asChild disabled={uploadingField === "gallery"}>
+            <label htmlFor="gallery-upload" className="cursor-pointer">
+              <Upload className="mr-2 h-4 w-4" />
+              {uploadingField === "gallery" ? "Uploading..." : "Upload Image"}
+            </label>
+          </Button>
+        </div>
+
+        {/* Image Grid */}
+        {images.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No gallery images yet. Upload your first image above.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {images.map((image) => (
+              <div key={image.id} className="group relative aspect-square rounded-lg overflow-hidden border">
+                <img
+                  src={image.src}
+                  alt={image.title}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                  <p className="text-white text-sm font-medium truncate">{image.title}</p>
+                  <p className="text-white/70 text-xs">{image.category}</p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => removeImage(image.id)}
+                    className="mt-2"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Differentiators Editor Component
+function DifferentiatorsEditor({ formData, setFormData }: { formData: Branding; setFormData: (data: Branding) => void }) {
+  const differentiators = formData.differentiators || []
+
+  const addDifferentiator = () => {
+    const newDiff: BrandingDifferentiator = {
+      id: `diff-${Date.now()}`,
+      title: "Why Choose Us",
+      description: "Explain what makes you different...",
+      icon: "Award",
+      enabled: true,
+    }
+    setFormData({ ...formData, differentiators: [...differentiators, newDiff] })
+  }
+
+  const updateDifferentiator = (id: string, updates: Partial<BrandingDifferentiator>) => {
+    setFormData({
+      ...formData,
+      differentiators: differentiators.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+    })
+  }
+
+  const removeDifferentiator = (id: string) => {
+    setFormData({
+      ...formData,
+      differentiators: differentiators.filter((d) => d.id !== id),
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            Why Choose Us
+          </CardTitle>
+          <CardDescription>Highlight what makes your studio special</CardDescription>
+        </div>
+        <Button onClick={addDifferentiator} size="sm" variant="outline">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Differentiator
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {differentiators.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            No differentiators added yet. Click "Add Differentiator" to highlight your strengths.
+          </div>
+        )}
+        {differentiators.map((diff, index) => (
+          <div key={diff.id} className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Point #{index + 1}</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={diff.enabled}
+                  onChange={(e) => updateDifferentiator(diff.id, { enabled: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label className="text-sm">Enabled</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeDifferentiator(diff.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs">Title</Label>
+                <Input
+                  value={diff.title}
+                  onChange={(e) => updateDifferentiator(diff.id, { title: e.target.value })}
+                  placeholder="e.g., Professional Team"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Icon</Label>
+                <Select
+                  value={diff.icon}
+                  onValueChange={(value) => updateDifferentiator(diff.id, { icon: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(AVAILABLE_ICONS).map((iconName) => (
+                      <SelectItem key={iconName} value={iconName}>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const Icon = AVAILABLE_ICONS[iconName]
+                            return <Icon className="h-4 w-4" />
+                          })()}
+                          {iconName}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                value={diff.description}
+                onChange={(e) => updateDifferentiator(diff.id, { description: e.target.value })}
+                placeholder="Explain this point..."
+                rows={2}
+              />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }

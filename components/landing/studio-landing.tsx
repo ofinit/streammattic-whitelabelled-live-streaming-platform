@@ -30,6 +30,13 @@ import {
   Music,
   Mic2,
   Image as ImageIcon,
+  Play,
+  ArrowRight,
+  Calendar,
+  Clock,
+  Heart,
+  Share2,
+  ChevronDown,
 } from "lucide-react"
 import type { Branding, BrandingService } from "@/lib/types"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
@@ -79,66 +86,112 @@ function useLandingBranding(): Branding {
 
 function SiteHeader({ branding }: { branding: Branding }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   const navLinks = [
     { label: "Services", href: "#services" },
     { label: "Gallery", href: "#gallery" },
     { label: "About", href: "#about" },
+    { label: "Contact", href: "#contact" },
   ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-3">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 shadow-lg shadow-black/20"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
+        <Link href="/" className="flex items-center gap-3 z-10">
           {branding.companyLogo ? (
-            <img src={branding.companyLogoDark || branding.companyLogo} alt={branding.brandName} className="h-8" />
+            <img
+              src={branding.companyLogoDark || branding.companyLogo}
+              alt={branding.brandName}
+              className="h-8 sm:h-10 w-auto object-contain"
+            />
           ) : (
-            <span className="text-xl font-bold" style={{ color: branding.themeColor }}>
+            <span
+              className="text-xl sm:text-2xl font-bold tracking-tight"
+              style={{ color: branding.themeColor }}
+            >
               {branding.brandName}
             </span>
           )}
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-slate-300 transition-all hover:text-white hover:scale-105"
             >
               {link.label}
             </a>
           ))}
-          {branding.whatsapp ? (
-            <a href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                Contact Us
+          <div className="flex items-center gap-3 ml-4">
+            {branding.whatsapp ? (
+              <a
+                href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  size="sm"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-6"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Contact Us
+                </Button>
+              </a>
+            ) : branding.phone ? (
+              <a href={`tel:${branding.phone}`}>
+                <Button
+                  size="sm"
+                  style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+                  className="font-medium px-6"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Contact Us
+                </Button>
+              </a>
+            ) : (
+              <a href="#contact">
+                <Button
+                  size="sm"
+                  style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+                  className="font-medium px-6"
+                >
+                  Contact Us
+                </Button>
+              </a>
+            )}
+            <Link href="/login">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+              >
+                Login
               </Button>
-            </a>
-          ) : branding.phone ? (
-            <a href={`tel:${branding.phone}`}>
-              <Button size="sm" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                Contact Us
-              </Button>
-            </a>
-          ) : (
-            <a href="#contact">
-              <Button size="sm" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                Contact Us
-              </Button>
-            </a>
-          )}
-          <Link href="/login">
-            <Button variant="outline" size="sm">
-              Login
-            </Button>
-          </Link>
+            </Link>
+          </div>
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-foreground"
+          className="lg:hidden text-slate-300 hover:text-white transition-colors p-2"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -147,34 +200,56 @@ function SiteHeader({ branding }: { branding: Branding }) {
       </div>
 
       {/* Mobile Nav */}
-      {mobileMenuOpen && (
-        <div className="border-t border-border/40 bg-background px-6 py-6 md:hidden">
-          <nav className="flex flex-col gap-4">
-            {navLinks.map((link) => (
+      <div
+        className={`lg:hidden absolute top-full left-0 right-0 bg-slate-950/98 backdrop-blur-xl border-b border-slate-800/50 transition-all duration-300 ${
+          mobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
+      >
+        <nav className="flex flex-col gap-2 px-4 py-6">
+          {navLinks.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="text-base font-medium text-slate-300 transition-colors hover:text-white py-3 px-4 rounded-lg hover:bg-slate-800/50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {link.label}
+            </a>
+          ))}
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-800/50 mt-4">
+            {branding.whatsapp ? (
               <a
-                key={link.href}
-                href={link.href}
-                className="text-base text-muted-foreground transition-colors hover:text-foreground"
+                href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {link.label}
+                <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium">
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  WhatsApp Us
+                </Button>
               </a>
-            ))}
-            <div className="flex flex-col gap-3 pt-4 border-t border-border/40">
+            ) : (
               <a href="#contact" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
+                <Button
+                  className="w-full font-medium"
+                  style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+                >
                   Contact Us
                 </Button>
               </a>
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Login
-                </Button>
-              </Link>
-            </div>
-          </nav>
-        </div>
-      )}
+            )}
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <Button
+                variant="outline"
+                className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+              >
+                Login
+              </Button>
+            </Link>
+          </div>
+        </nav>
+      </div>
     </header>
   )
 }
@@ -183,9 +258,9 @@ function HeroSection({ branding }: { branding: Branding }) {
   const stats = branding.stats?.filter(Boolean) || []
 
   return (
-    <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-6 pt-20 text-center">
-      {/* Hero background image */}
-      {branding.heroImage && (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image with Overlay */}
+      {branding.heroImage ? (
         <div className="absolute inset-0">
           <img
             src={branding.heroImage}
@@ -193,69 +268,136 @@ function HeroSection({ branding }: { branding: Branding }) {
             className="h-full w-full object-cover"
             crossOrigin="anonymous"
           />
-          <div className="absolute inset-0 bg-background/85" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/80 to-slate-950" />
         </div>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
       )}
-      {/* Subtle gradient backdrop */}
+
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute -top-1/2 -right-1/2 w-full h-full opacity-20"
+          style={{
+            background: `radial-gradient(ellipse at 70% 30%, ${branding.themeColor}40, transparent 60%)`,
+          }}
+        />
+        <div
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full opacity-10"
+          style={{
+            background: `radial-gradient(ellipse at 30% 70%, ${branding.themeColor}30, transparent 60%)`,
+          }}
+        />
+      </div>
+
+      {/* Grid Pattern Overlay */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          background: `radial-gradient(ellipse at 50% 0%, ${branding.themeColor}, transparent 70%)`,
+          backgroundImage: `linear-gradient(${branding.themeColor}20 1px, transparent 1px), linear-gradient(90deg, ${branding.themeColor}20 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
         }}
       />
 
-      <div className="relative z-10 mx-auto max-w-4xl">
-        <p className="mb-4 text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Photography & Videography
-        </p>
-        <h1 className="text-4xl font-bold leading-tight text-balance text-foreground md:text-6xl lg:text-7xl">
-          {branding.metaTitle || branding.brandName}
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-          {branding.metaDescription || "Professional photography, videography and live streaming services for your special events."}
-        </p>
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-32 sm:py-40">
+        <div className="text-center">
+          {/* Tagline */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/50 bg-slate-900/50 backdrop-blur-sm px-4 py-2 mb-6 sm:mb-8">
+            <span
+              className="h-2 w-2 rounded-full animate-pulse"
+              style={{ backgroundColor: branding.themeColor }}
+            />
+            <span className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wider">
+              Photography & Videography
+            </span>
+          </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          {branding.whatsapp ? (
-            <a href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
-              <Button size="lg" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                <MessageCircle className="mr-2 h-5 w-5" />
-                WhatsApp Us
+          {/* Main Heading */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-white mb-6 sm:mb-8">
+            {branding.metaTitle || branding.brandName}
+          </h1>
+
+          {/* Subtitle */}
+          <p className="mx-auto max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-400 mb-8 sm:mb-10 px-4">
+            {branding.metaDescription ||
+              "Professional photography, videography and live streaming services for your special events. Capturing moments that last forever."}
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
+            {branding.whatsapp ? (
+              <a
+                href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-14 text-base group"
+                >
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  WhatsApp Us
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </a>
+            ) : branding.phone ? (
+              <a href={`tel:${branding.phone}`}>
+                <Button
+                  size="lg"
+                  style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+                  className="w-full sm:w-auto font-semibold px-8 h-14 text-base group"
+                >
+                  <Phone className="mr-2 h-5 w-5" />
+                  Call Now
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </a>
+            ) : (
+              <a href="#contact">
+                <Button
+                  size="lg"
+                  style={{ backgroundColor: branding.themeColor, color: "#fff" }}
+                  className="w-full sm:w-auto font-semibold px-8 h-14 text-base group"
+                >
+                  Get In Touch
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </a>
+            )}
+            <a href="#gallery">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white px-8 h-14 text-base"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                View Our Work
               </Button>
             </a>
-          ) : branding.phone ? (
-            <a href={`tel:${branding.phone}`}>
-              <Button size="lg" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                <Phone className="mr-2 h-5 w-5" />
-                Call Now
-              </Button>
-            </a>
-          ) : (
-            <a href="#contact">
-              <Button size="lg" style={{ backgroundColor: branding.themeColor, color: "#fff" }}>
-                Contact Us
-              </Button>
-            </a>
-          )}
-          <a href="#gallery">
-            <Button variant="outline" size="lg">
-              View Our Work
-            </Button>
-          </a>
+          </div>
         </div>
 
         {/* Trust Stats */}
         {stats.length > 0 && (
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {stats.map((stat, i) => (
-              <div key={stat.id} className="flex flex-col items-center">
-                {i > 0 && <div className="hidden" />}
-                <span className="text-3xl font-bold text-foreground md:text-4xl">{stat.value}</span>
-                <span className="mt-1 text-sm text-muted-foreground">{stat.label}</span>
+          <div className="mt-16 sm:mt-24 grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-8 sm:gap-12 lg:gap-16">
+            {stats.map((stat) => (
+              <div key={stat.id} className="text-center">
+                <span className="block text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-1">
+                  {stat.value}
+                </span>
+                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider">
+                  {stat.label}
+                </span>
               </div>
             ))}
           </div>
         )}
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2">
+          <span className="text-xs text-slate-500 uppercase tracking-wider">Scroll</span>
+          <ChevronDown className="h-5 w-5 text-slate-500 animate-bounce" />
+        </div>
       </div>
     </section>
   )
@@ -266,34 +408,66 @@ function ServicesSection({ branding }: { branding: Branding }) {
   if (services.length === 0) return null
 
   return (
-    <section id="services" className="px-6 py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-16 text-center">
-          <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
+    <section id="services" className="relative py-20 sm:py-32 bg-slate-950">
+      {/* Background Accent */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-30"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${branding.themeColor}, transparent)`,
+        }}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="mb-12 sm:mb-16 text-center">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
             What We Offer
-          </p>
-          <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Our Services</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground leading-relaxed">
-            From capturing the perfect shot to streaming it live across the globe -- we handle it all.
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
+            Our Services
+          </h2>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-400 leading-relaxed px-4">
+            From capturing the perfect shot to streaming it live across the globe — we handle it all
+            with professional excellence.
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Services Grid */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service: BrandingService) => {
             const Icon = getServiceIcon(service.icon)
             return (
               <div
                 key={service.id}
-                className="group rounded-xl border border-border/50 bg-card p-8 transition-all hover:border-border hover:shadow-lg"
+                className="group relative rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6 sm:p-8 transition-all duration-300 hover:border-slate-700 hover:bg-slate-900 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
               >
+                {/* Icon */}
                 <div
-                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: branding.themeColor + "15" }}
+                  className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl transition-transform group-hover:scale-110"
+                  style={{ backgroundColor: `${branding.themeColor}15` }}
                 >
-                  <Icon className="h-6 w-6" style={{ color: branding.themeColor }} />
+                  <Icon
+                    className="h-6 w-6 sm:h-7 sm:w-7"
+                    style={{ color: branding.themeColor }}
+                  />
                 </div>
-                <h3 className="mb-3 text-lg font-semibold text-foreground">{service.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{service.description}</p>
+
+                {/* Content */}
+                <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-semibold text-white">
+                  {service.title}
+                </h3>
+                <p className="text-sm sm:text-base leading-relaxed text-slate-400">
+                  {service.description}
+                </p>
+
+                {/* Hover Accent Line */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl sm:rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: branding.themeColor }}
+                />
               </div>
             )
           })}
@@ -308,30 +482,53 @@ function EventTypesSection({ branding }: { branding: Branding }) {
   if (eventTypes.length === 0) return null
 
   return (
-    <section className="px-6 py-24 bg-card/50">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-16 text-center">
-          <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
+    <section className="relative py-20 sm:py-32 bg-slate-900">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, ${branding.themeColor} 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="mb-12 sm:mb-16 text-center">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
             What We Cover
-          </p>
-          <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Every Occasion, Captured</h2>
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+            Every Occasion, Captured
+          </h2>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Event Types Grid */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {eventTypes.map((eventType) => (
             <div
               key={eventType.id}
-              className="group relative overflow-hidden rounded-xl border border-border/50 aspect-[4/3]"
+              className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 aspect-[4/3] cursor-pointer"
             >
               <img
                 src={eventType.image || "/placeholder.svg?height=400&width=600"}
                 alt={eventType.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 crossOrigin="anonymous"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <h3 className="text-lg font-semibold text-white">{eventType.title}</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-1">
+                  {eventType.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Click to explore
+                </p>
               </div>
             </div>
           ))}
@@ -348,52 +545,84 @@ function GallerySection({ branding }: { branding: Branding }) {
   if (allImages.length === 0) return null
 
   const categories = ["All", ...Array.from(new Set(allImages.map((img) => img.category)))]
-  const filteredImages = activeFilter === "All" ? allImages : allImages.filter((img) => img.category === activeFilter)
+  const filteredImages =
+    activeFilter === "All" ? allImages : allImages.filter((img) => img.category === activeFilter)
 
   return (
-    <section id="gallery" className="px-6 py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-16 text-center">
-          <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
+    <section id="gallery" className="relative py-20 sm:py-32 bg-slate-950">
+      {/* Top Border Accent */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-30"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${branding.themeColor}, transparent)`,
+        }}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="mb-8 sm:mb-12 text-center">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
             Portfolio
-          </p>
-          <h2 className="text-3xl font-bold text-foreground md:text-4xl text-balance">Our Recent Work</h2>
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+            Our Recent Work
+          </h2>
         </div>
 
         {/* Filters */}
-        <div className="mb-10 flex flex-wrap items-center justify-center gap-2">
+        <div className="mb-8 sm:mb-12 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveFilter(cat)}
-              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${activeFilter === cat
-                ? "text-white"
-                : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              style={activeFilter === cat ? { backgroundColor: branding.themeColor } : undefined}
+              className={`rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-300 ${
+                activeFilter === cat
+                  ? "text-white shadow-lg"
+                  : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700"
+              }`}
+              style={
+                activeFilter === cat ? { backgroundColor: branding.themeColor } : undefined
+              }
             >
               {cat}
             </button>
           ))}
         </div>
 
-        {/* Gallery Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredImages.map((image) => (
+        {/* Gallery Grid - Masonry-like */}
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredImages.map((image, index) => (
             <div
               key={image.id}
-              className="group relative overflow-hidden rounded-xl border border-border/50 aspect-[3/2]"
+              className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 cursor-pointer ${
+                index % 3 === 0 ? "aspect-[3/4]" : "aspect-[3/2]"
+              }`}
             >
               <img
                 src={image.src}
                 alt={image.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                 crossOrigin="anonymous"
               />
-              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/50" />
-              <div className="absolute bottom-0 left-0 right-0 translate-y-full p-5 transition-transform group-hover:translate-y-0">
-                <h3 className="text-base font-semibold text-white">{image.title}</h3>
-                <p className="text-sm text-white/70">{image.category}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                  {image.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-400">{image.category}</p>
+              </div>
+
+              {/* Hover Actions */}
+              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors">
+                  <Heart className="h-4 w-4" />
+                </button>
+                <button className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors">
+                  <Share2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
           ))}
@@ -413,57 +642,92 @@ function TestimonialsSection({ branding }: { branding: Branding }) {
   const next = () => setCurrent((c) => (c === testimonials.length - 1 ? 0 : c + 1))
 
   return (
-    <section className="px-6 py-24 bg-card/50">
-      <div className="mx-auto max-w-4xl text-center">
-        <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
-          Testimonials
-        </p>
-        <h2 className="mb-16 text-3xl font-bold text-foreground md:text-4xl text-balance">
-          What Our Clients Say
-        </h2>
+    <section className="relative py-20 sm:py-32 bg-slate-900 overflow-hidden">
+      {/* Background Gradient */}
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{
+          background: `radial-gradient(ellipse at 50% 50%, ${branding.themeColor}20, transparent 70%)`,
+        }}
+      />
 
-        <div className="relative">
-          <div className="mb-8 flex items-center justify-center gap-1">
+      <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="text-center mb-12 sm:mb-16">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
+            Testimonials
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">
+            What Our Clients Say
+          </h2>
+        </div>
+
+        {/* Testimonial Card */}
+        <div className="relative bg-slate-950/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-slate-800 p-6 sm:p-10 lg:p-12">
+          {/* Quote Icon */}
+          <div
+            className="absolute top-4 sm:top-6 left-4 sm:left-6 text-6xl sm:text-8xl font-serif opacity-10 select-none"
+            style={{ color: branding.themeColor }}
+          >
+            &ldquo;
+          </div>
+
+          {/* Stars */}
+          <div className="mb-6 sm:mb-8 flex items-center justify-center gap-1">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="h-5 w-5 fill-current" style={{ color: branding.themeColor }} />
+              <Star
+                key={i}
+                className="h-4 w-4 sm:h-5 sm:w-5 fill-current"
+                style={{ color: branding.themeColor }}
+              />
             ))}
           </div>
 
-          <blockquote className="text-xl leading-relaxed text-foreground md:text-2xl">
+          {/* Quote */}
+          <blockquote className="text-lg sm:text-xl md:text-2xl leading-relaxed text-white text-center mb-6 sm:mb-8">
             &ldquo;{testimonials[current].quote}&rdquo;
           </blockquote>
 
-          <div className="mt-8">
-            <p className="font-semibold text-foreground">{testimonials[current].name}</p>
-            <p className="text-sm text-muted-foreground">
+          {/* Author */}
+          <div className="text-center">
+            <p className="font-semibold text-white text-base sm:text-lg">
+              {testimonials[current].name}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-400">
               {testimonials[current].eventType} &middot; {testimonials[current].location}
             </p>
           </div>
 
           {/* Navigation */}
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="mt-8 sm:mt-10 flex items-center justify-center gap-4">
             <button
               onClick={prev}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground hover:border-foreground"
+              className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition-all hover:text-white hover:border-slate-500 hover:bg-slate-800"
               aria-label="Previous testimonial"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
+
             <div className="flex gap-2">
               {testimonials.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrent(i)}
-                  className={`h-2 rounded-full transition-all ${i === current ? "w-8" : "w-2 bg-muted-foreground/30"
-                    }`}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === current ? "w-6 sm:w-8" : "w-2 bg-slate-600 hover:bg-slate-500"
+                  }`}
                   style={i === current ? { backgroundColor: branding.themeColor } : undefined}
                   aria-label={`Go to testimonial ${i + 1}`}
                 />
               ))}
             </div>
+
             <button
               onClick={next}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-foreground hover:border-foreground"
+              className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-slate-700 text-slate-400 transition-all hover:text-white hover:border-slate-500 hover:bg-slate-800"
               aria-label="Next testimonial"
             >
               <ChevronRight className="h-5 w-5" />
@@ -479,25 +743,64 @@ function AboutSection({ branding }: { branding: Branding }) {
   if (!branding.aboutUs) return null
 
   return (
-    <section id="about" className="px-6 py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-12 md:grid-cols-2 md:items-center">
-          <div>
-            <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
+    <section id="about" className="relative py-20 sm:py-32 bg-slate-950">
+      {/* Top Border */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-30"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${branding.themeColor}, transparent)`,
+        }}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid gap-8 sm:gap-12 lg:gap-16 lg:grid-cols-2 items-center">
+          {/* Content */}
+          <div className="order-2 lg:order-1">
+            <span
+              className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+              style={{ color: branding.themeColor }}
+            >
               About Us
-            </p>
-            <h2 className="mb-6 text-3xl font-bold text-foreground md:text-4xl text-balance">
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
               About {branding.brandName}
             </h2>
-            <p className="text-lg leading-relaxed text-muted-foreground">{branding.aboutUs}</p>
+            <p className="text-base sm:text-lg leading-relaxed text-slate-400 mb-6 sm:mb-8">
+              {branding.aboutUs}
+            </p>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              {["Professional Team", "Latest Equipment", "Quick Delivery", "24/7 Support"].map(
+                (feature) => (
+                  <span
+                    key={feature}
+                    className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-800 bg-slate-900/50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-300"
+                  >
+                    <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: branding.themeColor }} />
+                    {feature}
+                  </span>
+                )
+              )}
+            </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border/50">
-            <img
-              src={branding.aboutImage || "/placeholder.svg?height=600&width=800"}
-              alt={`About ${branding.brandName}`}
-              className="h-full w-full object-cover"
-              crossOrigin="anonymous"
-            />
+
+          {/* Image */}
+          <div className="order-1 lg:order-2">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800">
+              <img
+                src={branding.aboutImage || "/placeholder.svg?height=600&width=800"}
+                alt={`About ${branding.brandName}`}
+                className="h-full w-full object-cover"
+                crossOrigin="anonymous"
+              />
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  background: `linear-gradient(135deg, ${branding.themeColor}40, transparent)`,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -510,62 +813,135 @@ function ContactSection({ branding }: { branding: Branding }) {
   if (!hasContact) return null
 
   return (
-    <section id="contact" className="px-6 py-24 bg-card/50">
-      <div className="mx-auto max-w-4xl text-center">
-        <p className="mb-2 text-sm font-medium uppercase tracking-widest" style={{ color: branding.themeColor }}>
-          Get In Touch
-        </p>
-        <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl text-balance">
-          {"Let's Capture Your Moment"}
-        </h2>
-        <p className="mx-auto mb-12 max-w-xl text-muted-foreground leading-relaxed">
-          Ready to book? Reach out to us directly -- we would love to hear about your event.
-        </p>
+    <section id="contact" className="relative py-20 sm:py-32 bg-slate-900">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, ${branding.themeColor} 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+      </div>
 
-        {/* Contact info cards */}
-        <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="relative mx-auto max-w-5xl px-4 sm:px-6">
+        {/* Section Header */}
+        <div className="text-center mb-12 sm:mb-16">
+          <span
+            className="inline-block text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4"
+            style={{ color: branding.themeColor }}
+          >
+            Get In Touch
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+            {`Let's Capture Your Moment`}
+          </h2>
+          <p className="mx-auto max-w-xl text-base sm:text-lg text-slate-400 leading-relaxed">
+            Ready to book? Reach out to us directly — we would love to hear about your event.
+          </p>
+        </div>
+
+        {/* Contact Cards */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-8 sm:mb-12">
           {branding.phone && (
-            <a href={`tel:${branding.phone}`} className="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-card p-6 transition-colors hover:border-border">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: branding.themeColor + "15" }}>
-                <Phone className="h-5 w-5" style={{ color: branding.themeColor }} />
+            <a
+              href={`tel:${branding.phone}`}
+              className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
+            >
+              <div
+                className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+                style={{ backgroundColor: `${branding.themeColor}15` }}
+              >
+                <Phone
+                  className="h-5 w-5 sm:h-6 sm:w-6"
+                  style={{ color: branding.themeColor }}
+                />
               </div>
-              <p className="text-sm text-muted-foreground">Phone</p>
-              <p className="font-medium text-foreground">{branding.phone}</p>
+              <div className="text-center">
+                <p className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider mb-1">
+                  Phone
+                </p>
+                <p className="font-semibold text-white text-base sm:text-lg">
+                  {branding.phone}
+                </p>
+              </div>
             </a>
           )}
+
           {branding.email && (
-            <a href={`mailto:${branding.email}`} className="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-card p-6 transition-colors hover:border-border">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: branding.themeColor + "15" }}>
-                <Mail className="h-5 w-5" style={{ color: branding.themeColor }} />
+            <a
+              href={`mailto:${branding.email}`}
+              className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
+            >
+              <div
+                className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+                style={{ backgroundColor: `${branding.themeColor}15` }}
+              >
+                <Mail
+                  className="h-5 w-5 sm:h-6 sm:w-6"
+                  style={{ color: branding.themeColor }}
+                />
               </div>
-              <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium text-foreground">{branding.email}</p>
+              <div className="text-center">
+                <p className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider mb-1">
+                  Email
+                </p>
+                <p className="font-semibold text-white text-sm sm:text-base break-all">
+                  {branding.email}
+                </p>
+              </div>
             </a>
           )}
+
           {branding.address && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-card p-6 sm:col-span-2 lg:col-span-1">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: branding.themeColor + "15" }}>
-                <MapPin className="h-5 w-5" style={{ color: branding.themeColor }} />
+            <div className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 sm:col-span-2 lg:col-span-1">
+              <div
+                className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${branding.themeColor}15` }}
+              >
+                <MapPin
+                  className="h-5 w-5 sm:h-6 sm:w-6"
+                  style={{ color: branding.themeColor }}
+                />
               </div>
-              <p className="text-sm text-muted-foreground">Location</p>
-              <p className="font-medium text-foreground text-center">{branding.address}</p>
+              <div className="text-center">
+                <p className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider mb-1">
+                  Location
+                </p>
+                <p className="font-semibold text-white text-sm sm:text-base">
+                  {branding.address}
+                </p>
+              </div>
             </div>
           )}
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           {branding.whatsapp && (
-            <a href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
-              <Button size="lg" style={{ backgroundColor: "#25D366", color: "#fff" }}>
+            <a
+              href={`https://wa.me/${branding.whatsapp?.replace(/[^0-9]/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button
+                size="lg"
+                className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 h-12 sm:h-14 text-base group"
+              >
                 <MessageCircle className="mr-2 h-5 w-5" />
                 WhatsApp Us
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
             </a>
           )}
           {branding.phone && (
             <a href={`tel:${branding.phone}`}>
-              <Button variant="outline" size="lg">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white px-8 h-12 sm:h-14 text-base"
+              >
                 <Phone className="mr-2 h-5 w-5" />
                 Call Now
               </Button>
@@ -590,31 +966,68 @@ function SiteFooter({ branding }: { branding: Branding }) {
   const hasLegal = branding.termsConditions || branding.privacyPolicy || branding.refundPolicy
 
   return (
-    <footer className="border-t border-border/40 px-6 py-16">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-12 md:grid-cols-4">
+    <footer className="relative bg-slate-950 border-t border-slate-800">
+      {/* Top Border Accent */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-30"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${branding.themeColor}, transparent)`,
+        }}
+      />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16">
+        <div className="grid gap-8 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
-          <div className="md:col-span-1">
+          <div className="sm:col-span-2 lg:col-span-1">
             {branding.companyLogo ? (
-              <img src={branding.companyLogoDark || branding.companyLogo} alt={branding.brandName} className="mb-4 h-8" />
+              <img
+                src={branding.companyLogoDark || branding.companyLogo}
+                alt={branding.brandName}
+                className="mb-4 sm:mb-6 h-8 sm:h-10 w-auto object-contain"
+              />
             ) : (
-              <span className="mb-4 inline-block text-xl font-bold" style={{ color: branding.themeColor }}>
+              <span
+                className="mb-4 sm:mb-6 inline-block text-xl sm:text-2xl font-bold"
+                style={{ color: branding.themeColor }}
+              >
                 {branding.brandName}
               </span>
             )}
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {branding.metaDescription || "Professional photography, videography and live streaming services."}
+            <p className="text-sm sm:text-base leading-relaxed text-slate-400 mb-4 sm:mb-6">
+              {branding.metaDescription ||
+                "Professional photography, videography and live streaming services."}
             </p>
+            {socialLinks.length > 0 && (
+              <div className="flex gap-2 sm:gap-3">
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-slate-800 text-slate-400 transition-all hover:text-white hover:border-slate-600 hover:bg-slate-900"
+                    aria-label={social.label}
+                  >
+                    <social.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Services Column */}
           {services.length > 0 && (
             <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Services</h4>
-              <ul className="flex flex-col gap-2">
+              <h4 className="mb-4 sm:mb-6 text-sm font-semibold uppercase tracking-wider text-white">
+                Services
+              </h4>
+              <ul className="flex flex-col gap-2 sm:gap-3">
                 {services.map((service: BrandingService) => (
                   <li key={service.id}>
-                    <a href="#services" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                    <a
+                      href="#services"
+                      className="text-sm sm:text-base text-slate-400 transition-colors hover:text-white"
+                    >
                       {service.title}
                     </a>
                   </li>
@@ -623,49 +1036,71 @@ function SiteFooter({ branding }: { branding: Branding }) {
             </div>
           )}
 
-          {/* Social Column */}
-          {socialLinks.length > 0 && (
-            <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Follow Us</h4>
-              <div className="flex flex-wrap gap-3">
-                {socialLinks.map((social) => (
-                  <a
-                    key={social.label}
-                    href={social.url!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:text-foreground hover:border-border"
-                    aria-label={social.label}
-                  >
-                    <social.icon className="h-4 w-4" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Quick Links */}
+          <div>
+            <h4 className="mb-4 sm:mb-6 text-sm font-semibold uppercase tracking-wider text-white">
+              Quick Links
+            </h4>
+            <ul className="flex flex-col gap-2 sm:gap-3">
+              <li>
+                <a
+                  href="#gallery"
+                  className="text-sm sm:text-base text-slate-400 transition-colors hover:text-white"
+                >
+                  Gallery
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#about"
+                  className="text-sm sm:text-base text-slate-400 transition-colors hover:text-white"
+                >
+                  About Us
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#contact"
+                  className="text-sm sm:text-base text-slate-400 transition-colors hover:text-white"
+                >
+                  Contact
+                </a>
+              </li>
+              <li>
+                <Link
+                  href="/login"
+                  className="text-sm sm:text-base text-slate-400 transition-colors hover:text-white"
+                >
+                  Login
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           {/* Legal Column */}
           {hasLegal && (
             <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">Legal</h4>
-              <ul className="flex flex-col gap-2">
+              <h4 className="mb-4 sm:mb-6 text-sm font-semibold uppercase tracking-wider text-white">
+                Legal
+              </h4>
+              <ul className="flex flex-col gap-2 sm:gap-3">
                 {branding.termsConditions && (
                   <li>
-                    <span className="text-sm text-muted-foreground cursor-pointer transition-colors hover:text-foreground">
+                    <span className="text-sm sm:text-base text-slate-400 cursor-pointer transition-colors hover:text-white">
                       Terms & Conditions
                     </span>
                   </li>
                 )}
                 {branding.privacyPolicy && (
                   <li>
-                    <span className="text-sm text-muted-foreground cursor-pointer transition-colors hover:text-foreground">
+                    <span className="text-sm sm:text-base text-slate-400 cursor-pointer transition-colors hover:text-white">
                       Privacy Policy
                     </span>
                   </li>
                 )}
                 {branding.refundPolicy && (
                   <li>
-                    <span className="text-sm text-muted-foreground cursor-pointer transition-colors hover:text-foreground">
+                    <span className="text-sm sm:text-base text-slate-400 cursor-pointer transition-colors hover:text-white">
                       Refund Policy
                     </span>
                   </li>
@@ -676,13 +1111,29 @@ function SiteFooter({ branding }: { branding: Branding }) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 border-t border-border/40 pt-8">
-          <p className="text-center text-sm text-muted-foreground sm:text-left">
+        <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-slate-800">
+          <p className="text-center text-xs sm:text-sm text-slate-500">
             &copy; {new Date().getFullYear()} {branding.brandName}. All rights reserved.
           </p>
         </div>
       </div>
     </footer>
+  )
+}
+
+// Check Icon Component
+function CheckIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg
+      className={className}
+      style={style}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
   )
 }
 
@@ -719,12 +1170,13 @@ export function StudioLandingPage({
   const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`
 
   return (
-    <div 
-      className="min-h-screen bg-background text-foreground"
+    <div
+      className="min-h-screen bg-slate-950 text-white antialiased"
       style={{ fontFamily: theme.fontFamily }}
     >
       <Head>
         <link rel="stylesheet" href={googleFontsUrl} />
+        <meta name="theme-color" content="#020617" />
       </Head>
       {previewBanner}
       <SiteHeader branding={branding} />

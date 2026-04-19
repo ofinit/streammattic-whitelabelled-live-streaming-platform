@@ -45,7 +45,7 @@ function pathForRole(role: string | undefined): string {
 export default function SignupPage() {
   const router = useRouter()
   const { login } = useAuth()
-  const { isWhiteLabel, studio, branding } = useBranding()
+  const { isWhiteLabel, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [fullName, setFullName] = useState("")
@@ -328,7 +328,7 @@ export default function SignupPage() {
               </CardContent>
             </Card>
 
-            {isWhiteLabel && studio && (
+            {isWhiteLabel && (
               <div className="text-center text-sm text-muted-foreground">
                 <p>Powered by {branding.brandName}</p>
               </div>

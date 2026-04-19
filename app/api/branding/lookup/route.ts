@@ -16,11 +16,14 @@ export async function GET(req: NextRequest) {
 
   const sql = getDb()
   const hostNorm = hostname.trim().toLowerCase()
+  const wwwAlternate = hostNorm.startsWith("www.") ? hostNorm.slice(4) : `www.${hostNorm}`
 
   // 1. Try to find by custom domain (table is `domains`, not studio_domains)
+  // Match apex or www so one verified row covers both hostnames.
   const domains = await sql`
     SELECT * FROM domains 
-    WHERE LOWER(domain) = ${hostNorm} AND verification_status = 'verified'
+    WHERE verification_status = 'verified'
+    AND (LOWER(domain) = ${hostNorm} OR LOWER(domain) = ${wwwAlternate})
   `
   
   if (domains.length > 0) {

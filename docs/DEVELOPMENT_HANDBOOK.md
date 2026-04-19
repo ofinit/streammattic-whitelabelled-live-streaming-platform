@@ -32,6 +32,13 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 - Do not commit `.env.local`, `.env.production`, or real credentials.
 - Do not rely on a template admin email in production; create or promote admins deliberately (e.g. `scripts/seed-production-admin.js` or database role update).
 
+## Custom domains (studio white-label landing)
+
+The marketing root `/` loads studio vs platform content from [`GET /api/branding/lookup`](../app/api/branding/lookup/route.ts) using the browser hostname. For a custom domain to resolve to **studio** branding and [`StudioLandingPage`](../components/landing/studio-landing.tsx):
+
+1. **`domains` row** — `LOWER(domain)` must match the hostname (or apex/`www` alternate). **`verification_status` must be `verified`** (TXT verification in the dashboard); pending domains fall back to platform settings.
+2. **Edge / TLS** — The hostname must be attached to the app on the host (e.g. Coolify FQDNs) so traffic reaches Next.js with the correct `Host` header.
+
 ## UI: `AiImagePickerDialog` inside the event form (nested Radix Dialog)
 
 Create/Edit Event → template **Event media & info** uses [`components/media/ai-image-picker-dialog.tsx`](../components/media/ai-image-picker-dialog.tsx) with **`nestedInDialog`**. A second Radix `Dialog` broke native **file input** (click to browse). The stable pattern is:

@@ -29,7 +29,7 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
-  const { isWhiteLabel, studio, branding } = useBranding()
+  const { isWhiteLabel, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [email, setEmail] = useState("")
@@ -154,7 +154,7 @@ function LoginPageContent() {
             </CardContent>
           </Card>
 
-          {isWhiteLabel && studio && (
+          {isWhiteLabel && (
             <div className="text-center text-sm text-muted-foreground">
               <p>Powered by {branding.brandName}</p>
             </div>

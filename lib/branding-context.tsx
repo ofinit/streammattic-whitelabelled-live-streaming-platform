@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { Branding, Studio } from "./types"
-import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
+import { platformLookupBrandingToBranding, studioLookupRowToBranding } from "@/lib/map-lookup-branding"
 
 // Default platform branding (StreamLivee)
 const defaultBranding: Branding = {
@@ -29,21 +29,20 @@ interface BrandingContextType {
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined)
 
-
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<Branding>(defaultBranding)
-  const [studio, setStudio] = useState<Studio | null>(null)
+  const [studio] = useState<Studio | null>(null)
+  const [isWhiteLabel, setIsWhiteLabel] = useState(false)
   const [currentDomain, setCurrentDomain] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Check domain on mount
   useEffect(() => {
     const loadBranding = async () => {
       const hostname = typeof window !== "undefined" ? window.location.hostname : ""
       setCurrentDomain(hostname)
 
       try {
-        const response = await fetch(`/api/branding/lookup?hostname=${hostname}`)
+        const response = await fetch(`/api/branding/lookup?hostname=${encodeURIComponent(hostname)}`)
         if (response.ok) {
           const result = await response.json()
           const payload =
@@ -51,22 +50,18 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
               ? (result as { data: { branding?: Record<string, unknown>; isWhiteLabel?: boolean; userId?: string } }).data
               : (result as { branding?: Record<string, unknown>; isWhiteLabel?: boolean; userId?: string })
           const b = payload?.branding
-          if (b && typeof b === "object") {
-            const brandName = resolvePlatformDisplayName(
-              b.brandName ?? b.platformName ?? defaultBranding.brandName,
-              defaultBranding.brandName,
-            )
-            const themeColor = (b.themeColor || b.primaryColor || defaultBranding.themeColor) as string
-            const accentColor = (b.accentColor || b.secondaryColor || defaultBranding.accentColor) as string
-            setBranding({
-              ...defaultBranding,
-              brandName,
-              themeColor,
-              accentColor,
-              email: (b.email || b.supportEmail || defaultBranding.email) as string,
-              metaTitle: (b.metaTitle as string) || defaultBranding.metaTitle,
-              metaDescription: (b.metaDescription as string) || defaultBranding.metaDescription,
-            })
+          const wl = Boolean(payload?.isWhiteLabel)
+          const uid = typeof payload?.userId === "string" ? payload.userId : ""
+
+          if (wl && b && typeof b === "object" && uid) {
+            setIsWhiteLabel(true)
+            setBranding(studioLookupRowToBranding(b, uid))
+          } else if (b && typeof b === "object") {
+            setIsWhiteLabel(false)
+            setBranding(platformLookupBrandingToBranding(b))
+          } else {
+            setIsWhiteLabel(false)
+            setBranding(defaultBranding)
           }
         }
       } catch (error) {
@@ -79,12 +74,10 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     loadBranding()
   }, [])
 
-  // Apply theme colors as CSS variables
   useEffect(() => {
     if (typeof document !== "undefined" && branding) {
       const root = document.documentElement
 
-      // Convert hex to HSL for CSS variables
       const hexToHSL = (hex: string) => {
         const r = Number.parseInt(hex.slice(1, 3), 16) / 255
         const g = Number.parseInt(hex.slice(3, 5), 16) / 255
@@ -134,7 +127,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       value={{
         branding,
         studio,
-        isWhiteLabel: !!studio,
+        isWhiteLabel,
         isLoading,
         currentDomain,
       }}

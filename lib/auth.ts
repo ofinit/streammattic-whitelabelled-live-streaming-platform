@@ -3,6 +3,7 @@ import { getDb, toCamel } from "./db"
 import { cookies } from "next/headers"
 import { getIndianStateName } from "@/lib/indian-states"
 import { ensureUsersThemePreferenceColumn } from "@/lib/ensure-users-schema"
+import { downgradeExpiredStudioIfNeeded } from "@/lib/studio-subscription"
 
 const SESSION_COOKIE = "sm_session"
 const SESSION_DURATION_DAYS = 30
@@ -101,7 +102,8 @@ export async function getSessionUser(token: string) {
     WHERE s.token = ${token} AND s.expires_at > NOW()
   `
   if (rows.length === 0) return null
-  return toCamel(rows[0] as Record<string, unknown>)
+  const user = toCamel(rows[0] as Record<string, unknown>)
+  return downgradeExpiredStudioIfNeeded(sql, user)
 }
 
 export async function deleteSession(token: string) {

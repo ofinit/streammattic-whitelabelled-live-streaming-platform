@@ -22,11 +22,25 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images } from "lucide-react"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images, Building2 } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+
+function formatDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 export default function AdminStreamersPage() {
   const router = useRouter()
@@ -42,6 +56,9 @@ export default function AdminStreamersPage() {
     user: Streamer
     targetStatus: "active" | "suspended"
   } | null>(null)
+  const [studioGrantTarget, setStudioGrantTarget] = useState<Streamer | null>(null)
+  const [studioGrantExpiresLocal, setStudioGrantExpiresLocal] = useState("")
+  const [studioGrantSubmitting, setStudioGrantSubmitting] = useState(false)
 
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
@@ -155,6 +172,49 @@ export default function AdminStreamersPage() {
     }
   }
 
+  const openStudioGrantDialog = (user: Streamer) => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() + 1)
+    setStudioGrantExpiresLocal(formatDatetimeLocalValue(d))
+    setStudioGrantTarget(user)
+  }
+
+  const handleStudioGrantSubmit = async () => {
+    if (!studioGrantTarget) return
+    const expires = new Date(studioGrantExpiresLocal)
+    if (Number.isNaN(expires.getTime())) {
+      toast.error("Enter a valid date and time")
+      return
+    }
+    if (expires.getTime() <= Date.now()) {
+      toast.error("Subscription end must be in the future")
+      return
+    }
+    setStudioGrantSubmitting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${studioGrantTarget.id}/studio-subscription-grant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ expiresAt: expires.toISOString() }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+      if (!res.ok) {
+        toast.error(data.error || data.message || "Failed to grant Studio access")
+        return
+      }
+      toast.success(data.message || "Studio access granted")
+      setStudioGrantTarget(null)
+      const updated = await fetch("/api/admin/users?role=streamer", { credentials: "include" }).then((r) => r.json())
+      if (updated.users) setStreamers(updated.users)
+    } catch (e) {
+      console.error(e)
+      toast.error("Failed to grant Studio access")
+    } finally {
+      setStudioGrantSubmitting(false)
+    }
+  }
+
   const columns = [
     {
       key: "name",
@@ -212,6 +272,10 @@ export default function AdminStreamersPage() {
             <DropdownMenuItem onClick={() => setAddFundsStreamer(item)}>
               <Wallet className="mr-2 h-4 w-4" />
               Add Funds
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openStudioGrantDialog(item)}>
+              <Building2 className="mr-2 h-4 w-4" />
+              Grant Studio access (no payment)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setPricingStreamer(item)}>
@@ -383,6 +447,60 @@ export default function AdminStreamersPage() {
           }}
         />
       )}
+
+      <Dialog
+        open={!!studioGrantTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStudioGrantTarget(null)
+            setStudioGrantSubmitting(false)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Grant Studio access</DialogTitle>
+            <DialogDescription>
+              Sets the user&apos;s Studio subscription end without charging their wallet. Streamers are promoted to the Studio role;
+              existing Studio accounts only get an updated expiry. The same renewal reminders and dashboard notices apply as for paid
+              Studio plans; future renewal is at the platform&apos;s current Studio rate (set by admin). If the subscription is not renewed
+              before it ends, the account is downgraded to Streamer.
+            </DialogDescription>
+          </DialogHeader>
+          {studioGrantTarget && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{studioGrantTarget.name}</span>
+                <span className="mx-1">·</span>
+                {studioGrantTarget.email}
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="studio-grant-expires">Subscription valid until</Label>
+                <Input
+                  id="studio-grant-expires"
+                  type="datetime-local"
+                  value={studioGrantExpiresLocal}
+                  onChange={(e) => setStudioGrantExpiresLocal(e.target.value)}
+                  className="bg-secondary border-0"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStudioGrantTarget(null)}
+              disabled={studioGrantSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void handleStudioGrantSubmit()} disabled={studioGrantSubmitting}>
+              {studioGrantSubmitting ? "Saving…" : "Grant access"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

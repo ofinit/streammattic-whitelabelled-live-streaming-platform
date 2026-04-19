@@ -8,7 +8,8 @@ import {
 } from "@/lib/studio-subscription-shared"
 
 /**
- * Daily job: email studio users at 30, 15, 7, 3, 2, 1, and 0 days before subscription end.
+ * Daily job: (1) email studio users at 30, 15, 7, 3, 2, 1, and 0 days before subscription end;
+ * (2) downgrade users whose `studio_subscription_expires_at` is past (paid or admin-granted — same column).
  * Secure with Authorization: Bearer ${CRON_SECRET} or x-cron-secret header (Vercel Cron sends none by default—set CRON_SECRET in project and add header in vercel.json when supported, or call manually).
  */
 export async function GET(request: Request) {
@@ -67,5 +68,19 @@ export async function GET(request: Request) {
     if (okSend) sent++
   }
 
-  return NextResponse.json({ ok: true, checked: rows.length, emailsSent: sent })
+  const downgraded = await sql`
+    UPDATE users
+    SET role = 'streamer', updated_at = NOW()
+    WHERE role = 'studio'
+      AND studio_subscription_expires_at IS NOT NULL
+      AND studio_subscription_expires_at < NOW()
+    RETURNING id
+  `
+
+  return NextResponse.json({
+    ok: true,
+    checked: rows.length,
+    emailsSent: sent,
+    downgradedToStreamer: downgraded.length,
+  })
 }

@@ -34,6 +34,28 @@ export function applyStudioUpgradeOrRenewalSql(): string {
 
 type SqlFn = ReturnType<typeof getDb>
 
+/**
+ * When `studio_subscription_expires_at` is in the past, the account must behave as Streamer.
+ * Paid renewals use admin-configured Studio rates (`studio_annual_subscription`); complimentary/admin grants use the same field and rules.
+ */
+export async function downgradeExpiredStudioIfNeeded(
+  sql: SqlFn,
+  user: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  if (user.role !== "studio") return user
+  const raw = user.studioSubscriptionExpiresAt
+  if (raw == null || raw === "") return user
+  const iso = typeof raw === "string" ? raw : (raw as Date).toISOString()
+  if (!isStudioSubscriptionPastDue(iso)) return user
+  const id = user.id as string
+  await sql`
+    UPDATE users
+    SET role = 'streamer', updated_at = NOW()
+    WHERE id = ${id} AND role = 'studio'
+  `
+  return { ...user, role: "streamer" }
+}
+
 export async function checkStudioSubscriptionActiveForEventManagement(
   sql: SqlFn,
   userId: string,

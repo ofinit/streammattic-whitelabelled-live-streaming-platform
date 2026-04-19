@@ -1019,7 +1019,7 @@ export default function AdminPricingPage() {
         )}
       </Card>
 
-      <Card className="border-border bg-card">
+      <Card className="border-border bg-card w-full max-w-none">
         <CardHeader>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
@@ -1048,11 +1048,11 @@ export default function AdminPricingPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 max-w-3xl">
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+        <CardContent className="space-y-4 w-full max-w-none">
+          <div className="w-full rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
             <div className="flex gap-3">
               <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" aria-hidden />
-              <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
+              <p className="min-w-0 flex-1 text-xs leading-relaxed text-muted-foreground">
                 <strong className="text-foreground">Monthly price</strong> — reference on Packages; use{" "}
                 <code className="text-foreground">0</code> for contact admin / custom.{" "}
                 <strong className="text-foreground">Face recognition</strong> — one wallet price per processed image (field
@@ -1127,6 +1127,61 @@ export default function AdminPricingPage() {
               <p className="text-[10px] text-muted-foreground">
                 <strong className="text-foreground">Only price debited for face processing</strong> — once per image after at
                 least one face is stored (when processing is enabled). Public gallery views and person filters are not billed.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid w-full gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Your estimated AWS cost (₹ per processed image)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="bg-secondary border-0 pl-7"
+                  value={photoGalleryAddon.faceRecognitionProviderCostReferencePaisa / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({
+                      ...p,
+                      faceRecognitionProviderCostReferencePaisa: Math.round(n * 100),
+                    }))
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Optional. What you expect to pay AWS per processed image (your margin vs retail). Not shown as a separate
+                charge to streamers.
+              </p>
+              {photoGalleryAddon.faceIndexCreditPricePaisa > 0 &&
+                photoGalleryAddon.faceRecognitionProviderCostReferencePaisa > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Illustrative margin:{" "}
+                    <strong className="text-foreground">
+                      ₹
+                      {(
+                        Math.max(
+                          0,
+                          photoGalleryAddon.faceIndexCreditPricePaisa -
+                            photoGalleryAddon.faceRecognitionProviderCostReferencePaisa,
+                        ) / 100
+                      ).toFixed(2)}
+                    </strong>{" "}
+                    per image (customer price − your cost reference).
+                  </p>
+                )}
+            </div>
+            <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
+              <p className="text-sm font-medium text-foreground">Face identity engine (this product)</p>
+              <p>
+                <strong className="text-foreground">AWS Rekognition</strong> — face APIs used in code:{" "}
+                <code className="text-foreground">CreateCollection</code>, <code className="text-foreground">IndexFaces</code>,{" "}
+                <code className="text-foreground">SearchFaces</code>. There is no separate “AI model” name like a chat model;
+                AWS bills by API usage and region on your account when{" "}
+                <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code> and credentials are set.
               </p>
             </div>
           </div>

@@ -30,6 +30,11 @@ export type PhotoGalleryAddonSettings = {
    * Public gallery views / person filter clicks are not billed.
    */
   faceIndexCreditPricePaisa: number
+  /**
+   * Optional admin-only: your estimated AWS cost per processed image (paise), for margin planning.
+   * Not charged to streamers; does not affect wallet debits.
+   */
+  faceRecognitionProviderCostReferencePaisa: number
   /** Legacy JSON field; admin save forces 0 (not used). */
   rekognitionReferencePaisaPerCreateCollection: number
   /** Legacy JSON field; admin save forces 0 (not used). */
@@ -125,6 +130,9 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
   const faceIndexCreditPricePaisa = isFiniteNonNeg(o.faceIndexCreditPricePaisa)
     ? Math.round(o.faceIndexCreditPricePaisa)
     : d.faceIndexCreditPricePaisa
+  const faceRecognitionProviderCostReferencePaisa = isFiniteNonNeg(o.faceRecognitionProviderCostReferencePaisa)
+    ? Math.round(o.faceRecognitionProviderCostReferencePaisa)
+    : d.faceRecognitionProviderCostReferencePaisa
 
   let faceIndexOpenRouterModelId = d.faceIndexOpenRouterModelId
   if (typeof o.faceIndexOpenRouterModelId === "string") {
@@ -170,6 +178,9 @@ export function assertPhotoGalleryAddonForSave(raw: unknown): PhotoGalleryAddonS
   }
   if (parsed.faceIndexCreditPricePaisa > 1e12) {
     throw new Error("faceIndexCreditPricePaisa is too large")
+  }
+  if (parsed.faceRecognitionProviderCostReferencePaisa > 1e12) {
+    throw new Error("faceRecognitionProviderCostReferencePaisa is too large")
   }
   if (parsed.albumCreatePricePaisa > 1e12) {
     throw new Error("albumCreatePricePaisa is too large")

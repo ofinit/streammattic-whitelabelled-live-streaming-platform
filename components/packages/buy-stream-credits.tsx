@@ -623,6 +623,15 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                   </span>
                 </p>
                 <p>Opening the public gallery or filtering by person is not charged again.</p>
+                {faceRecognitionPricing.providerCostReferencePaisaPerProcessedImage > 0 ? (
+                  <p>
+                    Estimated platform reference cost (from your administrator):{" "}
+                    <strong className="text-foreground">
+                      {formatPaisa(faceRecognitionPricing.providerCostReferencePaisaPerProcessedImage)}
+                    </strong>{" "}
+                    per processed image — not an extra wallet line item.
+                  </p>
+                ) : null}
               </div>
             ) : faceRecognitionPricing && photoGalleryCatalog && photoGalleryCatalog.faceIndexCreditPricePaisa === 0 ? (
               <p className="text-xs text-muted-foreground">

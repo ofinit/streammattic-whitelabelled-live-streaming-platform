@@ -3,6 +3,7 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { autoConfigureDomain, verifyApiToken, getZonesByToken } from "@/lib/cloudflare-dns"
 import { jsonOk, jsonError, withRole } from "@/lib/api-helpers"
 import { isValidHostname } from "@/lib/studio-setup-validation"
+import { getPlatformARecordIp, getPlatformCnameTarget, PLATFORM_DNS_CONFIGURE_ENV_HINT } from "@/lib/platform-dns"
 
 export const POST = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
@@ -60,12 +61,20 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
       verificationToken = domainRecord.verification_token as string
     }
 
-    // 2. Get Platform settings for IP/CNAME
-    const platformIp = (await getPlatformSetting("platform_a_record_ip")) as string
-    const cnameTarget = (await getPlatformSetting("platform_cname_target")) as string || process.env.NEXT_PUBLIC_PLATFORM_CNAME_TARGET
+    // 2. Platform A/CNAME targets: admin Settings first, then env (same as DNS help text / Coolify deploy)
+    const ipFromDb = (await getPlatformSetting("platform_a_record_ip")) as string | null | undefined
+    const platformIp =
+      typeof ipFromDb === "string" && ipFromDb.trim() !== "" ? ipFromDb.trim() : getPlatformARecordIp() ?? ""
+
+    const cnameFromDb = (await getPlatformSetting("platform_cname_target")) as string | null | undefined
+    const cnameTarget = getPlatformCnameTarget(
+      typeof cnameFromDb === "string" && cnameFromDb.trim() !== "" ? cnameFromDb.trim() : undefined,
+    )
 
     if (!platformIp) {
-      return jsonError("Platform IP not configured by administrator. Please contact support.")
+      return jsonError(
+        `Platform A record IP is not set. Configure it in Admin → Settings (platform A record IP) or set NEXT_PUBLIC_PLATFORM_A_RECORD_IP. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}`,
+      )
     }
 
     // 3. Trigger Cloudflare Auto-Config

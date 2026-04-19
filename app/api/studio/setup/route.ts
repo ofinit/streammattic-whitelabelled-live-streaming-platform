@@ -25,14 +25,20 @@ export const GET = withRole(["studio", "streamer", "admin"], async (user) => {
     const sql = getDb()
     const userId = user.id as string
     const rows = await sql`
-      SELECT setup_wizard_draft
+      SELECT setup_wizard_draft, setup_completed_at
       FROM studio_branding
       WHERE user_id = ${userId}
       LIMIT 1
     `
-    const draft =
-      rows.length > 0 ? ((rows[0] as Record<string, unknown>).setup_wizard_draft as Record<string, unknown> | null) : null
-    return jsonOk({ draft: draft ?? null })
+    if (rows.length === 0) {
+      return jsonOk({ draft: null, setupCompletedAt: null })
+    }
+    const row = rows[0] as Record<string, unknown>
+    const draft = row.setup_wizard_draft as Record<string, unknown> | null
+    const at = row.setup_completed_at
+    const setupCompletedAt =
+      at instanceof Date ? at.toISOString() : typeof at === "string" ? at : null
+    return jsonOk({ draft: draft ?? null, setupCompletedAt })
   } catch (err) {
     console.error("Studio setup GET Error:", err)
     return jsonError("Failed to load setup draft", 500)
@@ -144,7 +150,7 @@ export const POST = withRole(["studio"], async (user, request) => {
 
     await sql`
       UPDATE studio_branding
-      SET setup_wizard_draft = NULL, updated_at = NOW()
+      SET setup_wizard_draft = NULL, setup_completed_at = NOW(), updated_at = NOW()
       WHERE user_id = ${userId}
     `
 

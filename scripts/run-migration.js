@@ -138,6 +138,8 @@ const statements = [
   `ALTER TABLE studio_branding ADD COLUMN IF NOT EXISTS tagline TEXT`,
   `ALTER TABLE orders ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`,
   `CREATE INDEX IF NOT EXISTS idx_orders_studio_id ON orders(studio_id)`,
+  `ALTER TABLE studio_branding ADD COLUMN IF NOT EXISTS setup_completed_at TIMESTAMPTZ`,
+  `UPDATE studio_branding SET setup_completed_at = COALESCE(updated_at, created_at) WHERE setup_completed_at IS NULL AND setup_wizard_draft IS NULL AND support_email IS NOT NULL AND trim(support_email) <> ''`,
 ];
 
 const seedSettings = [

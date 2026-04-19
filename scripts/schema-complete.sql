@@ -608,6 +608,7 @@ CREATE TABLE IF NOT EXISTS studio_branding (
   refund_policy       TEXT,
   preferred_gateway   TEXT,
   setup_wizard_draft  JSONB,
+  setup_completed_at  TIMESTAMPTZ,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

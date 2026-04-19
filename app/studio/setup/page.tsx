@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import useSWR from "swr"
+import useSWR, { useSWRConfig } from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -115,6 +115,7 @@ function DnsSetupHint({ domain }: { domain: string }) {
 
 export default function StudioSetupPage() {
   const router = useRouter()
+  const { mutate: mutateSwr } = useSWRConfig()
   const searchParams = useSearchParams()
   const upgraded = searchParams.get("upgraded") === "1"
   const { user } = useAuth()
@@ -136,7 +137,13 @@ export default function StudioSetupPage() {
 
   const [currentStep, setCurrentStep] = useState(0)
   const [draftHydrated, setDraftHydrated] = useState(false)
+  /** Server snapshot after GET /api/studio/setup — drives redirect + blocks PATCH before redirect for completed users */
+  const [setupLoadMeta, setSetupLoadMeta] = useState<{
+    completedAt: string | null
+    hadDraft: boolean
+  } | null>(null)
   const saveDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const forceSetupWizard = searchParams.get("force") === "1"
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state (no account-based prefill—users enter legal / public details here)
@@ -216,8 +223,17 @@ export default function StudioSetupPage() {
       try {
         const res = await fetch("/api/studio/setup", { credentials: "include" })
         if (!res.ok || cancelled) return
-        const data = (await res.json()) as { draft?: Record<string, unknown> | null }
+        const data = (await res.json()) as {
+          draft?: Record<string, unknown> | null
+          setupCompletedAt?: string | null
+        }
         const d = data.draft
+        if (!cancelled) {
+          setSetupLoadMeta({
+            completedAt: data.setupCompletedAt ?? null,
+            hadDraft: Boolean(d),
+          })
+        }
         if (!d || cancelled) return
         if (typeof d.currentStep === "number" && d.currentStep >= 0 && d.currentStep < SETUP_STEPS.length) {
           setCurrentStep(d.currentStep)
@@ -272,6 +288,15 @@ export default function StudioSetupPage() {
 
   useEffect(() => {
     if (!draftHydrated) return
+    // Completed studio users landing without ?force=1 are redirected; do not PATCH a blank draft first.
+    if (
+      !isStreamerSetup &&
+      setupLoadMeta?.completedAt &&
+      !setupLoadMeta.hadDraft &&
+      !forceSetupWizard
+    ) {
+      return
+    }
     if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current)
     saveDraftTimer.current = setTimeout(() => {
       saveDraft()
@@ -279,7 +304,16 @@ export default function StudioSetupPage() {
     return () => {
       if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current)
     }
-  }, [draftHydrated, saveDraft])
+  }, [draftHydrated, saveDraft, isStreamerSetup, setupLoadMeta, forceSetupWizard])
+
+  useEffect(() => {
+    if (!draftHydrated || setupLoadMeta === null) return
+    if (user?.role !== "studio") return
+    if (forceSetupWizard) return
+    if (setupLoadMeta.completedAt && !setupLoadMeta.hadDraft) {
+      router.replace("/studio")
+    }
+  }, [draftHydrated, setupLoadMeta, user?.role, forceSetupWizard, router])
 
   const handleNext = () => {
     if (stepValidationError) return
@@ -363,6 +397,7 @@ export default function StudioSetupPage() {
         throw new Error(msg)
       }
 
+      await mutateSwr("/api/studio/setup")
       router.push("/studio")
     } catch (err) {
       console.error("Setup error:", err)

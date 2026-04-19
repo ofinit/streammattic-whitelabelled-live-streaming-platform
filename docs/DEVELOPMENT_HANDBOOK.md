@@ -108,6 +108,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/users/[id]/domains/route.ts` | `/api/admin/users/[id]/domains` |
 | `app/api/admin/users/[id]/photo-gallery/route.ts` | `/api/admin/users/[id]/photo-gallery` |
 | `app/api/admin/users/[id]/route.ts` | `/api/admin/users/[id]` |
+| `app/api/admin/users/[id]/studio-subscription-grant/route.ts` | `/api/admin/users/[id]/studio-subscription-grant` |
 | `app/api/admin/users/route.ts` | `/api/admin/users` |
 | `app/api/admin/wallets/adjust/route.ts` | `/api/admin/wallets/adjust` |
 | `app/api/admin/wallets/route.ts` | `/api/admin/wallets` |

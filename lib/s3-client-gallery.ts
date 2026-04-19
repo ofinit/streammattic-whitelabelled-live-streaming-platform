@@ -81,6 +81,43 @@ export async function deleteObjectForOwner(ownerUserId: string, key: string): Pr
   await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }))
 }
 
+/** Download object bytes using the album owner’s BYOS credentials. */
+export async function getObjectBufferForOwner(ownerUserId: string, key: string): Promise<Buffer> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
+  }
+  const client = createS3ClientFromConfig(config)
+  const out = await client.send(new GetObjectCommand({ Bucket: config.bucket, Key: key }))
+  const bytes = await out.Body?.transformToByteArray()
+  if (!bytes) {
+    throw new Error("Empty object body")
+  }
+  return Buffer.from(bytes)
+}
+
+/** Upload small derived assets (e.g. face thumbnails) next to gallery objects. */
+export async function putObjectBufferForOwner(
+  ownerUserId: string,
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<void> {
+  const config = await getDecryptedStorageForUser(ownerUserId)
+  if (!config) {
+    throw new Error("Storage not configured")
+  }
+  const client = createS3ClientFromConfig(config)
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    }),
+  )
+}
+
 /** Deletes all objects whose keys start with `prefix` (album s3_prefix, e.g. cg/user/slug-uuid/). */
 export async function deleteAllObjectsUnderPrefixForOwner(ownerUserId: string, prefix: string): Promise<void> {
   const config = await getDecryptedStorageForUser(ownerUserId)

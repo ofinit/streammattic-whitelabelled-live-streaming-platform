@@ -278,6 +278,14 @@ export async function getAlbumByIdForUser(
   }
 }
 
+export type PublicPersonIdentityPayload = {
+  id: string
+  /** Presigned URL for a square crop, or null if thumbnail failed. */
+  thumbUrl: string | null
+  /** Distinct assets in this album where this person appears. */
+  assetIds: string[]
+}
+
 export type PublicAlbumPayload = {
   title: string
   storageConfigured: boolean
@@ -291,6 +299,8 @@ export type PublicAlbumPayload = {
   /** True when a guest PIN is required and the browser has not unlocked this album yet. */
   locked?: boolean
   images: { id: string; url: string; contentType: string | null }[]
+  /** Same-person groups (AWS Rekognition). Empty when disabled or not processed. */
+  personIdentities: PublicPersonIdentityPayload[]
 }
 
 type PublicAlbumDbRow = {
@@ -422,6 +432,7 @@ export async function buildPublicAlbumPayload(
       expired: false,
       locked: true,
       images: [],
+      personIdentities: [],
     }
   }
 
@@ -437,6 +448,7 @@ export async function buildPublicAlbumPayload(
       endsAt,
       expired,
       images: [],
+      personIdentities: [],
     }
   }
 
@@ -452,6 +464,7 @@ export async function buildPublicAlbumPayload(
       endsAt,
       expired: true,
       images: [],
+      personIdentities: [],
     }
   }
 
@@ -474,6 +487,16 @@ export async function buildPublicAlbumPayload(
     }
     images.push({ id, url, contentType })
   }
+
+  let personIdentities: PublicPersonIdentityPayload[] = []
+  try {
+    const { loadPersonIdentitiesForPublicAlbum } = await import("@/lib/client-gallery-face-identity")
+    personIdentities = await loadPersonIdentitiesForPublicAlbum(String(album.id), ownerId)
+  } catch (e) {
+    console.warn("[client-gallery] person identities", e)
+    personIdentities = []
+  }
+
   return {
     title,
     storageConfigured: true,
@@ -485,6 +508,7 @@ export async function buildPublicAlbumPayload(
     endsAt,
     expired: false,
     images,
+    personIdentities,
   }
 }
 

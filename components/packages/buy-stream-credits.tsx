@@ -37,6 +37,7 @@ import {
 } from "@/lib/validity-extensions"
 import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-generation"
 import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
+import type { FaceRecognitionPricingPayload } from "@/lib/rekognition-reference-pricing"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -70,6 +71,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
   const [photoGalleryOptIn, setPhotoGalleryOptIn] = useState(false)
   const [photoGalleryExpiresAt, setPhotoGalleryExpiresAt] = useState<string | null>(null)
   const [photoGalleryBusy, setPhotoGalleryBusy] = useState(false)
+  const [faceRecognitionPricing, setFaceRecognitionPricing] = useState<FaceRecognitionPricingPayload | null>(null)
 
   const loadAll = useCallback(async () => {
     setLoadState("loading")
@@ -124,6 +126,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
       if (pgRes.ok) {
         const pg = (await pgRes.json()) as {
           catalog?: unknown
+          faceRecognitionPricing?: FaceRecognitionPricingPayload
           entitled?: boolean
           eligible?: boolean
           adminEnabled?: boolean
@@ -131,6 +134,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
           subscriptionExpiresAt?: string | null
         }
         setPhotoGalleryCatalog(parsePhotoGalleryAddon(pg.catalog ?? null))
+        setFaceRecognitionPricing(pg.faceRecognitionPricing ?? null)
         setPhotoGalleryEntitled(pg.entitled === true)
         setPhotoGalleryEligible(pg.eligible === true)
         setPhotoGalleryAdminEnabled(pg.adminEnabled === true)
@@ -138,6 +142,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
         setPhotoGalleryExpiresAt(pg.subscriptionExpiresAt ?? null)
       } else {
         setPhotoGalleryCatalog(null)
+        setFaceRecognitionPricing(null)
         setPhotoGalleryEntitled(false)
         setPhotoGalleryEligible(false)
         setPhotoGalleryAdminEnabled(false)
@@ -607,6 +612,38 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                 </div>
               )}
             </div>
+
+            {faceRecognitionPricing && photoGalleryCatalog && photoGalleryCatalog.faceIndexCreditPricePaisa > 0 ? (
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground space-y-2">
+                <p className="text-sm font-medium text-foreground">Face recognition (AWS Rekognition)</p>
+                <p>
+                  You pay{" "}
+                  <strong className="text-foreground">{formatPaisa(faceRecognitionPricing.retailPaisaPerProcessedImage)}</strong>{" "}
+                  per image after faces are detected and stored. Opening the public gallery or filtering by person is not
+                  charged again.
+                </p>
+                <ul className="list-inside list-disc space-y-0.5">
+                  <li>
+                    Platform cost estimate (1st image, 1 face):{" "}
+                    {formatPaisa(faceRecognitionPricing.referencePaisaFirstImageOneFace)} reference → illustrative margin{" "}
+                    {formatPaisa(faceRecognitionPricing.marginPaisaFirstImageOneFace)}
+                  </li>
+                  <li>
+                    Later image, 1 face: {formatPaisa(faceRecognitionPricing.referencePaisaLaterImageOneFace)} reference →
+                    margin {formatPaisa(faceRecognitionPricing.marginPaisaLaterImageOneFace)}
+                  </li>
+                  <li>
+                    Later image, 5 faces: {formatPaisa(faceRecognitionPricing.referencePaisaLaterImageFiveFaces)} reference →
+                    margin {formatPaisa(faceRecognitionPricing.marginPaisaLaterImageFiveFaces)}
+                  </li>
+                </ul>
+              </div>
+            ) : faceRecognitionPricing && photoGalleryCatalog && photoGalleryCatalog.faceIndexCreditPricePaisa === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Face recognition wallet billing is off (retail ₹0). Your administrator sets reference AWS costs under Admin →
+                Packages.
+              </p>
+            ) : null}
 
             {photoGalleryAdminEnabled ? (
               <div className="flex flex-col gap-4 rounded-lg border border-border bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">

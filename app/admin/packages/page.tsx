@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -56,6 +56,7 @@ import {
 } from "@/lib/photo-gallery-addon"
 import { OPENROUTER_GALLERY_VISION_MODEL_OPTIONS } from "@/lib/photo-gallery-vision-model-catalog"
 import type { OpenRouterGalleryJobPricing } from "@/lib/openrouter-model-pricing"
+import { buildFaceRecognitionPricingPayload } from "@/lib/rekognition-reference-pricing"
 
 const streamTypes = [
   { key: "rtmp" as const, label: "RTMP Server", description: "Use OBS/Wirecast", icon: Video },
@@ -141,6 +142,11 @@ export default function AdminPricingPage() {
     "idle",
   )
   const [galleryOpenRouterPricingError, setGalleryOpenRouterPricingError] = useState<string | null>(null)
+
+  const rekognitionPricingPreview = useMemo(
+    () => buildFaceRecognitionPricingPayload(photoGalleryAddon),
+    [photoGalleryAddon],
+  )
 
   const loadSettings = useCallback(async () => {
     setSettingsLoadState("loading")
@@ -1137,7 +1143,7 @@ export default function AdminPricingPage() {
               <p className="text-[10px] text-muted-foreground">0 = contact admin / custom billing</p>
             </div>
             <div className="space-y-2">
-              <Label>Face index credit (₹)</Label>
+              <Label>Face recognition retail (₹ per processed image)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                 <Input
@@ -1153,7 +1159,10 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">Retail per job; wallet billing when the gallery worker ships.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Wallet debit once per image after AWS stores at least one face. Public gallery views and person filters are
+                not billed.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Album creation fee (₹)</Label>
@@ -1192,6 +1201,91 @@ export default function AdminPricingPage() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">0 = off. Debits wallet per presigned upload request.</p>
+            </div>
+          </div>
+
+          <div className="max-w-xl space-y-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
+            <Label className="text-sm font-semibold">AWS Rekognition (face identity — live when CLIENT_GALLERY_FACE_RECOGNITION=1)</Label>
+            <p className="text-[10px] text-muted-foreground">
+              Enter your platform’s illustrative AWS cost per API call (INR, paise internally). Used for margin estimates only;
+              actual AWS billing is on your AWS account.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label className="text-xs">CreateCollection (reference ₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.0001}
+                  className="bg-background border-border"
+                  value={photoGalleryAddon.rekognitionReferencePaisaPerCreateCollection / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({
+                      ...p,
+                      rekognitionReferencePaisaPerCreateCollection: Math.round(n * 100),
+                    }))
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">IndexFaces (reference ₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.0001}
+                  className="bg-background border-border"
+                  value={photoGalleryAddon.rekognitionReferencePaisaPerIndexFaces / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({
+                      ...p,
+                      rekognitionReferencePaisaPerIndexFaces: Math.round(n * 100),
+                    }))
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">SearchFaces (reference ₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.0001}
+                  className="bg-background border-border"
+                  value={photoGalleryAddon.rekognitionReferencePaisaPerSearchFaces / 100}
+                  onChange={(e) => {
+                    const n = parseFloat(e.target.value)
+                    if (e.target.value === "" || Number.isNaN(n)) return
+                    setPhotoGalleryAddon((p) => ({
+                      ...p,
+                      rekognitionReferencePaisaPerSearchFaces: Math.round(n * 100),
+                    }))
+                  }}
+                />
+              </div>
+            </div>
+            <div className="space-y-1 rounded-md border border-border/50 bg-background/80 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Illustrative reference totals (read-only)</p>
+              <p>
+                First image in album, 1 face:{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaFirstImageOneFace / 100).toFixed(4)}</strong>{" "}
+                reference → margin vs retail{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaFirstImageOneFace / 100).toFixed(4)}</strong>
+              </p>
+              <p>
+                Later image, 1 face:{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageOneFace / 100).toFixed(4)}</strong>{" "}
+                → margin{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageOneFace / 100).toFixed(4)}</strong>
+              </p>
+              <p>
+                Later image, 5 faces:{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>{" "}
+                → margin{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>
+              </p>
             </div>
           </div>
 

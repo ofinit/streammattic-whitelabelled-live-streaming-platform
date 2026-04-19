@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { PublicAlbumPayload } from "@/lib/client-gallery-album-service"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryLightbox } from "./gallery-lightbox"
 import { PublicGalleryPinGate } from "./public-gallery-pin-gate"
-import { Calendar, MapPin, Play, ZoomIn } from "lucide-react"
+import { Calendar, MapPin, Play, User, ZoomIn } from "lucide-react"
 
 function isVideoContentType(contentType: string | null): boolean {
   if (!contentType) return false
@@ -76,11 +76,69 @@ function PhotoTile({ img, index, onClick, className, aspect = "square" }: PhotoT
 
 interface GalleryLayoutProps {
   payload: PublicAlbumPayload
+  /** Filtered image list (e.g. by selected person). */
+  displayImages: PublicAlbumPayload["images"]
   onImageClick: (index: number) => void
 }
 
+function PersonFacesStrip({
+  identities,
+  selectedId,
+  onSelect,
+}: {
+  identities: PublicAlbumPayload["personIdentities"]
+  selectedId: string | null
+  onSelect: (id: string | null) => void
+}) {
+  const list = identities ?? []
+  if (list.length === 0) return null
+
+  return (
+    <div className="border-b border-border/60 bg-muted/30 px-4 py-3 sm:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">People</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onSelect(null)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              selectedId === null
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background text-foreground hover:bg-muted",
+            )}
+          >
+            All photos
+          </button>
+          {list.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelect(p.id)}
+              title="Show photos of this person"
+              className={cn(
+                "flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 transition-all",
+                selectedId === p.id
+                  ? "border-primary ring-2 ring-primary/30"
+                  : "border-transparent ring-1 ring-border hover:border-primary/50",
+              )}
+            >
+              {p.thumbUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.thumbUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <User className="h-5 w-5 text-muted-foreground" aria-hidden />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Enhanced Classic Grid with masonry feel
-function ClassicGrid({ payload, onImageClick }: GalleryLayoutProps) {
+function ClassicGrid({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -94,7 +152,7 @@ function ClassicGrid({ payload, onImageClick }: GalleryLayoutProps) {
       {/* Gallery Grid */}
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
-          {payload.images.map((img, idx) => (
+          {displayImages.map((img, idx) => (
             <PhotoTile key={img.id} img={img} index={idx} onClick={() => onImageClick(idx)} />
           ))}
         </div>
@@ -104,8 +162,8 @@ function ClassicGrid({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Hero Ribbon with large featured image
-function HeroRibbon({ payload, onImageClick }: GalleryLayoutProps) {
-  const [featured, ...rest] = payload.images
+function HeroRibbon({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
+  const [featured, ...rest] = displayImages
 
   return (
     <div className="min-h-screen bg-background">
@@ -171,11 +229,11 @@ function HeroRibbon({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Masonry Flow - Pinterest style
-function MasonryFlow({ payload, onImageClick }: GalleryLayoutProps) {
+function MasonryFlow({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
   const columns = 3
-  const columnImages: typeof payload.images[] = Array.from({ length: columns }, () => [])
+  const columnImages: PublicAlbumPayload["images"][] = Array.from({ length: columns }, () => [])
 
-  payload.images.forEach((img, idx) => {
+  displayImages.forEach((img, idx) => {
     columnImages[idx % columns].push(img)
   })
 
@@ -216,8 +274,8 @@ function MasonryFlow({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Bento Modern - Asymmetric grid
-function BentoModern({ payload, onImageClick }: GalleryLayoutProps) {
-  const [hero, second, third, ...rest] = payload.images
+function BentoModern({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
+  const [hero, second, third, ...rest] = displayImages
 
   return (
     <div className="min-h-screen bg-background">
@@ -276,8 +334,8 @@ function BentoModern({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Wedding Soft - Romantic elegant design
-function WeddingSoft({ payload, onImageClick }: GalleryLayoutProps) {
-  const [hero, ...rest] = payload.images
+function WeddingSoft({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
+  const [hero, ...rest] = displayImages
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-zinc-50/80">
@@ -384,8 +442,8 @@ function LavenderDream({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Sports Bold - energetic light palette
-function SportsBold({ payload, onImageClick }: GalleryLayoutProps) {
-  const [hero, ...rest] = payload.images
+function SportsBold({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
+  const [hero, ...rest] = displayImages
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/90 via-white to-slate-50 text-slate-900">
@@ -448,7 +506,7 @@ function SportsBold({ payload, onImageClick }: GalleryLayoutProps) {
 }
 
 // Obsidian frame — clean light gallery (minimal borders, bright canvas)
-function MinimalDark({ payload, onImageClick }: GalleryLayoutProps) {
+function MinimalDark({ payload, displayImages, onImageClick }: GalleryLayoutProps) {
   return (
     <div className="min-h-screen bg-white text-zinc-800">
       {/* Minimal Header */}
@@ -466,7 +524,7 @@ function MinimalDark({ payload, onImageClick }: GalleryLayoutProps) {
       {/* Gallery */}
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
-          {payload.images.map((img, idx) => {
+          {displayImages.map((img, idx) => {
             const isVideo = isVideoContentType(img.contentType)
             return (
               <button
@@ -537,6 +595,17 @@ interface PublicGalleryViewProps {
 
 export function PublicGalleryView({ payload, publicToken }: PublicGalleryViewProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
+
+  const identities = payload.personIdentities ?? []
+
+  const displayImages = useMemo(() => {
+    if (!selectedPersonId) return payload.images
+    const person = identities.find((p) => p.id === selectedPersonId)
+    if (!person) return payload.images
+    const allowed = new Set(person.assetIds)
+    return payload.images.filter((img) => allowed.has(img.id))
+  }, [payload.images, identities, selectedPersonId])
 
   useEffect(() => {
     if (!publicToken || payload.locked || payload.expired || !payload.storageConfigured) return
@@ -617,12 +686,12 @@ export function PublicGalleryView({ payload, publicToken }: PublicGalleryViewPro
 
   const layoutProps: GalleryLayoutProps = {
     payload,
+    displayImages,
     onImageClick: handleImageClick,
   }
 
-  return (
+  const templates = (
     <>
-      {/* Template Switch */}
       {templateId === "cinematic-hero" && <HeroRibbon {...layoutProps} />}
       {templateId === "storyflow" && <MasonryFlow {...layoutProps} />}
       {templateId === "artisan-bento" && <BentoModern {...layoutProps} />}
@@ -631,10 +700,34 @@ export function PublicGalleryView({ payload, publicToken }: PublicGalleryViewPro
       {templateId === "velocity-edge" && <SportsBold {...layoutProps} />}
       {templateId === "obsidian-frame" && <MinimalDark {...layoutProps} />}
       {(templateId === "midnight-elegance" || !templateId) && <ClassicGrid {...layoutProps} />}
+    </>
+  )
 
-      {/* Lightbox */}
+  return (
+    <>
+      <PersonFacesStrip
+        identities={identities}
+        selectedId={selectedPersonId}
+        onSelect={setSelectedPersonId}
+      />
+
+      {selectedPersonId && displayImages.length === 0 ? (
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <p className="text-muted-foreground">No photos in this gallery include this person.</p>
+          <button
+            type="button"
+            className="mt-4 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => setSelectedPersonId(null)}
+          >
+            Show all photos
+          </button>
+        </div>
+      ) : (
+        templates
+      )}
+
       <GalleryLightbox
-        images={payload.images}
+        images={displayImages}
         currentIndex={lightboxIndex ?? 0}
         isOpen={lightboxIndex !== null}
         onClose={handleCloseLightbox}

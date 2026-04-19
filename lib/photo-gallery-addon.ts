@@ -25,8 +25,17 @@ export type PhotoGalleryAddonSettings = {
   galleryServiceBaseUrl: string
   /** Optional monthly entitlement price in paisa (0 = contact admin / custom). */
   monthlyPricePaisa: number
-  /** Wallet debit per face-index job when AI search is enabled (future gallery service). */
+  /**
+   * Retail wallet debit per image after successful face-identity processing (AWS Rekognition path).
+   * Public gallery views / person filter clicks are not billed.
+   */
   faceIndexCreditPricePaisa: number
+  /** Admin reference: illustrative AWS cost for CreateCollection (paise), margin planning only. */
+  rekognitionReferencePaisaPerCreateCollection: number
+  /** Admin reference: illustrative AWS cost per IndexFaces call (paise). */
+  rekognitionReferencePaisaPerIndexFaces: number
+  /** Admin reference: illustrative AWS cost per SearchFaces call (paise). */
+  rekognitionReferencePaisaPerSearchFaces: number
   /** Optional per-album create charge (0 = off). */
   albumCreatePricePaisa: number
   /** Optional per-upload presign charge (0 = off). */
@@ -49,6 +58,9 @@ export function getDefaultPhotoGalleryAddonSettings(): PhotoGalleryAddonSettings
     galleryServiceBaseUrl: "",
     monthlyPricePaisa: 0,
     faceIndexCreditPricePaisa: 500,
+    rekognitionReferencePaisaPerCreateCollection: 0,
+    rekognitionReferencePaisaPerIndexFaces: 0,
+    rekognitionReferencePaisaPerSearchFaces: 0,
     faceIndexOpenRouterModelId: defaultVisionId,
     albumCreatePricePaisa: 0,
     uploadPricePaisa: 0,
@@ -128,6 +140,16 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     : d.albumCreatePricePaisa
   const uploadPricePaisa = isFiniteNonNeg(o.uploadPricePaisa) ? Math.round(o.uploadPricePaisa) : d.uploadPricePaisa
 
+  const rekognitionReferencePaisaPerCreateCollection = isFiniteNonNeg(o.rekognitionReferencePaisaPerCreateCollection)
+    ? Math.round(o.rekognitionReferencePaisaPerCreateCollection)
+    : d.rekognitionReferencePaisaPerCreateCollection
+  const rekognitionReferencePaisaPerIndexFaces = isFiniteNonNeg(o.rekognitionReferencePaisaPerIndexFaces)
+    ? Math.round(o.rekognitionReferencePaisaPerIndexFaces)
+    : d.rekognitionReferencePaisaPerIndexFaces
+  const rekognitionReferencePaisaPerSearchFaces = isFiniteNonNeg(o.rekognitionReferencePaisaPerSearchFaces)
+    ? Math.round(o.rekognitionReferencePaisaPerSearchFaces)
+    : d.rekognitionReferencePaisaPerSearchFaces
+
   return {
     listingEnabled,
     productName,
@@ -135,6 +157,9 @@ export function parsePhotoGalleryAddon(raw: unknown): PhotoGalleryAddonSettings 
     galleryServiceBaseUrl,
     monthlyPricePaisa,
     faceIndexCreditPricePaisa,
+    rekognitionReferencePaisaPerCreateCollection,
+    rekognitionReferencePaisaPerIndexFaces,
+    rekognitionReferencePaisaPerSearchFaces,
     faceIndexOpenRouterModelId,
     albumCreatePricePaisa,
     uploadPricePaisa,
@@ -154,6 +179,15 @@ export function assertPhotoGalleryAddonForSave(raw: unknown): PhotoGalleryAddonS
   }
   if (parsed.uploadPricePaisa > 1e12) {
     throw new Error("uploadPricePaisa is too large")
+  }
+  if (parsed.rekognitionReferencePaisaPerCreateCollection > 1e12) {
+    throw new Error("rekognitionReferencePaisaPerCreateCollection is too large")
+  }
+  if (parsed.rekognitionReferencePaisaPerIndexFaces > 1e12) {
+    throw new Error("rekognitionReferencePaisaPerIndexFaces is too large")
+  }
+  if (parsed.rekognitionReferencePaisaPerSearchFaces > 1e12) {
+    throw new Error("rekognitionReferencePaisaPerSearchFaces is too large")
   }
   if (!parsed.galleryPath.startsWith("/")) {
     throw new Error("galleryPath must start with /")

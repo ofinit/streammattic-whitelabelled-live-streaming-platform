@@ -2,6 +2,7 @@ import { jsonOk, withAuth } from "@/lib/api-helpers"
 import { parsePhotoGalleryAddon, PHOTO_GALLERY_PLATFORM_SETTING_KEY } from "@/lib/photo-gallery-addon"
 import { getPlatformSetting } from "@/lib/db-queries"
 import { getClientGalleryAccessState } from "@/lib/photo-gallery-subscription"
+import { buildFaceRecognitionPricingPayload } from "@/lib/rekognition-reference-pricing"
 
 export const dynamic = "force-dynamic"
 
@@ -15,6 +16,7 @@ export const GET = withAuth(async (user) => {
   if (user.role !== "studio" && user.role !== "streamer") {
     return jsonOk({
       catalog,
+      faceRecognitionPricing: buildFaceRecognitionPricingPayload(catalog),
       entitled: false,
       eligible: catalog.listingEnabled === true,
       adminEnabled: false,
@@ -31,6 +33,7 @@ export const GET = withAuth(async (user) => {
 
   return jsonOk({
     catalog,
+    faceRecognitionPricing: buildFaceRecognitionPricingPayload(catalog),
     /** True when the user may use gallery APIs (active subscription). */
     entitled: active,
     eligible: catalog.listingEnabled === true,

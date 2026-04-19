@@ -4,6 +4,7 @@ import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
 import { isStorageConfiguredForUser } from "@/lib/client-gallery-storage"
 import { getDb } from "@/lib/db"
 import { isUuid } from "@/lib/client-gallery-utils"
+import { deleteRekognitionFacesForAsset } from "@/lib/client-gallery-face-identity"
 import { deleteObjectForOwner } from "@/lib/s3-client-gallery"
 
 export const dynamic = "force-dynamic"
@@ -45,8 +46,28 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
     return jsonError("Invalid asset", 400)
   }
 
+  await deleteRekognitionFacesForAsset(albumId, assetId)
+
   if (await isStorageConfiguredForUser(uid)) {
     try {
+      try {
+        const thumbRows = await sql`
+          SELECT thumb_s3_key FROM client_gallery_face_instances
+          WHERE album_id = ${albumId} AND asset_id = ${assetId} AND thumb_s3_key IS NOT NULL
+        `
+        for (const tr of thumbRows) {
+          const tk = (tr as { thumb_s3_key?: string }).thumb_s3_key
+          if (tk) {
+            try {
+              await deleteObjectForOwner(uid, tk)
+            } catch {
+              /* best-effort */
+            }
+          }
+        }
+      } catch (te) {
+        if ((te as { code?: string })?.code !== "42P01") throw te
+      }
       await deleteObjectForOwner(uid, key)
     } catch (e) {
       console.error("[client-gallery asset DELETE] S3", e)

@@ -12,6 +12,7 @@ import {
 import { getAlbumByIdForUser, isPgUndefinedColumnError } from "@/lib/client-gallery-album-service"
 import { normalizeGalleryTemplateId } from "@/lib/client-gallery-templates"
 import { getDb } from "@/lib/db"
+import { deleteRekognitionCollectionForAlbum } from "@/lib/client-gallery-face-identity"
 import { deleteAllObjectsUnderPrefixForOwner } from "@/lib/s3-client-gallery"
 
 function clientGallerySchemaErrorMessage(e: unknown): string | null {
@@ -105,6 +106,8 @@ export async function DELETE(_request: Request, props: { params: Promise<{ id: s
   }
 
   const prefix = String(row.s3_prefix ?? "")
+  await deleteRekognitionCollectionForAlbum(id)
+
   if (await isStorageConfiguredForUser(uid)) {
     try {
       await deleteAllObjectsUnderPrefixForOwner(uid, prefix)

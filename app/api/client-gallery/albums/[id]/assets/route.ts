@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth"
 import { jsonError, jsonOk } from "@/lib/api-helpers"
 import { isClientGalleryEntitled } from "@/lib/client-gallery-entitlement"
+import { scheduleClientGalleryFaceProcessing } from "@/lib/client-gallery-face-identity"
 import { getDb } from "@/lib/db"
 import { isUuid, MAX_CLIENT_GALLERY_UPLOAD_BYTES } from "@/lib/client-gallery-utils"
 
@@ -70,6 +71,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     `
     await sql`UPDATE client_gallery_albums SET updated_at = NOW() WHERE id = ${albumId}`
     const r = inserted[0] as Record<string, unknown>
+    scheduleClientGalleryFaceProcessing(String(r.id))
     return jsonOk({
       asset: {
         id: String(r.id),

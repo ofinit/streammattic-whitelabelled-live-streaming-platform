@@ -47,6 +47,22 @@ This value is **admin configuration only** until a gallery worker debits `wallet
 
 For true biometric search, budget Rekognition/Azure/self-hosted instead of chat vision models.
 
+### Public gallery: same-person filter (AWS Rekognition)
+
+When enabled, new **image** uploads trigger **IndexFaces** into a per-album Rekognition collection; faces are grouped into **`client_gallery_person_identities`** for the public UI “People” strip and per-person photo filter. Image bytes are read with the album owner’s **BYOS S3** credentials; **Rekognition** calls use the **platform** AWS credentials (not the customer’s object-storage keys).
+
+**Environment (server):**
+
+| Variable | Meaning |
+| --- | --- |
+| `CLIENT_GALLERY_FACE_RECOGNITION` | Set to `1` to enable processing and public person rows. Omit or any other value disables it. |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Platform IAM user/role for Rekognition. |
+| `AWS_REGION` or `AWS_REKOGNITION_REGION` | Region for the Rekognition API (collection and faces live in this region). |
+
+Apply tables: `scripts/ensure-client-gallery-face-identity-schema.sql` (also merged into `scripts/schema-complete.sql`).
+
+**Wallet (streamer/studio):** **Retail** per processed image (`faceIndexCreditPricePaisa` in `photo_gallery_addon`) is debited **once per asset** after at least one face is stored, if retail > 0. The same public URL and person-filter UI do **not** trigger extra debits. **Admin reference** fields (`rekognitionReferencePaisaPerCreateCollection`, `rekognitionReferencePaisaPerIndexFaces`, `rekognitionReferencePaisaPerSearchFaces`) are for **margin estimates** only; set them from current AWS list pricing for your region.
+
 ---
 
 See also: [deploy-coolify-ozero.md](deploy-coolify-ozero.md) for the main Stream-Livee stack.

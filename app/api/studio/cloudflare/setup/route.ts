@@ -38,9 +38,10 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
         INSERT INTO domains (user_id, domain, verification_token, verification_status, is_primary)
         VALUES (${userId}, ${raw}, ${vt}, 'pending', true)
         ON CONFLICT (domain) DO UPDATE SET
-          user_id = ${userId},
+          user_id = EXCLUDED.user_id,
           verification_token = EXCLUDED.verification_token,
-          updated_at = NOW()
+          verification_status = 'pending',
+          is_primary = EXCLUDED.is_primary
         RETURNING domain, verification_token
       `
       if (rows.length === 0) return jsonError("Could not save domain for DNS setup", 500)
@@ -99,7 +100,12 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
     })
   } catch (err) {
     console.error("Cloudflare Setup API Error:", err)
-    return jsonError("Internal server error during Cloudflare setup")
+    const detail =
+      err instanceof Error ? err.message : "Internal server error during Cloudflare setup"
+    return jsonError(
+      process.env.NODE_ENV === "development" ? detail : "Internal server error during Cloudflare setup",
+      500,
+    )
   }
 })
 

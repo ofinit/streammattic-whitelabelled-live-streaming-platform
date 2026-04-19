@@ -27,8 +27,12 @@ export const POST = withRole(["studio"], async (user, request) => {
     const [newDomain] = await sql`
       INSERT INTO domains (user_id, domain, verification_token, verification_status, is_primary)
       VALUES (${user.id}, ${domain.trim().toLowerCase()}, ${verificationToken}, 'pending', true)
-      ON CONFLICT (domain) 
-      DO UPDATE SET verification_token = EXCLUDED.verification_token, updated_at = NOW()
+      ON CONFLICT (domain)
+      DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        verification_token = EXCLUDED.verification_token,
+        verification_status = 'pending',
+        is_primary = EXCLUDED.is_primary
       RETURNING *
     `
 

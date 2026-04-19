@@ -1,7 +1,8 @@
 import { getDb, toCamel } from "@/lib/db"
-import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
+import { jsonOk, withAuth } from "@/lib/api-helpers"
 import { withRedisCache, invalidateCache } from "@/lib/redis"
 import { encrypt, decrypt } from "@/lib/encryption"
+import { mapBrandingPutBody, normalizeBrandingRowForClient } from "@/lib/branding-api-map"
 
 export const dynamic = "force-dynamic"
 
@@ -20,10 +21,11 @@ export const GET = withAuth(async (user, request) => {
       if (branding.smtpPassword) {
         branding.smtpPassword = decrypt(branding.smtpPassword as string)
       }
-      return {
+      const merged = {
         ...branding,
-        selectedTheme: rows[0].selected_theme || 'modern_emerald'
-      }
+        selectedTheme: rows[0].selected_theme || "modern_emerald",
+      } as Record<string, unknown>
+      return normalizeBrandingRowForClient(merged)
     }
   )
 
@@ -31,17 +33,48 @@ export const GET = withAuth(async (user, request) => {
 })
 
 export const PUT = withAuth(async (user, request) => {
-  const body = await request.json()
+  const bodyRaw = await request.json()
+  const body = mapBrandingPutBody(bodyRaw as Record<string, unknown>)
   const sql = getDb()
   const userId = user.id as string
-  const { 
-    companyLogo, favicon, primaryColor, secondaryColor, accentColor, customCss, 
-    platformName, tagline, supportEmail, socialLinks, metaTitle, metaDescription, 
-    googleAnalyticsId, aboutUs, termsConditions, privacyPolicy, refundPolicy,
-    heroImage, aboutImage, address, phone, whatsapp, facebookUrl, instagramUrl,
-    twitterUrl, youtubeUrl, linkedinUrl, companyLogoDark, preferredGateway,
-    smtpHost, smtpPort, smtpUser, smtpPassword, smtpFromEmail, smtpFromName, smtpSecure,
-    selectedTheme
+  const {
+    companyLogo,
+    favicon,
+    primaryColor,
+    secondaryColor,
+    accentColor,
+    customCss,
+    platformName,
+    tagline,
+    supportEmail,
+    socialLinks,
+    metaTitle,
+    metaDescription,
+    googleAnalyticsId,
+    aboutUs,
+    termsConditions,
+    privacyPolicy,
+    refundPolicy,
+    heroImage,
+    aboutImage,
+    address,
+    phone,
+    whatsapp,
+    facebookUrl,
+    instagramUrl,
+    twitterUrl,
+    youtubeUrl,
+    linkedinUrl,
+    companyLogoDark,
+    preferredGateway,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPassword,
+    smtpFromEmail,
+    smtpFromName,
+    smtpSecure,
+    selectedTheme,
   } = body
 
   const rows = await sql`
@@ -109,5 +142,14 @@ export const PUT = withAuth(async (user, request) => {
 
   await invalidateCache(`studio_branding:${userId}`)
 
-  return jsonOk({ branding: toCamel(rows[0] as Record<string, unknown>) })
+  const saved = toCamel(rows[0] as Record<string, unknown>) as Record<string, unknown>
+  if (saved.smtpPassword) {
+    saved.smtpPassword = decrypt(saved.smtpPassword as string)
+  }
+  return jsonOk({
+    branding: normalizeBrandingRowForClient({
+      ...saved,
+      selectedTheme: rows[0].selected_theme || "modern_emerald",
+    }),
+  })
 })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Copy,
+  Search,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import type { Studio } from "@/lib/types"
@@ -290,6 +291,13 @@ export default function StudioSetupPage() {
   const [isCloudflareLoading, setIsCloudflareLoading] = useState(false)
   const [cloudflareError, setCloudflareError] = useState<string | null>(null)
   const [cfZones, setCfZones] = useState<CloudflareZone[]>([])
+  const [cfZoneSearch, setCfZoneSearch] = useState("")
+
+  const filteredCfZones = useMemo(() => {
+    const q = cfZoneSearch.trim().toLowerCase()
+    if (!q) return cfZones
+    return cfZones.filter((z) => z.name.toLowerCase().includes(q))
+  }, [cfZones, cfZoneSearch])
   const [cfStep, setCfStep] = useState<1 | 2>(1)
   const [copiedNS, setCopiedNS] = useState<string | null>(null)
 
@@ -333,6 +341,7 @@ export default function StudioSetupPage() {
     try {
       const res = await fetch("/api/studio/setup", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           companyData: {
@@ -346,8 +355,12 @@ export default function StudioSetupPage() {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.message || "Failed to complete setup")
+        const error = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+        const msg =
+          (typeof error.error === "string" && error.error) ||
+          (typeof error.message === "string" && error.message) ||
+          "Failed to complete setup"
+        throw new Error(msg)
       }
 
       router.push("/studio")
@@ -368,6 +381,7 @@ export default function StudioSetupPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to fetch zones")
       setCfZones(data.zones || [])
+      setCfZoneSearch("")
       setCfStep(2)
       
       // Auto-select if match found
@@ -912,10 +926,22 @@ export default function StudioSetupPage() {
                     ) : (
                       <div className="space-y-4">
                         <Label>Select Your Cloudflare Zone</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                          <Input
+                            type="search"
+                            value={cfZoneSearch}
+                            onChange={(e) => setCfZoneSearch(e.target.value)}
+                            placeholder="Search domains…"
+                            className="bg-background border-border pl-9"
+                            aria-label="Search Cloudflare zones"
+                          />
+                        </div>
                         <div className="grid gap-2 max-h-40 overflow-y-auto pr-1">
-                          {cfZones.map((zone) => (
+                          {filteredCfZones.map((zone) => (
                             <button
                               key={zone.id}
+                              type="button"
                               onClick={() => setDomainData({ ...domainData, cfZoneId: zone.id })}
                               className={`text-left rounded-lg border p-3 transition-all ${
                                 domainData.cfZoneId === zone.id 
@@ -929,10 +955,24 @@ export default function StudioSetupPage() {
                               </div>
                             </button>
                           ))}
-                          {cfZones.length === 0 && <p className="text-xs text-center text-muted-foreground">No zones found</p>}
+                          {cfZones.length === 0 && (
+                            <p className="text-xs text-center text-muted-foreground">No zones found</p>
+                          )}
+                          {cfZones.length > 0 && filteredCfZones.length === 0 && (
+                            <p className="text-xs text-center text-muted-foreground">No zones match your search</p>
+                          )}
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" className="flex-1" onClick={() => setCfStep(1)}>Back</Button>
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setCfStep(1)
+                              setCfZoneSearch("")
+                            }}
+                          >
+                            Back
+                          </Button>
                           <Button 
                             className="flex-[2] bg-orange-600 hover:bg-orange-700 text-white" 
                             onClick={handleSetupCloudflare}

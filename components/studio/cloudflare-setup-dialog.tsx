@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Zap, CheckCircle2, AlertCircle, Copy, Check } from "lucide-react"
+import { Loader2, Zap, CheckCircle2, AlertCircle, Copy, Check, Search } from "lucide-react"
 import type { CloudflareZone } from "@/lib/cloudflare-dns"
 
 interface CloudflareSetupDialogProps {
@@ -28,7 +28,14 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
   
   const [apiToken, setApiToken] = useState("")
   const [zones, setZones] = useState<CloudflareZone[]>([])
+  const [zoneSearch, setZoneSearch] = useState("")
   const [selectedZoneId, setSelectedZoneId] = useState("")
+
+  const filteredZones = useMemo(() => {
+    const q = zoneSearch.trim().toLowerCase()
+    if (!q) return zones
+    return zones.filter((z) => z.name.toLowerCase().includes(q))
+  }, [zones, zoneSearch])
   
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,6 +59,7 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
       if (!res.ok) throw new Error(data.error || "Failed to fetch zones")
       
       setZones(data.zones || [])
+      setZoneSearch("")
       if (data.zones?.length > 0) {
         // Try to find matching zone automatically
         const match = data.zones.find((z: CloudflareZone) => domainName.endsWith(z.name))
@@ -137,11 +145,30 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Select Cloudflare Zone</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    value={zoneSearch}
+                    onChange={(e) => setZoneSearch(e.target.value)}
+                    placeholder="Search domains…"
+                    className="bg-secondary/50 border-0 pl-9"
+                    aria-label="Search Cloudflare zones"
+                  />
+                </div>
                 <div className="grid gap-2 max-h-48 overflow-y-auto pr-1">
-                  {zones.map((zone) => (
+                  {filteredZones.map((zone) => (
                     <div
                       key={zone.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedZoneId(zone.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          setSelectedZoneId(zone.id)
+                        }
+                      }}
                       className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                         selectedZoneId === zone.id 
                           ? "bg-primary/10 border-primary shadow-sm" 
@@ -157,6 +184,9 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
                   {zones.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">No active zones found in this account.</p>
                   )}
+                  {zones.length > 0 && filteredZones.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No zones match your search</p>
+                  )}
                 </div>
               </div>
               {error && (
@@ -166,7 +196,15 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
                 </div>
               )}
               <div className="flex gap-2">
-                <Button variant="ghost" className="flex-1" onClick={() => setStep(1)} disabled={isLoading}>
+                <Button
+                  variant="ghost"
+                  className="flex-1"
+                  onClick={() => {
+                    setStep(1)
+                    setZoneSearch("")
+                  }}
+                  disabled={isLoading}
+                >
                   Back
                 </Button>
                 <Button className="flex-[2]" onClick={handleRunSetup} disabled={!selectedZoneId || isLoading}>

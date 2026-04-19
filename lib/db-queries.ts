@@ -444,8 +444,43 @@ export async function getAdminDashboardStats() {
 // DASHBOARD STATS (studio)
 // ============================================================
 
+const pgColumnCache = new Map<string, boolean>()
+
+async function pgColumnExists(table: string, column: string): Promise<boolean> {
+  const key = `${table}.${column}`
+  if (pgColumnCache.has(key)) return pgColumnCache.get(key)!
+  const sql = getDb()
+  const rows = await sql`
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = ${table} AND column_name = ${column}
+    LIMIT 1
+  `
+  const ok = rows.length > 0
+  pgColumnCache.set(key, ok)
+  return ok
+}
+
 export async function getStudioDashboardStats(studioId: string) {
   const sql = getDb()
+  const ordersByStudio = await pgColumnExists("orders", "studio_id")
+
+  if (ordersByStudio) {
+    const rows = await sql`
+      SELECT
+        (SELECT (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId})
+          + (SELECT COUNT(*)::int FROM deleted_events_log WHERE owner_user_id = ${studioId})) AS total_events,
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'live') AS live_events,
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
+        (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'ended') AS completed_events,
+        (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${studioId}) AS total_views,
+        (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
+        (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
+        (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+        (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
+    `
+    return toCamel(rows[0] as Record<string, unknown>)
+  }
+
   const rows = await sql`
     SELECT
       (SELECT (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId})
@@ -454,9 +489,9 @@ export async function getStudioDashboardStats(studioId: string) {
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'scheduled') AS scheduled_events,
       (SELECT COUNT(*)::int FROM events WHERE user_id = ${studioId} AND status = 'ended') AS completed_events,
       (SELECT COALESCE(SUM(total_views), 0)::bigint FROM events WHERE user_id = ${studioId}) AS total_views,
-      (SELECT COUNT(*)::int FROM orders WHERE studio_id = ${studioId}) AS total_orders,
-      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed') AS total_revenue,
-      (SELECT COALESCE(SUM(total_price), 0)::numeric FROM orders WHERE studio_id = ${studioId} AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days') AS monthly_revenue,
+      0::int AS total_orders,
+      0::numeric AS total_revenue,
+      0::numeric AS monthly_revenue,
       (SELECT COALESCE(balance, 0)::numeric FROM wallets WHERE user_id = ${studioId}) AS wallet_balance
   `
   return toCamel(rows[0] as Record<string, unknown>)

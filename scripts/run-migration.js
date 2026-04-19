@@ -134,6 +134,10 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS idx_afe_visitor ON analytics_funnel_events(visitor_key)`,
   `CREATE INDEX IF NOT EXISTS idx_afe_user ON analytics_funnel_events(user_id) WHERE user_id IS NOT NULL`,
   `CREATE INDEX IF NOT EXISTS idx_afe_related_event ON analytics_funnel_events(related_event_id) WHERE related_event_id IS NOT NULL`,
+  // Studio setup (POST /api/studio/setup) + dashboard (orders scoped by studio)
+  `ALTER TABLE studio_branding ADD COLUMN IF NOT EXISTS tagline TEXT`,
+  `ALTER TABLE orders ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_orders_studio_id ON orders(studio_id)`,
 ];
 
 const seedSettings = [

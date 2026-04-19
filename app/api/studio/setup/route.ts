@@ -153,6 +153,10 @@ export const POST = withRole(["studio"], async (user, request) => {
     return jsonOk({ message: "Setup completed successfully" })
   } catch (err) {
     console.error("Studio Setup API Error:", err)
-    return jsonError("Failed to complete setup")
+    const detail = err instanceof Error ? err.message : "Failed to complete setup"
+    return jsonError(
+      process.env.NODE_ENV === "development" ? detail : "Failed to complete setup",
+      500,
+    )
   }
 })

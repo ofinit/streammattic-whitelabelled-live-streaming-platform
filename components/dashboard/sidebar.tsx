@@ -90,7 +90,6 @@ const studioNav: NavItem[] = [
   { title: "Billing & Wallet", href: "/studio/wallet", icon: Wallet },
   { title: "Setup Wizard", href: "/studio/setup", icon: Zap },
   { title: "Branding", href: "/studio/branding", icon: Paintbrush },
-  { title: "Integrations", href: "/studio/settings/integrations", icon: Plug },
   { title: "YouTube Channels", href: "/studio/settings/youtube", icon: Youtube },
   { title: "Settings", href: "/studio/settings", icon: Settings },
 ]
@@ -222,7 +221,7 @@ function PhotoGalleryMenuBadge({ collapsed }: { collapsed: boolean }) {
   )
 }
 
-/** Same-origin dashboard link when no legacy external URL; listed add-on visible to all streamers/studios. */
+/** Add-on nav: same-origin or external URL; always opens in a new tab so the main dashboard stays open. */
 function PhotoGallerySidebarNavLink({
   pathname,
   isCollapsed,
@@ -278,7 +277,9 @@ function PhotoGallerySidebarNavLink({
   ) : (
     <Link
       href={href}
-      aria-label={titleFull}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${titleFull} (opens in new tab)`}
       title={titleFull}
       onClick={() => onNavigate?.()}
       className={linkClassName}
@@ -289,6 +290,7 @@ function PhotoGallerySidebarNavLink({
         <span className="flex min-w-0 flex-1 items-center gap-2">
           <span className="min-w-0 truncate">{PHOTO_GALLERY_MENU_SHORT}</span>
           <PhotoGalleryMenuBadge collapsed={false} />
+          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
         </span>
       )}
     </Link>
@@ -304,7 +306,8 @@ function PhotoGallerySidebarNavLink({
           <span className="flex flex-wrap items-center gap-2">
             <span>
               {titleFull}
-              {isExternal ? " (opens in new tab)" : ""}
+              {" "}
+              (opens in new tab)
             </span>
             <PhotoGalleryMenuBadge collapsed={false} />
           </span>
@@ -388,32 +391,12 @@ export function Sidebar() {
   const pathname = usePathname()
   const { user, logout, isImpersonating } = useAuth()
   const { isCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useSidebar()
-  const { data: settingsData, isLoading: settingsLoading } = useSWR<
-    { settings?: { key: string; value: unknown }[] }
-  >(user?.role === "streamer" || user?.role === "studio" ? "/api/settings" : null, settingsFetcher)
-  const settingsReady = !settingsLoading && settingsData !== undefined
-  const platformYoutubeEnabled =
-    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === true ||
-    settingsData?.settings?.find((s) => s.key === "youtube_config_enabled")?.value === "true"
-  const override = settingsData?.settings?.find((s) => s.key === "youtube_config_override")?.value
-  const youtubeConfigEnabled =
-    override === true || override === "true"
-      ? true
-      : override === false || override === "false"
-        ? false
-        : Boolean(platformYoutubeEnabled)
-
   const getNavItems = (): NavItem[] => {
     switch (user?.role) {
       case "admin":
         return adminNav
-      case "studio": {
-        // Only hide Integrations after settings load; avoids treating "still loading" as disabled.
-        if (settingsReady && !youtubeConfigEnabled) {
-          return studioNav.filter((item) => item.href !== "/studio/settings/integrations")
-        }
+      case "studio":
         return studioNav
-      }
       case "streamer":
         return streamerNav
       default:

@@ -19,10 +19,11 @@ export async function GET(req: NextRequest) {
   const wwwAlternate = hostNorm.startsWith("www.") ? hostNorm.slice(4) : `www.${hostNorm}`
 
   // 1. Try to find by custom domain (table is `domains`, not studio_domains)
-  // Match apex or www so one verified row covers both hostnames.
+  // Match apex or www. Include pending so the studio landing renders on the custom host
+  // while DNS/TXT verification is still in progress (row must exist from setup wizard).
   const domains = await sql`
     SELECT * FROM domains 
-    WHERE verification_status = 'verified'
+    WHERE verification_status IN ('verified', 'pending')
     AND (LOWER(domain) = ${hostNorm} OR LOWER(domain) = ${wwwAlternate})
   `
   

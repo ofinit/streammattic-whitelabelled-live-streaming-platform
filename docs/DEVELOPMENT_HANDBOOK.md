@@ -36,7 +36,7 @@ Canonical technical entry point for contributors. Product overview and deploy sh
 
 The marketing root `/` loads studio vs platform content from [`GET /api/branding/lookup`](../app/api/branding/lookup/route.ts) using the browser hostname. For a custom domain to resolve to **studio** branding and [`StudioLandingPage`](../components/landing/studio-landing.tsx):
 
-1. **`domains` row** — `LOWER(domain)` must match the hostname (or apex/`www` alternate). **`verification_status` must be `verified`** (TXT verification in the dashboard); pending domains fall back to platform settings.
+1. **`domains` row** — `LOWER(domain)` must match the hostname (or apex/`www` alternate). **`verification_status` must be `verified` or `pending`** so the studio landing can show while DNS/TXT verification is in progress; `failed` does not match.
 2. **Edge / TLS** — The hostname must be attached to the app on the host (e.g. Coolify FQDNs) so traffic reaches Next.js with the correct `Host` header.
 
 ## UI: `AiImagePickerDialog` inside the event form (nested Radix Dialog)

@@ -1,11 +1,17 @@
 import { getDb } from "@/lib/db"
 import { getPlatformSetting } from "@/lib/db-queries"
 import { autoConfigureDomain, verifyApiToken, getZonesByToken } from "@/lib/cloudflare-dns"
-import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
+import { jsonOk, jsonError, withRole } from "@/lib/api-helpers"
+import { isValidHostname } from "@/lib/studio-setup-validation"
 
-export const POST = withRole(["studio", "admin"], async (user, request) => {
+export const POST = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
-    const body = await request.json()
+    const body = (await request.json()) as {
+      apiToken?: string
+      zoneId?: string
+      domainId?: string
+      customDomain?: string
+    }
     const { apiToken, zoneId, domainId } = body
 
     if (!apiToken || !zoneId || !domainId) {
@@ -16,7 +22,30 @@ export const POST = withRole(["studio", "admin"], async (user, request) => {
     let domainName = ""
     let verificationToken = ""
 
-    if (domainId === "platform") {
+    if (domainId === "wizard") {
+      // Studio setup wizard: same user may be streamer or studio; domain row may not exist yet
+      const raw =
+        typeof body.customDomain === "string"
+          ? body.customDomain.trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+          : ""
+      if (!raw || !isValidHostname(raw)) {
+        return jsonError("A valid customDomain is required for setup wizard Cloudflare", 400)
+      }
+      const userId = user.id as string
+      const vt = `streamlivee-verify-${Math.random().toString(36).substring(2, 34)}`
+      const rows = await sql`
+        INSERT INTO domains (user_id, domain, verification_token, verification_status, is_primary)
+        VALUES (${userId}, ${raw}, ${vt}, 'pending', true)
+        ON CONFLICT (domain) DO UPDATE SET
+          user_id = ${userId},
+          verification_token = EXCLUDED.verification_token,
+          updated_at = NOW()
+        RETURNING domain, verification_token
+      `
+      if (rows.length === 0) return jsonError("Could not save domain for DNS setup", 500)
+      domainName = rows[0].domain as string
+      verificationToken = rows[0].verification_token as string
+    } else if (domainId === "platform") {
       // Platform-wide setup
       if (user.role !== "admin") return jsonError("Forbidden", 403)
       domainName = (await getPlatformSetting("platform_domain")) as string

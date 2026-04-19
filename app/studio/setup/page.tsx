@@ -377,7 +377,9 @@ export default function StudioSetupPage() {
     setIsCloudflareLoading(true)
     setCloudflareError(null)
     try {
-      const res = await fetch(`/api/studio/cloudflare/setup?apiToken=${domainData.cfApiToken}`)
+      const res = await fetch(`/api/studio/cloudflare/setup?apiToken=${encodeURIComponent(domainData.cfApiToken)}`, {
+        credentials: "include",
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to fetch zones")
       setCfZones(data.zones || [])
@@ -403,11 +405,13 @@ export default function StudioSetupPage() {
     try {
       const res = await fetch("/api/studio/cloudflare/setup", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          apiToken: domainData.cfApiToken, 
-          zoneId: domainData.cfZoneId, 
-          domainId: "platform" // During onboarding, we treat this as the station domain
+        body: JSON.stringify({
+          apiToken: domainData.cfApiToken,
+          zoneId: domainData.cfZoneId,
+          domainId: "wizard",
+          customDomain: domainData.customDomain.trim(),
         }),
       })
       const data = await res.json()

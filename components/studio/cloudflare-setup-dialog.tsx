@@ -54,7 +54,9 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/studio/cloudflare/setup?apiToken=${apiToken}`)
+      const res = await fetch(`/api/studio/cloudflare/setup?apiToken=${encodeURIComponent(apiToken)}`, {
+        credentials: "include",
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to fetch zones")
       
@@ -80,6 +82,7 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
     try {
       const res = await fetch("/api/studio/cloudflare/setup", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiToken, zoneId: selectedZoneId, domainId }),
       })

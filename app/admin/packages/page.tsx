@@ -1093,8 +1093,13 @@ export default function AdminPricingPage() {
               <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
                 <strong className="text-foreground">Monthly price</strong> — reference on Packages; use{" "}
                 <code className="text-foreground">0</code> for contact admin / custom.{" "}
-                <strong className="text-foreground">Face index credit</strong> — retail per job when billing exists; no free
-                quota. Provider cost and margin for the selected model are shown below.
+                <strong className="text-foreground">Face recognition</strong> — one customer-facing wallet price per
+                processed image (field below). When <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code>,
+                AWS Rekognition runs on your account; you do not set separate per-API prices for streamers. The{" "}
+                <strong className="text-foreground">AWS Rekognition</strong> block is only your optional internal reference
+                for margin math; the <strong className="text-foreground">OpenRouter</strong> block is a separate planned path.{" "}
+                Album and per-upload fees are optional non-AI charges — leave at <code className="text-foreground">0</code>{" "}
+                if you do not want them.
               </p>
             </div>
           </div>
@@ -1143,7 +1148,7 @@ export default function AdminPricingPage() {
               <p className="text-[10px] text-muted-foreground">0 = contact admin / custom billing</p>
             </div>
             <div className="space-y-2">
-              <Label>Face recognition retail (₹ per processed image)</Label>
+              <Label>Face recognition — customer price (₹ per processed image)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                 <Input
@@ -1160,8 +1165,10 @@ export default function AdminPricingPage() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Wallet debit once per image after AWS stores at least one face. Public gallery views and person filters are
-                not billed.
+                <strong className="text-foreground">This is the only per-image face-AI price</strong> debited from the
+                streamer wallet (once per image after at least one face is stored). The per-API fields in the AWS block below
+                do not add extra customer charges—they help you estimate your AWS cost vs this price. Public gallery views and
+                person filters are not billed.
               </p>
             </div>
             <div className="space-y-2">
@@ -1181,7 +1188,10 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">0 = off. Debits wallet when a new album is created.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Optional platform fee — not AI. <code className="text-foreground">0</code> = no charge. Debits wallet when a
+                new album is created.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Per-upload fee (₹)</Label>
@@ -1200,15 +1210,20 @@ export default function AdminPricingPage() {
                   }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">0 = off. Debits wallet per presigned upload request.</p>
+              <p className="text-[10px] text-muted-foreground">
+                Optional platform fee — not AI (presigned URL only). <code className="text-foreground">0</code> = no charge.
+                Debits wallet per presigned upload request.
+              </p>
             </div>
           </div>
 
           <div className="max-w-xl space-y-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-4">
-            <Label className="text-sm font-semibold">AWS Rekognition (face identity — live when CLIENT_GALLERY_FACE_RECOGNITION=1)</Label>
+            <Label className="text-sm font-semibold">AWS Rekognition — your cost reference (admin only)</Label>
             <p className="text-[10px] text-muted-foreground">
-              Enter your platform’s illustrative AWS cost per API call (INR, paise internally). Used for margin estimates only;
-              actual AWS billing is on your AWS account.
+              Live when <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code>. Streamers pay only the
+              customer price field above — not per API. Enter <strong className="text-foreground">illustrative</strong> AWS
+              prices per call (INR; stored as paise) so you can compare your AWS bill to retail; actual AWS billing is on your
+              account.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-2">
@@ -1274,34 +1289,46 @@ export default function AdminPricingPage() {
                   costs.
                 </p>
               )}
-            <div className="space-y-1 rounded-md border border-border/50 bg-background/80 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Illustrative reference totals (read-only)</p>
+            <div className="space-y-2 rounded-md border border-border/50 bg-background/80 p-3 text-xs text-muted-foreground">
               <p>
-                First image in album, 1 face:{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaFirstImageOneFace / 100).toFixed(4)}</strong>{" "}
-                reference → margin vs retail{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaFirstImageOneFace / 100).toFixed(4)}</strong>
+                <span className="font-medium text-foreground">Customer price (fixed):</span>{" "}
+                <strong className="text-foreground">₹{(rekognitionPricingPreview.retailPaisaPerProcessedImage / 100).toFixed(2)}</strong>{" "}
+                per processed image — same wallet debit in all cases.
               </p>
-              <p>
-                Later image, 1 face:{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageOneFace / 100).toFixed(4)}</strong>{" "}
-                → margin{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageOneFace / 100).toFixed(4)}</strong>
-              </p>
-              <p>
-                Later image, 5 faces:{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>{" "}
-                → margin{" "}
-                <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>
-              </p>
+              <details className="group rounded border border-border/40 bg-muted/30 p-2">
+                <summary className="cursor-pointer font-medium text-foreground select-none">
+                  Scenario breakdown (your AWS reference vs that price — optional detail)
+                </summary>
+                <div className="mt-2 space-y-1 border-t border-border/40 pt-2">
+                  <p>
+                    First image in album, 1 face:{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaFirstImageOneFace / 100).toFixed(4)}</strong>{" "}
+                    reference → margin vs retail{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaFirstImageOneFace / 100).toFixed(4)}</strong>
+                  </p>
+                  <p>
+                    Later image, 1 face:{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageOneFace / 100).toFixed(4)}</strong>{" "}
+                    → margin{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageOneFace / 100).toFixed(4)}</strong>
+                  </p>
+                  <p>
+                    Later image, 5 faces:{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.referencePaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>{" "}
+                    → margin{" "}
+                    <strong className="text-foreground">₹{(rekognitionPricingPreview.marginPaisaLaterImageFiveFaces / 100).toFixed(4)}</strong>
+                  </p>
+                </div>
+              </details>
             </div>
           </div>
 
           <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
             <Label className="text-sm font-semibold">Planned OpenRouter model (gallery vision / index jobs)</Label>
             <p className="text-[10px] text-muted-foreground">
-              Margin below applies to a planned OpenRouter vision job only. When live face identity runs on AWS
-              Rekognition (section above), use that block for provider-cost planning—not this OpenRouter estimate.
+              Does not add a second wallet price for streamers unless you ship this path separately. Margin below applies to a
+              planned OpenRouter vision job only. When live face identity runs on AWS Rekognition (section above), use that
+              block for provider-cost planning—not this OpenRouter estimate.
             </p>
             <Select
               value={photoGalleryAddon.faceIndexOpenRouterModelId}

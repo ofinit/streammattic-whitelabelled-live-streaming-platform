@@ -1266,6 +1266,14 @@ export default function AdminPricingPage() {
                 />
               </div>
             </div>
+            {photoGalleryAddon.rekognitionReferencePaisaPerCreateCollection === 0 &&
+              photoGalleryAddon.rekognitionReferencePaisaPerIndexFaces === 0 &&
+              photoGalleryAddon.rekognitionReferencePaisaPerSearchFaces === 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  Reference costs not set (all ₹0). Margins below equal retail until you enter illustrative per-call AWS
+                  costs.
+                </p>
+              )}
             <div className="space-y-1 rounded-md border border-border/50 bg-background/80 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Illustrative reference totals (read-only)</p>
               <p>
@@ -1291,6 +1299,10 @@ export default function AdminPricingPage() {
 
           <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
             <Label className="text-sm font-semibold">Planned OpenRouter model (gallery vision / index jobs)</Label>
+            <p className="text-[10px] text-muted-foreground">
+              Margin below applies to a planned OpenRouter vision job only. When live face identity runs on AWS
+              Rekognition (section above), use that block for provider-cost planning—not this OpenRouter estimate.
+            </p>
             <Select
               value={photoGalleryAddon.faceIndexOpenRouterModelId}
               onValueChange={(id) => {

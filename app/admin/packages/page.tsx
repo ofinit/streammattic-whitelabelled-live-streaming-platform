@@ -1131,7 +1131,9 @@ export default function AdminPricingPage() {
             </div>
           </div>
 
-          <div className="grid w-full gap-4 lg:grid-cols-2">
+          <div className="border-t border-border pt-4">
+            <p className="mb-3 text-sm font-semibold text-foreground">Your AWS cost &amp; face engine (admin only)</p>
+            <div className="grid w-full gap-4 lg:grid-cols-2">
             <div className="space-y-2">
               <Label>Your estimated AWS cost (₹ per processed image)</Label>
               <div className="relative">
@@ -1141,7 +1143,7 @@ export default function AdminPricingPage() {
                   min={0}
                   step={0.01}
                   className="bg-secondary border-0 pl-7"
-                  value={photoGalleryAddon.faceRecognitionProviderCostReferencePaisa / 100}
+                  value={(photoGalleryAddon.faceRecognitionProviderCostReferencePaisa ?? 0) / 100}
                   onChange={(e) => {
                     const n = parseFloat(e.target.value)
                     if (e.target.value === "" || Number.isNaN(n)) return
@@ -1166,7 +1168,7 @@ export default function AdminPricingPage() {
                         Math.max(
                           0,
                           photoGalleryAddon.faceIndexCreditPricePaisa -
-                            photoGalleryAddon.faceRecognitionProviderCostReferencePaisa,
+                            (photoGalleryAddon.faceRecognitionProviderCostReferencePaisa ?? 0),
                         ) / 100
                       ).toFixed(2)}
                     </strong>{" "}
@@ -1183,6 +1185,7 @@ export default function AdminPricingPage() {
                 AWS bills by API usage and region on your account when{" "}
                 <code className="text-foreground">CLIENT_GALLERY_FACE_RECOGNITION=1</code> and credentials are set.
               </p>
+            </div>
             </div>
           </div>
 

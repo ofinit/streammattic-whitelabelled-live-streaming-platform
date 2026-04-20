@@ -10,17 +10,24 @@ const now = new Date()
 const STUDIO_LANDING_DEFAULT_MEDIA = {
   /** Photography / videography — camera & creative work (readable behind lighter hero overlay) */
   hero: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=2400&q=80",
-  /** DSLR / gear — About section (avoid wedding-only imagery like rings) */
-  about: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1600&q=80",
+  /** Wedding photographer at work — About section visual */
+  about: "https://images.unsplash.com/photo-1493863641943-9b68992a8d6a?auto=format&fit=crop&w=1600&q=80",
   eventWedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
   eventCorporate: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
   eventBirthday: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
   eventReligious: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&q=80",
 } as const
 
-/** Old platform default (wedding rings). Merged landing treats this like “no custom about image.” */
+/**
+ * Old platform defaults. Merged landing treats these like “no custom about image”
+ * so studios get the current default without re-saving branding.
+ */
 export function isLegacyStudioDefaultAboutImage(url: string | undefined): boolean {
-  return Boolean(url?.includes("photo-1606800052052"))
+  if (!url) return false
+  return (
+    url.includes("photo-1606800052052") || // wedding rings
+    url.includes("photo-1502920917128") // generic DSLR product on table (replaced by wedding photographer)
+  )
 }
 
 /** Portfolio grid when the studio has not uploaded gallery items yet (Unsplash CDN). */

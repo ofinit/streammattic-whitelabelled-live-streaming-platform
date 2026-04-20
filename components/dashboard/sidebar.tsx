@@ -35,7 +35,6 @@ import {
   ClipboardList,
   Database,
   Images,
-  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -278,7 +277,6 @@ function PhotoGallerySidebarNavLink({
         <span className="flex min-w-0 flex-1 items-center gap-2">
           <span className="min-w-0 truncate">{PHOTO_GALLERY_MENU_SHORT}</span>
           <PhotoGalleryMenuBadge collapsed={false} />
-          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
         </span>
       )}
     </a>
@@ -298,7 +296,6 @@ function PhotoGallerySidebarNavLink({
         <span className="flex min-w-0 flex-1 items-center gap-2">
           <span className="min-w-0 truncate">{PHOTO_GALLERY_MENU_SHORT}</span>
           <PhotoGalleryMenuBadge collapsed={false} />
-          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
         </span>
       )}
     </Link>

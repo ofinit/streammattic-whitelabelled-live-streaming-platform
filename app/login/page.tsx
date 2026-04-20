@@ -166,12 +166,6 @@ function LoginPageContent() {
         <div className="container mx-auto px-6">
           <BrandedLogo size="sm" className="mx-auto mb-4 opacity-50 grayscale" />
           <p>© {new Date().getFullYear()} {branding.brandName} Software. All rights reserved.</p>
-          <p className="mt-2">
-            Powered by{" "}
-            <a href="https://www.ofinit.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              OfinIT
-            </a>
-          </p>
         </div>
       </footer>
       </div>

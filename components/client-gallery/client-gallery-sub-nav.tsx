@@ -2,18 +2,42 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import useSWR from "swr"
+import { Wallet } from "lucide-react"
 import { BrandedLogo } from "@/components/branding/branded-logo"
+import { useAuth } from "@/lib/auth-context"
 import {
   CLIENT_GALLERY_BASE,
   clientGalleryNavItems,
   isGalleryNavActive,
 } from "@/lib/client-gallery-nav-items"
+import {
+  type PhotoGalleryStatusResponse,
+  resolveClientGalleryLockedAction,
+} from "@/lib/client-gallery-access-ui"
 import { cn } from "@/lib/utils"
 
 export { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
 
 export function ClientGallerySubNav() {
+  const { user } = useAuth()
   const pathname = usePathname() ?? ""
+  const isStreamerOrStudio = user?.role === "streamer" || user?.role === "studio"
+  const { data } = useSWR<PhotoGalleryStatusResponse>(
+    isStreamerOrStudio ? "/api/photo-gallery-addon/status" : null,
+    (url: string) => fetch(url, { credentials: "include" }).then((r) => r.json()),
+    { revalidateOnFocus: true },
+  )
+
+  const entitled = data?.entitled === true
+  const lockAction = resolveClientGalleryLockedAction({ role: user?.role, status: data })
+  const dashboardItem = clientGalleryNavItems[0]
+  const visibleItems = entitled
+    ? clientGalleryNavItems
+    : [
+        dashboardItem,
+        { title: lockAction.label, href: lockAction.href, icon: Wallet },
+      ]
 
   return (
     <nav
@@ -33,7 +57,7 @@ export function ClientGallerySubNav() {
         Gallery
       </p>
       <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0 lg:pr-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {clientGalleryNavItems.map(({ title, href, icon: Icon }) => {
+        {visibleItems.map(({ title, href, icon: Icon }) => {
           const active = isGalleryNavActive(pathname, href)
           return (
             <li key={href} className="shrink-0 lg:w-full">

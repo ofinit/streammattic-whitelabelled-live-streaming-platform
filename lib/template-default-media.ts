@@ -129,29 +129,23 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   "tpl-charity":
     "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=2400&q=80",
 
-  /** Stream themes (ported HTML packs) — curated Unsplash when source assets are absent */
-  "tpl-stream-classic-banner":
-    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-voguish-hero":
-    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-digital-creative":
-    "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-showcase-home":
-    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-corporate-stage":
-    "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=2400&q=80",
+  /**
+   * Stream themes — hero thumbnails + watch fallback match assets under
+   * `public/templates/stream-legacy/<id>/` (synced from `templates/` via `npm run sync:stream-legacy`).
+   */
+  "tpl-stream-classic-banner": "/templates/stream-legacy/tpl-stream-classic-banner/img/1.jpg",
+  "tpl-stream-voguish-hero": "/templates/stream-legacy/tpl-stream-voguish-hero/assets/demo/bg/bg-7.jpg",
+  "tpl-stream-digital-creative": "/templates/stream-legacy/tpl-stream-digital-creative/assets/demo/bg/bg-7.jpg",
+  "tpl-stream-showcase-home": "/templates/stream-legacy/tpl-stream-showcase-home/images/banner/img-01.jpg",
+  "tpl-stream-corporate-stage": "/templates/stream-legacy/tpl-stream-corporate-stage/imagestemplate/full/conference.jpg",
   "tpl-stream-corporate-countdown":
-    "https://images.unsplash.com/photo-1511578314327-379afb476865?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-corporate-clean":
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-wedding-floral-heart":
-    "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-wedding-flex":
-    "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=2400&q=80",
-  "tpl-stream-wedding-cloud":
-    "https://images.unsplash.com/photo-1515934751635-c81c6bc5a41d?auto=format&fit=crop&w=2400&q=80",
+    "/templates/stream-legacy/tpl-stream-corporate-countdown/assets/img/gallery/gallery4.jpg",
+  "tpl-stream-corporate-clean": "/templates/stream-legacy/tpl-stream-corporate-clean/images/gallery/gallery-1.jpg",
+  "tpl-stream-wedding-floral-heart": "/templates/stream-legacy/tpl-stream-wedding-floral-heart/img/love-bg3.jpg",
+  "tpl-stream-wedding-flex": "/templates/stream-legacy/tpl-stream-wedding-flex/assets/img/gallery-1.jpg",
+  "tpl-stream-wedding-cloud": "/templates/stream-legacy/tpl-stream-wedding-cloud/assets/images/slider/slide-1.jpg",
   "tpl-stream-wedding-cinematic":
-    "https://images.unsplash.com/photo-1522673607200-1e2fbda5b9a2?auto=format&fit=crop&w=2400&q=80",
+    "/templates/stream-legacy/tpl-stream-wedding-cinematic/assets/rslider/assets/c6b68-slider-1.jpg",
 }
 
 export function getDefaultTemplateHeroBackdropUrl(templateId: string): string | undefined {

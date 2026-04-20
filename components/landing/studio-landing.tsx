@@ -66,6 +66,11 @@ function getServiceIcon(iconName: string) {
   return iconMap[iconName] || Camera
 }
 
+/** Saved JSON often omits `enabled`; treat missing as on (only explicit false hides). */
+function isBrandingToggleOn(item: { enabled?: boolean }): boolean {
+  return item.enabled !== false
+}
+
 /** Serif wordmark when no logo image — matches landing elegance (Playfair via --font-serif) */
 function StudioBrandNameText({
   branding,
@@ -125,6 +130,30 @@ function omitUndefined<T extends Record<string, unknown>>(obj: Partial<T>): Part
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>
 }
 
+/** When DB has no rows or every service is disabled, show platform template services on the landing page */
+function resolveServicesForLandingMerge(
+  base: Partial<Branding>,
+  fallback: BrandingService[] | undefined,
+): BrandingService[] | undefined {
+  const fb = fallback ?? []
+  const raw = base.services
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return fb.length ? fb : undefined
+  }
+  const anyVisible = raw.some((s) => s && typeof s === "object" && isBrandingToggleOn(s as BrandingService))
+  if (!anyVisible && fb.length > 0) {
+    return fb
+  }
+  return raw as BrandingService[]
+}
+
+/** Visible services for landing: toggled on, else platform defaults if nothing would show */
+function getStudioLandingServices(branding: Branding): BrandingService[] {
+  const primary = (branding.services || []).filter((s: BrandingService) => isBrandingToggleOn(s))
+  if (primary.length > 0) return primary
+  return (PLATFORM_LANDING_BRANDING.services || []).filter((s: BrandingService) => isBrandingToggleOn(s))
+}
+
 /** Merge saved/mock defaults with overrides (context or editor draft) for the studio landing page */
 export function mergeStudioLandingBranding(overrides: Partial<Branding>): Branding {
   const base = omitUndefined(overrides as Record<string, unknown>) as Partial<Branding>
@@ -134,7 +163,7 @@ export function mergeStudioLandingBranding(overrides: Partial<Branding>): Brandi
     ...base,
     heroImage: base.heroImage || P.heroImage,
     aboutImage: base.aboutImage || P.aboutImage,
-    services: base.services ?? P.services,
+    services: resolveServicesForLandingMerge(base, P.services),
     eventTypes: base.eventTypes ?? P.eventTypes,
     stats: base.stats ?? P.stats,
     testimonials: base.testimonials ?? P.testimonials,
@@ -472,7 +501,7 @@ function HeroSection({ branding }: { branding: Branding }) {
 }
 
 function ServicesSection({ branding }: { branding: Branding }) {
-  const services = (branding.services || []).filter((s: BrandingService) => s.enabled)
+  const services = getStudioLandingServices(branding)
   const hasServices = services.length > 0
 
   return (
@@ -505,7 +534,7 @@ function ServicesSection({ branding }: { branding: Branding }) {
 
         {/* Services Grid or Placeholder */}
         {hasServices ? (
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {services.map((service: BrandingService) => {
               const Icon = getServiceIcon(service.icon)
               return (
@@ -561,7 +590,7 @@ function ServicesSection({ branding }: { branding: Branding }) {
 }
 
 function EventTypesSection({ branding }: { branding: Branding }) {
-  const eventTypes = (branding.eventTypes || []).filter((e) => e.enabled)
+  const eventTypes = (branding.eventTypes || []).filter((e) => isBrandingToggleOn(e))
   if (eventTypes.length === 0) return null
 
   return (
@@ -622,7 +651,7 @@ function EventTypesSection({ branding }: { branding: Branding }) {
 }
 
 function WhyChooseUsSection({ branding }: { branding: Branding }) {
-  const differentiators = (branding.differentiators || []).filter((d) => d.enabled)
+  const differentiators = (branding.differentiators || []).filter((d) => isBrandingToggleOn(d))
   const hasDifferentiators = differentiators.length > 0
 
   // Default differentiators if none configured
@@ -1314,7 +1343,7 @@ function SiteFooter({ branding }: { branding: Branding }) {
     { url: branding.linkedinUrl, icon: Linkedin, label: "LinkedIn" },
   ].filter((s) => s.url)
 
-  const services = (branding.services || []).filter((s: BrandingService) => s.enabled)
+  const services = getStudioLandingServices(branding)
   const hasLegal = branding.termsConditions || branding.privacyPolicy || branding.refundPolicy
 
   return (

@@ -31,6 +31,20 @@ function parseJsonArray<T>(v: unknown): T[] | undefined {
   return undefined
 }
 
+/** Normalize services from JSONB: missing `enabled` means on; ensure required fields for UI */
+function mapServicesFromRow(raw: unknown): BrandingService[] | undefined {
+  const arr = parseJsonArray<BrandingService>(raw)
+  if (arr == null) return undefined
+  if (arr.length === 0) return []
+  return arr.map((s, i) => ({
+    id: typeof s.id === "string" && s.id.trim() ? s.id : `svc-${i}`,
+    title: typeof s.title === "string" ? s.title : "Service",
+    description: typeof s.description === "string" ? s.description : "",
+    icon: typeof s.icon === "string" && s.icon ? s.icon : "Camera",
+    enabled: s.enabled === false ? false : true,
+  }))
+}
+
 /** Studio row from lookup (toCamel) + userId from domains join */
 export function studioLookupRowToBranding(raw: Record<string, unknown>, userId: string): Branding {
   const id = typeof raw.id === "string" ? raw.id : userId
@@ -67,7 +81,7 @@ export function studioLookupRowToBranding(raw: Record<string, unknown>, userId: 
     refundPolicy: raw.refundPolicy as string | undefined,
     heroImage: raw.heroImage as string | undefined,
     aboutImage: raw.aboutImage as string | undefined,
-    services: parseJsonArray<BrandingService>(raw.services),
+    services: mapServicesFromRow(raw.services),
     eventTypes: parseJsonArray<BrandingEventType>(raw.eventTypes),
     stats: parseJsonArray<BrandingStat>(raw.stats),
     testimonials: parseJsonArray<BrandingTestimonial>(raw.testimonials),

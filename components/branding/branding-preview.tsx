@@ -32,7 +32,9 @@ export function BrandingPreview({ branding }: BrandingPreviewProps) {
     )
   }
 
-  const services = (branding.services || PLATFORM_LANDING_BRANDING.services || []).filter((s: BrandingService) => s.enabled).slice(0, 4)
+  const services = (branding.services || PLATFORM_LANDING_BRANDING.services || []).filter(
+    (s: BrandingService) => s.enabled !== false,
+  )
   const stats = branding.stats || PLATFORM_LANDING_BRANDING.stats || []
   const testimonial = (branding.testimonials || PLATFORM_LANDING_BRANDING.testimonials || [])[0]
   const theme = getThemeConfig(branding.selectedTheme)

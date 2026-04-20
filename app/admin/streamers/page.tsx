@@ -441,9 +441,43 @@ export default function AdminStreamersPage() {
             name: addFundsStreamer.name,
             balance: (addFundsStreamer.walletBalance ?? 0) * 100,
           }}
-          onConfirm={(amount, type, reason) => {
-            console.log("Adjust wallet:", addFundsStreamer.name, type, amount, reason)
-            setAddFundsStreamer(null)
+          onConfirm={async (amountInPaise, type, reason) => {
+            try {
+              const amountInRupees = amountInPaise / 100
+              const res = await fetch("/api/wallets/adjust", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  userId: addFundsStreamer.id,
+                  amount: amountInRupees,
+                  type,
+                  category: "manual_adjustment",
+                  reason,
+                }),
+              })
+
+              const data = (await res.json().catch(() => ({}))) as { error?: string; newBalance?: number }
+              if (!res.ok) {
+                toast.error(data.error || "Failed to adjust wallet")
+                return
+              }
+
+              const newBalance = Number(data.newBalance ?? 0)
+              setStreamers((prev) =>
+                prev.map((s) => (s.id === addFundsStreamer.id ? { ...s, walletBalance: newBalance } : s)),
+              )
+
+              toast.success(
+                type === "credit"
+                  ? `Funds added to ${addFundsStreamer.name}`
+                  : `Funds deducted from ${addFundsStreamer.name}`,
+              )
+              setAddFundsStreamer(null)
+            } catch (error) {
+              console.error(error)
+              toast.error("Failed to adjust wallet")
+            }
           }}
         />
       )}

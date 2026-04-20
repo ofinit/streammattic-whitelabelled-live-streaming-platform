@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
 import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
+import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
 import { toast } from "sonner"
 
 export default function AdminStudiosPage() {
@@ -35,6 +36,7 @@ export default function AdminStudiosPage() {
   const [domainStudio, setDomainStudio] = useState<Studio | null>(null)
   const [youtubeStudio, setYoutubeStudio] = useState<Studio | null>(null)
   const [pricingStudio, setPricingStudio] = useState<Studio | null>(null)
+  const [addFundsStudio, setAddFundsStudio] = useState<Studio | null>(null)
 
   const [studios, setStudios] = useState<Studio[]>([])
   const [loading, setLoading] = useState(true)
@@ -224,7 +226,7 @@ export default function AdminStudiosPage() {
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setAddFundsStudio(item)}>
               <Wallet className="mr-2 h-4 w-4" />
               Add Funds
             </DropdownMenuItem>
@@ -362,6 +364,55 @@ export default function AdminStudiosPage() {
               .then(data => { if (data.users) setStudios(data.users) })
               .catch(console.error)
             setPricingStudio(null)
+          }}
+        />
+      )}
+
+      {addFundsStudio && (
+        <AdjustWalletDialog
+          open={!!addFundsStudio}
+          onOpenChange={(open) => !open && setAddFundsStudio(null)}
+          targetUser={{
+            id: addFundsStudio.id,
+            name: addFundsStudio.name,
+            balance: Number(addFundsStudio.walletBalance ?? 0),
+          }}
+          onConfirm={async (amountInPaise, type, reason) => {
+            try {
+              const amountInRupees = amountInPaise / 100
+              const res = await fetch("/api/wallets/adjust", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  userId: addFundsStudio.id,
+                  amount: amountInRupees,
+                  type,
+                  category: "manual_adjustment",
+                  reason,
+                }),
+              })
+
+              const data = (await res.json().catch(() => ({}))) as { error?: string; newBalance?: number }
+              if (!res.ok) {
+                toast.error(data.error || "Failed to adjust wallet")
+                return
+              }
+
+              const newBalance = Number(data.newBalance ?? 0)
+              setStudios((prev) =>
+                prev.map((s) => (s.id === addFundsStudio.id ? { ...s, walletBalance: newBalance } : s)),
+              )
+              toast.success(
+                type === "credit"
+                  ? `Funds added to ${addFundsStudio.name}`
+                  : `Funds deducted from ${addFundsStudio.name}`,
+              )
+              setAddFundsStudio(null)
+            } catch (error) {
+              console.error(error)
+              toast.error("Failed to adjust wallet")
+            }
           }}
         />
       )}

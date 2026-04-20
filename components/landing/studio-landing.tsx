@@ -53,6 +53,10 @@ import type { Branding, BrandingService, BrandingGalleryImage, BrandingDifferent
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
 import { cn } from "@/lib/utils"
 import { normalizeBrandingImageUrl } from "@/lib/resolve-branding-image-url"
+import {
+  resolveStudioLandingPageMeta,
+  STUDIO_LANDING_DEFAULT_META_DESCRIPTION,
+} from "@/lib/studio-landing-meta"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
@@ -377,15 +381,16 @@ function HeroSection({ branding }: { branding: Branding }) {
       {/* Background Image with Overlay */}
       {branding.heroImage ? (
         <div className="absolute inset-0">
-          <img
-            src={branding.heroImage}
-            alt="Hero background"
-            className="h-full w-full object-cover"
-            crossOrigin="anonymous"
+          {/* Background layer (not img) so the image never tiles/repeats; cover + no-repeat */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+            style={{ backgroundImage: `url(${branding.heroImage})` }}
+            role="img"
+            aria-label="Hero background"
           />
           {/* Lighter overlay so the photo stays visible; text legibility via shadows + bottom scrim */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/35 to-slate-950/75" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/35 to-slate-950/75 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/30 pointer-events-none" />
         </div>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
@@ -407,14 +412,16 @@ function HeroSection({ branding }: { branding: Branding }) {
         />
       </div>
 
-      {/* Grid Pattern Overlay */}
-      <div
-        className={`absolute inset-0 ${hasHeroPhoto ? "opacity-[0.015]" : "opacity-[0.03]"}`}
-        style={{
-          backgroundImage: `linear-gradient(${branding.themeColor}20 1px, transparent 1px), linear-gradient(90deg, ${branding.themeColor}20 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
-      />
+      {/* Grid Pattern Overlay — hide on photo hero to avoid a moiré / “repeating” look */}
+      {!hasHeroPhoto && (
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(${branding.themeColor}20 1px, transparent 1px), linear-gradient(90deg, ${branding.themeColor}20 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
+        />
+      )}
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-32 sm:py-40">
         <div className="text-center">
@@ -436,8 +443,7 @@ function HeroSection({ branding }: { branding: Branding }) {
 
           {/* Subtitle */}
           <p className="mx-auto max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-200 mb-8 sm:mb-10 px-4 [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
-            {branding.metaDescription ||
-              "Professional photography, videography and live streaming services for your special events. Capturing moments that last forever."}
+            {branding.metaDescription || STUDIO_LANDING_DEFAULT_META_DESCRIPTION}
           </p>
 
           {/* CTA Buttons */}
@@ -1466,8 +1472,7 @@ function SiteFooter({ branding }: { branding: Branding }) {
               />
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-400 mb-4 sm:mb-6">
-              {branding.metaDescription ||
-                "Professional photography, videography and live streaming services."}
+              {branding.metaDescription || STUDIO_LANDING_DEFAULT_META_DESCRIPTION}
             </p>
             {socialLinks.length > 0 && (
               <div className="flex gap-2 sm:gap-3">
@@ -1623,16 +1628,18 @@ export function StudioLandingPage({
   const branding = draftBranding != null ? mergeStudioLandingBranding(draftBranding) : contextBranding
 
   useEffect(() => {
-    const title = (branding.metaTitle || branding.brandName || "").trim()
-    if (title) document.title = title
-    const desc = branding.metaDescription?.trim() ?? ""
+    const { title, description } = resolveStudioLandingPageMeta(
+      branding,
+      branding.brandName || "Studio",
+    )
+    document.title = title
     let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null
     if (!meta) {
       meta = document.createElement("meta")
       meta.setAttribute("name", "description")
       document.head.appendChild(meta)
     }
-    meta.setAttribute("content", desc)
+    meta.setAttribute("content", description)
     const fav = branding.favicon?.trim()
     if (fav) applyFaviconHrefToDocument(fav)
   }, [branding])

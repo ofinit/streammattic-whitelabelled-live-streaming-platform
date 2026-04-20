@@ -29,6 +29,10 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { getPlatformSetting } from "@/lib/db-queries"
 import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import { getPlatformFaviconUrl, DEFAULT_FAVICON_PATH } from "@/lib/favicon-resolve"
+import {
+  absoluteMetadataAssetUrl,
+  resolveStudioLandingPageMeta,
+} from "@/lib/studio-landing-meta"
 
 export async function generateMetadata(): Promise<Metadata> {
   const platformName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
@@ -39,6 +43,44 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase = new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000")
   } catch {
     metadataBase = new URL("http://localhost:3000")
+  }
+
+  const initial = await getInitialBrandingForLayout()
+
+  if (initial?.isWhiteLabel && initial.branding) {
+    const b = initial.branding
+    const { title, description } = resolveStudioLandingPageMeta(b, platformName)
+    const ogRaw = b.heroImage?.trim() || b.companyLogo?.trim()
+    const ogFromStudio = absoluteMetadataAssetUrl(ogRaw, metadataBase)
+    const ogImageUrl = ogFromStudio ?? absoluteMetadataAssetUrl(brandIcon, metadataBase) ?? brandIcon
+
+    const favRaw = b.favicon?.trim()
+    const iconUrl = absoluteMetadataAssetUrl(favRaw, metadataBase) ?? brandIcon
+
+    return {
+      title,
+      description,
+      metadataBase,
+      openGraph: {
+        title,
+        description,
+        siteName: b.brandName || platformName,
+        type: "website",
+        images: [{ url: ogImageUrl }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [ogImageUrl],
+      },
+      icons: {
+        icon: iconUrl.endsWith(".svg")
+          ? [{ url: iconUrl, type: "image/svg+xml" }]
+          : [{ url: iconUrl }],
+        apple: [{ url: iconUrl }],
+      },
+    }
   }
 
   const title = `${platformName} - White-Label Live Streaming Platform`

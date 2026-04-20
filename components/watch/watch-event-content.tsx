@@ -1420,10 +1420,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
                     <Radio className="h-10 w-10 text-muted-foreground" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-lg font-semibold text-white">This stream has ended</p>
-                    <p className="text-sm text-white/50">Thanks for watching!</p>
-                  </div>
                   <div className="flex items-center gap-2 text-white/50 text-sm">
                     <Eye className="h-4 w-4" />
                     <span>{(event.totalViews ?? 0).toLocaleString()} total views</span>

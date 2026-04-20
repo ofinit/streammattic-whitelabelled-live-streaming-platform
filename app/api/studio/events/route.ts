@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
-      validityExpiresAt, validityDays, crewPin,
+      validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
     } = body
 
     if (!title || !title.trim()) return NextResponse.json({ error: "Event title is required" }, { status: 400 })
@@ -219,8 +219,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const streamKey = isPendingCreate ? null : generateStreamKey()
-    const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
+    const providedRtmpUrl =
+      typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim() ? bodyRtmpUrl.trim() : null
+    const providedStreamKey =
+      typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null
+    const streamKey = isPendingCreate ? null : (providedStreamKey || generateStreamKey())
+    const rtmpUrl = providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
 
     // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
     const resolvedTemplateId =
@@ -283,7 +287,7 @@ export async function POST(req: NextRequest) {
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
         ${insertStreamType}, ${streamKey},
-        ${!isPendingCreate && ["rtmp", "youtube_api"].includes(insertStreamType || "") ? rtmpUrl : null},
+        ${!isPendingCreate && (["rtmp", "youtube_api"].includes(insertStreamType || "") || !!providedRtmpUrl) ? rtmpUrl : null},
         ${youtubeUrl || null}, ${embedCode || null},
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
@@ -356,7 +360,7 @@ export async function PUT(req: NextRequest) {
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData, timezone, showScheduledPage, showRecording,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
-      validityExpiresAt, validityDays, crewPin,
+      validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
       streamType, youtubeUrl, embedCode, simulcastConfig,
       isSuspended,
     } = body
@@ -650,6 +654,14 @@ export async function PUT(req: NextRequest) {
         ? (typeof photographerContact === "object" && photographerContact ? JSON.stringify(photographerContact) : "{}")
         : JSON.stringify(typeof prevPhotographer === "object" && prevPhotographer ? prevPhotographer : {})
     const finalCrewPinHash = crewPinHash !== undefined ? crewPinHash : (prev.crew_pin_hash as string | null) ?? null
+    const finalRtmpUrl =
+      bodyRtmpUrl === undefined
+        ? ((prev.rtmp_url as string | null) ?? null)
+        : (typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim() ? bodyRtmpUrl.trim() : null)
+    const finalStreamKey =
+      bodyStreamKey === undefined
+        ? ((prev.stream_key as string | null) ?? null)
+        : (typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null)
 
     const nextSimulcastPersisted =
       simulcastConfig !== undefined || streamTypeForUpdate !== undefined ? storedSimulcastJson : existingSim
@@ -668,6 +680,8 @@ export async function PUT(req: NextRequest) {
         status = COALESCE(${status ?? null}, status),
         scheduled_at = COALESCE(${scheduledAt ?? null}, scheduled_at),
         stream_type = COALESCE(${streamTypeForUpdate ?? null}, stream_type),
+        rtmp_url = ${finalRtmpUrl},
+        stream_key = ${finalStreamKey},
         youtube_url = COALESCE(${youtubeUrlParam}, youtube_url),
         embed_code = COALESCE(${embedCodeParam}, embed_code),
         simulcast_config = ${JSON.stringify(nextSimulcastPersisted)}::jsonb,

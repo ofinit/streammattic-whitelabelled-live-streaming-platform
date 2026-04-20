@@ -1709,6 +1709,8 @@ export function EventFormDialog({
       subtitle: formData.subtitle.trim(),
       description: formData.description,
       streamType: formData.streamType.trim() ? formData.streamType : undefined,
+      rtmpUrl: formData.rtmpUrl.trim() ? formData.rtmpUrl.trim() : undefined,
+      streamKey: formData.streamKey.trim() ? formData.streamKey.trim() : undefined,
       slug: slug || undefined,
       scheduledAt: scheduledAtUtc,
       timezone: formData.scheduledAt ? timezone : undefined,
@@ -2877,6 +2879,51 @@ export function EventFormDialog({
                   </div>
                 )}
               </div>
+
+              {formData.streamType && (
+                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                  <Alert className="border-primary/40 bg-primary/5">
+                    <Lock className="h-4 w-4" />
+                    <AlertTitle>Crew credentials (FMS)</AlertTitle>
+                    <AlertDescription>
+                      Enter the RTMP/FMS URL and stream key you want to share with crew. When Crew PIN is set, these
+                      values are shown on <code className="font-mono text-[11px]">/crew</code> after PIN verification.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <Label htmlFor="fms-url">FMS URL (RTMP Server)</Label>
+                    <Input
+                      id="fms-url"
+                      value={formData.rtmpUrl || ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, rtmpUrl: e.target.value }))}
+                      placeholder="rtmp://your-fms-server/live"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fms-stream-key">Stream Key</Label>
+                    <div className="relative">
+                      <Input
+                        id="fms-stream-key"
+                        value={formData.streamKey || ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, streamKey: e.target.value }))}
+                        type={showStreamKey ? "text" : "password"}
+                        placeholder="Enter stream key"
+                        className="font-mono text-sm pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full"
+                        onClick={() => setShowStreamKey(!showStreamKey)}
+                      >
+                        {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {isEditing && formData.streamType === "rtmp" && ((event as any)?.hasCrewPin || crewPin.trim()) && (
                   <div className="space-y-2 p-4 rounded-lg border bg-muted/30">

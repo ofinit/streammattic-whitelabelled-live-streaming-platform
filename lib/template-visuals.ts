@@ -172,10 +172,24 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-halloween": "border-l-4 border-l-orange-500",
   "tpl-fitness": "border-l-4 border-l-lime-500",
   "tpl-charity": "border-l-4 border-l-violet-300",
+  "tpl-stream-classic-banner": "border-l-4 border-l-slate-400",
+  "tpl-stream-voguish-hero": "border-l-4 border-l-teal-400",
+  "tpl-stream-digital-creative": "border-l-4 border-l-fuchsia-500",
+  "tpl-stream-showcase-home": "border-l-4 border-l-amber-400",
+  "tpl-stream-corporate-stage": "border-l-4 border-l-blue-500",
+  "tpl-stream-corporate-countdown": "border-l-4 border-l-indigo-400",
+  "tpl-stream-corporate-clean": "border-l-4 border-l-slate-500",
+  "tpl-stream-wedding-floral-heart": "border-l-4 border-l-rose-400",
+  "tpl-stream-wedding-flex": "border-l-4 border-l-pink-400",
+  "tpl-stream-wedding-cloud": "border-l-4 border-l-sky-400",
+  "tpl-stream-wedding-cinematic": "border-l-4 border-l-purple-500",
 }
 
 export function getTemplateCategoryAndName(templateId: string): { category: string; name: string } {
   // Direct mapping — keep template visuals independent of the event template registry
+  if (templateId.startsWith("tpl-stream-wedding-")) return { category: "Wedding", name: "Stream wedding" }
+  if (templateId.startsWith("tpl-stream-corporate-")) return { category: "Corporate", name: "Stream corporate" }
+  if (templateId.startsWith("tpl-stream-")) return { category: "General", name: "Stream" }
   if (templateId.includes("wedding")) return { category: "Wedding", name: "Wedding" }
   if (templateId.includes("corporate")) return { category: "Corporate", name: "Corporate" }
   if (templateId === "tpl-concert") return { category: "Entertainment", name: "Concert" }
@@ -229,7 +243,8 @@ export function extractTemplateBannerContent(
     templateId === "tpl-wedding-celestial" ||
     templateId === "tpl-wedding-traditional-hindu" ||
     templateId === "tpl-christian-wedding-rose" ||
-    templateId === "tpl-muslim-wedding-nikah"
+    templateId === "tpl-muslim-wedding-nikah" ||
+    templateId.startsWith("tpl-stream-wedding-")
   ) {
     const couple = [d.brideName, d.groomName].filter(Boolean).join(" & ")
     const lines: string[] = []
@@ -280,7 +295,11 @@ export function extractTemplateBannerContent(
     return { headline: match || eventTitle, accent: eventTitle !== match ? eventTitle : null, lines }
   }
 
-  if (templateId === "tpl-corporate" || templateId === "tpl-corporate-tech-forward") {
+  if (
+    templateId === "tpl-corporate" ||
+    templateId === "tpl-corporate-tech-forward" ||
+    templateId.startsWith("tpl-stream-corporate-")
+  ) {
     const lines: string[] = []
     pushUnique(lines, d.companyName)
     const speaker = [d.speakerName, d.speakerTitle].filter(Boolean).join(" · ")

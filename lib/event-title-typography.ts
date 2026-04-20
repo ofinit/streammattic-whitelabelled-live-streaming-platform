@@ -13,9 +13,6 @@ export const TITLE_SIZE_SLIDER_STEP = 0.125
 
 /** Default hero base (rem) when titleFontSizeRem is not set — tuned per template */
 export function getTemplateDefaultTitleRem(templateId: string): number {
-  if (templateId.startsWith("tpl-stream-wedding-")) return 3.5
-  if (templateId.startsWith("tpl-stream-corporate-")) return 2.375
-  if (templateId.startsWith("tpl-stream-")) return 2
   switch (templateId) {
     case "tpl-wedding-midnight":
       return 4

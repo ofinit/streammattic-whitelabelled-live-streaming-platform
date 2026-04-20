@@ -56,18 +56,6 @@ import { HalloweenTemplate } from "@/components/templates/halloween-template"
 import { FitnessTemplate } from "@/components/templates/fitness-template"
 import { CharityTemplate } from "@/components/templates/charity-template"
 
-import { StreamClassicBannerTemplate } from "@/components/templates/stream-classic-banner-template"
-import { StreamVoguishHeroTemplate } from "@/components/templates/stream-voguish-hero-template"
-import { StreamDigitalCreativeTemplate } from "@/components/templates/stream-digital-creative-template"
-import { StreamShowcaseHomeTemplate } from "@/components/templates/stream-showcase-home-template"
-import { StreamCorporateStageTemplate } from "@/components/templates/stream-corporate-stage-template"
-import { StreamCorporateCountdownTemplate } from "@/components/templates/stream-corporate-countdown-template"
-import { StreamCorporateCleanTemplate } from "@/components/templates/stream-corporate-clean-template"
-import { StreamWeddingFloralHeartTemplate } from "@/components/templates/stream-wedding-floral-heart-template"
-import { StreamWeddingFlexTemplate } from "@/components/templates/stream-wedding-flex-template"
-import { StreamWeddingCloudTemplate } from "@/components/templates/stream-wedding-cloud-template"
-import { StreamWeddingCinematicTemplate } from "@/components/templates/stream-wedding-cinematic-template"
-
 const templateContent: Record<
   string,
   {
@@ -260,50 +248,6 @@ const templateContent: Record<
     title: "Hope Foundation Fundraiser",
     description: "Together we make a difference",
   },
-  "tpl-stream-classic-banner": {
-    title: "Annual Gala Live",
-    description: "Join us for keynote sessions and celebration — streaming to guests everywhere.",
-  },
-  "tpl-stream-voguish-hero": {
-    title: "Riley & Jordan",
-    description: "We solicit your gracious virtual presence with family and friends on this special day.",
-  },
-  "tpl-stream-digital-creative": {
-    title: "Creative Showcase 2026",
-    description: "Experience the launch live — design, motion, and music in one stream.",
-  },
-  "tpl-stream-showcase-home": {
-    title: "Open House Live Tour",
-    description: "Walk through the space with us — streaming in full HD with Q&A.",
-  },
-  "tpl-stream-corporate-stage": {
-    title: "Innovation Summit 2026",
-    description: "Keynotes, panels, and live Q&A with industry leaders — join from anywhere.",
-  },
-  "tpl-stream-corporate-countdown": {
-    title: "Global Summit Live",
-    description: "The countdown ends here — watch the keynote and live announcements.",
-  },
-  "tpl-stream-corporate-clean": {
-    title: "Quarterly Business Update",
-    description: "A clean, focused live stream for investors and teams — slides and Q&A included.",
-  },
-  "tpl-stream-wedding-floral-heart": {
-    title: "Amelia & Henry",
-    description: "With love and gratitude — join our ceremony live with family and friends near and far.",
-  },
-  "tpl-stream-wedding-flex": {
-    title: "Sophie & Daniel",
-    description: "Celebrate with us — live stream, photos, and well-wishes from everyone you love.",
-  },
-  "tpl-stream-wedding-cloud": {
-    title: "Elena & Mateo",
-    description: "Head in the clouds — join our wedding live from wherever you are.",
-  },
-  "tpl-stream-wedding-cinematic": {
-    title: "Isla & Marcus",
-    description: "A cinematic celebration — live stream in full color with everyone who matters.",
-  },
 }
 
 export default function TemplatePreviewPage(props: { params: Promise<{ templateId: string }> }) {
@@ -449,28 +393,6 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <FitnessTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-charity":
       return <CharityTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-classic-banner":
-      return <StreamClassicBannerTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-voguish-hero":
-      return <StreamVoguishHeroTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-digital-creative":
-      return <StreamDigitalCreativeTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-showcase-home":
-      return <StreamShowcaseHomeTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-corporate-stage":
-      return <StreamCorporateStageTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-corporate-countdown":
-      return <StreamCorporateCountdownTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-corporate-clean":
-      return <StreamCorporateCleanTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-wedding-floral-heart":
-      return <StreamWeddingFloralHeartTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-wedding-flex":
-      return <StreamWeddingFlexTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-wedding-cloud":
-      return <StreamWeddingCloudTemplate eventTitle={content.title} eventDescription={content.description} />
-    case "tpl-stream-wedding-cinematic":
-      return <StreamWeddingCinematicTemplate eventTitle={content.title} eventDescription={content.description} />
     default:
       return <DefaultTemplate eventTitle={content.title} eventDescription={content.description} />
   }

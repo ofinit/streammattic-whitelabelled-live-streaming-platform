@@ -128,24 +128,6 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   /** Charity */
   "tpl-charity":
     "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=2400&q=80",
-
-  /**
-   * Stream themes — hero thumbnails + watch fallback match assets under
-   * `public/templates/stream-legacy/<id>/` (synced from `templates/` via `npm run sync:stream-legacy`).
-   */
-  "tpl-stream-classic-banner": "/templates/stream-legacy/tpl-stream-classic-banner/img/1.jpg",
-  "tpl-stream-voguish-hero": "/templates/stream-legacy/tpl-stream-voguish-hero/assets/demo/bg/bg-7.jpg",
-  "tpl-stream-digital-creative": "/templates/stream-legacy/tpl-stream-digital-creative/assets/demo/bg/bg-7.jpg",
-  "tpl-stream-showcase-home": "/templates/stream-legacy/tpl-stream-showcase-home/images/banner/img-01.jpg",
-  "tpl-stream-corporate-stage": "/templates/stream-legacy/tpl-stream-corporate-stage/imagestemplate/full/conference.jpg",
-  "tpl-stream-corporate-countdown":
-    "/templates/stream-legacy/tpl-stream-corporate-countdown/assets/img/gallery/gallery4.jpg",
-  "tpl-stream-corporate-clean": "/templates/stream-legacy/tpl-stream-corporate-clean/images/gallery/gallery-1.jpg",
-  "tpl-stream-wedding-floral-heart": "/templates/stream-legacy/tpl-stream-wedding-floral-heart/img/love-bg3.jpg",
-  "tpl-stream-wedding-flex": "/templates/stream-legacy/tpl-stream-wedding-flex/assets/img/gallery-1.jpg",
-  "tpl-stream-wedding-cloud": "/templates/stream-legacy/tpl-stream-wedding-cloud/assets/images/slider/slide-1.jpg",
-  "tpl-stream-wedding-cinematic":
-    "/templates/stream-legacy/tpl-stream-wedding-cinematic/assets/rslider/assets/c6b68-slider-1.jpg",
 }
 
 export function getDefaultTemplateHeroBackdropUrl(templateId: string): string | undefined {

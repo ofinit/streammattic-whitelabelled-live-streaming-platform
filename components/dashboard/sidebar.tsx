@@ -211,7 +211,7 @@ type StudioSetupInfoResponse = {
 }
 
 /** Short sidebar label; full product name from catalog in tooltip / aria. */
-const PHOTO_GALLERY_MENU_SHORT = "AI photo gallery"
+const PHOTO_GALLERY_MENU_SHORT = "AI Photo Gallery"
 
 function PhotoGalleryMenuBadge({ collapsed }: { collapsed: boolean }) {
   return (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2, Image, Layers, Sparkles, Megaphone, Plus, Trash2, Camera, Film, Radio, Plane, Music, Mic2, Star, Award, Clock, Users, Zap, Heart, Shield, Gift, Truck, Headphones } from "lucide-react"
+import { Save, Upload, ExternalLink, Palette, Globe, FileText, Mail, ShieldCheck, Layout, CheckCircle2, Image, Layers, Sparkles, Megaphone, Plus, Trash2, Camera, Film, Radio, SatelliteDish, Music, Mic2, Star, Award, Clock, Users, Zap, Heart, Shield, Gift, Truck, Headphones } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LANDING_THEME_CATEGORY_TABS,
@@ -847,7 +847,23 @@ export function BrandingForm({ branding, onSave, onChange }: BrandingFormProps) 
 
 // Available icons for services and differentiators
 const AVAILABLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Camera, Film, Radio, Plane, Music, Mic2, Star, Award, Clock, Users, Zap, Heart, Shield, Gift, Truck, Headphones
+  Camera,
+  Film,
+  Radio,
+  SatelliteDish,
+  Drone: SatelliteDish,
+  Music,
+  Mic2,
+  Star,
+  Award,
+  Clock,
+  Users,
+  Zap,
+  Heart,
+  Shield,
+  Gift,
+  Truck,
+  Headphones,
 }
 
 // Services Editor Component

@@ -118,7 +118,7 @@ export const PLATFORM_LANDING_BRANDING: Branding = {
       id: "svc-4",
       title: "Aerial Photography",
       description: "Stunning drone footage and aerial photography for unique perspectives on your events.",
-      icon: "Plane",
+      icon: "Drone",
       enabled: true,
     },
   ],

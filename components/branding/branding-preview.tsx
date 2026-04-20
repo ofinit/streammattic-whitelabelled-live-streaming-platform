@@ -1,6 +1,6 @@
 "use client"
 
-import { Monitor, Smartphone, Camera, Film, Radio, Plane, Star, ExternalLink } from "lucide-react"
+import { Monitor, Smartphone, Camera, Film, Radio, SatelliteDish, Star, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -14,7 +14,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
   Camera,
   Film,
   Radio,
-  Plane,
+  SatelliteDish,
+  Drone: SatelliteDish,
+  Plane: SatelliteDish,
 }
 
 interface BrandingPreviewProps {

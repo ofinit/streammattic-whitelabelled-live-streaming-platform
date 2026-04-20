@@ -14,7 +14,7 @@ import {
   Camera,
   Film,
   Radio,
-  Plane,
+  SatelliteDish,
   Phone,
   Mail,
   MapPin,
@@ -47,7 +47,6 @@ import {
   CheckCircle2,
   X as XIcon,
   Maximize2,
-  type LucideIcon,
 } from "lucide-react"
 import type { Branding, BrandingService, BrandingGalleryImage, BrandingDifferentiator } from "@/lib/types"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
@@ -62,7 +61,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
   Camera,
   Film,
   Radio,
-  Plane,
+  SatelliteDish,
+  Drone: SatelliteDish,
+  Plane: SatelliteDish,
   Music,
   Mic2,
   ImageIcon,
@@ -79,7 +80,7 @@ function isBrandingToggleOn(item: { enabled?: boolean }): boolean {
   return item.enabled !== false
 }
 
-/** Serif wordmark when no logo image — matches landing elegance (Playfair via --font-serif) */
+/** Wordmark fallback when no logo image — inherits active landing theme font. */
 function StudioBrandNameText({
   branding,
   className,
@@ -90,7 +91,7 @@ function StudioBrandNameText({
   return (
     <span
       className={cn(
-        "font-serif text-xl sm:text-2xl font-semibold tracking-[0.02em] text-white antialiased [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]",
+        "text-xl sm:text-2xl font-semibold tracking-[0.02em] text-white antialiased [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]",
         className
       )}
     >
@@ -1279,59 +1280,14 @@ function AboutSection({ branding }: { branding: Branding }) {
 
 /** Third column: physical location, or first social profile if no address (avoids an empty grid cell). */
 function getThirdContactCard(branding: Branding):
-  | { kind: "location"; text: string }
-  | { kind: "social"; label: string; href: string; Icon: LucideIcon }
-  | null {
+  | { kind: "location"; text: string } {
   const addr = branding.address?.trim()
   if (addr) return { kind: "location", text: addr }
-
-  const socials: { label: string; href?: string; Icon: LucideIcon }[] = [
-    { label: "Instagram", href: branding.instagramUrl, Icon: Instagram },
-    { label: "YouTube", href: branding.youtubeUrl, Icon: Youtube },
-    { label: "Facebook", href: branding.facebookUrl, Icon: Facebook },
-    { label: "X", href: branding.twitterUrl, Icon: Twitter },
-    { label: "LinkedIn", href: branding.linkedinUrl, Icon: Linkedin },
-  ]
-  for (const s of socials) {
-    const h = s.href?.trim()
-    if (h) return { kind: "social", label: s.label, href: h, Icon: s.Icon }
-  }
-  return null
+  return { kind: "location", text: "Address coming soon" }
 }
 
 const contactCardShell =
   "group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
-
-function SocialContactCard({
-  branding,
-  card,
-  className,
-}: {
-  branding: Branding
-  card: { kind: "social"; label: string; href: string; Icon: LucideIcon }
-  className?: string
-}) {
-  const Icon = card.Icon
-  return (
-    <a
-      href={card.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(contactCardShell, className)}
-    >
-      <div
-        className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
-        style={{ backgroundColor: `${branding.themeColor}15` }}
-      >
-        <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: branding.themeColor }} />
-      </div>
-      <div className="text-center">
-        <p className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider mb-1">{card.label}</p>
-        <p className="font-semibold text-white text-sm sm:text-base">Follow us</p>
-      </div>
-    </a>
-  )
-}
 
 function ContactSection({ branding }: { branding: Branding }) {
   const hasPhone = Boolean(branding.phone?.trim())
@@ -1457,9 +1413,6 @@ function ContactSection({ branding }: { branding: Branding }) {
             </div>
           )}
 
-          {thirdCard?.kind === "social" && (
-            <SocialContactCard branding={branding} card={thirdCard} className={thirdSpansRow} />
-          )}
         </div>
         )}
 
@@ -1733,13 +1686,6 @@ export function StudioLandingPage({
         <ServicesSection branding={branding} />
         <WhyChooseUsSection branding={branding} />
         <EventTypesSection branding={branding} />
-        <CTABanner 
-          branding={branding} 
-          title="View Our Portfolio"
-          subtitle="See our recent work and imagine what we can create for you"
-          buttonText="View Gallery"
-          buttonUrl="#gallery"
-        />
         <GallerySection branding={branding} />
         <TestimonialsSection branding={branding} />
         <AboutSection branding={branding} />

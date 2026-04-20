@@ -2880,6 +2880,18 @@ export function EventFormDialog({
                 )}
               </div>
 
+              {isYoutubeEmbedFormType(formData.streamType) && (
+                <div className="space-y-2">
+                  <Label htmlFor="youtubeUrl">YouTube Live URL *</Label>
+                  <Input
+                    id="youtubeUrl"
+                    value={formData.youtubeUrl}
+                    onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+              )}
+
               {formData.streamType && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                   <Alert className="border-primary/40 bg-primary/5">
@@ -3176,18 +3188,6 @@ export function EventFormDialog({
                     </Card>
                   )}
                 </>
-              )}
-
-              {isYoutubeEmbedFormType(formData.streamType) && (
-                <div className="space-y-2">
-                  <Label htmlFor="youtubeUrl">YouTube Live URL *</Label>
-                  <Input
-                    id="youtubeUrl"
-                    value={formData.youtubeUrl}
-                    onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
-                    placeholder="https://youtube.com/watch?v=..."
-                  />
-                </div>
               )}
 
               {isThirdPartyEmbedFormType(formData.streamType) && (

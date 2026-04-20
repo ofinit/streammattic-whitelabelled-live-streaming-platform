@@ -147,6 +147,19 @@ function resolveServicesForLandingMerge(
   return raw as BrandingService[]
 }
 
+/** When DB has no gallery rows or `[]`, show platform template portfolio images */
+function resolveGalleryForLandingMerge(
+  base: Partial<Branding>,
+  fallback: BrandingGalleryImage[] | undefined,
+): BrandingGalleryImage[] | undefined {
+  const fb = fallback ?? []
+  const raw = base.galleryImages
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return fb.length ? fb : undefined
+  }
+  return raw as BrandingGalleryImage[]
+}
+
 /** Visible services for landing: toggled on, else platform defaults if nothing would show */
 function getStudioLandingServices(branding: Branding): BrandingService[] {
   const primary = (branding.services || []).filter((s: BrandingService) => isBrandingToggleOn(s))
@@ -167,7 +180,7 @@ export function mergeStudioLandingBranding(overrides: Partial<Branding>): Brandi
     eventTypes: base.eventTypes ?? P.eventTypes,
     stats: base.stats ?? P.stats,
     testimonials: base.testimonials ?? P.testimonials,
-    galleryImages: base.galleryImages ?? P.galleryImages,
+    galleryImages: resolveGalleryForLandingMerge(base, P.galleryImages) ?? P.galleryImages,
     differentiators: base.differentiators ?? P.differentiators,
     ctaBannerTitle: base.ctaBannerTitle ?? P.ctaBannerTitle,
     ctaBannerSubtitle: base.ctaBannerSubtitle ?? P.ctaBannerSubtitle,

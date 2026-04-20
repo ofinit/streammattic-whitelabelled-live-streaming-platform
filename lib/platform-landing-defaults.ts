@@ -1,4 +1,4 @@
-import type { Branding } from "@/lib/types"
+import type { Branding, BrandingGalleryImage } from "@/lib/types"
 
 const now = new Date()
 
@@ -16,6 +16,46 @@ const STUDIO_LANDING_DEFAULT_MEDIA = {
   eventBirthday: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
   eventReligious: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&q=80",
 } as const
+
+/** Portfolio grid when the studio has not uploaded gallery items yet (Unsplash CDN). */
+const STUDIO_LANDING_DEFAULT_GALLERY: BrandingGalleryImage[] = [
+  {
+    id: "g-1",
+    src: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80",
+    title: "Garden ceremony",
+    category: "Wedding",
+  },
+  {
+    id: "g-2",
+    src: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1600&q=80",
+    title: "Annual summit",
+    category: "Corporate",
+  },
+  {
+    id: "g-3",
+    src: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1600&q=80",
+    title: "Birthday celebration",
+    category: "Birthday",
+  },
+  {
+    id: "g-4",
+    src: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1600&q=80",
+    title: "Traditional ceremony",
+    category: "Religious",
+  },
+  {
+    id: "g-5",
+    src: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=80",
+    title: "Live stage",
+    category: "Live Event",
+  },
+  {
+    id: "g-6",
+    src: "https://images.unsplash.com/photo-1464366400606-199abd6e36b0?auto=format&fit=crop&w=1600&q=80",
+    title: "Reception details",
+    category: "Wedding",
+  },
+]
 
 /**
  * Platform marketing defaults for studio landing + previews when no white-label row exists.
@@ -130,7 +170,7 @@ export const PLATFORM_LANDING_BRANDING: Branding = {
   ctaBannerSubtitle: "Contact us today to book your event",
   ctaBannerButtonText: "Get In Touch",
   ctaBannerButtonUrl: "#contact",
-  galleryImages: [],
+  galleryImages: STUDIO_LANDING_DEFAULT_GALLERY,
   createdAt: now,
   updatedAt: now,
 }

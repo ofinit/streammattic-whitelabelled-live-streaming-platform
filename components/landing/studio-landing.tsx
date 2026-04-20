@@ -47,6 +47,7 @@ import {
   CheckCircle2,
   X as XIcon,
   Maximize2,
+  type LucideIcon,
 } from "lucide-react"
 import type { Branding, BrandingService, BrandingGalleryImage, BrandingDifferentiator } from "@/lib/types"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
@@ -1208,9 +1209,79 @@ function AboutSection({ branding }: { branding: Branding }) {
   )
 }
 
+/** Third column: physical location, or first social profile if no address (avoids an empty grid cell). */
+function getThirdContactCard(branding: Branding):
+  | { kind: "location"; text: string }
+  | { kind: "social"; label: string; href: string; Icon: LucideIcon }
+  | null {
+  const addr = branding.address?.trim()
+  if (addr) return { kind: "location", text: addr }
+
+  const socials: { label: string; href?: string; Icon: LucideIcon }[] = [
+    { label: "Instagram", href: branding.instagramUrl, Icon: Instagram },
+    { label: "YouTube", href: branding.youtubeUrl, Icon: Youtube },
+    { label: "Facebook", href: branding.facebookUrl, Icon: Facebook },
+    { label: "X", href: branding.twitterUrl, Icon: Twitter },
+    { label: "LinkedIn", href: branding.linkedinUrl, Icon: Linkedin },
+  ]
+  for (const s of socials) {
+    const h = s.href?.trim()
+    if (h) return { kind: "social", label: s.label, href: h, Icon: s.Icon }
+  }
+  return null
+}
+
+const contactCardShell =
+  "group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
+
+function SocialContactCard({
+  branding,
+  card,
+  className,
+}: {
+  branding: Branding
+  card: { kind: "social"; label: string; href: string; Icon: LucideIcon }
+  className?: string
+}) {
+  const Icon = card.Icon
+  return (
+    <a
+      href={card.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(contactCardShell, className)}
+    >
+      <div
+        className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+        style={{ backgroundColor: `${branding.themeColor}15` }}
+      >
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: branding.themeColor }} />
+      </div>
+      <div className="text-center">
+        <p className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider mb-1">{card.label}</p>
+        <p className="font-semibold text-white text-sm sm:text-base">Follow us</p>
+      </div>
+    </a>
+  )
+}
+
 function ContactSection({ branding }: { branding: Branding }) {
-  const hasContact = branding.phone || branding.whatsapp || branding.email || branding.address
+  const hasPhone = Boolean(branding.phone?.trim())
+  const hasEmail = Boolean(branding.email?.trim())
+  const thirdCard = getThirdContactCard(branding)
+  const cardCount = [hasPhone, hasEmail, Boolean(thirdCard)].filter(Boolean).length
+
+  const hasContact = Boolean(
+    branding.phone ||
+      branding.whatsapp ||
+      branding.email ||
+      branding.address?.trim() ||
+      thirdCard,
+  )
   if (!hasContact) return null
+
+  const thirdSpansRow =
+    cardCount === 3 ? "sm:col-span-2 lg:col-span-1" : ""
 
   return (
     <section id="contact" className="relative py-20 sm:py-32 bg-slate-900">
@@ -1242,13 +1313,18 @@ function ContactSection({ branding }: { branding: Branding }) {
           </p>
         </div>
 
-        {/* Contact Cards */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-8 sm:mb-12">
-          {branding.phone && (
-            <a
-              href={`tel:${branding.phone}`}
-              className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
-            >
+        {/* Contact Cards — grid columns follow card count so two cards are not stretched into a 3-column row */}
+        {cardCount > 0 && (
+        <div
+          className={cn(
+            "grid gap-4 sm:gap-6 mb-8 sm:mb-12 mx-auto",
+            cardCount === 1 && "grid-cols-1 max-w-md",
+            cardCount === 2 && "grid-cols-1 sm:grid-cols-2 max-w-2xl sm:max-w-4xl",
+            cardCount >= 3 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl",
+          )}
+        >
+          {hasPhone && (
+            <a href={`tel:${branding.phone}`} className={contactCardShell}>
               <div
                 className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
                 style={{ backgroundColor: `${branding.themeColor}15` }}
@@ -1269,11 +1345,8 @@ function ContactSection({ branding }: { branding: Branding }) {
             </a>
           )}
 
-          {branding.email && (
-            <a
-              href={`mailto:${branding.email}`}
-              className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 hover:-translate-y-1"
-            >
+          {hasEmail && (
+            <a href={`mailto:${branding.email}`} className={contactCardShell}>
               <div
                 className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110"
                 style={{ backgroundColor: `${branding.themeColor}15` }}
@@ -1294,8 +1367,8 @@ function ContactSection({ branding }: { branding: Branding }) {
             </a>
           )}
 
-          {branding.address && (
-            <div className="group flex flex-col items-center gap-4 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950/50 p-6 sm:p-8 transition-all hover:border-slate-700 hover:bg-slate-950 sm:col-span-2 lg:col-span-1">
+          {thirdCard?.kind === "location" && (
+            <div className={cn(contactCardShell, thirdSpansRow)}>
               <div
                 className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full"
                 style={{ backgroundColor: `${branding.themeColor}15` }}
@@ -1310,12 +1383,17 @@ function ContactSection({ branding }: { branding: Branding }) {
                   Location
                 </p>
                 <p className="font-semibold text-white text-sm sm:text-base">
-                  {branding.address}
+                  {thirdCard.text}
                 </p>
               </div>
             </div>
           )}
+
+          {thirdCard?.kind === "social" && (
+            <SocialContactCard branding={branding} card={thirdCard} className={thirdSpansRow} />
+          )}
         </div>
+        )}
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">

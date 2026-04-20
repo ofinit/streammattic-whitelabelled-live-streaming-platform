@@ -10,8 +10,8 @@ const now = new Date()
 const STUDIO_LANDING_DEFAULT_MEDIA = {
   /** Photography / videography — camera & creative work (readable behind lighter hero overlay) */
   hero: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=2400&q=80",
-  /** Wedding photographer at work — About section visual */
-  about: "https://images.unsplash.com/photo-1493863641943-9b68992a8d6a?auto=format&fit=crop&w=1600&q=80",
+  /** Wedding / event photography (Unsplash — verified 200; do not use dead photo IDs) */
+  about: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=80",
   eventWedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
   eventCorporate: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
   eventBirthday: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
@@ -26,7 +26,8 @@ export function isLegacyStudioDefaultAboutImage(url: string | undefined): boolea
   if (!url) return false
   return (
     url.includes("photo-1606800052052") || // wedding rings
-    url.includes("photo-1502920917128") // generic DSLR product on table (replaced by wedding photographer)
+    url.includes("photo-1502920917128") || // generic DSLR product on table
+    url.includes("photo-1493863641943") // bad Unsplash id (404); replaced by current default
   )
 }
 

@@ -4,7 +4,10 @@ import { useState, useEffect, type ReactNode } from "react"
 import Link from "next/link"
 import Head from "next/head"
 import { useBranding } from "@/lib/branding-context"
-import { PLATFORM_LANDING_BRANDING } from "@/lib/platform-landing-defaults"
+import {
+  PLATFORM_LANDING_BRANDING,
+  isLegacyStudioDefaultAboutImage,
+} from "@/lib/platform-landing-defaults"
 import { getThemeConfig } from "@/lib/landing-themes"
 import { Button } from "@/components/ui/button"
 import {
@@ -175,7 +178,10 @@ export function mergeStudioLandingBranding(overrides: Partial<Branding>): Brandi
     ...P,
     ...base,
     heroImage: base.heroImage || P.heroImage,
-    aboutImage: base.aboutImage || P.aboutImage,
+    aboutImage:
+      base.aboutImage && !isLegacyStudioDefaultAboutImage(base.aboutImage)
+        ? base.aboutImage
+        : P.aboutImage,
     services: resolveServicesForLandingMerge(base, P.services),
     eventTypes: base.eventTypes ?? P.eventTypes,
     stats: base.stats ?? P.stats,

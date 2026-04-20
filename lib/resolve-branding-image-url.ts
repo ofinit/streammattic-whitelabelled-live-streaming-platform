@@ -8,6 +8,18 @@ export function normalizeBrandingImageUrl(src: string | undefined | null): strin
   let s = String(src).trim()
   if (!s) return null
 
+  // Any absolute URL pointing at app upload API → same path on current origin (white-label / custom domain)
+  if (/^https?:\/\//i.test(s)) {
+    try {
+      const u = new URL(s)
+      if (u.pathname.startsWith("/api/uploads/")) {
+        return `${u.pathname}${u.search}${u.hash}`
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+
   const appBase =
     typeof process !== "undefined" && process.env.NEXT_PUBLIC_APP_URL
       ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")

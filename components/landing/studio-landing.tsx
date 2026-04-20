@@ -654,10 +654,11 @@ function EventTypesSection({ branding }: { branding: Branding }) {
               className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 aspect-[4/3] cursor-pointer"
             >
               <img
-                src={eventType.image || "/placeholder.svg?height=400&width=600"}
+                src={normalizeBrandingImageUrl(eventType.image) || "/placeholder.svg?height=400&width=600"}
                 alt={eventType.title}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                crossOrigin="anonymous"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
               <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
@@ -835,7 +836,11 @@ function GalleryMasonryCard({
   image: BrandingGalleryImage
   onOpen: () => void
 }) {
-  const [src, setSrc] = useState(image.src)
+  const [src, setSrc] = useState(() => normalizeBrandingImageUrl(image.src) ?? image.src)
+
+  useEffect(() => {
+    setSrc(normalizeBrandingImageUrl(image.src) ?? image.src)
+  }, [image.src, image.id])
 
   return (
     <div
@@ -854,7 +859,6 @@ function GalleryMasonryCard({
         src={src}
         alt={image.title}
         className="block w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-        crossOrigin="anonymous"
         loading="lazy"
         decoding="async"
         onError={() => setSrc(GALLERY_IMAGE_FALLBACK_SRC)}
@@ -1150,6 +1154,40 @@ function TestimonialsSection({ branding }: { branding: Branding }) {
   )
 }
 
+function AboutSectionImage({ branding }: { branding: Branding }) {
+  const primary =
+    normalizeBrandingImageUrl(branding.aboutImage) ??
+    normalizeBrandingImageUrl(PLATFORM_LANDING_BRANDING.aboutImage) ??
+    ""
+  const fallback = PLATFORM_LANDING_BRANDING.aboutImage || GALLERY_IMAGE_FALLBACK_SRC
+  const [src, setSrc] = useState(primary)
+
+  useEffect(() => {
+    setSrc(primary)
+  }, [primary])
+
+  if (!src) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-slate-500 text-sm">
+        Image unavailable
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={`About ${branding.brandName}`}
+      className="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (src !== fallback) setSrc(fallback)
+      }}
+    />
+  )
+}
+
 function AboutSection({ branding }: { branding: Branding }) {
   const hasAboutContent = branding.aboutUs && branding.aboutUs.trim().length > 0
 
@@ -1224,14 +1262,9 @@ function AboutSection({ branding }: { branding: Branding }) {
           {/* Image */}
           <div className="order-1 lg:order-2">
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800">
-              <img
-                src={branding.aboutImage || "/placeholder.svg?height=600&width=800"}
-                alt={`About ${branding.brandName}`}
-                className="h-full w-full object-cover"
-                crossOrigin="anonymous"
-              />
+              <AboutSectionImage branding={branding} />
               <div
-                className="absolute inset-0 opacity-20"
+                className="absolute inset-0 opacity-20 pointer-events-none"
                 style={{
                   background: `linear-gradient(135deg, ${branding.themeColor}40, transparent)`,
                 }}

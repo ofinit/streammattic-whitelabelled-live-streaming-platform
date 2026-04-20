@@ -824,6 +824,58 @@ function CTABanner({
   )
 }
 
+/** When a gallery URL fails to load (CDN / typo), swap to a known-good stock image */
+const GALLERY_IMAGE_FALLBACK_SRC =
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80"
+
+function GalleryMasonryCard({
+  image,
+  onOpen,
+}: {
+  image: BrandingGalleryImage
+  onOpen: () => void
+}) {
+  const [src, setSrc] = useState(image.src)
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className="group relative w-full overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+    >
+      <img
+        src={src}
+        alt={image.title}
+        className="block w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        crossOrigin="anonymous"
+        loading="lazy"
+        decoding="async"
+        onError={() => setSrc(GALLERY_IMAGE_FALLBACK_SRC)}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none">
+        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">{image.title}</h3>
+        <p className="text-xs sm:text-sm text-slate-400">{image.category}</p>
+      </div>
+      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <span
+          className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white"
+          aria-hidden
+        >
+          <Maximize2 className="h-4 w-4" />
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function GallerySection({ branding }: { branding: Branding }) {
   const allImages = branding.galleryImages || []
   const [activeFilter, setActiveFilter] = useState("All")
@@ -902,41 +954,18 @@ function GallerySection({ branding }: { branding: Branding }) {
           </div>
         )}
 
-        {/* Gallery Grid - Masonry-like */}
+        {/* Masonry gallery — CSS columns so items stack without row-height gaps */}
         {hasImages ? (
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={cn(
+              "columns-1 sm:columns-2 lg:columns-3",
+              "[column-fill:_balance]",
+              "[column-gap:0.875rem] sm:[column-gap:1rem] lg:[column-gap:1.25rem]",
+            )}
+          >
             {filteredImages.map((image, index) => (
-              <div
-                key={image.id}
-                onClick={() => openLightbox(index)}
-                className={`group relative overflow-hidden rounded-xl sm:rounded-2xl border border-slate-800 cursor-pointer ${
-                  index % 3 === 0 ? "aspect-[3/4]" : "aspect-[3/2]"
-                }`}
-              >
-                <img
-                  src={image.src}
-                  alt={image.title}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  crossOrigin="anonymous"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
-                    {image.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-400">{image.category}</p>
-                </div>
-
-                {/* Hover Actions */}
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); }}
-                    className="h-8 w-8 rounded-full bg-slate-950/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-slate-800 transition-colors"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
-                </div>
+              <div key={image.id} className="mb-3 sm:mb-4 break-inside-avoid">
+                <GalleryMasonryCard image={image} onOpen={() => openLightbox(index)} />
               </div>
             ))}
           </div>

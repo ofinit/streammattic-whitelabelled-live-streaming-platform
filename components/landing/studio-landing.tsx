@@ -47,6 +47,8 @@ import {
 } from "lucide-react"
 import type { Branding, BrandingService, BrandingGalleryImage, BrandingDifferentiator } from "@/lib/types"
 import { applyFaviconHrefToDocument } from "@/lib/favicon-dom"
+import { cn } from "@/lib/utils"
+import { normalizeBrandingImageUrl } from "@/lib/resolve-branding-image-url"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Camera,
@@ -62,6 +64,61 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; style?: 
 
 function getServiceIcon(iconName: string) {
   return iconMap[iconName] || Camera
+}
+
+/** Serif wordmark when no logo image — matches landing elegance (Playfair via --font-serif) */
+function StudioBrandNameText({
+  branding,
+  className,
+}: {
+  branding: Branding
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        "font-serif text-xl sm:text-2xl font-semibold tracking-[0.02em] text-white antialiased [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]",
+        className
+      )}
+    >
+      {branding.brandName}
+    </span>
+  )
+}
+
+/**
+ * Logo image with URL fix for custom domains + fallback chain (dark → light → text).
+ */
+function StudioBrandLogo({
+  branding,
+  imgClassName,
+  textClassName,
+  loading = "eager",
+}: {
+  branding: Branding
+  imgClassName?: string
+  textClassName?: string
+  loading?: "eager" | "lazy"
+}) {
+  const dark = normalizeBrandingImageUrl(branding.companyLogoDark)
+  const light = normalizeBrandingImageUrl(branding.companyLogo)
+  const candidates = [dark, light].filter((x): x is string => Boolean(x)).filter((x, i, a) => a.indexOf(x) === i)
+  const [failIndex, setFailIndex] = useState(0)
+
+  if (failIndex >= candidates.length || candidates.length === 0) {
+    return <StudioBrandNameText branding={branding} className={textClassName} />
+  }
+
+  return (
+    <img
+      src={candidates[failIndex]}
+      alt={branding.brandName}
+      className={imgClassName}
+      loading={loading}
+      decoding="async"
+      onError={() => setFailIndex((i) => i + 1)}
+    />
+  )
 }
 
 function omitUndefined<T extends Record<string, unknown>>(obj: Partial<T>): Partial<T> {
@@ -130,21 +187,11 @@ function SiteHeader({ branding }: { branding: Branding }) {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
-        <Link href="/" className="flex items-center gap-3 z-10">
-          {branding.companyLogo ? (
-            <img
-              src={branding.companyLogoDark || branding.companyLogo}
-              alt={branding.brandName}
-              className="h-8 sm:h-10 w-auto object-contain"
-            />
-          ) : (
-            <span
-              className="text-xl sm:text-2xl font-bold tracking-tight"
-              style={{ color: branding.themeColor }}
-            >
-              {branding.brandName}
-            </span>
-          )}
+        <Link href="/" className="flex min-w-0 max-w-[min(100%,14rem)] items-center gap-3 z-10">
+          <StudioBrandLogo
+            branding={branding}
+            imgClassName="h-8 sm:h-10 w-auto max-w-full object-contain object-left"
+          />
         </Link>
 
         {/* Desktop Nav */}
@@ -1284,20 +1331,14 @@ function SiteFooter({ branding }: { branding: Branding }) {
         <div className="grid gap-8 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            {branding.companyLogo ? (
-              <img
-                src={branding.companyLogoDark || branding.companyLogo}
-                alt={branding.brandName}
-                className="mb-4 sm:mb-6 h-8 sm:h-10 w-auto object-contain"
+            <div className="mb-4 sm:mb-6">
+              <StudioBrandLogo
+                branding={branding}
+                imgClassName="h-8 sm:h-10 w-auto max-w-[min(100%,240px)] object-contain object-left"
+                textClassName="inline-block"
+                loading="lazy"
               />
-            ) : (
-              <span
-                className="mb-4 sm:mb-6 inline-block text-xl sm:text-2xl font-bold"
-                style={{ color: branding.themeColor }}
-              >
-                {branding.brandName}
-              </span>
-            )}
+            </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-400 mb-4 sm:mb-6">
               {branding.metaDescription ||
                 "Professional photography, videography and live streaming services."}

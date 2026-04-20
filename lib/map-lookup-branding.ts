@@ -1,7 +1,15 @@
 /**
  * Maps GET /api/branding/lookup payloads (camelCase studio_branding row) to Branding.
  */
-import type { Branding, BrandingEventType, BrandingGalleryImage, BrandingService, BrandingStat, BrandingTestimonial } from "@/lib/types"
+import type {
+  Branding,
+  BrandingDifferentiator,
+  BrandingEventType,
+  BrandingGalleryImage,
+  BrandingService,
+  BrandingStat,
+  BrandingTestimonial,
+} from "@/lib/types"
 import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 
 const defaultBrandingBase = (): Pick<Branding, "hasGatewayConfig" | "createdAt" | "updatedAt"> => ({
@@ -64,6 +72,11 @@ export function studioLookupRowToBranding(raw: Record<string, unknown>, userId: 
     stats: parseJsonArray<BrandingStat>(raw.stats),
     testimonials: parseJsonArray<BrandingTestimonial>(raw.testimonials),
     galleryImages: parseJsonArray<BrandingGalleryImage>(raw.galleryImages),
+    differentiators: parseJsonArray<BrandingDifferentiator>(raw.differentiators),
+    ctaBannerTitle: raw.ctaBannerTitle as string | undefined,
+    ctaBannerSubtitle: raw.ctaBannerSubtitle as string | undefined,
+    ctaBannerButtonText: raw.ctaBannerButtonText as string | undefined,
+    ctaBannerButtonUrl: raw.ctaBannerButtonUrl as string | undefined,
     selectedTheme: raw.selectedTheme as Branding["selectedTheme"],
     preferredGateway: raw.preferredGateway as Branding["preferredGateway"],
     hasGatewayConfig: Boolean(raw.preferredGateway),

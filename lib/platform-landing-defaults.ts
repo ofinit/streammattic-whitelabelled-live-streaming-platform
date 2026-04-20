@@ -3,6 +3,20 @@ import type { Branding } from "@/lib/types"
 const now = new Date()
 
 /**
+ * Default hero / section imagery for studio landing when the DB has no uploads yet.
+ * Uses Unsplash CDN (same pattern as `lib/template-default-media.ts`). Do not use
+ * `/placeholder-*.jpg` paths — those files are not shipped in `/public`.
+ */
+const STUDIO_LANDING_DEFAULT_MEDIA = {
+  hero: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2400&q=80",
+  about: "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1600&q=80",
+  eventWedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
+  eventCorporate: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
+  eventBirthday: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
+  eventReligious: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&q=80",
+} as const
+
+/**
  * Platform marketing defaults for studio landing + previews when no white-label row exists.
  * Not tied to a real tenant — replace with context/DB branding when configured.
  */
@@ -19,6 +33,8 @@ export const PLATFORM_LANDING_BRANDING: Branding = {
   metaTitle: "StreamLivee — Live streaming platform",
   metaDescription: "Professional live streaming for events, studios, and creators.",
   aboutUs: "We are a professional media company specializing in capturing life's most precious moments. With state-of-the-art equipment and an experienced team, we deliver stunning photography and videography services for events of all sizes.",
+  heroImage: STUDIO_LANDING_DEFAULT_MEDIA.hero,
+  aboutImage: STUDIO_LANDING_DEFAULT_MEDIA.about,
   hasGatewayConfig: false,
   selectedTheme: "modern_emerald",
   services: [
@@ -52,10 +68,10 @@ export const PLATFORM_LANDING_BRANDING: Branding = {
     },
   ],
   eventTypes: [
-    { id: "evt-1", title: "Weddings", image: "/placeholder-wedding.jpg", enabled: true },
-    { id: "evt-2", title: "Corporate Events", image: "/placeholder-corporate.jpg", enabled: true },
-    { id: "evt-3", title: "Birthdays", image: "/placeholder-birthday.jpg", enabled: true },
-    { id: "evt-4", title: "Religious Events", image: "/placeholder-religious.jpg", enabled: true },
+    { id: "evt-1", title: "Weddings", image: STUDIO_LANDING_DEFAULT_MEDIA.eventWedding, enabled: true },
+    { id: "evt-2", title: "Corporate Events", image: STUDIO_LANDING_DEFAULT_MEDIA.eventCorporate, enabled: true },
+    { id: "evt-3", title: "Birthdays", image: STUDIO_LANDING_DEFAULT_MEDIA.eventBirthday, enabled: true },
+    { id: "evt-4", title: "Religious Events", image: STUDIO_LANDING_DEFAULT_MEDIA.eventReligious, enabled: true },
   ],
   stats: [
     { id: "stat-1", value: "500+", label: "Events Covered" },

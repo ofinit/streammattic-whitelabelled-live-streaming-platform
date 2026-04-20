@@ -64,18 +64,29 @@ function getServiceIcon(iconName: string) {
   return iconMap[iconName] || Camera
 }
 
+function omitUndefined<T extends Record<string, unknown>>(obj: Partial<T>): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>
+}
+
 /** Merge saved/mock defaults with overrides (context or editor draft) for the studio landing page */
 export function mergeStudioLandingBranding(overrides: Partial<Branding>): Branding {
+  const base = omitUndefined(overrides as Record<string, unknown>) as Partial<Branding>
+  const P = PLATFORM_LANDING_BRANDING
   return {
-    ...PLATFORM_LANDING_BRANDING,
-    ...overrides,
-    heroImage: overrides.heroImage || PLATFORM_LANDING_BRANDING.heroImage,
-    aboutImage: overrides.aboutImage || PLATFORM_LANDING_BRANDING.aboutImage,
-    services: overrides.services || PLATFORM_LANDING_BRANDING.services,
-    eventTypes: overrides.eventTypes || PLATFORM_LANDING_BRANDING.eventTypes,
-    stats: overrides.stats || PLATFORM_LANDING_BRANDING.stats,
-    testimonials: overrides.testimonials || PLATFORM_LANDING_BRANDING.testimonials,
-    galleryImages: overrides.galleryImages || PLATFORM_LANDING_BRANDING.galleryImages,
+    ...P,
+    ...base,
+    heroImage: base.heroImage || P.heroImage,
+    aboutImage: base.aboutImage || P.aboutImage,
+    services: base.services ?? P.services,
+    eventTypes: base.eventTypes ?? P.eventTypes,
+    stats: base.stats ?? P.stats,
+    testimonials: base.testimonials ?? P.testimonials,
+    galleryImages: base.galleryImages ?? P.galleryImages,
+    differentiators: base.differentiators ?? P.differentiators,
+    ctaBannerTitle: base.ctaBannerTitle ?? P.ctaBannerTitle,
+    ctaBannerSubtitle: base.ctaBannerSubtitle ?? P.ctaBannerSubtitle,
+    ctaBannerButtonText: base.ctaBannerButtonText ?? P.ctaBannerButtonText,
+    ctaBannerButtonUrl: base.ctaBannerButtonUrl ?? P.ctaBannerButtonUrl,
   }
 }
 

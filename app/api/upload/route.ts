@@ -16,6 +16,7 @@ const ALLOWED_SUBDIRS = [
   "event-gallery",
   "event-photographer",
   "branding",
+  "gallery",
 ]
 
 const MAX_BATCH_FILES = 24

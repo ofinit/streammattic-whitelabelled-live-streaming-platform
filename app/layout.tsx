@@ -20,6 +20,7 @@ import {
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { BrandingProvider } from "@/lib/branding-context"
+import { getInitialBrandingForLayout } from "@/lib/server/get-initial-branding-for-layout"
 import { DynamicFavicon } from "@/components/branding/dynamic-favicon"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
@@ -191,6 +192,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const initialBranding = await getInitialBrandingForLayout()
+
   return (
     <html
       lang="en"
@@ -199,7 +202,7 @@ export default async function RootLayout({
     >
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <BrandingProvider>
+          <BrandingProvider initialServerState={initialBranding ?? undefined}>
             <AuthProvider>
               <DynamicFavicon />
               {children}

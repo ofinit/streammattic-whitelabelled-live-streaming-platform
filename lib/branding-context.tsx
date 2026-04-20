@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { Branding, Studio } from "./types"
+import type { BrandingServerInitialState } from "@/lib/branding-server-initial"
 import { platformLookupBrandingToBranding, studioLookupRowToBranding } from "@/lib/map-lookup-branding"
 
 // Default platform branding (StreamLivee)
@@ -29,17 +30,32 @@ interface BrandingContextType {
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined)
 
-export function BrandingProvider({ children }: { children: ReactNode }) {
-  const [branding, setBranding] = useState<Branding>(defaultBranding)
+export type { BrandingServerInitialState }
+
+export function BrandingProvider({
+  children,
+  initialServerState,
+}: {
+  children: ReactNode
+  initialServerState?: BrandingServerInitialState | null
+}) {
+  const [branding, setBranding] = useState<Branding>(initialServerState?.branding ?? defaultBranding)
   const [studio] = useState<Studio | null>(null)
-  const [isWhiteLabel, setIsWhiteLabel] = useState(false)
-  const [currentDomain, setCurrentDomain] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isWhiteLabel, setIsWhiteLabel] = useState(initialServerState?.isWhiteLabel ?? false)
+  const [currentDomain, setCurrentDomain] = useState<string | null>(initialServerState?.currentDomain ?? null)
+  const [isLoading, setIsLoading] = useState(!initialServerState)
 
   useEffect(() => {
     const loadBranding = async () => {
       const hostname = typeof window !== "undefined" ? window.location.hostname : ""
       setCurrentDomain(hostname)
+
+      const serverHost = (initialServerState?.currentDomain || "").toLowerCase().replace(/^www\./, "")
+      const clientHost = hostname.toLowerCase().replace(/^www\./, "")
+      if (initialServerState && serverHost && serverHost === clientHost) {
+        setIsLoading(false)
+        return
+      }
 
       try {
         const response = await fetch(`/api/branding/lookup?hostname=${encodeURIComponent(hostname)}`)
@@ -72,7 +88,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
 
     loadBranding()
-  }, [])
+  }, [initialServerState])
 
   useEffect(() => {
     if (typeof document !== "undefined" && branding) {

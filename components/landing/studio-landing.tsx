@@ -274,6 +274,7 @@ function SiteHeader({ branding }: { branding: Branding }) {
 
 function HeroSection({ branding }: { branding: Branding }) {
   const stats = branding.stats?.filter(Boolean) || []
+  const hasHeroPhoto = Boolean(branding.heroImage)
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -286,22 +287,24 @@ function HeroSection({ branding }: { branding: Branding }) {
             className="h-full w-full object-cover"
             crossOrigin="anonymous"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/80 to-slate-950" />
+          {/* Lighter overlay so the photo stays visible; text legibility via shadows + bottom scrim */}
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/35 to-slate-950/75" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/30" />
         </div>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
       )}
 
-      {/* Animated Background Elements */}
+      {/* Animated Background Elements — dimmer when a real hero photo is shown */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute -top-1/2 -right-1/2 w-full h-full opacity-20"
+          className={`absolute -top-1/2 -right-1/2 w-full h-full ${hasHeroPhoto ? "opacity-10" : "opacity-20"}`}
           style={{
             background: `radial-gradient(ellipse at 70% 30%, ${branding.themeColor}40, transparent 60%)`,
           }}
         />
         <div
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full opacity-10"
+          className={`absolute -bottom-1/2 -left-1/2 w-full h-full ${hasHeroPhoto ? "opacity-5" : "opacity-10"}`}
           style={{
             background: `radial-gradient(ellipse at 30% 70%, ${branding.themeColor}30, transparent 60%)`,
           }}
@@ -310,7 +313,7 @@ function HeroSection({ branding }: { branding: Branding }) {
 
       {/* Grid Pattern Overlay */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className={`absolute inset-0 ${hasHeroPhoto ? "opacity-[0.015]" : "opacity-[0.03]"}`}
         style={{
           backgroundImage: `linear-gradient(${branding.themeColor}20 1px, transparent 1px), linear-gradient(90deg, ${branding.themeColor}20 1px, transparent 1px)`,
           backgroundSize: "60px 60px",
@@ -331,12 +334,12 @@ function HeroSection({ branding }: { branding: Branding }) {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-white mb-6 sm:mb-8">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight text-white mb-6 sm:mb-8 [text-shadow:0_2px_24px_rgba(0,0,0,0.75),0_1px_3px_rgba(0,0,0,0.9)]">
             {branding.metaTitle || branding.brandName}
           </h1>
 
           {/* Subtitle */}
-          <p className="mx-auto max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-400 mb-8 sm:mb-10 px-4">
+          <p className="mx-auto max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-200 mb-8 sm:mb-10 px-4 [text-shadow:0_1px_12px_rgba(0,0,0,0.85)]">
             {branding.metaDescription ||
               "Professional photography, videography and live streaming services for your special events. Capturing moments that last forever."}
           </p>

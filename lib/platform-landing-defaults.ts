@@ -8,7 +8,8 @@ const now = new Date()
  * `/placeholder-*.jpg` paths — those files are not shipped in `/public`.
  */
 const STUDIO_LANDING_DEFAULT_MEDIA = {
-  hero: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2400&q=80",
+  /** Photography / videography — camera & creative work (readable behind lighter hero overlay) */
+  hero: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=2400&q=80",
   about: "https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1600&q=80",
   eventWedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
   eventCorporate: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",

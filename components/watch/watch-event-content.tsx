@@ -58,6 +58,7 @@ import {
   readVisitorDisplayName,
   readVisitorGateComplete,
 } from "@/components/watch/visitor-gate-form"
+import "@/styles/the-heart-template.css"
 
 function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
   if (raw == null || raw === "") return {}
@@ -2271,203 +2272,161 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const heartTagline = eventSubtitle || "We're getting married"
 
     return (
-      <div className="relative flex min-h-screen flex-col bg-rose-50/80 font-wedding text-rose-950">
+      <div className="the-heart-skin relative flex min-h-screen flex-col">
         {globalHeaderImage}
-        <style jsx global>{`
-          @keyframes theHeartFadeInUp {
-            from {
-              opacity: 0;
-              transform: translate3d(0, 28px, 0);
-            }
-            to {
-              opacity: 1;
-              transform: translate3d(0, 0, 0);
-            }
-          }
-          @keyframes theHeartMarquee {
-            0% {
-              transform: translateX(0);
-            }
-            100% {
-              transform: translateX(-50%);
-            }
-          }
-          .the-heart-hero-animate {
-            animation: theHeartFadeInUp 1s ease-out both;
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .the-heart-hero-animate {
-              animation: none;
-              opacity: 1;
-              transform: none;
-            }
-            .the-heart-marquee-track,
-            .the-heart-thanks-track {
-              animation: none !important;
-            }
-          }
-        `}</style>
 
-        <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
-          {heartHero ? (
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-fixed"
-              style={{ backgroundImage: `url(${heartHero})` }}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-900 via-pink-900/90 to-stone-900" />
+        <section
+          id="the-heart-home"
+          className={cn(
+            "the-heart-welcome-section jarallax black-overly",
+            !heartHero && "the-heart-welcome-fallback",
           )}
-          <div className="absolute inset-0 bg-black/55" />
-          <div className="relative z-20 mx-auto max-w-4xl px-4 text-center text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.65)] the-heart-hero-animate">
-            <h1
-              className={cn(
-                "mt-2 font-bold leading-tight drop-shadow-lg",
-                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
-              )}
-              style={{
-                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
-                ...heroTitleFontSizeStyle(titleHeroRem),
-              }}
-            >
-              {coupleParts && coupleParts.length === 2 ? (
-                <>
-                  {coupleParts[0]}{" "}
-                  <span className="inline-block italic text-rose-200">&</span> {coupleParts[1]}
-                </>
-              ) : (
-                coupleHero
-              )}
-            </h1>
-            <p className="mt-5 text-lg font-light text-white/95 md:text-xl">{heartTagline}</p>
-            {event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
-              <div className="mt-10 flex flex-wrap justify-center gap-3 md:gap-6">
-                {[
-                  { label: "Days", value: countdown.days },
-                  { label: "Hours", value: countdown.hours },
-                  { label: "Minutes", value: countdown.minutes },
-                  { label: "Seconds", value: countdown.seconds },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="min-w-[76px] rounded-2xl bg-white/95 px-4 py-3 shadow-lg md:min-w-[100px] md:px-5 md:py-4"
+          style={heartHero ? { backgroundImage: `url(${heartHero})` } : undefined}
+        >
+          <div className="container mx-auto max-w-7xl px-4">
+            <div className="the-heart-welcome-tbl">
+              <div className="the-heart-welcome-tbl-c the-heart-hero-animate">
+                <div className="the-heart-welcome-content">
+                  <h1
+                    className={cn(titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
+                    style={{
+                      ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                      ...heroTitleFontSizeStyle(titleHeroRem),
+                    }}
                   >
-                    <p className="text-2xl font-bold tabular-nums text-stone-800 md:text-3xl">
-                      {String(item.value).padStart(2, "0")}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
-                      {item.label}
-                    </p>
+                    {coupleParts && coupleParts.length === 2 ? (
+                      <>
+                        {coupleParts[0]}{" "}
+                        <span className="inline-block italic text-rose-200">&</span> {coupleParts[1]}
+                      </>
+                    ) : (
+                      coupleHero
+                    )}
+                  </h1>
+                </div>
+                <h4 className="single-text">{heartTagline}</h4>
+                {event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
+                  <div className="the-heart-countdown-grid">
+                    {[
+                      { label: "Days", value: countdown.days },
+                      { label: "Hours", value: countdown.hours },
+                      { label: "Minutes", value: countdown.minutes },
+                      { label: "Seconds", value: countdown.seconds },
+                    ].map((item) => (
+                      <div key={item.label} className="the-heart-timer-card">
+                        <p className="digit">{String(item.value).padStart(2, "0")}</p>
+                        <p className="label">{item.label}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : primaryDateFormatted || eventDates.length > 0 ? (
-              <div className="mx-auto mt-8 max-w-lg space-y-2 rounded-2xl bg-black/35 px-6 py-5 text-sm leading-relaxed text-white/95 backdrop-blur-sm md:text-base">
-                {event.scheduledAt && primaryDateFormatted ? (
-                  <p>
-                    <span className="font-semibold text-rose-200">When · </span>
-                    {primaryDateFormatted}
-                  </p>
+                ) : primaryDateFormatted || eventDates.length > 0 ? (
+                  <div className="the-heart-floral-txt">
+                    <h3>
+                      {event.scheduledAt && primaryDateFormatted ? (
+                        <>
+                          {primaryDateFormatted}
+                          <br />
+                          <br />
+                        </>
+                      ) : null}
+                      {eventDates.map((d, i) => (
+                        <span key={d.id}>
+                          {i > 0 ? (
+                            <>
+                              <br />
+                              <br />
+                            </>
+                          ) : null}
+                          {(d.label || "Session").trim()} · {formatExtraDate(d)}
+                        </span>
+                      ))}
+                    </h3>
+                  </div>
                 ) : null}
-                {eventDates.map((d) => (
-                  <p key={d.id}>
-                    <span className="font-semibold text-rose-200">{(d.label || "Session").trim()} · </span>
-                    {formatExtraDate(d)}
-                  </p>
-                ))}
+                <div className="the-heart-btn-holder">
+                  <Button asChild variant="ghost" className="the-heart-btn pink-btn">
+                    <a
+                      href="#the-heart-stream"
+                      className="inline-flex cursor-pointer items-center justify-center no-underline"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        scrollToTheHeartStream()
+                      }}
+                    >
+                      Watch Live Stream
+                    </a>
+                  </Button>
+                </div>
               </div>
-            ) : null}
-            <Button
-              asChild
-              className="mt-12 h-auto cursor-pointer rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-8 py-2.5 text-base font-semibold text-white shadow-xl hover:from-rose-600 hover:to-pink-600"
-            >
-              <a
-                href="#the-heart-stream"
-                className="inline-flex cursor-pointer items-center justify-center no-underline text-inherit"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToTheHeartStream()
-                }}
-              >
-                Watch Live Stream
-              </a>
-            </Button>
+            </div>
           </div>
-          <div className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2 animate-bounce text-white">
-            <ChevronDown className="h-7 w-7 opacity-80" />
+          <div className="the-heart-scroll-hint" aria-hidden>
+            <ChevronDown className="mx-auto h-7 w-7 opacity-80" />
           </div>
         </section>
 
-        <div
-          className="overflow-hidden border-y border-rose-900/20 bg-rose-950 py-2 text-sm text-rose-50"
-          onMouseEnter={(e) => {
-            const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
-            if (track) track.style.animationPlayState = "paused"
-          }}
-          onMouseLeave={(e) => {
-            const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
-            if (track) track.style.animationPlayState = "running"
-          }}
-        >
-          <div
-            className="the-heart-marquee-track flex w-max whitespace-nowrap"
-            style={{ animation: "theHeartMarquee 28s linear infinite" }}
-          >
-            <span className="pr-16 font-medium">
-              {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
-            </span>
-            <span className="pr-16 font-medium" aria-hidden>
-              {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
-            </span>
-          </div>
-        </div>
-
-        <section id="the-heart-stream" className="scroll-mt-4 bg-gradient-to-b from-rose-100/80 to-white px-4 py-16">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-10 text-center">
-              <h2 className="bg-gradient-to-r from-rose-700 via-pink-600 to-rose-600 bg-clip-text text-4xl font-bold text-transparent md:text-5xl">
-                Watch Live
-              </h2>
+        <section id="the-heart-stream" className="the-heart-memoragble-days-section section-padding scroll-mt-4">
+          <div className="container mx-auto max-w-7xl px-4">
+            <div className="the-heart-section-heading">
+              <div
+                className="the-heart-marquee-slot"
+                onMouseEnter={(e) => {
+                  const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
+                  if (track) track.style.animationPlayState = "paused"
+                }}
+                onMouseLeave={(e) => {
+                  const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
+                  if (track) track.style.animationPlayState = "running"
+                }}
+              >
+                <div className="the-heart-marquee-track">
+                  <span className="pr-16 font-medium">
+                    {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
+                  </span>
+                  <span className="pr-16 font-medium" aria-hidden>
+                    {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
+                  </span>
+                </div>
+              </div>
+              <h2>Watch Live</h2>
             </div>
+
             <div
               className={cn(
-                "grid grid-cols-1 gap-8 lg:items-start",
+                "content-margin-top grid grid-cols-1 gap-8 lg:items-start",
                 allowChat ? "lg:grid-cols-3" : "",
               )}
             >
               <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
-                {renderStreamPlayer(THE_HEART_STREAM_SHELL)}
-                {invitationLine ? (
-                  <h3 className="text-balance text-center text-lg font-semibold leading-snug text-rose-900 md:text-xl">
-                    {invitationLine}
-                  </h3>
-                ) : null}
-                <div
-                  className="overflow-hidden rounded-lg border border-rose-200/60 bg-rose-950/5 py-2 text-center text-sm text-rose-800"
-                  onMouseEnter={(e) => {
-                    const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
-                    if (track) track.style.animationPlayState = "paused"
-                  }}
-                  onMouseLeave={(e) => {
-                    const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
-                    if (track) track.style.animationPlayState = "running"
-                  }}
-                >
+                <div className="the-heart-memoragble-days-wraper">
+                  {renderStreamPlayer(THE_HEART_STREAM_SHELL)}
+                  {invitationLine ? <h2 className="the-heart-invitation-line">{invitationLine}</h2> : null}
                   <div
-                    className="the-heart-thanks-track inline-block w-max whitespace-nowrap"
-                    style={{ animation: "theHeartMarquee 22s linear infinite" }}
+                    className="the-heart-thanks-ticker-wrap"
+                    onMouseEnter={(e) => {
+                      const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                      if (track) track.style.animationPlayState = "paused"
+                    }}
+                    onMouseLeave={(e) => {
+                      const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                      if (track) track.style.animationPlayState = "running"
+                    }}
                   >
-                    <span className="pr-12 font-semibold">Thank you! · Thank you! · </span>
-                    <span className="pr-12 font-semibold" aria-hidden>
-                      Thank you! · Thank you! ·{" "}
-                    </span>
+                    <div className="the-heart-thanks-track">
+                      <span className="pr-12 font-semibold">Thank you! · Thank you! · </span>
+                      <span className="pr-12 font-semibold" aria-hidden>
+                        Thank you! · Thank you! ·{" "}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
               {allowChat ? (
                 <div
-                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-rose-200/80 bg-white shadow-xl lg:min-h-[600px] ${
-                    showChat ? "flex" : "hidden lg:flex"
-                  }`}
+                  className={cn(
+                    "the-heart-stream-chat-panel flex min-h-[420px] flex-col overflow-hidden lg:min-h-[600px]",
+                    showChat ? "flex" : "hidden lg:flex",
+                  )}
                 >
                   {renderLiveChatBody()}
                 </div>
@@ -2477,27 +2436,49 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         </section>
 
         {teaserEmbed ? (
-          <section className="border-t border-rose-100 bg-white px-4 py-14">
-            <div className="mx-auto max-w-5xl">
-              <h2 className="mb-8 text-center text-3xl font-bold text-rose-900 md:text-4xl">Watch Teaser</h2>
-              <div className="aspect-video w-full overflow-hidden rounded-2xl border border-rose-200/70 shadow-lg">
-                <iframe
-                  title="Teaser"
-                  src={`${teaserEmbed}?rel=0`}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+          <section
+            className="the-heart-groomsman-section the-heart-bridemaid section-padding border-t border-rose-100/80 bg-white/90"
+            id="the-heart-teaser"
+          >
+            <div className="container mx-auto max-w-5xl px-4">
+              <div className="the-heart-section-heading">
+                <h2>Watch Teaser</h2>
+              </div>
+              <div className="content-margin-top">
+                <div className="the-heart-teaser-frame">
+                  <iframe
+                    title="Teaser"
+                    src={`${teaserEmbed}?rel=0`}
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               </div>
             </div>
           </section>
         ) : null}
 
         {photoGalleryUrls.length > 0 ? (
-          <section className="border-t border-rose-100 bg-gradient-to-b from-rose-50 to-white px-4 py-16">
-            <div className="mx-auto max-w-6xl">
-              <h2 className="mb-10 text-center text-3xl font-bold text-rose-900 md:text-4xl">Photo Gallery</h2>
-              <WatchPhotoGallery urls={photoGalleryUrls} theme="theHeart" />
+          <section className="the-heart-paper-effect-bg" id="the-heart-gallery">
+            <div
+              className="the-heart-lovely-gallery-section the-heart-gallery-bg-soft section-padding"
+              style={
+                heartHero
+                  ? {
+                      backgroundImage: `url(${heartHero})`,
+                    }
+                  : undefined
+              }
+            >
+              <div className="container relative z-[1] mx-auto max-w-6xl px-4">
+                <div className="the-heart-section-heading">
+                  <h2>Photo Gallery</h2>
+                </div>
+                <div className="content-margin-top">
+                  <WatchPhotoGallery urls={photoGalleryUrls} theme="theHeart" />
+                </div>
+              </div>
             </div>
           </section>
         ) : null}
@@ -2507,8 +2488,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           photographerContact.phone ||
           photographerContact.email ||
           photographerWebsitePublicUrl) && (
-          <section className="border-t border-rose-100 bg-rose-50/50 px-4 py-12">
-            <div className="mx-auto max-w-3xl text-center text-rose-900">
+          <section className="the-heart-credits-section">
+            <div className="mx-auto max-w-3xl px-4">
               {photographerLogoUrl ? (
                 <img src={photographerLogoUrl} alt="" className="mx-auto mb-4 h-16 w-auto object-contain" />
               ) : null}
@@ -2522,7 +2503,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         )}
 
         <footer
-          className="relative border-t border-rose-200/60 bg-cover bg-fixed bg-center py-16 text-center text-white"
+          className="the-heart-footer-section bg-cover bg-fixed bg-center text-white"
           style={
             heartHero
               ? {
@@ -2531,9 +2512,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               : { background: "linear-gradient(135deg,#9f1239,#831843)" }
           }
         >
-          <div className="the-heart-hero-animate relative z-10 mx-auto max-w-2xl px-4">
-            <h2 className="text-3xl font-semibold md:text-4xl">Thank You</h2>
-            <p className="mt-4 text-sm text-white/85">With love — thank you for celebrating with us.</p>
+          <div className="the-heart-footer-content the-heart-hero-animate mx-auto max-w-2xl px-4">
+            <h2>Thank You</h2>
+            <p>With love — thank you for celebrating with us.</p>
           </div>
         </footer>
 

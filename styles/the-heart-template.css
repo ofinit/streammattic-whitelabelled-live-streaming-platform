@@ -1,0 +1,552 @@
+/**
+ * "The Heart" wedding template — scoped port of reference style.css
+ * (Wedding Template 03). All rules live under .the-heart-skin to avoid
+ * leaking globals. Decorative assets that pointed at YOUR-CDN-URL are
+ * replaced with gradients or omitted.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Roboto:wght@300;400;700&display=swap");
+
+@keyframes the-heart-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes the-heart-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.the-heart-skin {
+  font-family: "Roboto", sans-serif;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: #96327d;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background-color: #fcf5e4;
+  background-repeat: repeat;
+  background-position: center center;
+  background-size: 100%;
+}
+
+.the-heart-skin h1,
+.the-heart-skin h2,
+.the-heart-skin h3,
+.the-heart-skin h4 {
+  font-family: "Great Vibes", cursive;
+  font-weight: 700;
+}
+
+.the-heart-skin .section-padding {
+  padding: 4rem 0;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .section-padding {
+    padding: 6rem 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .the-heart-skin .section-padding {
+    padding: 150px 0;
+  }
+}
+
+/* Match reference: memorable block — extra top padding, no bottom */
+.the-heart-skin .the-heart-memoragble-days-section.section-padding {
+  padding: 4rem 0 0;
+}
+
+@media (min-width: 1024px) {
+  .the-heart-skin .the-heart-memoragble-days-section.section-padding {
+    padding: 150px 0 0;
+  }
+}
+
+.the-heart-skin .the-heart-groomsman-section.section-padding {
+  padding: 3rem 0 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .the-heart-skin .the-heart-groomsman-section.section-padding {
+    padding: 100px 0 43px;
+  }
+}
+
+.the-heart-skin .content-margin-top {
+  margin-top: 3rem;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .content-margin-top {
+    margin-top: 80px;
+  }
+}
+
+.the-heart-skin .the-heart-section-heading {
+  text-align: center;
+  position: relative;
+  z-index: 6;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .the-heart-section-heading {
+    margin-bottom: 70px;
+  }
+}
+
+.the-heart-skin .the-heart-section-heading h2 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 2.667em);
+}
+
+.the-heart-skin .the-heart-marquee-slot {
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.the-heart-skin .the-heart-marquee-slot p {
+  margin: 0;
+  font-family: "Roboto", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* --- Welcome hero --- */
+.the-heart-skin .the-heart-welcome-section {
+  position: relative;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  text-align: center;
+  z-index: 2;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Reference had a white wash — omitted so black-overly reads cleanly */
+.the-heart-skin .the-heart-welcome-section::before {
+  display: none;
+}
+
+.the-heart-skin .the-heart-welcome-section.the-heart-welcome-fallback {
+  background-image: linear-gradient(135deg, #9f1239, #831843 50%, #1c1917);
+  background-attachment: scroll;
+}
+
+.the-heart-skin .black-overly::before {
+  background: #000;
+  position: absolute;
+  content: "";
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.the-heart-skin .the-heart-welcome-section.black-overly .the-heart-welcome-content {
+  color: #fff;
+}
+
+.the-heart-skin .the-heart-welcome-tbl {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+}
+
+.the-heart-skin .the-heart-welcome-tbl-c {
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 100%;
+  max-width: 56rem;
+  padding: 0 1rem;
+}
+
+.the-heart-skin .the-heart-welcome-content {
+  position: relative;
+  z-index: 10;
+  margin-bottom: 25px;
+}
+
+.the-heart-skin .the-heart-welcome-content h1 {
+  font-size: clamp(2.75rem, 11vw, 6.667rem);
+  margin: 0 0 11px;
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+.the-heart-skin .the-heart-welcome-tbl-c .single-text {
+  margin: 0;
+  font-size: clamp(1.25rem, 3.5vw, 1.667em);
+  margin-bottom: 1.25rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
+.the-heart-skin .the-heart-floral-txt {
+  position: relative;
+  padding: 1rem 0 0.25rem;
+  margin-bottom: 1rem;
+}
+
+/* Stand-in for floral PNG borders */
+.the-heart-skin .the-heart-floral-txt::before,
+.the-heart-skin .the-heart-floral-txt::after {
+  position: absolute;
+  content: "";
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+}
+
+.the-heart-skin .the-heart-floral-txt::before {
+  top: 0;
+}
+
+.the-heart-skin .the-heart-floral-txt::after {
+  bottom: 0;
+}
+
+.the-heart-skin .the-heart-floral-txt h3 {
+  margin: 0.5rem 0 0;
+  font-size: 1.333em;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #fff;
+  font-family: "Roboto", sans-serif;
+}
+
+.the-heart-skin .black-overly .the-heart-floral-txt h3 {
+  color: #fff;
+}
+
+.the-heart-skin .the-heart-countdown-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .the-heart-countdown-grid {
+    gap: 1.5rem;
+  }
+}
+
+.the-heart-skin .the-heart-timer-card {
+  min-width: 76px;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .the-heart-timer-card {
+    min-width: 100px;
+    padding: 1rem 1.25rem;
+  }
+}
+
+.the-heart-skin .the-heart-timer-card .digit {
+  font-family: "Roboto", sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #292524;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .the-heart-timer-card .digit {
+    font-size: 2rem;
+  }
+}
+
+.the-heart-skin .the-heart-timer-card .label {
+  margin-top: 0.25rem;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #78716c;
+  font-family: "Roboto", sans-serif;
+}
+
+.the-heart-skin .the-heart-date-card {
+  margin-top: 2rem;
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  font-family: "Roboto", sans-serif;
+}
+
+.the-heart-skin .the-heart-date-card .accent {
+  font-weight: 600;
+  color: #fecdd3;
+}
+
+.the-heart-skin .the-heart-btn-holder {
+  margin-top: 2.5rem;
+  text-align: center;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .the-heart-skin .the-heart-btn-holder {
+    margin-top: 3rem;
+  }
+}
+
+.the-heart-skin .the-heart-btn.pink-btn,
+.the-heart-skin button.the-heart-btn.pink-btn {
+  width: auto;
+  min-width: 220px;
+  height: 50px;
+  border-radius: 25px;
+  background-color: #96327d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  color: #fff;
+  font-size: 1em;
+  font-weight: 400;
+  font-family: "Roboto", sans-serif;
+  border: none;
+  box-shadow: 0 12px 30px rgba(150, 50, 125, 0.35);
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.the-heart-skin .the-heart-btn.pink-btn:hover,
+.the-heart-skin button.the-heart-btn.pink-btn:hover {
+  background-color: #7c2868;
+  color: #fff;
+}
+
+.the-heart-skin .the-heart-hero-animate {
+  animation: the-heart-fade-in-up 1s ease-out both;
+}
+
+.the-heart-skin .the-heart-scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  color: #fff;
+  animation: bounce 2s infinite;
+}
+
+/* --- Full-width ticker (between hero and stream) --- */
+.the-heart-skin .the-heart-ticker-bar {
+  overflow: hidden;
+  border-top: 1px solid rgba(136, 19, 55, 0.35);
+  border-bottom: 1px solid rgba(136, 19, 55, 0.35);
+  background: #3f0d24;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #fff7ed;
+  font-family: "Roboto", sans-serif;
+}
+
+.the-heart-skin .the-heart-marquee-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: the-heart-marquee 28s linear infinite;
+}
+
+.the-heart-skin .the-heart-thanks-track {
+  display: inline-block;
+  width: max-content;
+  white-space: nowrap;
+  animation: the-heart-marquee 22s linear infinite;
+}
+
+/* --- Stream / memorable --- */
+.the-heart-skin .the-heart-memoragble-days-wraper {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.the-heart-skin .the-heart-invitation-line {
+  margin: 1.5rem auto 0;
+  max-width: 48rem;
+  text-align: center;
+  font-family: "Roboto", sans-serif;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.45;
+  color: #881337;
+}
+
+.the-heart-skin .the-heart-thanks-ticker-wrap {
+  overflow: hidden;
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(225, 29, 72, 0.25);
+  background: rgba(253, 242, 248, 0.5);
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9f1239;
+  font-family: "Roboto", sans-serif;
+}
+
+.the-heart-skin .the-heart-stream-chat-panel {
+  border-radius: 1rem;
+  border: 1px solid rgba(225, 29, 72, 0.35);
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(190, 24, 93, 0.12);
+}
+
+/* --- Teaser --- */
+.the-heart-skin .the-heart-teaser-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(225, 29, 72, 0.35);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Gallery shell --- */
+.the-heart-skin .the-heart-paper-effect-bg {
+  position: relative;
+}
+
+.the-heart-skin .the-heart-lovely-gallery-section {
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: fixed;
+  padding: 4rem 0;
+}
+
+/* Fallback when no gallery backdrop image is set */
+.the-heart-skin .the-heart-lovely-gallery-section.the-heart-gallery-bg-soft {
+  background-image: linear-gradient(160deg, #fdf2f8 0%, #fce7f3 45%, #ffe4e6 100%);
+  background-attachment: scroll;
+}
+
+@media (min-width: 1024px) {
+  .the-heart-skin .the-heart-lovely-gallery-section {
+    padding: 240px 0;
+  }
+}
+
+.the-heart-skin .the-heart-lovely-gallery-section::before {
+  position: absolute;
+  content: "";
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 0;
+}
+
+.the-heart-skin .the-heart-lovely-gallery-section .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Credits (photographer) --- */
+.the-heart-skin .the-heart-credits-section {
+  border-top: 1px solid rgba(251, 113, 133, 0.35);
+  background: rgba(255, 241, 242, 0.6);
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #881337;
+  font-family: "Roboto", sans-serif;
+}
+
+/* --- Footer --- */
+.the-heart-skin .the-heart-footer-section {
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  padding: 4rem 1rem;
+}
+
+@media (min-width: 1024px) {
+  .the-heart-skin .the-heart-footer-section {
+    padding: 8rem 1rem;
+  }
+}
+
+.the-heart-skin .the-heart-footer-content {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.the-heart-skin .the-heart-footer-content h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2.5rem, 6vw, 4em);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+.the-heart-skin .the-heart-footer-content p {
+  margin: 0;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: "Roboto", sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .the-heart-skin .the-heart-hero-animate {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .the-heart-skin .the-heart-marquee-track,
+  .the-heart-skin .the-heart-thanks-track {
+    animation: none !important;
+  }
+}

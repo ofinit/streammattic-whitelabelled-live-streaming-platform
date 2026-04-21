@@ -32,6 +32,7 @@ export function EventTemplateBanner({ event, templateId, templateData, headlineT
   const isCoastalWedding = templateId === "tpl-wedding-coastal"
   const isCelestialWedding = templateId === "tpl-wedding-celestial"
   const isTraditionalHinduWedding = templateId === "tpl-wedding-traditional-hindu"
+  const isTheHeartWedding = templateId === "tpl-wedding-the-heart"
 
   const { category, name: templateName } = getTemplateCategoryAndName(templateId)
   const theme = getBannerThemeForCategory(category)
@@ -247,6 +248,48 @@ export function EventTemplateBanner({ event, templateId, templateData, headlineT
                 <span
                   key={i}
                   className="rounded border border-amber-500/30 bg-black/50 px-3 py-1 font-mono text-xs text-amber-200/90"
+                >
+                  {line}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (isTheHeartWedding) {
+    const couple = [data.brideName, data.groomName].filter(Boolean).join(" & ")
+    return (
+      <div className="border-b border-[#e8b4c8]/60 bg-[#fcf5e4] px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-[#96327d]/40 bg-white/90 px-2.5 py-1 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-[#96327d]">
+              The Heart Wedding
+            </span>
+            <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-[#96327d]/85">
+              Romantic celebration
+            </span>
+          </div>
+          {event.subtitle?.trim() ? (
+            <p className="font-sans text-xs font-semibold uppercase tracking-[0.28em] text-[#96327d]">{event.subtitle}</p>
+          ) : null}
+          <h2
+            className="mt-2 text-3xl font-semibold leading-tight text-[#881337] md:text-5xl"
+            style={{ fontFamily: "'Great Vibes', cursive" }}
+          >
+            {couple || headline || title || "Wedding celebration"}
+          </h2>
+          {event.description?.trim() ? (
+            <p className="mt-3 max-w-3xl font-sans text-sm leading-relaxed text-[#96327d] md:text-base">{event.description}</p>
+          ) : null}
+          {detailLines.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {detailLines.slice(0, 4).map((line, i) => (
+                <span
+                  key={i}
+                  className="rounded-full border border-[#e8b4c8] bg-white/90 px-3 py-1 font-sans text-xs text-[#881337]"
                 >
                   {line}
                 </span>

@@ -58,26 +58,9 @@ import {
   readVisitorDisplayName,
   readVisitorGateComplete,
 } from "@/components/watch/visitor-gate-form"
+import { THE_HEART_GALLERY_BG_URL } from "@/lib/the-heart-template-assets"
+import { parseWatchTemplateData, resolveWatchTemplateId } from "@/lib/watch-template-data"
 import "@/styles/the-heart-template.css"
-
-function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
-  if (raw == null || raw === "") return {}
-  if (typeof raw === "string") {
-    try {
-      const parsed = JSON.parse(raw) as unknown
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>
-      }
-      return {}
-    } catch {
-      return {}
-    }
-  }
-  if (typeof raw === "object" && !Array.isArray(raw)) {
-    return raw as Record<string, unknown>
-  }
-  return {}
-}
 
 /** templateData.teaserYoutubeUrl — watch URL, short URL, or embed URL */
 function youtubeUrlToEmbed(url: string): string | null {
@@ -709,15 +692,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     return () => document.removeEventListener("fullscreenchange", onFsChange)
   }, [])
 
-  const watchTemplateId = useMemo(() => {
-    if (!event) return ""
-    const ev = event as unknown as Record<string, unknown>
-    const data = parseWatchTemplateData(ev.templateData)
-    const fromJson = data.templateId as string | undefined
-    const fromColumn = ev.templateId as string | null | undefined
-    // App stores slug-style ids (tpl-wedding) in template_data; prefer that over any legacy column value
-    return (fromJson && String(fromJson).trim()) || (fromColumn && String(fromColumn).trim()) || ""
-  }, [event])
+  const watchTemplateId = useMemo(
+    () => (event ? resolveWatchTemplateId(event) : ""),
+    [event],
+  )
 
   const watchSkin = getWatchPageSkin(watchTemplateId)
   const streamChrome: WatchChromeTheme =
@@ -1372,8 +1350,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const DEFAULT_STREAM_SHELL = "relative aspect-video w-full bg-black"
   const WEDDING_STREAM_SHELL =
     "relative aspect-video w-full rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-950 via-rose-950/40 to-zinc-900 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] border border-white/10"
+  /** Reference memorable section: video on light paper-style panel, not a dark cinema frame */
   const THE_HEART_STREAM_SHELL =
-    "relative aspect-video w-full rounded-2xl overflow-hidden bg-gradient-to-br from-rose-950 via-pink-950/50 to-zinc-900 shadow-[0_25px_50px_-12px_rgba(190,24,93,0.35)] border border-rose-300/25"
+    "relative aspect-video w-full overflow-hidden rounded-lg border border-[#e8b4c8]/90 bg-[#faf8f5] shadow-[0_12px_40px_rgba(150,50,125,0.15)]"
   const GARDEN_STREAM_SHELL =
     "relative aspect-video w-full overflow-hidden rounded-3xl border border-white/55 bg-white/15 shadow-[0_8px_32px_rgba(22,101,52,0.18)] backdrop-blur-md"
   const MIDNIGHT_STREAM_SHELL =
@@ -2462,14 +2441,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         {photoGalleryUrls.length > 0 ? (
           <section className="the-heart-paper-effect-bg" id="the-heart-gallery">
             <div
-              className="the-heart-lovely-gallery-section the-heart-gallery-bg-soft section-padding"
-              style={
-                heartHero
-                  ? {
-                      backgroundImage: `url(${heartHero})`,
-                    }
-                  : undefined
-              }
+              className="the-heart-lovely-gallery-section section-padding"
+              style={{ backgroundImage: `url(${THE_HEART_GALLERY_BG_URL})` }}
             >
               <div className="container relative z-[1] mx-auto max-w-6xl px-4">
                 <div className="the-heart-section-heading">

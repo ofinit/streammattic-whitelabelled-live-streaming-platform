@@ -37,6 +37,8 @@
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   background-color: #fcf5e4;
+  /* body.the-heart-default-body in reference style.css */
+  background-image: url("https://pub-67ccaf48793c4d198d51c92c7f3885be.r2.dev/the-heart-body-bg.png");
   background-repeat: repeat;
   background-position: center center;
   background-size: 100%;

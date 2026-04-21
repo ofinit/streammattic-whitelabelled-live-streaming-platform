@@ -25,6 +25,7 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-coastal": "weddingCoastal",
   "tpl-wedding-celestial": "weddingCelestial",
   "tpl-wedding-traditional-hindu": "weddingTraditionalHindu",
+  /** Wedding Template 03 ("The Heart") — requires `templateData.templateId` (or legacy `template_id`) on the event */
   "tpl-wedding-the-heart": "weddingTheHeart",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",

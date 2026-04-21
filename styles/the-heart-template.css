@@ -245,10 +245,10 @@
   margin-bottom: 25px;
 }
 
-/* Clip floating hearts to the title stack only (not full-bleed hero) */
+/* Title + heart anchor; overflow visible so rising hearts are not clipped */
 .the-heart-skin .the-heart-title-heart-wrap {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: 0.35rem 0.5rem 0.5rem;
   margin: 0 auto;
   max-width: 100%;

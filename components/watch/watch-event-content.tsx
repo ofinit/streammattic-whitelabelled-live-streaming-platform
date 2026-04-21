@@ -2283,7 +2283,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               <div className="the-heart-welcome-tbl-c the-heart-hero-animate">
                 <div className="the-heart-welcome-content the-heart-title-heart-wrap">
                   <div
-                    className="the-heart-title-heart-layer pointer-events-none absolute inset-x-0 -top-6 bottom-0 z-[1] overflow-hidden motion-reduce:hidden md:-top-10"
+                    className="the-heart-title-heart-layer pointer-events-none absolute inset-x-0 -top-12 bottom-0 z-[1] overflow-visible motion-reduce:hidden md:-top-16"
                     aria-hidden
                   >
                     {roseHearts.map((h) => (

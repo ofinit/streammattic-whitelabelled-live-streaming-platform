@@ -392,7 +392,7 @@ export default function StudioEventsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: editingEvent.id, ...eventData }),
         })
-        const resData = await res.json()
+        const resData = (await res.json()) as { event?: LiveEvent; error?: string }
         if (!res.ok) {
           if (res.status === 409 && resData.error) {
             setSaveError({ slug: resData.error })
@@ -401,6 +401,9 @@ export default function StudioEventsPage() {
             toast.error(resData.error || "Failed to update event")
           }
           return
+        }
+        if (resData.event) {
+          setEditingEvent(resData.event)
         }
         toast.success("Event updated")
         mutate()
@@ -1117,6 +1120,11 @@ export default function StudioEventsPage() {
       )}
 
       <EventFormDialog
+        key={
+          editingEvent?.id
+            ? `${editingEvent.id}-${Object.keys(editingEvent as unknown as Record<string, unknown>).length > 1 ? "full" : "stub"}`
+            : "create"
+        }
         open={showEventDialog}
         onOpenChange={(val) => {
           setShowEventDialog(val)

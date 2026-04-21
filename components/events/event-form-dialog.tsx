@@ -258,10 +258,46 @@ function coerceEventBooleanFlag(camel: unknown, snake: unknown, whenMissing: boo
   return whenMissing
 }
 
+/** Extra session dates for the event form (aligned with `event_dates` / API `eventDates`). */
+function parseAdditionalDatesFromEvent(event: unknown): {
+  id: string
+  label: string
+  scheduledAt: string
+  timezone?: string
+}[] {
+  if (event == null || typeof event !== "object") return []
+  const r = event as Record<string, unknown>
+  const raw = r.eventDates ?? r.event_dates
+  if (!Array.isArray(raw)) return []
+  return raw.map((item, i) => {
+    const row = item as Record<string, unknown>
+    const id = typeof row.id === "string" && row.id.trim() ? row.id : `extra-${i}`
+    const label = typeof row.label === "string" ? row.label : ""
+    const scheduledAt = row.scheduledAt ?? row.scheduled_at
+    const tz = row.timezone ?? row.time_zone
+    return {
+      id,
+      label,
+      scheduledAt: scheduledAt ? String(scheduledAt) : "",
+      timezone: typeof tz === "string" ? tz : undefined,
+    }
+  })
+}
+
+function eventUpdatedAtToken(r: Record<string, unknown>): string {
+  const u = r.updatedAt ?? r.updated_at
+  if (u == null || u === "") return ""
+  if (typeof u === "string") return u
+  if (typeof u === "object" && u !== null && "toISOString" in u && typeof (u as Date).toISOString === "function") {
+    return (u as Date).toISOString()
+  }
+  return String(u)
+}
+
 /**
- * One-time hydrate key: must change when the parent replaces a partial `event` (e.g. `{ id }` or a row
- * without template_data / capture_visitor_data) with the full API row — otherwise template + toggles
- * stay on defaults even after save.
+ * Hydrate key: changes when the server row or loaded stub/full shape changes enough to require re-sync.
+ * Includes `updatedAt` so saves bump the row version; includes stub vs full so OAuth `{id}` → list row
+ * triggers a second hydrate without relying only on coarse fields.
  */
 function eventFormHydrateFingerprint(event: LiveEvent | undefined): string {
   if (event == null || event.id == null || String(event.id).trim() === "") return "__create__"
@@ -286,7 +322,10 @@ function eventFormHydrateFingerprint(event: LiveEvent | undefined): string {
           ? "1"
           : "0"
         : "unk"
-  return `${String(event.id)}:${tid || "notpl"}:${cap}`
+  const updatedAt = eventUpdatedAtToken(r)
+  const keyCount = Object.keys(r).length
+  const fullness = keyCount <= 1 ? "stub" : "full"
+  return `${String(event.id)}:${tid || "notpl"}:${cap}:${updatedAt}:${fullness}`
 }
 
 function parsePhotographerContact(raw: unknown): PhotographerContact {
@@ -1155,6 +1194,12 @@ export function EventFormDialog({
    * `photoGalleryUrls` (and other fields) after in-dialog edits, before Save.
    */
   const formHydratedKeyRef = useRef<string | null>(null)
+  /** Last event id we applied `setAdditionalDates` for — avoids wiping extra dates on stub→full re-hydrate. */
+  const lastHydratedAdditionalDatesForEventIdRef = useRef<string | null>(null)
+  /** True while the dialog is open (for detecting false → true open). */
+  const dialogOpenActiveRef = useRef(false)
+  /** So we can apply initial tab when credentials screen dismisses (first hydrate was skipped). */
+  const prevShowCredentialsScreenRef = useRef(false)
   /** Keeps validity reset logic in sync with hydrate so we don’t clear DB-loaded validity on open. */
   const prevValidityStreamGroupRef = useRef<ValidityStreamGroup | null>(null)
   const lastValidityInferenceFingerprintRef = useRef<string>("")
@@ -1167,9 +1212,17 @@ export function EventFormDialog({
   useEffect(() => {
     if (!open) {
       formHydratedKeyRef.current = null
+      lastHydratedAdditionalDatesForEventIdRef.current = null
+      dialogOpenActiveRef.current = false
+      prevShowCredentialsScreenRef.current = false
       prevValidityStreamGroupRef.current = null
       return
     }
+    const justOpenedDialog = !dialogOpenActiveRef.current
+    dialogOpenActiveRef.current = true
+    const credentialsScreenJustClosed =
+      prevShowCredentialsScreenRef.current === true && showCredentialsScreen === false
+    prevShowCredentialsScreenRef.current = showCredentialsScreen
     if (showCredentialsScreen) return
 
     const hydrateKey = eventFormHydrateFingerprint(event)
@@ -1229,7 +1282,13 @@ export function EventFormDialog({
         setYoutubeBroadcastCredentials(null)
         setIsCreatingBroadcast(false)
         setBroadcastCreateError(null)
+        const eid = String((event as any).id ?? "")
+        if (eid && lastHydratedAdditionalDatesForEventIdRef.current !== eid) {
+          lastHydratedAdditionalDatesForEventIdRef.current = eid
+          setAdditionalDates(parseAdditionalDatesFromEvent(event))
+        }
       } else {
+        lastHydratedAdditionalDatesForEventIdRef.current = null
         setFormData({
           title: "",
           subtitle: "",
@@ -1299,17 +1358,19 @@ export function EventFormDialog({
           setSlugError("")
           setFormData((prev) => ({ ...prev, useCustomDomain: true }))
         }
+        setAdditionalDates([])
       }
-      setAdditionalDates([])
       setCreditStatus("idle")
       setCreditInfo(null)
-      setActiveTab(initialTab ?? "details")
+      if (justOpenedDialog || credentialsScreenJustClosed) {
+        setActiveTab(initialTab ?? "details")
+      }
 
       const hydratedStreamTypeForRef = event
         ? String((event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) ?? "")
         : String((initialStreamType ?? "") ?? "")
       prevValidityStreamGroupRef.current = streamValidityGroup(hydratedStreamTypeForRef)
-  }, [open, event, showCredentialsScreen, initialStreamType])
+  }, [open, event, showCredentialsScreen, initialStreamType, initialTab])
 
   // When stream type crosses ingest ↔ embed, reset validity (rules differ; avoids stale dates)
   useEffect(() => {

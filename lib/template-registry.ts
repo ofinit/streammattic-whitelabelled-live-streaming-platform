@@ -59,6 +59,14 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     sortOrder: 2.58,
   },
   {
+    id: "tpl-wedding-the-heart",
+    name: "The Heart Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-the-heart"] ?? "",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.59,
+  },
+  {
     id: "tpl-corporate-tech-forward",
     name: "Tech Forward Summit",
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",

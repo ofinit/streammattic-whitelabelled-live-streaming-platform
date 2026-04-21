@@ -15,6 +15,7 @@ import { WeddingMidnightTemplate } from "@/components/templates/wedding-midnight
 import { WeddingCoastalTemplate } from "@/components/templates/wedding-coastal-template"
 import { WeddingCelestialTemplate } from "@/components/templates/wedding-celestial-template"
 import { WeddingTraditionalHinduTemplate } from "@/components/templates/wedding-traditional-hindu-template"
+import { WeddingTheHeartTemplate } from "@/components/templates/wedding-the-heart-template"
 import { CorporateTemplate } from "@/components/templates/corporate-template"
 import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
@@ -98,6 +99,10 @@ const templateContent: Record<
   "tpl-wedding-traditional-hindu": {
     title: "Vikram & Ananya",
     description: "Shubh Vivah — join our sacred union with blessings from both families.",
+  },
+  "tpl-wedding-the-heart": {
+    title: "Romeo & Juliet",
+    description: "We're getting married — join us live with family and friends near and far.",
   },
   "tpl-corporate-tech-forward": {
     title: "TechForward 2026 | Annual Innovation Summit",
@@ -299,6 +304,8 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <WeddingCelestialTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-wedding-traditional-hindu":
       return <WeddingTraditionalHinduTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-the-heart":
+      return <WeddingTheHeartTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate-tech-forward":
       return <CorporateTechForwardTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate":

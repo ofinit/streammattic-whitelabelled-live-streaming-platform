@@ -20,6 +20,9 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   /** Shubh Vivah — brass diyas / temple lamps (spiritual, prayer, ritual) */
   "tpl-wedding-traditional-hindu":
     "https://images.unsplash.com/photo-1771929712047-3e7022669175?auto=format&fit=crop&w=2400&q=80",
+  /** The Heart — romantic couple / soft light (reference: love-bg hero) */
+  "tpl-wedding-the-heart":
+    "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2400&q=80",
   /** Tech Forward Summit — dark grid + blue/cyan/neon orbs (matches watch skin `#0a0a0a` palette) */
   "tpl-corporate-tech-forward": "/templates/corporate-tech-forward-hero.svg",
   /** Classic corporate — same bundled hero as Tech Forward */

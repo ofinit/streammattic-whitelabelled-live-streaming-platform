@@ -10,6 +10,7 @@ export type WatchPageSkin =
   | "weddingCoastal"
   | "weddingCelestial"
   | "weddingTraditionalHindu"
+  | "weddingTheHeart"
   | "christianWeddingRose"
   | "muslimWeddingNikah"
   | "birthdayParty"
@@ -24,6 +25,7 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-coastal": "weddingCoastal",
   "tpl-wedding-celestial": "weddingCelestial",
   "tpl-wedding-traditional-hindu": "weddingTraditionalHindu",
+  "tpl-wedding-the-heart": "weddingTheHeart",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
   "tpl-birthday-party": "birthdayParty",

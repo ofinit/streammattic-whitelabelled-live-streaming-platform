@@ -78,6 +78,19 @@ function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
   return {}
 }
 
+/** templateData.teaserYoutubeUrl — watch URL, short URL, or embed URL */
+function youtubeUrlToEmbed(url: string): string | null {
+  const u = url.trim()
+  if (!u) return null
+  const embed = u.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/)
+  if (embed) return `https://www.youtube.com/embed/${embed[1]}`
+  const v = u.match(/[?&]v=([a-zA-Z0-9_-]{11})/)
+  if (v) return `https://www.youtube.com/embed/${v[1]}`
+  const shortM = u.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
+  if (shortM) return `https://www.youtube.com/embed/${shortM[1]}`
+  return null
+}
+
 interface ChatMessage {
   id: string
   user: string
@@ -89,6 +102,7 @@ interface ChatMessage {
 type WatchChromeTheme =
   | "default"
   | "wedding"
+  | "theHeart"
   | "garden"
   | "midnight"
   | "coastal"
@@ -107,7 +121,9 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
   const borderClass =
     theme === "wedding"
       ? "border-amber-200/70"
-      : theme === "garden"
+      : theme === "theHeart"
+        ? "border-rose-300/70"
+        : theme === "garden"
         ? "border-emerald-200/70"
         : theme === "midnight"
           ? "border-amber-600/45"
@@ -126,7 +142,9 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
   const galleryFocusRing =
     theme === "wedding"
       ? "focus-visible:ring-amber-400/80"
-      : theme === "garden"
+      : theme === "theHeart"
+        ? "focus-visible:ring-rose-400/80"
+        : theme === "garden"
         ? "focus-visible:ring-emerald-400/80"
         : theme === "midnight"
           ? "focus-visible:ring-amber-500/60"
@@ -235,7 +253,9 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
               className={`absolute left-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full shadow-md ${
                 theme === "wedding"
                   ? "border-amber-300/80 bg-[#fefae0]/95 text-stone-800 hover:bg-[#fefae0]"
-                  : theme === "garden"
+                  : theme === "theHeart"
+                    ? "border-rose-300/80 bg-rose-50/95 text-rose-950 hover:bg-rose-100"
+                    : theme === "garden"
                     ? "border-emerald-300/80 bg-white/95 text-emerald-900 hover:bg-emerald-50"
                     : theme === "midnight"
                       ? "border-amber-500/50 bg-black/90 text-amber-200 hover:bg-amber-950/50"
@@ -263,7 +283,9 @@ function WatchPhotoGallery({ urls, theme }: { urls: string[]; theme: WatchChrome
               className={`absolute right-0 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full shadow-md ${
                 theme === "wedding"
                   ? "border-amber-300/80 bg-[#fefae0]/95 text-stone-800 hover:bg-[#fefae0]"
-                  : theme === "garden"
+                  : theme === "theHeart"
+                    ? "border-rose-300/80 bg-rose-50/95 text-rose-950 hover:bg-rose-100"
+                    : theme === "garden"
                     ? "border-emerald-300/80 bg-white/95 text-emerald-900 hover:bg-emerald-50"
                     : theme === "midnight"
                       ? "border-amber-500/50 bg-black/90 text-amber-200 hover:bg-amber-950/50"
@@ -710,13 +732,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ? "celestial"
               : watchSkin === "weddingTraditionalHindu"
                 ? "traditionalHindu"
-                : watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
-                  ? "wedding"
-                  : watchSkin === "corporateTechForward"
-                    ? "corporateTech"
-                    : watchSkin === "memorialService"
-                      ? "memorial"
-                      : "default"
+                : watchSkin === "weddingTheHeart"
+                  ? "theHeart"
+                  : watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
+                    ? "wedding"
+                    : watchSkin === "corporateTechForward"
+                      ? "corporateTech"
+                      : watchSkin === "memorialService"
+                        ? "memorial"
+                        : "default"
 
   useEffect(() => {
     if (!event) return
@@ -1098,6 +1122,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     watchSkin !== "weddingCoastal" &&
     watchSkin !== "weddingCelestial" &&
     watchSkin !== "weddingTraditionalHindu" &&
+    watchSkin !== "weddingTheHeart" &&
     watchSkin !== "christianWeddingRose" &&
     watchSkin !== "muslimWeddingNikah" &&
     watchSkin !== "birthdayParty" &&
@@ -1346,6 +1371,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const DEFAULT_STREAM_SHELL = "relative aspect-video w-full bg-black"
   const WEDDING_STREAM_SHELL =
     "relative aspect-video w-full rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-950 via-rose-950/40 to-zinc-900 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] border border-white/10"
+  const THE_HEART_STREAM_SHELL =
+    "relative aspect-video w-full rounded-2xl overflow-hidden bg-gradient-to-br from-rose-950 via-pink-950/50 to-zinc-900 shadow-[0_25px_50px_-12px_rgba(190,24,93,0.35)] border border-rose-300/25"
   const GARDEN_STREAM_SHELL =
     "relative aspect-video w-full overflow-hidden rounded-3xl border border-white/55 bg-white/15 shadow-[0_8px_32px_rgba(22,101,52,0.18)] backdrop-blur-md"
   const MIDNIGHT_STREAM_SHELL =
@@ -1517,7 +1544,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <Badge
                   variant="outline"
                   className={
-                    streamChrome === "wedding"
+                    streamChrome === "wedding" || streamChrome === "theHeart"
                       ? "border-rose-200/60 bg-rose-900/45 text-rose-50"
                       : streamChrome === "garden"
                         ? "border-emerald-200/50 bg-emerald-950/50 text-emerald-50"
@@ -1555,7 +1582,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
           <div
             className={`absolute bottom-0 left-0 right-0 p-4 ${
-              streamChrome === "wedding"
+              streamChrome === "wedding" || streamChrome === "theHeart"
                 ? "bg-gradient-to-t from-rose-950/80 via-rose-900/40 to-transparent"
                 : streamChrome === "garden"
                   ? "bg-gradient-to-t from-emerald-950/85 via-emerald-900/35 to-transparent"
@@ -1659,7 +1686,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const headerClass =
       chatSkin === "wedding"
         ? "border-transparent bg-gradient-to-r from-amber-600 to-orange-500 text-white"
-        : chatSkin === "garden"
+        : chatSkin === "theHeart"
+          ? "border-transparent bg-gradient-to-r from-rose-600 to-pink-500 text-white"
+          : chatSkin === "garden"
           ? "border-transparent bg-emerald-700 text-white"
           : chatSkin === "midnight"
             ? "border-b border-amber-500/25 bg-black text-amber-100"
@@ -1709,7 +1738,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ? "text-zinc-400"
                 : "text-white/90"
     const scrollBg =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "bg-stone-50"
         : chatSkin === "garden"
           ? "bg-emerald-50/60"
@@ -1725,7 +1754,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "bg-[#0a0a0a]"
                     : ""
     const avFallback =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "bg-rose-200 text-rose-800 text-xs"
         : chatSkin === "garden"
           ? "bg-emerald-200 text-emerald-900 text-xs"
@@ -1741,7 +1770,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "bg-slate-800 font-corporate-tech-display text-blue-200 text-xs"
                     : "bg-primary/20 text-primary text-xs"
     const msgUser =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "text-rose-900"
         : chatSkin === "garden"
           ? "text-emerald-950"
@@ -1757,7 +1786,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "font-corporate-tech-display text-sm font-semibold text-sky-200"
                     : "text-foreground"
     const msgTime =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "text-rose-600/70"
         : chatSkin === "garden"
           ? "text-emerald-700/80"
@@ -1773,7 +1802,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "font-corporate-tech-display text-[10px] text-zinc-500"
                     : "text-muted-foreground"
     const msgBody =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "text-rose-800/85"
         : chatSkin === "garden"
           ? "text-emerald-900/85"
@@ -1789,7 +1818,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "font-sans text-sm text-zinc-300"
                     : "text-muted-foreground"
     const formBorder =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "border-rose-200/70 bg-white"
         : chatSkin === "garden"
           ? "border-emerald-200/80 bg-white/95"
@@ -1805,7 +1834,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "border-t border-blue-500/20 bg-black/50"
                     : "border-border"
     const inputClass =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "flex-1 rounded-full border-rose-200 bg-white shadow-sm"
         : chatSkin === "garden"
           ? "flex-1 rounded-full border-emerald-200 bg-white shadow-sm"
@@ -1821,7 +1850,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     ? "flex-1 border border-white/10 bg-black/60 text-sm text-white placeholder:text-zinc-600 focus-visible:ring-blue-500/40"
                     : "flex-1 bg-secondary border-0"
     const sendBtn =
-      chatSkin === "wedding"
+      chatSkin === "wedding" || chatSkin === "theHeart"
         ? "rounded-full bg-amber-600 hover:bg-amber-700 text-white"
         : chatSkin === "garden"
           ? "rounded-full bg-emerald-700 hover:bg-emerald-800 text-white"
@@ -1838,7 +1867,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     : ""
 
     const chatTitle =
-      streamChrome === "wedding"
+      streamChrome === "wedding" || streamChrome === "theHeart"
         ? "Live Wishes"
         : streamChrome === "garden"
           ? "Garden Messages"
@@ -1856,7 +1885,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                         ? "Live discussion"
                         : "Live Chat"
     const chatPlaceholder =
-      streamChrome === "wedding"
+      streamChrome === "wedding" || streamChrome === "theHeart"
         ? "Send your wishes..."
         : streamChrome === "garden"
           ? "Send love..."
@@ -1998,6 +2027,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const renderDetailsPanel = (detailsTheme: WatchChromeTheme) => {
     const hideGenericHeader =
       detailsTheme === "wedding" ||
+      detailsTheme === "theHeart" ||
       detailsTheme === "garden" ||
       detailsTheme === "midnight" ||
       detailsTheme === "coastal" ||
@@ -2009,7 +2039,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const panelShell =
       detailsTheme === "wedding"
         ? "border-amber-200/50 bg-[#fefae0]"
-        : detailsTheme === "garden"
+        : detailsTheme === "theHeart"
+          ? "border-rose-200/55 bg-rose-50/95"
+          : detailsTheme === "garden"
           ? "border-emerald-200/50 bg-[#faf9f6]"
           : detailsTheme === "midnight"
             ? "border-amber-500/25 bg-zinc-950 text-zinc-100"
@@ -2027,7 +2059,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const galleryBorder =
       detailsTheme === "wedding"
         ? "border-amber-200/60"
-        : detailsTheme === "garden"
+        : detailsTheme === "theHeart"
+          ? "border-rose-200/65"
+          : detailsTheme === "garden"
           ? "border-emerald-200/60"
           : detailsTheme === "midnight"
             ? "border-amber-500/25"
@@ -2045,7 +2079,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const shareBtn =
       detailsTheme === "wedding"
         ? "border-amber-300/80 bg-white/50 text-amber-950 hover:bg-white/70"
-        : detailsTheme === "garden"
+        : detailsTheme === "theHeart"
+          ? "border-rose-300/80 bg-white/60 text-rose-950 hover:bg-rose-50"
+          : detailsTheme === "garden"
           ? "border-emerald-300/80 bg-white/70 text-emerald-950 hover:bg-emerald-50"
           : detailsTheme === "midnight"
             ? "border-amber-500/40 bg-black/50 font-mono text-amber-100 hover:bg-amber-950/30"
@@ -2063,7 +2099,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const photoNameClass =
       detailsTheme === "wedding"
         ? "font-medium text-stone-900"
-        : detailsTheme === "garden"
+        : detailsTheme === "theHeart"
+          ? "font-medium text-rose-950"
+          : detailsTheme === "garden"
           ? "font-medium text-emerald-950"
           : detailsTheme === "midnight"
             ? "font-medium text-amber-100"
@@ -2081,7 +2119,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     const photoLinksClass =
       detailsTheme === "wedding"
         ? "flex flex-wrap gap-x-3 gap-y-1 text-stone-700"
-        : detailsTheme === "garden"
+        : detailsTheme === "theHeart"
+          ? "flex flex-wrap gap-x-3 gap-y-1 text-rose-900/90"
+          : detailsTheme === "garden"
           ? "flex flex-wrap gap-x-3 gap-y-1 text-emerald-800"
           : detailsTheme === "midnight"
             ? "flex flex-wrap gap-x-3 gap-y-1 font-mono text-sm text-amber-300/90"
@@ -2160,7 +2200,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         </div>
       </div>
 
-      {photoGalleryUrls.length > 0 && (
+      {photoGalleryUrls.length > 0 && watchSkin !== "weddingTheHeart" && (
         <div className={`mt-6 border-t pt-4 ${galleryBorder}`}>
           <h3 className="mb-3 text-sm font-semibold text-foreground">Photo gallery</h3>
           <WatchPhotoGallery urls={photoGalleryUrls} theme={detailsTheme} />
@@ -2209,6 +2249,296 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         </div>
       )}
     </div>
+    )
+  }
+
+  if (watchSkin === "weddingTheHeart") {
+    const scrollToTheHeartStream = () =>
+      document.getElementById("the-heart-stream")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    const heartHero =
+      heroBackdropUrl || getDefaultTemplateHeroBackdropUrl("tpl-wedding-the-heart") || ""
+    const teaserRaw =
+      typeof weddingFields.teaserYoutubeUrl === "string" ? weddingFields.teaserYoutubeUrl.trim() : ""
+    const teaserEmbed = teaserRaw ? youtubeUrlToEmbed(teaserRaw) : null
+    const invitationLine =
+      typeof weddingFields.invitationLine === "string" && weddingFields.invitationLine.trim()
+        ? weddingFields.invitationLine.trim()
+        : weddingHeroDescription
+    const tickerPrimary =
+      primaryDateFormatted && String(primaryDateFormatted).trim() !== ""
+        ? `Live streaming — ${primaryDateFormatted}`
+        : eventSubtitle || "Join us for our celebration"
+    const heartTagline = eventSubtitle || "We're getting married"
+
+    return (
+      <div className="relative flex min-h-screen flex-col bg-rose-50/80 font-wedding text-rose-950">
+        {globalHeaderImage}
+        <style jsx global>{`
+          @keyframes theHeartFadeInUp {
+            from {
+              opacity: 0;
+              transform: translate3d(0, 28px, 0);
+            }
+            to {
+              opacity: 1;
+              transform: translate3d(0, 0, 0);
+            }
+          }
+          @keyframes theHeartMarquee {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+          .the-heart-hero-animate {
+            animation: theHeartFadeInUp 1s ease-out both;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .the-heart-hero-animate {
+              animation: none;
+              opacity: 1;
+              transform: none;
+            }
+            .the-heart-marquee-track,
+            .the-heart-thanks-track {
+              animation: none !important;
+            }
+          }
+        `}</style>
+
+        <section className="relative flex min-h-[88vh] items-center justify-center overflow-hidden">
+          {heartHero ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-fixed"
+              style={{ backgroundImage: `url(${heartHero})` }}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-900 via-pink-900/90 to-stone-900" />
+          )}
+          <div className="absolute inset-0 bg-black/55" />
+          <div className="relative z-20 mx-auto max-w-4xl px-4 text-center text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.65)] the-heart-hero-animate">
+            <h1
+              className={cn(
+                "mt-2 font-bold leading-tight drop-shadow-lg",
+                titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+              )}
+              style={{
+                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...heroTitleFontSizeStyle(titleHeroRem),
+              }}
+            >
+              {coupleParts && coupleParts.length === 2 ? (
+                <>
+                  {coupleParts[0]}{" "}
+                  <span className="inline-block italic text-rose-200">&</span> {coupleParts[1]}
+                </>
+              ) : (
+                coupleHero
+              )}
+            </h1>
+            <p className="mt-5 text-lg font-light text-white/95 md:text-xl">{heartTagline}</p>
+            {event.status === "scheduled" && event.scheduledAt && showScheduledPageEnabled ? (
+              <div className="mt-10 flex flex-wrap justify-center gap-3 md:gap-6">
+                {[
+                  { label: "Days", value: countdown.days },
+                  { label: "Hours", value: countdown.hours },
+                  { label: "Minutes", value: countdown.minutes },
+                  { label: "Seconds", value: countdown.seconds },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="min-w-[76px] rounded-2xl bg-white/95 px-4 py-3 shadow-lg md:min-w-[100px] md:px-5 md:py-4"
+                  >
+                    <p className="text-2xl font-bold tabular-nums text-stone-800 md:text-3xl">
+                      {String(item.value).padStart(2, "0")}
+                    </p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                      {item.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : primaryDateFormatted || eventDates.length > 0 ? (
+              <div className="mx-auto mt-8 max-w-lg space-y-2 rounded-2xl bg-black/35 px-6 py-5 text-sm leading-relaxed text-white/95 backdrop-blur-sm md:text-base">
+                {event.scheduledAt && primaryDateFormatted ? (
+                  <p>
+                    <span className="font-semibold text-rose-200">When · </span>
+                    {primaryDateFormatted}
+                  </p>
+                ) : null}
+                {eventDates.map((d) => (
+                  <p key={d.id}>
+                    <span className="font-semibold text-rose-200">{(d.label || "Session").trim()} · </span>
+                    {formatExtraDate(d)}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+            <Button
+              asChild
+              className="mt-12 h-auto cursor-pointer rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-8 py-2.5 text-base font-semibold text-white shadow-xl hover:from-rose-600 hover:to-pink-600"
+            >
+              <a
+                href="#the-heart-stream"
+                className="inline-flex cursor-pointer items-center justify-center no-underline text-inherit"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToTheHeartStream()
+                }}
+              >
+                Watch Live Stream
+              </a>
+            </Button>
+          </div>
+          <div className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2 animate-bounce text-white">
+            <ChevronDown className="h-7 w-7 opacity-80" />
+          </div>
+        </section>
+
+        <div
+          className="overflow-hidden border-y border-rose-900/20 bg-rose-950 py-2 text-sm text-rose-50"
+          onMouseEnter={(e) => {
+            const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
+            if (track) track.style.animationPlayState = "paused"
+          }}
+          onMouseLeave={(e) => {
+            const track = e.currentTarget.querySelector(".the-heart-marquee-track") as HTMLElement | null
+            if (track) track.style.animationPlayState = "running"
+          }}
+        >
+          <div
+            className="the-heart-marquee-track flex w-max whitespace-nowrap"
+            style={{ animation: "theHeartMarquee 28s linear infinite" }}
+          >
+            <span className="pr-16 font-medium">
+              {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
+            </span>
+            <span className="pr-16 font-medium" aria-hidden>
+              {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
+            </span>
+          </div>
+        </div>
+
+        <section id="the-heart-stream" className="scroll-mt-4 bg-gradient-to-b from-rose-100/80 to-white px-4 py-16">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 text-center">
+              <h2 className="bg-gradient-to-r from-rose-700 via-pink-600 to-rose-600 bg-clip-text text-4xl font-bold text-transparent md:text-5xl">
+                Watch Live
+              </h2>
+            </div>
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-8 lg:items-start",
+                allowChat ? "lg:grid-cols-3" : "",
+              )}
+            >
+              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
+                {renderStreamPlayer(THE_HEART_STREAM_SHELL)}
+                {invitationLine ? (
+                  <h3 className="text-balance text-center text-lg font-semibold leading-snug text-rose-900 md:text-xl">
+                    {invitationLine}
+                  </h3>
+                ) : null}
+                <div
+                  className="overflow-hidden rounded-lg border border-rose-200/60 bg-rose-950/5 py-2 text-center text-sm text-rose-800"
+                  onMouseEnter={(e) => {
+                    const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                    if (track) track.style.animationPlayState = "paused"
+                  }}
+                  onMouseLeave={(e) => {
+                    const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                    if (track) track.style.animationPlayState = "running"
+                  }}
+                >
+                  <div
+                    className="the-heart-thanks-track inline-block w-max whitespace-nowrap"
+                    style={{ animation: "theHeartMarquee 22s linear infinite" }}
+                  >
+                    <span className="pr-12 font-semibold">Thank you! · Thank you! · </span>
+                    <span className="pr-12 font-semibold" aria-hidden>
+                      Thank you! · Thank you! ·{" "}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {allowChat ? (
+                <div
+                  className={`flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-rose-200/80 bg-white shadow-xl lg:min-h-[600px] ${
+                    showChat ? "flex" : "hidden lg:flex"
+                  }`}
+                >
+                  {renderLiveChatBody()}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        {teaserEmbed ? (
+          <section className="border-t border-rose-100 bg-white px-4 py-14">
+            <div className="mx-auto max-w-5xl">
+              <h2 className="mb-8 text-center text-3xl font-bold text-rose-900 md:text-4xl">Watch Teaser</h2>
+              <div className="aspect-video w-full overflow-hidden rounded-2xl border border-rose-200/70 shadow-lg">
+                <iframe
+                  title="Teaser"
+                  src={`${teaserEmbed}?rel=0`}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {photoGalleryUrls.length > 0 ? (
+          <section className="border-t border-rose-100 bg-gradient-to-b from-rose-50 to-white px-4 py-16">
+            <div className="mx-auto max-w-6xl">
+              <h2 className="mb-10 text-center text-3xl font-bold text-rose-900 md:text-4xl">Photo Gallery</h2>
+              <WatchPhotoGallery urls={photoGalleryUrls} theme="theHeart" />
+            </div>
+          </section>
+        ) : null}
+
+        {(photographerLogoUrl ||
+          photographerContact.name ||
+          photographerContact.phone ||
+          photographerContact.email ||
+          photographerWebsitePublicUrl) && (
+          <section className="border-t border-rose-100 bg-rose-50/50 px-4 py-12">
+            <div className="mx-auto max-w-3xl text-center text-rose-900">
+              {photographerLogoUrl ? (
+                <img src={photographerLogoUrl} alt="" className="mx-auto mb-4 h-16 w-auto object-contain" />
+              ) : null}
+              {photographerContact.name ? (
+                <p className="text-lg font-semibold">Photography by {photographerContact.name}</p>
+              ) : (
+                <p className="text-lg font-semibold">Photography</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        <footer
+          className="relative border-t border-rose-200/60 bg-cover bg-fixed bg-center py-16 text-center text-white"
+          style={
+            heartHero
+              ? {
+                  backgroundImage: `linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.72)), url(${heartHero})`,
+                }
+              : { background: "linear-gradient(135deg,#9f1239,#831843)" }
+          }
+        >
+          <div className="the-heart-hero-animate relative z-10 mx-auto max-w-2xl px-4">
+            <h2 className="text-3xl font-semibold md:text-4xl">Thank You</h2>
+            <p className="mt-4 text-sm text-white/85">With love — thank you for celebrating with us.</p>
+          </div>
+        </footer>
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10">{renderDetailsPanel("theHeart")}</div>
+      </div>
     )
   }
 

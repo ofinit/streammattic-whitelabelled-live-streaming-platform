@@ -29,6 +29,7 @@ import {
 } from "@/lib/third-party-embed-validation"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
+import { templateIdFromTemplateDataRecord } from "@/lib/watch-template-data"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -228,15 +229,23 @@ export async function POST(req: NextRequest) {
 
     // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
     const resolvedTemplateId =
-      templateId ??
-      (rawTemplateData && typeof rawTemplateData === "object" && "templateId" in rawTemplateData
-        ? (rawTemplateData.templateId as string)
-        : null)
+      templateId != null && String(templateId).trim() !== ""
+        ? String(templateId).trim()
+        : templateIdFromTemplateDataRecord(
+            rawTemplateData && typeof rawTemplateData === "object" && !Array.isArray(rawTemplateData)
+              ? (rawTemplateData as Record<string, unknown>)
+              : undefined,
+          )
+    const mergedRaw =
+      rawTemplateData && typeof rawTemplateData === "object" && !Array.isArray(rawTemplateData)
+        ? { ...(rawTemplateData as Record<string, unknown>) }
+        : {}
+    const finalPostTemplateId = resolvedTemplateId ?? templateIdFromTemplateDataRecord(mergedRaw)
     const templateDataJson =
-      resolvedTemplateId || (rawTemplateData && typeof rawTemplateData === "object" && Object.keys(rawTemplateData).length > 0)
+      finalPostTemplateId || Object.keys(mergedRaw).length > 0
         ? JSON.stringify({
-            ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
-            templateId: resolvedTemplateId,
+            ...mergedRaw,
+            ...(finalPostTemplateId ? { templateId: finalPostTemplateId } : {}),
           })
         : "{}"
 
@@ -587,21 +596,35 @@ export async function PUT(req: NextRequest) {
 
     const existingTemplateData = existingRow.template_data as Record<string, unknown> | null | undefined
     const hasTemplateUpdate = templateId !== undefined || (rawTemplateData !== undefined && rawTemplateData !== null)
+    const fromBodyPut =
+      templateId !== undefined && templateId != null && String(templateId).trim() !== ""
+        ? String(templateId).trim()
+        : null
+    const fromRawPut =
+      rawTemplateData && typeof rawTemplateData === "object" && !Array.isArray(rawTemplateData)
+        ? templateIdFromTemplateDataRecord(rawTemplateData as Record<string, unknown>)
+        : null
+    const mergedWithoutFinalId = {
+      ...(existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {}),
+      ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
+    } as Record<string, unknown>
     const resolvedTemplateIdPut =
-      templateId !== undefined
-        ? templateId
-        : (rawTemplateData && typeof rawTemplateData === "object" && "templateId" in rawTemplateData
-            ? (rawTemplateData.templateId as string)
-            : existingTemplateData && typeof existingTemplateData === "object" && "templateId" in existingTemplateData
-              ? existingTemplateData.templateId
-              : null)
+      fromBodyPut ??
+      fromRawPut ??
+      templateIdFromTemplateDataRecord(mergedWithoutFinalId)
     const newTemplateData = hasTemplateUpdate
-      ? {
-          ...(existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {}),
-          ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
-          templateId: resolvedTemplateIdPut,
-        }
-      : (existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {})
+      ? (() => {
+          const next = { ...mergedWithoutFinalId }
+          if (resolvedTemplateIdPut) {
+            next.templateId = resolvedTemplateIdPut
+          } else if ("templateId" in next && next.templateId == null) {
+            delete next.templateId
+          }
+          return next
+        })()
+      : existingTemplateData && typeof existingTemplateData === "object"
+        ? existingTemplateData
+        : {}
 
     let validityExpiresAtValue: string | null | undefined = validityExpiresAt
     if (validityExpiresAtValue === undefined && typeof validityDays === "number" && validityDays > 0) {

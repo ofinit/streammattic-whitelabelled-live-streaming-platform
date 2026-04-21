@@ -22,16 +22,34 @@ export function parseWatchTemplateData(raw: unknown): Record<string, unknown> {
 }
 
 /**
+ * Reads `templateId` or legacy `template_id` inside `events.template_data` JSON.
+ * Some imports and older rows only set snake_case.
+ */
+export function templateIdFromTemplateDataRecord(data: Record<string, unknown> | null | undefined): string | null {
+  if (!data || typeof data !== "object") return null
+  const camel = data.templateId
+  const snake = data.template_id
+  if (typeof camel === "string" && camel.trim()) return camel.trim()
+  if (typeof snake === "string" && snake.trim()) return snake.trim()
+  return null
+}
+
+/**
  * Resolves the stream template id for watch chrome and Tier-C skins.
  * Prefer `templateData.templateId` (what the event form saves); fall back to DB columns.
  */
 export function resolveWatchTemplateId(event: unknown): string {
   if (!event || typeof event !== "object") return ""
   const ev = event as Record<string, unknown>
-  const data = parseWatchTemplateData(ev.templateData)
-  const fromJson = data.templateId
-  if (typeof fromJson === "string" && fromJson.trim()) return fromJson.trim()
+  const rawTd = ev.templateData ?? ev.template_data
+  const data = parseWatchTemplateData(rawTd)
+  const fromJson = templateIdFromTemplateDataRecord(data)
+  if (fromJson) return fromJson
   const fromColumn = ev.templateId ?? ev.template_id
-  if (typeof fromColumn === "string" && fromColumn.trim()) return fromColumn.trim()
+  if (typeof fromColumn === "string" && fromColumn.trim()) {
+    const s = fromColumn.trim()
+    // Skin map uses string slugs like tpl-wedding-the-heart. Ignore UUID `template_id` FK if present.
+    if (s.startsWith("tpl-")) return s
+  }
   return ""
 }

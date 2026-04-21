@@ -1133,8 +1133,22 @@ export function EventFormDialog({
     }
     if (showCredentialsScreen) return
 
+    /**
+     * OAuth / deep-link flows sometimes pass `editingEvent` as `{ id }` until the events list loads.
+     * We must re-hydrate when the full row arrives; using only `id` as the key skipped that and left
+     * template + settings stuck on defaults (tpl-default, empty template_data, etc.).
+     */
+    const eventRecord = event != null ? (event as Record<string, unknown>) : null
+    const isStubEvent =
+      event != null &&
+      event.id != null &&
+      String(event.id).trim() !== "" &&
+      eventRecord != null &&
+      Object.keys(eventRecord).length <= 1
     const hydrateKey =
-      event != null && event.id != null && String(event.id).trim() !== "" ? String(event.id) : "__create__"
+      event != null && event.id != null && String(event.id).trim() !== ""
+        ? `${String(event.id)}${isStubEvent ? ":stub" : ""}`
+        : "__create__"
     if (formHydratedKeyRef.current === hydrateKey) return
     formHydratedKeyRef.current = hydrateKey
 
@@ -1168,7 +1182,9 @@ export function EventFormDialog({
         if (event.simulcastConfig) {
           setSimulcastConfig(event.simulcastConfig)
         }
-        setTemplateData(parseTemplateDataFromEvent((event as any).templateData))
+        setTemplateData(
+          parseTemplateDataFromEvent((event as any).templateData ?? (event as any).template_data),
+        )
         setHeroImageUrl((ev.heroImageUrl as string) || "")
         setHeaderImageUrl((ev.headerImageUrl as string) || "")
         setPlayerImageUrl((ev.playerImageUrl as string) || "")

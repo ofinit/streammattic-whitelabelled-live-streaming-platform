@@ -110,9 +110,7 @@ export function formatWatchScheduleForMeta(ev: WatchEventMetaPayload): string {
 }
 
 export function buildWatchDocumentTitle(ev: WatchEventMetaPayload): string {
-  const name = buildWatchDisplayName(ev)
-  const when = formatWatchScheduleForMeta(ev)
-  return `${name} ~ ${when}`
+  return buildWatchDisplayName(ev)
 }
 
 /**
@@ -122,10 +120,6 @@ export function buildWatchDocumentTitle(ev: WatchEventMetaPayload): string {
 export function buildWatchShareDescription(ev: WatchEventMetaPayload, scheduleLine: string): string {
   const parts: string[] = []
   parts.push(`When: ${scheduleLine}`)
-  const tz = ev.timezone?.trim()
-  if (tz && tz !== "UTC") {
-    parts.push(`Timezone: ${tz}`)
-  }
 
   return parts.join("\n\n").slice(0, 600)
 }

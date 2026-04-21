@@ -116,26 +116,16 @@ export function buildWatchDocumentTitle(ev: WatchEventMetaPayload): string {
 }
 
 /**
- * Rich OG/Twitter body: subtitle, description, schedule + IANA TZ, studio.
+ * Keep OG/Twitter body minimal: schedule details only.
+ * Excludes subtitle/description/studio so share previews stay clean across all templates.
  */
 export function buildWatchShareDescription(ev: WatchEventMetaPayload, scheduleLine: string): string {
   const parts: string[] = []
-  const sub = ev.subtitle?.trim()
-  if (sub) parts.push(sub)
-
-  const desc = ev.description?.trim()
-  if (desc) {
-    parts.push(desc.replace(/\s+/g, " ").slice(0, 400))
-  }
-
   parts.push(`When: ${scheduleLine}`)
   const tz = ev.timezone?.trim()
   if (tz && tz !== "UTC") {
     parts.push(`Timezone: ${tz}`)
   }
-
-  const studio = ev.studioName?.trim()
-  if (studio) parts.push(`Presented by ${studio}`)
 
   return parts.join("\n\n").slice(0, 600)
 }

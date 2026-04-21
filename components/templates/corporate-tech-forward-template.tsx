@@ -22,7 +22,6 @@ export function CorporateTechForwardTemplate({
 }: TemplateProps) {
   const hero =
     heroImageUrl?.trim() || getDefaultTemplateHeroBackdropUrl("tpl-corporate-tech-forward") || ""
-  const heroIsCustom = !!heroImageUrl?.trim()
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0a0a0a] font-sans text-white">
@@ -59,16 +58,7 @@ export function CorporateTechForwardTemplate({
             aria-hidden
           />
         ) : null}
-        <div
-          className={
-            heroIsCustom
-              ? "absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/55 via-[#0a0a0a]/72 to-[#0a0a0a]"
-              : "absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/20 via-[#0a0a0a]/35 to-[#0a0a0a]/75"
-          }
-          aria-hidden
-        />
-
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
+        <div className="relative z-10 mx-auto max-w-4xl text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.7)]">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400">
             <span className="h-2 w-2 rounded-full bg-emerald-400 corp-tech-live-dot" />
             Innovation summit skin

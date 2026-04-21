@@ -115,8 +115,7 @@ export function WeddingTemplate({
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-stone-800 via-stone-900 to-black" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/50 to-black/65" />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 pb-24 pt-16 text-center text-white">
+        <div className="relative z-10 mx-auto max-w-4xl px-4 pb-24 pt-16 text-center text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-white/90 md:text-sm">
             We are getting married
           </p>

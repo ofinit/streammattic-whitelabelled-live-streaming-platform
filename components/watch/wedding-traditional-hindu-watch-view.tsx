@@ -169,11 +169,6 @@ export function WeddingTraditionalHinduWatchView({
         ) : (
           <div className="absolute inset-0 z-0 bg-gradient-to-b from-orange-50 to-[#FFF8DC]" aria-hidden />
         )}
-        <div
-          className="absolute inset-0 z-[1] bg-gradient-to-b from-[#FFF8DC]/80 via-orange-50/50 to-[#FFF8DC]"
-          aria-hidden
-        />
-
         {/* Hero-only: fixed overlays would cover the stream player; keep animations inside this section */}
         <div className="pointer-events-none absolute inset-0 z-[5] overflow-hidden motion-reduce:hidden" aria-hidden>
           {diyas.map((d) => (
@@ -225,7 +220,7 @@ export function WeddingTraditionalHinduWatchView({
           </div>
         </div>
 
-        <div className="relative z-30 mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-4 pb-8 pt-[210px] text-center sm:pt-[230px]">
+        <div className="relative z-30 mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-4 pb-8 pt-[210px] text-center [text-shadow:0_2px_8px_rgba(0,0,0,0.25)] sm:pt-[230px]">
           <div data-hindu-reveal className="hindu-wedding-reveal hindu-wedding-reveal--visible mb-6">
             <span className="inline-block text-6xl text-amber-600 drop-shadow-[0_0_24px_rgba(255,215,0,0.55)] motion-reduce:animate-none md:text-7xl">
               ॐ

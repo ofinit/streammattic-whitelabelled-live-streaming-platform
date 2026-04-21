@@ -51,9 +51,7 @@ export function WeddingTraditionalHinduTemplate({
             style={{ backgroundImage: `url(${hero})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FFF8DC]/90 via-orange-50/70 to-[#FFF8DC]" aria-hidden />
-
-        <div className="relative z-[1] mx-auto max-w-3xl text-center">
+        <div className="relative z-[1] mx-auto max-w-3xl text-center [text-shadow:0_2px_8px_rgba(0,0,0,0.25)]">
           <p className="text-sm font-medium uppercase tracking-[0.35em] text-orange-600">Traditional Hindu Wedding</p>
           <h1 className="mt-4 font-hindu-wedding-display text-4xl font-semibold text-red-900 md:text-6xl">{eventTitle}</h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-zinc-700 md:text-lg">{eventDescription}</p>

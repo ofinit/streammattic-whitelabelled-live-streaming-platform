@@ -581,6 +581,33 @@ export function EventFormDialog({
     return candidate.toISOString()
   }
 
+  // Helper: convert UTC/ISO timestamp from DB into a datetime-local value for a specific timezone.
+  const utcToLocalInput = (utcIso: string, tz: string): string => {
+    const raw = String(utcIso || "").trim()
+    if (!raw) return ""
+    const parsed = new Date(raw)
+    if (Number.isNaN(parsed.getTime())) {
+      return raw.length >= 16 ? raw.slice(0, 16) : ""
+    }
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    const parts = fmt.formatToParts(parsed)
+    const p = Object.fromEntries(parts.filter((x) => x.type !== "literal").map((x) => [x.type, x.value]))
+    const hour = p.hour === "24" ? "00" : String(p.hour || "00")
+    const year = String(p.year || "0000")
+    const month = String(p.month || "01")
+    const day = String(p.day || "01")
+    const minute = String(p.minute || "00")
+    return `${year}-${month}-${day}T${hour}:${minute}`
+  }
+
   const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
   function toSlug(text: string) {
@@ -1108,6 +1135,11 @@ export function EventFormDialog({
     formHydratedKeyRef.current = hydrateKey
 
     if (event) {
+        const ev = event as any
+        const eventTimezone =
+          (typeof ev.timezone === "string" && ev.timezone.trim()) ||
+          "Asia/Kolkata"
+        setTimezone(eventTimezone)
         setFormData({
           title: event.title,
           subtitle: event.subtitle || "",
@@ -1115,7 +1147,7 @@ export function EventFormDialog({
           streamType: (event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) as StreamType,
           youtubeUrl: event.youtubeUrl || "",
           embedCode: event.embedCode || "",
-          scheduledAt: event.scheduledAt ? String(event.scheduledAt).slice(0, 16) : "",
+          scheduledAt: event.scheduledAt ? utcToLocalInput(String(event.scheduledAt), eventTimezone) : "",
           isPasswordProtected: event.isPasswordProtected,
           password: event.password || "",
           captureVisitorData:
@@ -1133,7 +1165,6 @@ export function EventFormDialog({
           setSimulcastConfig(event.simulcastConfig)
         }
         setTemplateData(parseTemplateDataFromEvent((event as any).templateData))
-        const ev = event as any
         setHeroImageUrl((ev.heroImageUrl as string) || "")
         setHeaderImageUrl((ev.headerImageUrl as string) || "")
         setPlayerImageUrl((ev.playerImageUrl as string) || "")

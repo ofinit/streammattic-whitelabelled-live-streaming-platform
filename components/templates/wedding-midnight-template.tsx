@@ -60,13 +60,7 @@ export function WeddingMidnightTemplate({
             style={{ backgroundImage: `url(${hero})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/85 to-[#0a0a0a]" />
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(212,175,55,0.12)_0%,transparent_55%)]"
-          aria-hidden
-        />
-
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
+        <div className="relative z-10 mx-auto max-w-4xl text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.7)]">
           <p className="midnight-typing-caret font-midnight-sans text-xs font-semibold uppercase tracking-[0.35em] text-amber-500/80">
             Digital wedding experience
           </p>

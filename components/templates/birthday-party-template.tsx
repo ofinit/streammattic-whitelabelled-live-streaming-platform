@@ -282,17 +282,6 @@ export function BirthdayPartyTemplate({
           background: `linear-gradient(135deg, ${PARTY_PINK} 0%, ${PARTY_PURPLE} 45%, ${PARTY_BLUE} 100%)`,
         }}
       >
-        <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-40"
-          style={{
-            background: `
-              radial-gradient(circle at 20% 30%, rgba(255,255,255,0.2) 0%, transparent 45%),
-              radial-gradient(circle at 80% 70%, rgba(255,255,255,0.15) 0%, transparent 50%)
-            `,
-            animation: reduceMotion ? undefined : "bpPulseGlow 4s ease-in-out infinite",
-          }}
-          aria-hidden
-        />
         {heroBackdrop ? (
           <div
             className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20"
@@ -342,7 +331,7 @@ export function BirthdayPartyTemplate({
           </div>
         ) : null}
 
-        <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col justify-center">
+        <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col justify-center [text-shadow:0_2px_8px_rgba(0,0,0,0.35)]">
           <div
             className="mx-auto w-full max-w-4xl px-2"
             style={{

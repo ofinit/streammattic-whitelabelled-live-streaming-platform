@@ -65,12 +65,7 @@ export function FuneralTemplate({
           className="absolute inset-0 bg-gradient-to-br from-[#1e3c72] via-[#2a5298] to-[#7e8ba3]"
           aria-hidden
         />
-        <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.45)_100%)]"
-          aria-hidden
-        />
-
-        <div className="relative z-10 mx-auto max-w-2xl text-center">
+        <div className="relative z-10 mx-auto max-w-2xl text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
           <div className="relative mx-auto mb-8 w-[200px] md:w-[240px]">
             <div className="memorial-photo-glow rounded-full border-[5px] border-[#c9a961] bg-white p-2 shadow-xl">
               <div className="flex aspect-square items-center justify-center rounded-full bg-gradient-to-br from-zinc-200 to-zinc-400 text-zinc-500">

@@ -56,13 +56,7 @@ export function WeddingGardenTemplate({
             style={{ backgroundImage: `url(${hero})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/45" aria-hidden />
-        <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_85%_65%_at_50%_42%,rgba(4,32,28,0.82)_0%,rgba(4,32,28,0.45)_52%,transparent_72%)]"
-          aria-hidden
-        />
-
-        <div className="relative z-10 mx-auto max-w-3xl text-center">
+        <div className="relative z-10 mx-auto max-w-3xl text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-emerald-100/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
             Garden wedding
           </p>

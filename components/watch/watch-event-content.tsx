@@ -2258,8 +2258,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-rose-900 via-amber-900/90 to-stone-900" />
           )}
-          <div className="absolute inset-0 bg-black/45" />
-          <div className="relative z-20 mx-auto max-w-4xl px-4 text-center text-white">
+          <div className="relative z-20 mx-auto max-w-4xl px-4 text-center text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
             {eventSubtitle ? (
               <p className="text-sm font-light uppercase tracking-[0.3em] md:text-base">{eventSubtitle}</p>
             ) : null}
@@ -2490,16 +2489,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-800 to-stone-900" />
           )}
-          {/* Darken center for readable type; keep photo visible at edges (not washed-out cream) */}
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/45"
-            aria-hidden
-          />
-          <div
-            className="absolute inset-0 bg-[radial-gradient(ellipse_85%_65%_at_50%_42%,rgba(4,32,28,0.82)_0%,rgba(4,32,28,0.45)_52%,transparent_72%)]"
-            aria-hidden
-          />
-          <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+          <div className="relative z-10 mx-auto max-w-4xl px-4 text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
             {eventSubtitle ? (
               <p className="text-xs font-medium uppercase tracking-[0.35em] text-emerald-100/95 md:text-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
                 {eventSubtitle}
@@ -3759,13 +3749,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-black to-zinc-900" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/75 to-[#0a0a0a]" />
-          <div
-            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(212,175,55,0.14)_0%,transparent_58%)]"
-            aria-hidden
-          />
-
-          <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 text-center [text-shadow:0_2px_10px_rgba(0,0,0,0.65)]">
             {eventSubtitle ? (
               <p className="midnight-typing-caret font-midnight-sans text-xs font-medium uppercase tracking-[0.35em] text-amber-500/85 md:text-sm">
                 {eventSubtitle}
@@ -3956,7 +3940,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               aria-hidden
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-[#edf6f9]/80 to-[#edf6f9]/95" aria-hidden />
           <div
             className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-[100px] overflow-hidden"
             aria-hidden
@@ -3966,7 +3949,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             <div className="coastal-wave-layer" />
           </div>
 
-          <div className="relative z-10 mx-auto max-w-4xl px-4 text-center">
+          <div className="relative z-10 mx-auto max-w-4xl px-4 text-center [text-shadow:0_1px_8px_rgba(0,0,0,0.4)]">
             <p className="text-2xl motion-safe:animate-[pulse_3s_ease-in-out_infinite]" aria-hidden>
               🐚
             </p>
@@ -4182,12 +4165,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               style={{ backgroundImage: `url(${celestialHeroBackdrop})` }}
             />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0b0d17]/20 via-[#1a1f3d]/85 to-[#0b0d17]" aria-hidden />
-          <div
-            className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_20%,rgba(74,14,78,0.35)_0%,transparent_55%)]"
-            aria-hidden
-          />
-
           <div className="celestial-aurora-hero z-[1]" aria-hidden />
           <div
             className="celestial-nebula-blob z-[1] h-96 w-96 bg-purple-600 top-20 -left-20"
@@ -4276,7 +4253,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             />
           </svg>
 
-          <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
+          <div className="relative z-10 mx-auto max-w-5xl px-4 text-center [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
             <div className="celestial-moon-disc mx-auto shadow-2xl" aria-hidden />
 
             <h1

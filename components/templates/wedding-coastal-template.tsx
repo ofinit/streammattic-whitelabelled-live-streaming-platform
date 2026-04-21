@@ -45,8 +45,6 @@ export function WeddingCoastalTemplate({
             style={{ backgroundImage: `url(${hero})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-[#edf6f9]/85 to-[#e6ccb2]/40" aria-hidden />
-
         <div
           className="pointer-events-none absolute bottom-0 left-0 right-0 h-[100px] overflow-hidden"
           aria-hidden
@@ -56,7 +54,7 @@ export function WeddingCoastalTemplate({
           <div className="coastal-wave-layer" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl text-center">
+        <div className="relative z-10 mx-auto max-w-3xl text-center [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#e29578]">Beach wedding</p>
           <h1 className="mt-4 font-coastal-script text-5xl text-[#006d77] drop-shadow-sm md:text-7xl">
             {eventTitle}

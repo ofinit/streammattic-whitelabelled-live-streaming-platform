@@ -59,12 +59,6 @@ export function WeddingCelestialTemplate({
             style={{ backgroundImage: `url(${hero})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0b0d17]/30 via-[#1a1f3d]/90 to-[#0b0d17]" aria-hidden />
-        <div
-          className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_20%,rgba(74,14,78,0.35)_0%,transparent_55%)]"
-          aria-hidden
-        />
-
         <div className="celestial-aurora-hero z-[1]" aria-hidden />
         <div
           className="celestial-nebula-blob z-[1] h-96 w-96 bg-purple-600 top-20 -left-20 opacity-80"
@@ -98,7 +92,7 @@ export function WeddingCelestialTemplate({
           <span className="celestial-shooting-star celestial-shooting-star--track3" style={{ top: "38%", left: "8%" }} />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl text-center">
+        <div className="relative z-10 mx-auto max-w-3xl text-center [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
           <div className="celestial-moon-disc mx-auto" aria-hidden />
           <h1 className="mt-8 bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 bg-clip-text font-celestial-display text-5xl font-semibold uppercase tracking-tight text-transparent md:text-7xl">
             {eventTitle}

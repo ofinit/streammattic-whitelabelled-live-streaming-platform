@@ -154,18 +154,7 @@ export function CorporateTechForwardWatchView({
             aria-hidden
           />
         ) : null}
-        <div
-          className={cn(
-            "absolute inset-0 z-[1] bg-gradient-to-b",
-            /** Custom photo/logo: strong wash for any image. Default bundled SVG: light vignette so the art stays visible. */
-            heroBackdropIsCustom
-              ? "from-[#0a0a0a]/55 via-[#0a0a0a]/72 to-[#0a0a0a]"
-              : "from-[#0a0a0a]/20 via-[#0a0a0a]/35 to-[#0a0a0a]/75",
-          )}
-          aria-hidden
-        />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 [text-shadow:0_2px_10px_rgba(0,0,0,0.7)]">
           <div className="mx-auto max-w-3xl text-center">
             <div>
               <h1

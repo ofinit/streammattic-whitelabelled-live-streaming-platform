@@ -111,21 +111,18 @@ export function MemorialServiceWatchView({
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f8f5f0] font-memorial-serif text-[#2c3e50]">
       <EventGlobalHeaderImage url={headerImageUrl} />
       <section className="relative flex min-h-[min(100dvh,920px)] items-center justify-center overflow-hidden px-4 py-16 md:py-20">
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-[#1e3c72] via-[#2a5298] to-[#7e8ba3]"
-          aria-hidden
-        />
         {heroBackdropUrl ? (
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-40"
+            className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${heroBackdropUrl})` }}
             aria-hidden
           />
-        ) : null}
-        <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.45)_100%)]"
-          aria-hidden
-        />
+        ) : (
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-[#1e3c72] via-[#2a5298] to-[#7e8ba3]"
+            aria-hidden
+          />
+        )}
 
         <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden" aria-hidden>
           {rays.map((r) => (
@@ -147,7 +144,7 @@ export function MemorialServiceWatchView({
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl text-center motion-safe:animate-[memorialFadeInUp_1.2s_ease-out]">
+        <div className="relative z-10 mx-auto max-w-3xl text-center motion-safe:animate-[memorialFadeInUp_1.2s_ease-out] [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
           <div className="relative mx-auto mb-8 w-[min(220px,70vw)] md:mb-10 md:w-[280px]">
             <div className="memorial-photo-glow rounded-full border-[5px] border-[#c9a961] bg-white p-2 shadow-[0_10px_40px_rgba(0,0,0,0.35)] md:border-[6px] md:p-2">
               <div className="relative aspect-square overflow-hidden rounded-full bg-gradient-to-br from-zinc-200 to-zinc-400">

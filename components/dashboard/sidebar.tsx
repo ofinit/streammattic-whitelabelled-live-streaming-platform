@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Fragment, useEffect, useMemo } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -51,6 +51,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { resolveGalleryHref, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 import { ThemePreferenceMenu } from "@/components/settings/theme-toggle"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { StudioSetupWizard } from "@/components/studio/studio-setup-wizard"
 
 interface NavItem {
   title: string
@@ -81,7 +83,7 @@ const adminNav: NavItem[] = [
   { title: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
-/** Studio nav without Setup Wizard — wizard row is injected when onboarding is incomplete or draft exists */
+/** Studio primary nav — setup wizard opens from My Account (modal), not the sidebar list */
 const studioNavBeforeSetup: NavItem[] = [
   { title: "Dashboard", href: "/studio", icon: LayoutDashboard },
   { title: "Control Center", href: "/studio/control-center", icon: Radio },
@@ -331,7 +333,7 @@ function AccountBlock({
   userRole,
   initials,
   logout,
-  reRunSetupWizardHref,
+  studioSetupWizardAction,
 }: {
   isCollapsed: boolean
   isMobileSheet: boolean
@@ -339,8 +341,8 @@ function AccountBlock({
   userRole?: string
   initials?: string
   logout: () => void
-  /** Studio users who finished onboarding — open full wizard with ?force=1 */
-  reRunSetupWizardHref?: string
+  /** Studio: open setup / resume / re-setup in modal from My Account */
+  studioSetupWizardAction?: { label: string; badge?: number; onSelect: () => void }
 }) {
   const effectiveCollapsed = isCollapsed && !isMobileSheet
 
@@ -384,12 +386,23 @@ function AccountBlock({
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
-          {reRunSetupWizardHref ? (
-            <DropdownMenuItem asChild>
-              <Link href={reRunSetupWizardHref} className="cursor-pointer">
-                <Zap className="mr-2 h-4 w-4" />
-                Re-run setup wizard
-              </Link>
+          {studioSetupWizardAction ? (
+            <DropdownMenuItem
+              onClick={() => studioSetupWizardAction.onSelect()}
+              className="cursor-pointer"
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              <span className="flex flex-1 items-center gap-2">
+                <span>{studioSetupWizardAction.label}</span>
+                {studioSetupWizardAction.badge ? (
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-5 justify-center bg-primary text-primary-foreground"
+                  >
+                    {studioSetupWizardAction.badge}
+                  </Badge>
+                ) : null}
+              </span>
             </DropdownMenuItem>
           ) : null}
           <ThemePreferenceMenu />
@@ -407,7 +420,8 @@ export function Sidebar() {
   const pathname = usePathname()
   const { user, logout, isImpersonating } = useAuth()
   const { isCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useSidebar()
-  const { data: studioSetupInfo } = useSWR<StudioSetupInfoResponse>(
+  const [studioSetupWizardOpen, setStudioSetupWizardOpen] = useState(false)
+  const { data: studioSetupInfo, mutate: mutateStudioSetup } = useSWR<StudioSetupInfoResponse>(
     user?.role === "studio" ? "/api/studio/setup" : null,
     settingsFetcher,
     { revalidateOnFocus: true },
@@ -417,36 +431,34 @@ export function Sidebar() {
     switch (user?.role) {
       case "admin":
         return adminNav
-      case "studio": {
-        const showSetup =
-          studioSetupInfo == null ||
-          !studioSetupInfo.setupCompletedAt ||
-          studioSetupInfo.draft != null
-        const hasDraft = Boolean(studioSetupInfo?.draft)
-        const setupItem: NavItem | null = showSetup
-          ? {
-              title: hasDraft ? "Resume setup" : "Setup Wizard",
-              href: "/studio/setup",
-              icon: Zap,
-              badge: hasDraft ? 1 : undefined,
-            }
-          : null
-        return [...studioNavBeforeSetup, ...(setupItem ? [setupItem] : []), ...studioNavAfterSetup]
-      }
+      case "studio":
+        return [...studioNavBeforeSetup, ...studioNavAfterSetup]
       case "streamer":
         return streamerNav
       default:
         return []
     }
+  }, [user?.role])
+
+  const studioSetupWizardModal = useMemo(() => {
+    if (user?.role !== "studio") return null
+    if (studioSetupInfo == null) {
+      return { label: "Setup wizard" as const, badge: undefined as number | undefined, force: false }
+    }
+    const hasDraft = Boolean(studioSetupInfo.draft)
+    const completed = Boolean(studioSetupInfo.setupCompletedAt)
+    if (hasDraft) return { label: "Resume setup" as const, badge: 1 as const, force: false }
+    if (!completed) return { label: "Setup wizard" as const, badge: undefined, force: false }
+    return { label: "Re-setup wizard" as const, badge: undefined, force: true }
   }, [user?.role, studioSetupInfo])
 
-  const reRunSetupWizardHref =
-    user?.role === "studio" &&
-    studioSetupInfo &&
-    Boolean(studioSetupInfo.setupCompletedAt) &&
-    studioSetupInfo.draft == null
-      ? "/studio/setup?force=1"
-      : undefined
+  const studioSetupWizardAction = studioSetupWizardModal
+    ? {
+        label: studioSetupWizardModal.label,
+        badge: studioSetupWizardModal.badge,
+        onSelect: () => setStudioSetupWizardOpen(true),
+      }
+    : undefined
   const closeMobileNav = () => setMobileNavOpen(false)
   const galleryNavTrailing =
     user?.role === "streamer" || user?.role === "studio" ? (
@@ -522,7 +534,7 @@ export function Sidebar() {
               userRole={user?.role}
               initials={initials}
               logout={logout}
-              reRunSetupWizardHref={reRunSetupWizardHref}
+              studioSetupWizardAction={studioSetupWizardAction}
             />
           </div>
         </SheetContent>
@@ -574,10 +586,38 @@ export function Sidebar() {
             userRole={user?.role}
             initials={initials}
             logout={logout}
-            reRunSetupWizardHref={reRunSetupWizardHref}
+            studioSetupWizardAction={studioSetupWizardAction}
           />
         </div>
       </aside>
+
+      {user?.role === "studio" && studioSetupWizardModal ? (
+        <Dialog
+          open={studioSetupWizardOpen}
+          onOpenChange={(open) => {
+            setStudioSetupWizardOpen(open)
+            if (!open) void mutateStudioSetup()
+          }}
+        >
+          <DialogContent
+            className="top-4 max-h-[min(calc(100dvh-2rem),900px)] w-[calc(100vw-2rem)] max-w-4xl translate-y-0 gap-0 overflow-y-auto overscroll-contain p-0 sm:top-[50%] sm:max-h-[min(90dvh,900px)] sm:translate-y-[-50%]"
+            showCloseButton
+          >
+            <DialogTitle className="sr-only">Studio setup wizard</DialogTitle>
+            {studioSetupWizardOpen ? (
+              <StudioSetupWizard
+                mode="modal"
+                forceSetupWizard={studioSetupWizardModal.force}
+                upgradedBanner={false}
+                onClose={() => {
+                  setStudioSetupWizardOpen(false)
+                  void mutateStudioSetup()
+                }}
+              />
+            ) : null}
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </TooltipProvider>
   )
 }

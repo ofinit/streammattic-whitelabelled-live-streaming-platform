@@ -1377,17 +1377,21 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   /** Garden / coastal shells are light/frosted — use dark type (readable on glass bg) */
   const streamPlaceholderTitleClass =
-    streamChrome === "garden" || streamChrome === "coastal"
-      ? streamChrome === "garden"
-        ? "text-lg font-semibold text-emerald-950"
-        : "font-coastal-sans text-lg font-semibold text-[#006d77]"
-      : "text-lg font-medium text-white"
+    streamChrome === "theHeart"
+      ? "text-lg font-medium text-white [text-shadow:0_1px_0_rgba(0,0,0,0.85),0_2px_6px_rgba(0,0,0,0.75),0_4px_24px_rgba(0,0,0,0.55)]"
+      : streamChrome === "garden" || streamChrome === "coastal"
+        ? streamChrome === "garden"
+          ? "text-lg font-semibold text-emerald-950"
+          : "font-coastal-sans text-lg font-semibold text-[#006d77]"
+        : "text-lg font-medium text-white"
   const streamPlaceholderSubClass =
-    streamChrome === "garden" || streamChrome === "coastal"
-      ? streamChrome === "garden"
-        ? "text-sm font-medium text-emerald-900/90"
-        : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
-      : "text-sm text-white/60"
+    streamChrome === "theHeart"
+      ? "text-sm text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,0.85),0_2px_14px_rgba(0,0,0,0.5)]"
+      : streamChrome === "garden" || streamChrome === "coastal"
+        ? streamChrome === "garden"
+          ? "text-sm font-medium text-emerald-900/90"
+          : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
+        : "text-sm text-white/60"
 
   const renderStreamPlayer = (shellClassName: string) => (
     <div ref={videoContainerRef} className={shellClassName}>
@@ -1914,7 +1918,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             </div>
           ) : (
             <ScrollArea
-              className={`${streamChrome === "theHeart" ? "max-h-none flex-none" : "flex-1"} ${scrollBg}`}
+              className={`${streamChrome === "theHeart" ? "min-h-0 flex-1" : "flex-1"} ${scrollBg}`}
             >
               <ChatVisitorInlineForm
                 eventId={eventId}
@@ -1972,7 +1976,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       ) : (
         <ScrollArea
           className={`${
-            streamChrome === "theHeart" ? "max-h-[min(70svh,30rem)] flex-none" : "flex-1"
+            streamChrome === "theHeart" ? "min-h-0 flex-1" : "flex-1"
           } p-4 ${scrollBg}`}
         >
           {chatMessageList}
@@ -2274,40 +2278,43 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           )}
           style={heartHero ? { backgroundImage: `url(${heartHero})` } : undefined}
         >
-          <div
-            className="the-heart-floating-heart-layer pointer-events-none absolute inset-0 z-[8] overflow-hidden motion-reduce:hidden"
-            aria-hidden
-          >
-            {roseHearts.map((h) => (
-              <span
-                key={h.id}
-                className="absolute text-red-500/95 drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
-                style={{
-                  left: h.left,
-                  top: "108%",
-                  fontSize: h.size,
-                  ["--cr-d0" as string]: `${h.d0}px`,
-                  ["--cr-d1" as string]: `${h.d1}px`,
-                  ["--cr-d2" as string]: `${h.d2}px`,
-                  ["--cr-d3" as string]: `${h.d3}px`,
-                  ["--cr-d4" as string]: `${h.d4}px`,
-                  animationName: "the-heart-floating-heart-float",
-                  animationDuration: h.duration,
-                  animationTimingFunction: "cubic-bezier(0.4, 0.15, 0.25, 1)",
-                  animationIterationCount: "infinite",
-                  animationDelay: h.delay,
-                }}
-              >
-                ❤️
-              </span>
-            ))}
-          </div>
           <div className="relative z-10 container mx-auto max-w-7xl px-4">
             <div className="the-heart-welcome-tbl">
               <div className="the-heart-welcome-tbl-c the-heart-hero-animate">
-                <div className="the-heart-welcome-content">
+                <div className="the-heart-welcome-content the-heart-title-heart-wrap">
+                  <div
+                    className="the-heart-title-heart-layer pointer-events-none absolute inset-x-0 -top-6 bottom-0 z-[1] overflow-hidden motion-reduce:hidden md:-top-10"
+                    aria-hidden
+                  >
+                    {roseHearts.map((h) => (
+                      <span
+                        key={h.id}
+                        className="absolute text-red-500/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+                        style={{
+                          left: h.left,
+                          top: "108%",
+                          fontSize: Math.min(h.size, 36),
+                          ["--cr-d0" as string]: `${Math.round(h.d0 * 0.45)}px`,
+                          ["--cr-d1" as string]: `${Math.round(h.d1 * 0.45)}px`,
+                          ["--cr-d2" as string]: `${Math.round(h.d2 * 0.45)}px`,
+                          ["--cr-d3" as string]: `${Math.round(h.d3 * 0.45)}px`,
+                          ["--cr-d4" as string]: `${Math.round(h.d4 * 0.45)}px`,
+                          animationName: "the-heart-floating-heart-float",
+                          animationDuration: h.duration,
+                          animationTimingFunction: "cubic-bezier(0.4, 0.15, 0.25, 1)",
+                          animationIterationCount: "infinite",
+                          animationDelay: h.delay,
+                        }}
+                      >
+                        ❤️
+                      </span>
+                    ))}
+                  </div>
                   <h1
-                    className={cn(titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
+                    className={cn(
+                      "relative z-[2]",
+                      titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
+                    )}
                     style={{
                       ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
                       ...heroTitleFontSizeStyleForTheHeart(titleHeroRem),
@@ -2399,27 +2406,34 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 }}
               >
                 <div className="the-heart-marquee-track">
-                  <span className="pr-16 font-medium">
+                  <span className="the-heart-marquee-text pr-16 font-medium">
                     {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
                   </span>
-                  <span className="pr-16 font-medium" aria-hidden>
+                  <span className="the-heart-marquee-text pr-16 font-medium" aria-hidden>
                     {tickerPrimary} &nbsp;·&nbsp; {tickerPrimary} &nbsp;·&nbsp;
                   </span>
                 </div>
               </div>
-              <h2>Watch Live</h2>
+              <h2 className="the-heart-watch-live-heading">Watch Live</h2>
             </div>
 
             <div
               className={cn(
-                "content-margin-top grid grid-cols-1 gap-8 lg:items-start",
+                "content-margin-top grid grid-cols-1 gap-8 lg:items-stretch",
                 allowChat ? "lg:grid-cols-3" : "",
               )}
             >
-              <div className={cn("space-y-6", allowChat ? "lg:col-span-2" : "mx-auto w-full max-w-5xl")}>
-                <div className="the-heart-memoragble-days-wraper">
-                  {renderStreamPlayer(THE_HEART_STREAM_SHELL)}
-                  {invitationLine ? <h2 className="the-heart-invitation-line">{invitationLine}</h2> : null}
+              <div
+                className={cn(
+                  "flex min-h-0 flex-col",
+                  allowChat ? "lg:col-span-2 lg:h-full" : "mx-auto w-full max-w-5xl",
+                )}
+              >
+                <div className="the-heart-memoragble-days-wraper flex min-h-0 flex-1 flex-col gap-4">
+                  <div className="shrink-0">{renderStreamPlayer(THE_HEART_STREAM_SHELL)}</div>
+                  {invitationLine ? (
+                    <h2 className="the-heart-invitation-line shrink-0">{invitationLine}</h2>
+                  ) : null}
                   {heartShowThanksTicker ? (
                     <div
                       className="the-heart-thanks-ticker-wrap"
@@ -2442,16 +2456,25 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       </div>
                     </div>
                   ) : null}
+                  {allowChat ? (
+                    <div className="hidden min-h-0 flex-1 lg:block" aria-hidden />
+                  ) : null}
                 </div>
               </div>
               {allowChat ? (
                 <div
                   className={cn(
-                    "the-heart-stream-chat-panel flex h-fit max-h-full flex-col overflow-hidden self-start",
+                    "flex min-h-0 flex-col lg:h-full",
                     showChat ? "flex" : "hidden lg:flex",
                   )}
                 >
-                  {renderLiveChatBody()}
+                  <div
+                    className={cn(
+                      "the-heart-stream-chat-panel flex min-h-0 flex-1 flex-col overflow-hidden",
+                    )}
+                  >
+                    {renderLiveChatBody()}
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -2531,7 +2554,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         >
           <div className="the-heart-footer-content the-heart-hero-animate mx-auto max-w-2xl px-4">
             <h2>Thank You</h2>
-            <p>With love — thank you for celebrating with us.</p>
           </div>
         </footer>
 

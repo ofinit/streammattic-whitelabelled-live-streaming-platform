@@ -160,6 +160,23 @@
   font-weight: 700;
 }
 
+/* Scrolling dateline above “Watch Live” — readable on light patterned bg */
+.the-heart-skin .the-heart-marquee-text {
+  color: #9f1239;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.45),
+    0 3px 14px rgba(0, 0, 0, 0.28);
+}
+
+.the-heart-skin .the-heart-watch-live-heading {
+  margin: 0.35rem 0 0;
+  color: #881337;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
 /* --- Welcome hero --- */
 .the-heart-skin .the-heart-welcome-section {
   position: relative;
@@ -228,11 +245,24 @@
   margin-bottom: 25px;
 }
 
+/* Clip floating hearts to the title stack only (not full-bleed hero) */
+.the-heart-skin .the-heart-title-heart-wrap {
+  position: relative;
+  overflow: hidden;
+  padding: 0.35rem 0.5rem 0.5rem;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
 .the-heart-skin .the-heart-welcome-content h1 {
   font-size: clamp(2.75rem, 11vw, 6.667rem);
   margin: 0 0 11px;
   font-weight: 700;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.75),
+    0 6px 24px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(0, 0, 0, 0.35);
 }
 
 .the-heart-skin .the-heart-welcome-tbl-c .single-text {
@@ -240,8 +270,11 @@
   font-size: clamp(1.25rem, 3.5vw, 1.667em);
   margin-bottom: 1.25rem;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.98);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.8),
+    0 2px 6px rgba(0, 0, 0, 0.65),
+    0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
 .the-heart-skin .the-heart-floral-txt {
@@ -281,6 +314,10 @@
   line-height: 1.45;
   color: #fff;
   font-family: "Roboto", sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 5px rgba(0, 0, 0, 0.7),
+    0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .the-heart-skin .black-overly .the-heart-floral-txt h3 {
@@ -567,16 +604,10 @@
   font-size: clamp(2.5rem, 6vw, 4em);
   font-weight: 700;
   color: #fff;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
-}
-
-.the-heart-skin .the-heart-footer-content p {
-  margin: 0;
-  font-size: 1rem;
-  font-style: italic;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.88);
-  font-family: "Roboto", sans-serif;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.75),
+    0 2px 8px rgba(0, 0, 0, 0.55),
+    0 6px 28px rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -586,7 +617,7 @@
     transform: none;
   }
 
-  .the-heart-skin .the-heart-floating-heart-layer span {
+  .the-heart-skin .the-heart-title-heart-layer span {
     animation: none !important;
     opacity: 0 !important;
   }

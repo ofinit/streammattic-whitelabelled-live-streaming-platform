@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent } from "@/lib/favicon-resolve"
+import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
 
 /** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
 const WATCH_EVENT_ID_SKIP = new Set(
@@ -95,6 +96,7 @@ export async function GET(
     }
 
     const eventRow = toCamel(eventData) as Record<string, any>
+    normalizeWatchEventTemplateFields(eventRow)
     if (youtubeBroadcastId) {
       eventRow.youtubeBroadcastId = youtubeBroadcastId
     }
@@ -103,10 +105,17 @@ export async function GET(
     console.log(`[api/watch/[eventId]] Resolving favicon for owner: ${ownerId}`)
     const faviconHref = await resolveFaviconForWatchEvent(ownerId || null)
 
-    return NextResponse.json({
-      event: eventRow,
-      favicon: faviconHref
-    })
+    const jsonHeaders = {
+      "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+    }
+
+    return NextResponse.json(
+      {
+        event: eventRow,
+        favicon: faviconHref,
+      },
+      { headers: jsonHeaders },
+    )
   } catch (err) {
     console.error(`[api/watch/[eventId]] CRITICAL ERROR:`, err)
     // Fallback to minimal data if full query failed (maybe domains table doesn't exist?)
@@ -114,7 +123,16 @@ export async function GET(
        const sql = getDb()
        const rows = await sql("SELECT * FROM events WHERE id::text = $1 OR slug = $1 LIMIT 1", [eventId])
        if (rows.length > 0) {
-         return NextResponse.json({ event: toCamel(rows[0] as any) })
+         const ev = toCamel(rows[0] as any) as Record<string, unknown>
+         normalizeWatchEventTemplateFields(ev)
+         return NextResponse.json(
+           { event: ev },
+           {
+             headers: {
+               "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+             },
+           },
+         )
        }
     } catch (fallbackErr) {
        console.error(`[api/watch/[eventId]] Fallback also failed:`, fallbackErr)

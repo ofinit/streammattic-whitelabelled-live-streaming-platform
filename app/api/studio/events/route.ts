@@ -622,9 +622,9 @@ export async function PUT(req: NextRequest) {
           }
           return next
         })()
-      : existingTemplateData && typeof existingTemplateData === "object"
-        ? existingTemplateData
-        : {}
+      : null
+    /** When false, SQL uses COALESCE so we do not overwrite template_data with {} on status-only PUTs (go live, etc.). */
+    const templateDataJsonForUpdate = hasTemplateUpdate && newTemplateData ? JSON.stringify(newTemplateData) : null
 
     let validityExpiresAtValue: string | null | undefined = validityExpiresAt
     if (validityExpiresAtValue === undefined && typeof validityDays === "number" && validityDays > 0) {
@@ -717,7 +717,7 @@ export async function PUT(req: NextRequest) {
         timezone = COALESCE(${timezone ?? null}, timezone),
         show_scheduled_page = COALESCE(${showScheduledPage ?? null}, show_scheduled_page),
         show_recording = COALESCE(${showRecording ?? null}, show_recording),
-        template_data = ${JSON.stringify(newTemplateData)}::jsonb,
+        template_data = COALESCE(${templateDataJsonForUpdate}::jsonb, template_data),
         validity_expires_at = COALESCE(${validityExpiresAtValue ?? null}, validity_expires_at),
         hero_image_url = ${finalHeroImageUrl},
         header_image_url = ${finalHeaderImageUrl},

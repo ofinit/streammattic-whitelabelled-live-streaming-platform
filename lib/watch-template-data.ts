@@ -38,6 +38,33 @@ export function templateIdFromTemplateDataRecord(data: Record<string, unknown> |
  * Resolves the stream template id for watch chrome and Tier-C skins.
  * Prefer `templateData.templateId` (what the event form saves); fall back to DB columns.
  */
+/**
+ * Ensures `templateData` is a plain object on API payloads (JSONB is usually parsed;
+ * some drivers/edge cases return a string).
+ */
+export function normalizeWatchEventTemplateFields(ev: Record<string, unknown>): void {
+  const raw = ev.templateData ?? ev.template_data
+  if (raw == null || raw === "") {
+    ev.templateData = {}
+    return
+  }
+  if (typeof raw === "string") {
+    try {
+      const p = JSON.parse(raw) as unknown
+      ev.templateData =
+        p && typeof p === "object" && !Array.isArray(p) ? { ...(p as Record<string, unknown>) } : {}
+    } catch {
+      ev.templateData = {}
+    }
+    return
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    ev.templateData = { ...(raw as Record<string, unknown>) }
+  } else {
+    ev.templateData = {}
+  }
+}
+
 export function resolveWatchTemplateId(event: unknown): string {
   if (!event || typeof event !== "object") return ""
   const ev = event as Record<string, unknown>

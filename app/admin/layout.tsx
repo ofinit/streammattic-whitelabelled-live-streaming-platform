@@ -5,6 +5,7 @@ import type React from "react"
 import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { getRouteForRole } from "@/lib/role-routes"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner"
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context"
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils"
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, originalUser, isAuthenticated, isLoading, isImpersonating } = useAuth()
+  const { user, isAuthenticated, isLoading, isImpersonating } = useAuth()
   const router = useRouter()
   const { isCollapsed } = useSidebar()
   const isPublicAdminAuthPage =
@@ -20,18 +21,30 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     pathname === "/admin/forgot-password" ||
     pathname === "/admin/reset-password"
 
-  /** True while cookie session is admin, including the moment after "View as …" before navigation leaves /admin */
-  const hasAdminAccess =
-    user?.role === "admin" || (isImpersonating && originalUser?.role === "admin")
+  /** Effective user must be admin (impersonation swaps `user` to the target). */
+  const hasAdminAccess = user?.role === "admin"
 
   useEffect(() => {
-    if (isPublicAdminAuthPage || isLoading) return  // wait until auth check completes
+    if (isPublicAdminAuthPage || isLoading) return
     if (!isAuthenticated) {
-      router.push("/admin/login")
-    } else if (!hasAdminAccess) {
-      router.push("/login")
+      router.replace("/admin/login")
+      return
     }
-  }, [isPublicAdminAuthPage, isLoading, isAuthenticated, hasAdminAccess, router])
+    if (!hasAdminAccess) {
+      if (user?.role) {
+        router.replace(getRouteForRole(user.role))
+      } else {
+        router.replace("/login")
+      }
+    }
+  }, [
+    isPublicAdminAuthPage,
+    isLoading,
+    isAuthenticated,
+    hasAdminAccess,
+    user?.role,
+    router,
+  ])
 
   if (isPublicAdminAuthPage) {
     return <>{children}</>

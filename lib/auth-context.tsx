@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import { useTheme } from "next-themes"
 import type { UserRole } from "./types"
+import { getRouteForRole } from "@/lib/role-routes"
 
 export interface AuthUser {
   id: string
@@ -51,15 +52,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Store impersonation state in sessionStorage (not persisted across tabs for safety)
 const IMPERSONATE_KEY = "sm_impersonate"
-
-function getRouteForRole(role: UserRole): string {
-  switch (role) {
-    case "admin": return "/admin"
-    case "studio": return "/studio"
-    case "streamer": return "/streamer"
-    default: return "/streamer"
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { setTheme } = useTheme()

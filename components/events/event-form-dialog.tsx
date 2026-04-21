@@ -88,6 +88,7 @@ import {
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
 } from "@/lib/third-party-embed-validation"
 import { toast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-context"
 
 /** Validity + distinct extra event days — must stay in sync with the credit-check effect. */
 function computeCreditPreviewNeed(
@@ -407,6 +408,9 @@ export function EventFormDialog({
   primaryDomain,
 }: EventFormDialogProps) {
   const isEditing = !!event
+  const { user } = useAuth()
+  const canEditScheduleDespitePast =
+    user?.role === "admin" || user?.role === "studio" || user?.role === "streamer"
 
   // When parent reports 409 duplicate slug, show inline error and switch to Details tab
   useEffect(() => {
@@ -2557,7 +2561,11 @@ export function EventFormDialog({
               {/* Schedule: date, timezone, countdown — placed above additional dates for clearer flow */}
               <div className="space-y-3">
                 {(() => {
-                  const isDateLocked = isEditing && !!event?.scheduledAt && new Date(event.scheduledAt as unknown as string) <= new Date()
+                  const scheduleIsPast =
+                    !!event?.scheduledAt &&
+                    new Date(event.scheduledAt as unknown as string) <= new Date()
+                  const isDateLocked =
+                    isEditing && scheduleIsPast && !canEditScheduleDespitePast
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">

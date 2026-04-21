@@ -250,6 +250,45 @@ function parsePhotoGalleryUrls(raw: unknown): string[] {
 
 type PhotographerContact = { name?: string; phone?: string; email?: string; website?: string }
 
+/** Load boolean event flags from camel or snake API keys; treat explicit false as off. */
+function coerceEventBooleanFlag(camel: unknown, snake: unknown, whenMissing: boolean): boolean {
+  const v = camel !== undefined && camel !== null ? camel : snake
+  if (v === false || v === "false" || v === 0 || v === "0") return false
+  if (v === true || v === "true" || v === 1 || v === "1") return true
+  return whenMissing
+}
+
+/**
+ * One-time hydrate key: must change when the parent replaces a partial `event` (e.g. `{ id }` or a row
+ * without template_data / capture_visitor_data) with the full API row — otherwise template + toggles
+ * stay on defaults even after save.
+ */
+function eventFormHydrateFingerprint(event: LiveEvent | undefined): string {
+  if (event == null || event.id == null || String(event.id).trim() === "") return "__create__"
+  const r = event as unknown as Record<string, unknown>
+  const td = r.templateData ?? r.template_data
+  let tid = ""
+  if (td && typeof td === "object" && !Array.isArray(td)) {
+    const t0 = (td as Record<string, unknown>).templateId ?? (td as Record<string, unknown>).template_id
+    if (typeof t0 === "string" && t0.trim()) tid = t0.trim()
+  }
+  if (!tid) {
+    const top = r.templateId ?? r.template_id
+    if (typeof top === "string" && top.trim().startsWith("tpl-")) tid = top.trim()
+  }
+  const cap =
+    typeof r.captureVisitorData === "boolean"
+      ? r.captureVisitorData
+        ? "1"
+        : "0"
+      : typeof r.capture_visitor_data === "boolean"
+        ? r.capture_visitor_data
+          ? "1"
+          : "0"
+        : "unk"
+  return `${String(event.id)}:${tid || "notpl"}:${cap}`
+}
+
 function parsePhotographerContact(raw: unknown): PhotographerContact {
   if (raw == null || raw === "") return {}
   if (typeof raw === "string") {
@@ -1133,22 +1172,7 @@ export function EventFormDialog({
     }
     if (showCredentialsScreen) return
 
-    /**
-     * OAuth / deep-link flows sometimes pass `editingEvent` as `{ id }` until the events list loads.
-     * We must re-hydrate when the full row arrives; using only `id` as the key skipped that and left
-     * template + settings stuck on defaults (tpl-default, empty template_data, etc.).
-     */
-    const eventRecord = event != null ? (event as Record<string, unknown>) : null
-    const isStubEvent =
-      event != null &&
-      event.id != null &&
-      String(event.id).trim() !== "" &&
-      eventRecord != null &&
-      Object.keys(eventRecord).length <= 1
-    const hydrateKey =
-      event != null && event.id != null && String(event.id).trim() !== ""
-        ? `${String(event.id)}${isStubEvent ? ":stub" : ""}`
-        : "__create__"
+    const hydrateKey = eventFormHydrateFingerprint(event)
     if (formHydratedKeyRef.current === hydrateKey) return
     formHydratedKeyRef.current = hydrateKey
 
@@ -1168,9 +1192,11 @@ export function EventFormDialog({
           scheduledAt: event.scheduledAt ? utcToLocalInput(String(event.scheduledAt), eventTimezone) : "",
           isPasswordProtected: event.isPasswordProtected,
           password: event.password || "",
-          captureVisitorData:
-            (event as unknown as Record<string, unknown>).captureVisitorData !== false &&
-            (event as unknown as Record<string, unknown>).capture_visitor_data !== false,
+          captureVisitorData: coerceEventBooleanFlag(
+            (event as unknown as Record<string, unknown>).captureVisitorData,
+            (event as unknown as Record<string, unknown>).capture_visitor_data,
+            true,
+          ),
           allowChat: event.allowChat !== false,
           allowReactions: event.allowReactions !== false,
           showScheduledPage: (event as any).show_scheduled_page === true || (event as any).showScheduledPage === true,

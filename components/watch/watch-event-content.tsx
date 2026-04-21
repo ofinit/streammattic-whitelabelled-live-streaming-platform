@@ -45,6 +45,7 @@ import {
   cardTitleFontSizeStyle,
   googleFontsStylesheetHref,
   heroTitleFontSizeStyle,
+  heroTitleFontSizeStyleForTheHeart,
   pageTitleFontSizeStyle,
   resolveTitleGoogleFontFamily,
   resolveTitleHeroRem,
@@ -765,7 +766,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   }, [watchSkin])
 
   useEffect(() => {
-    if (watchSkin !== "christianWeddingRose") {
+    if (watchSkin !== "christianWeddingRose" && watchSkin !== "weddingTheHeart") {
       setRoseHearts([])
       return
     }
@@ -1912,7 +1913,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               />
             </div>
           ) : (
-            <ScrollArea className={`flex-1 ${scrollBg}`}>
+            <ScrollArea
+              className={`${streamChrome === "theHeart" ? "max-h-none flex-none" : "flex-1"} ${scrollBg}`}
+            >
               <ChatVisitorInlineForm
                 eventId={eventId}
                 eventTitle={event.title}
@@ -1967,7 +1970,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           {chatMessageList}
         </div>
       ) : (
-        <ScrollArea className={`flex-1 p-4 ${scrollBg}`}>{chatMessageList}</ScrollArea>
+        <ScrollArea
+          className={`${
+            streamChrome === "theHeart" ? "max-h-[min(70svh,30rem)] flex-none" : "flex-1"
+          } p-4 ${scrollBg}`}
+        >
+          {chatMessageList}
+        </ScrollArea>
       )}
 
       <form onSubmit={handleSendMessage} className={`border-t p-4 ${formBorder}`}>
@@ -2249,6 +2258,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         ? `Live streaming — ${primaryDateFormatted}`
         : eventSubtitle || "Join us for our celebration"
     const heartTagline = eventSubtitle || "We're getting married"
+    const heartThanksTickerLine =
+      typeof event.description === "string" ? event.description.trim().replace(/\s+/g, " ") : ""
+    const heartShowThanksTicker = heartThanksTickerLine.length > 0
 
     return (
       <div className="the-heart-skin relative flex min-h-screen flex-col">
@@ -2262,7 +2274,35 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           )}
           style={heartHero ? { backgroundImage: `url(${heartHero})` } : undefined}
         >
-          <div className="container mx-auto max-w-7xl px-4">
+          <div
+            className="the-heart-floating-heart-layer pointer-events-none absolute inset-0 z-[8] overflow-hidden motion-reduce:hidden"
+            aria-hidden
+          >
+            {roseHearts.map((h) => (
+              <span
+                key={h.id}
+                className="absolute text-red-500/95 drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]"
+                style={{
+                  left: h.left,
+                  top: "108%",
+                  fontSize: h.size,
+                  ["--cr-d0" as string]: `${h.d0}px`,
+                  ["--cr-d1" as string]: `${h.d1}px`,
+                  ["--cr-d2" as string]: `${h.d2}px`,
+                  ["--cr-d3" as string]: `${h.d3}px`,
+                  ["--cr-d4" as string]: `${h.d4}px`,
+                  animationName: "the-heart-floating-heart-float",
+                  animationDuration: h.duration,
+                  animationTimingFunction: "cubic-bezier(0.4, 0.15, 0.25, 1)",
+                  animationIterationCount: "infinite",
+                  animationDelay: h.delay,
+                }}
+              >
+                ❤️
+              </span>
+            ))}
+          </div>
+          <div className="relative z-10 container mx-auto max-w-7xl px-4">
             <div className="the-heart-welcome-tbl">
               <div className="the-heart-welcome-tbl-c the-heart-hero-animate">
                 <div className="the-heart-welcome-content">
@@ -2270,7 +2310,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     className={cn(titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
                     style={{
                       ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
-                      ...heroTitleFontSizeStyle(titleHeroRem),
+                      ...heroTitleFontSizeStyleForTheHeart(titleHeroRem),
                     }}
                   >
                     {coupleParts && coupleParts.length === 2 ? (
@@ -2380,30 +2420,34 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <div className="the-heart-memoragble-days-wraper">
                   {renderStreamPlayer(THE_HEART_STREAM_SHELL)}
                   {invitationLine ? <h2 className="the-heart-invitation-line">{invitationLine}</h2> : null}
-                  <div
-                    className="the-heart-thanks-ticker-wrap"
-                    onMouseEnter={(e) => {
-                      const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
-                      if (track) track.style.animationPlayState = "paused"
-                    }}
-                    onMouseLeave={(e) => {
-                      const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
-                      if (track) track.style.animationPlayState = "running"
-                    }}
-                  >
-                    <div className="the-heart-thanks-track">
-                      <span className="pr-12 font-semibold">Thank you! · Thank you! · </span>
-                      <span className="pr-12 font-semibold" aria-hidden>
-                        Thank you! · Thank you! ·{" "}
-                      </span>
+                  {heartShowThanksTicker ? (
+                    <div
+                      className="the-heart-thanks-ticker-wrap"
+                      onMouseEnter={(e) => {
+                        const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                        if (track) track.style.animationPlayState = "paused"
+                      }}
+                      onMouseLeave={(e) => {
+                        const track = e.currentTarget.querySelector(".the-heart-thanks-track") as HTMLElement | null
+                        if (track) track.style.animationPlayState = "running"
+                      }}
+                    >
+                      <div className="the-heart-thanks-track">
+                        <span className="pr-12 font-semibold">
+                          {heartThanksTickerLine} · {heartThanksTickerLine} ·{" "}
+                        </span>
+                        <span className="pr-12 font-semibold" aria-hidden>
+                          {heartThanksTickerLine} · {heartThanksTickerLine} ·{" "}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
               {allowChat ? (
                 <div
                   className={cn(
-                    "the-heart-stream-chat-panel flex min-h-[420px] flex-col overflow-hidden lg:min-h-[600px]",
+                    "the-heart-stream-chat-panel flex h-fit max-h-full flex-col overflow-hidden self-start",
                     showChat ? "flex" : "hidden lg:flex",
                   )}
                 >

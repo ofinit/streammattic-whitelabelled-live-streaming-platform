@@ -27,6 +27,37 @@
   }
 }
 
+/* Floating hearts on hero — same motion as Christian Rose watch skin (rising + drift) */
+@keyframes the-heart-floating-heart-float {
+  0% {
+    top: 108%;
+    opacity: 0;
+    transform: translate(calc(-50% + var(--cr-d0, 0px)), 0) scale(0.96);
+  }
+  6% {
+    opacity: 0.95;
+    transform: translate(calc(-50% + var(--cr-d0, 0px)), 0) scale(0.99);
+  }
+  28% {
+    top: 52%;
+    transform: translate(calc(-50% + var(--cr-d1, 0px)), 0) scale(1.05);
+  }
+  50% {
+    top: 28%;
+    transform: translate(calc(-50% + var(--cr-d2, 0px)), 0) scale(1.08);
+  }
+  72% {
+    top: 6%;
+    opacity: 0.92;
+    transform: translate(calc(-50% + var(--cr-d3, 0px)), 0) scale(1.04);
+  }
+  100% {
+    top: -14%;
+    opacity: 0;
+    transform: translate(calc(-50% + var(--cr-d4, 0px)), 0) scale(1);
+  }
+}
+
 .the-heart-skin {
   font-family: "Roboto", sans-serif;
   font-size: 18px;
@@ -172,17 +203,23 @@
   position: relative;
   height: 100vh;
   width: 100%;
+  /* Flex keeps hero copy centered; do not use transform + absolute here — .the-heart-hero-animate
+     overwrites transform and would break translate(-50%,-50%) centering. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .the-heart-skin .the-heart-welcome-tbl-c {
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
   z-index: 2;
   width: 100%;
   max-width: 56rem;
   padding: 0 1rem;
+  text-align: center;
 }
 
 .the-heart-skin .the-heart-welcome-content {
@@ -434,6 +471,8 @@
 }
 
 .the-heart-skin .the-heart-stream-chat-panel {
+  height: fit-content;
+  max-height: 100%;
   border-radius: 1rem;
   border: 1px solid rgba(225, 29, 72, 0.35);
   background: #fff;
@@ -545,6 +584,11 @@
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  .the-heart-skin .the-heart-floating-heart-layer span {
+    animation: none !important;
+    opacity: 0 !important;
   }
 
   .the-heart-skin .the-heart-marquee-track,

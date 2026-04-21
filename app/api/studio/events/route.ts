@@ -34,6 +34,35 @@ import { templateIdFromTemplateDataRecord } from "@/lib/watch-template-data"
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+/** JSON bodies may stringify booleans oddly across clients; normalize before persisting. */
+function normalizeBodyBoolean(v: unknown): boolean | undefined {
+  if (v === undefined) return undefined
+  if (v === false || v === null) return false
+  if (v === true) return true
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase()
+    if (s === "false" || s === "0") return false
+    if (s === "true" || s === "1") return true
+  }
+  if (typeof v === "number" && Number.isFinite(v)) return v !== 0
+  return Boolean(v)
+}
+
+function parseExistingTemplateDataJsonb(raw: unknown): Record<string, unknown> {
+  if (raw == null || raw === "") return {}
+  if (typeof raw === "string") {
+    try {
+      const p = JSON.parse(raw) as unknown
+      if (p && typeof p === "object" && !Array.isArray(p)) return p as Record<string, unknown>
+    } catch {
+      return {}
+    }
+    return {}
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) return { ...(raw as Record<string, unknown>) }
+  return {}
+}
+
 function generateStreamKey() {
   return `sk_live_${Math.random().toString(36).substring(2, 18)}${Math.random().toString(36).substring(2, 10)}`
 }
@@ -280,7 +309,8 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
 
-    const captureVisitorDataValue = captureVisitorData !== false
+    const capPost = normalizeBodyBoolean(captureVisitorData)
+    const captureVisitorDataValue = capPost === undefined ? true : capPost
 
     const subtitleValue =
       subtitle !== undefined && subtitle !== null ? (String(subtitle).trim() || null) : null
@@ -594,7 +624,7 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const existingTemplateData = existingRow.template_data as Record<string, unknown> | null | undefined
+    const existingTemplateData = parseExistingTemplateDataJsonb(existingRow.template_data)
     const hasTemplateUpdate = templateId !== undefined || (rawTemplateData !== undefined && rawTemplateData !== null)
     const fromBodyPut =
       templateId !== undefined && templateId != null && String(templateId).trim() !== ""
@@ -605,7 +635,7 @@ export async function PUT(req: NextRequest) {
         ? templateIdFromTemplateDataRecord(rawTemplateData as Record<string, unknown>)
         : null
     const mergedWithoutFinalId = {
-      ...(existingTemplateData && typeof existingTemplateData === "object" ? existingTemplateData : {}),
+      ...existingTemplateData,
       ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
     } as Record<string, unknown>
     const resolvedTemplateIdPut =
@@ -623,8 +653,11 @@ export async function PUT(req: NextRequest) {
           return next
         })()
       : null
-    /** When false, SQL uses COALESCE so we do not overwrite template_data with {} on status-only PUTs (go live, etc.). */
-    const templateDataJsonForUpdate = hasTemplateUpdate && newTemplateData ? JSON.stringify(newTemplateData) : null
+    /** Always persist explicit JSON (no COALESCE) so drivers cannot drop updates; when body omits template, reuse row. */
+    const finalTemplateDataJson =
+      hasTemplateUpdate && newTemplateData
+        ? JSON.stringify(newTemplateData)
+        : JSON.stringify(existingTemplateData)
 
     let validityExpiresAtValue: string | null | undefined = validityExpiresAt
     if (validityExpiresAtValue === undefined && typeof validityDays === "number" && validityDays > 0) {
@@ -695,6 +728,17 @@ export async function PUT(req: NextRequest) {
     const prevSuspended = Boolean(existingRow.is_suspended ?? false)
     const nextSuspended = isSuspended !== undefined ? Boolean(isSuspended) : prevSuspended
 
+    /** Must not use COALESCE($param, col) for booleans: `false` is valid and must persist (PG/drivers can mishandle falsy in COALESCE). */
+    const prevCaptureVisitor = existingRow.capture_visitor_data === false ? false : true
+    const captureNorm = normalizeBodyBoolean(captureVisitorData)
+    const finalCaptureVisitorData = captureNorm !== undefined ? captureNorm : prevCaptureVisitor
+    const prevAllowChat = existingRow.allow_chat === false ? false : true
+    const allowChatNorm = normalizeBodyBoolean(allowChat)
+    const finalAllowChat = allowChatNorm !== undefined ? allowChatNorm : prevAllowChat
+    const prevAllowReactions = existingRow.allow_reactions === false ? false : true
+    const allowReactionsNorm = normalizeBodyBoolean(allowReactions)
+    const finalAllowReactions = allowReactionsNorm !== undefined ? allowReactionsNorm : prevAllowReactions
+
     const rows = await sql`
       UPDATE events SET
         title = COALESCE(${title ?? null}, title),
@@ -710,14 +754,14 @@ export async function PUT(req: NextRequest) {
         simulcast_config = ${JSON.stringify(nextSimulcastPersisted)}::jsonb,
         is_password_protected = COALESCE(${isPasswordProtected ?? null}, is_password_protected),
         event_password = COALESCE(${password ?? null}, event_password),
-        allow_chat = COALESCE(${allowChat ?? null}, allow_chat),
-        allow_reactions = COALESCE(${allowReactions ?? null}, allow_reactions),
-        capture_visitor_data = COALESCE(${captureVisitorData ?? null}, capture_visitor_data),
+        allow_chat = ${finalAllowChat},
+        allow_reactions = ${finalAllowReactions},
+        capture_visitor_data = ${finalCaptureVisitorData},
         slug = COALESCE(${finalSlug}, slug),
         timezone = COALESCE(${timezone ?? null}, timezone),
         show_scheduled_page = COALESCE(${showScheduledPage ?? null}, show_scheduled_page),
         show_recording = COALESCE(${showRecording ?? null}, show_recording),
-        template_data = COALESCE(${templateDataJsonForUpdate}::jsonb, template_data),
+        template_data = ${finalTemplateDataJson}::jsonb,
         validity_expires_at = COALESCE(${validityExpiresAtValue ?? null}, validity_expires_at),
         hero_image_url = ${finalHeroImageUrl},
         header_image_url = ${finalHeaderImageUrl},

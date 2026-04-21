@@ -176,6 +176,21 @@ export function heroTitleFontSizeStyle(baseRem: number): { fontSize: string } {
   }
 }
 
+/**
+ * "The Heart" hero — matches Wedding Template 03 reference (`clamp(2.75rem, 11vw, 6.667rem)` at default).
+ * Generic `heroTitleFontSizeStyle` was too small here because inline styles override `the-heart-template.css`.
+ */
+export function heroTitleFontSizeStyleForTheHeart(baseRem: number): { fontSize: string } {
+  const def = getTemplateDefaultTitleRem("tpl-wedding-the-heart")
+  const scale = Math.max(0.45, baseRem / def)
+  const min = 2.75 * scale
+  const vw = 11 * scale
+  const max = 6.667 * scale
+  return {
+    fontSize: `clamp(${min.toFixed(3)}rem, ${vw.toFixed(3)}vw, ${max.toFixed(3)}rem)`,
+  }
+}
+
 export function cardTitleFontSizeStyle(baseRem: number): { fontSize: string } {
   const c = baseRem * 0.4
   const min = Math.max(0.9, c * 0.82)

@@ -67,8 +67,7 @@ function formatOneDate(iso: string, timeZone: string): string {
         .formatToParts(d)
         .find((p) => p.type === "timeZoneName")?.value ?? tz
     : "UTC"
-  const iana = timeZone && timeZone !== "UTC" ? ` · ${timeZone}` : ""
-  return `${dateStr} · ${timeStr} ${tzShort}${iana}`
+  return `${dateStr} · ${timeStr} ${tzShort}`
 }
 
 /**

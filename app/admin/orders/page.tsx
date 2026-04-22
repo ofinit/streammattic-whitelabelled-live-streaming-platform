@@ -24,9 +24,13 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { fetchOrders() }, [])
 
-  const handleProcessOrder = async (orderId: string) => {
-    const res = await fetch(`/api/admin/orders/${orderId}/process`, { method: "POST" })
-    const data = await res.json() as { success?: boolean; error?: string; message?: string }
+  const handleProcessOrder = async (orderId: string, force = false) => {
+    const res = await fetch(`/api/admin/orders/${orderId}/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force }),
+    })
+    const data = await res.json() as { success?: boolean; error?: string; message?: string; forceAvailable?: boolean }
     if (!res.ok || !data.success) {
       throw new Error(data.error ?? "Processing failed")
     }
@@ -64,7 +68,7 @@ export default function AdminOrdersPage() {
             key={order.id}
             order={order}
             showUser
-            onProcess={handleProcessOrder}
+            onProcess={(id, force) => handleProcessOrder(id, force)}
           />
         ))}
       </div>

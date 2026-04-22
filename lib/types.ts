@@ -223,6 +223,7 @@ export interface Order {
   serviceType?: "ai_image" | "whitelabel_hosting" | "domain_registration" | "domain_renewal"
   // Payment info (for wallet recharges)
   paymentGateway?: PaymentGateway
+  gatewayOrderId?: string
   paymentId?: string
   // Failure tracking
   failureReason?: string

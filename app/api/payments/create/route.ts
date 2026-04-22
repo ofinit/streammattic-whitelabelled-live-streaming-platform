@@ -113,6 +113,19 @@ export const POST = withAuth(async (user, request) => {
   const orderNumber = newOrderNumber()
   const desc = description || `${orderType} payment`
 
+  // Cancel any stale pending orders of the same type for this user before creating a new one.
+  // This prevents the orders list from accumulating duplicate pending entries when a user
+  // retries payment without completing the previous attempt.
+  if (gateway !== "wallet") {
+    await sql`
+      UPDATE orders
+      SET status = 'cancelled', updated_at = NOW()
+      WHERE user_id = ${userId}
+        AND order_type = ${orderType}
+        AND status = 'pending'
+    `
+  }
+
   // Create order in DB (metadata holds wallet credit vs GST for wallet_recharge)
   const orderRows = await sql`
     INSERT INTO orders (order_number, user_id, order_type, total_price, description, payment_gateway, status, metadata)

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { formatDistanceToNow } from "date-fns"
-import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock, Building2, RefreshCw } from "lucide-react"
+import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock, Building2, RefreshCw, Zap } from "lucide-react"
 
 const orderTypeLabels: Record<string, string> = {
   credit_purchase: "Credit Purchase",
@@ -37,26 +37,32 @@ const streamTypeLabels: Record<string, string> = {
 interface OrderCardProps {
   order: Order
   showUser?: boolean
-  onProcess?: (orderId: string) => Promise<void>
+  onProcess?: (orderId: string, force?: boolean) => Promise<void>
 }
 
 export function OrderCard({ order, showUser = false, onProcess }: OrderCardProps) {
   const [processing, setProcessing] = useState(false)
-  const [processResult, setProcessResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [forceProcessing, setForceProcessing] = useState(false)
+  const [processResult, setProcessResult] = useState<{ ok: boolean; message: string; forceAvailable?: boolean } | null>(null)
 
-  const handleProcess = async () => {
+  const handleProcess = async (force = false) => {
     if (!onProcess) return
-    setProcessing(true)
+    if (force) setForceProcessing(true)
+    else setProcessing(true)
     setProcessResult(null)
     try {
-      await onProcess(order.id as string)
-      setProcessResult({ ok: true, message: "Order processed — account upgraded." })
+      await onProcess(order.id as string, force)
+      setProcessResult({ ok: true, message: force ? "Force-processed — account upgraded." : "Order processed — account upgraded." })
     } catch (err) {
-      setProcessResult({ ok: false, message: err instanceof Error ? err.message : "Processing failed." })
+      const msg = err instanceof Error ? err.message : "Processing failed."
+      const forceAvailable = msg.includes("Force Process") || msg.includes("Instamojo does not show")
+      setProcessResult({ ok: false, message: msg, forceAvailable })
     } finally {
       setProcessing(false)
+      setForceProcessing(false)
     }
   }
+
   const TypeIcon = orderTypeIcons[order.orderType] || CreditCard
 
   const getTitle = () => {
@@ -167,18 +173,41 @@ export function OrderCard({ order, showUser = false, onProcess }: OrderCardProps
           </div>
         )}
 
+        {/* Gateway reference ID — helps admin cross-check with Instamojo dashboard */}
+        {order.gatewayOrderId && order.status === "pending" && (
+          <p className="text-[10px] font-mono text-muted-foreground break-all">
+            Ref: {order.gatewayOrderId}
+          </p>
+        )}
+
         {onProcess && order.status === "pending" && order.paymentGateway && (
           <div className="pt-1 space-y-2">
             <Button
               size="sm"
               variant="outline"
               className="w-full"
-              onClick={handleProcess}
-              disabled={processing}
+              onClick={() => handleProcess(false)}
+              disabled={processing || forceProcessing}
             >
               <RefreshCw className={`mr-2 h-3.5 w-3.5 ${processing ? "animate-spin" : ""}`} />
-              {processing ? "Processing…" : "Process Order"}
+              {processing ? "Verifying with Instamojo…" : "Process Order"}
             </Button>
+
+            {/* Show Force Process if Instamojo verification fails or always as secondary option */}
+            {(processResult?.forceAvailable || processResult?.ok === false) && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full"
+                onClick={() => handleProcess(true)}
+                disabled={processing || forceProcessing}
+                title="Bypasses Instamojo verification. Only use after confirming payment in your Instamojo dashboard."
+              >
+                <Zap className={`mr-2 h-3.5 w-3.5 ${forceProcessing ? "animate-pulse" : ""}`} />
+                {forceProcessing ? "Force-processing…" : "Force Process (skip Instamojo check)"}
+              </Button>
+            )}
+
             {processResult && (
               <p className={`text-xs text-center ${processResult.ok ? "text-green-600" : "text-destructive"}`}>
                 {processResult.message}

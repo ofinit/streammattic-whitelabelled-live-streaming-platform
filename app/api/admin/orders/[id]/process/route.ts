@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db"
 import { verifyInstamojoPayment, processSuccessfulPayment } from "@/lib/payment-service"
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -13,6 +13,16 @@ export async function POST(
     const { id: orderId } = await params
     if (!orderId) {
       return NextResponse.json({ error: "Order ID required" }, { status: 400 })
+    }
+
+    let force = false
+    let bodyGatewayPaymentId: string | undefined
+    try {
+      const body = await req.json() as { force?: boolean; gatewayPaymentId?: string }
+      force = body.force === true
+      bodyGatewayPaymentId = body.gatewayPaymentId || undefined
+    } catch {
+      // no body is fine — defaults to non-force
     }
 
     const sql = getDb()
@@ -46,45 +56,53 @@ export async function POST(
       )
     }
 
-    const gatewayOrderId = order.gateway_order_id as string | null
-    if (!gatewayOrderId) {
-      return NextResponse.json(
-        { error: "Order has no gateway_order_id — cannot re-verify with Instamojo" },
-        { status: 422 },
-      )
-    }
-
+    const gatewayOrderId = (order.gateway_order_id as string | null) ?? ""
     const userId = order.user_id as string
+    const orderType = order.order_type as string
     const totalPaise = Number(order.total_price ?? 0)
 
-    let gatewayPaymentId = gatewayOrderId
+    let gatewayPaymentId: string
 
-    if (gateway === "instamojo") {
-      let result: Record<string, unknown>
-      try {
-        result = await verifyInstamojoPayment(gatewayOrderId)
-      } catch (err) {
-        console.error("Instamojo re-verify error:", err)
+    if (force) {
+      // Admin has confirmed payment externally — bypass Instamojo verification.
+      gatewayPaymentId = bodyGatewayPaymentId || `ADMIN-FORCED-${orderId.slice(0, 8).toUpperCase()}`
+    } else {
+      if (!gatewayOrderId) {
         return NextResponse.json(
-          { error: "Failed to reach Instamojo to verify payment. Check API credentials." },
-          { status: 502 },
-        )
-      }
-
-      const payments =
-        (result.payment_request as Record<string, unknown>)?.payments ??
-        (result.payments as unknown[]) ??
-        []
-      const successful = (payments as Record<string, unknown>[]).find(
-        (p) => p.status === "Credit",
-      )
-      if (!successful) {
-        return NextResponse.json(
-          { error: "Instamojo does not show a successful (Credit) payment for this request. The customer may not have completed the payment." },
+          { error: "Order has no gateway_order_id — use Force Process to bypass verification, or check your Instamojo dashboard." },
           { status: 422 },
         )
       }
-      gatewayPaymentId = (successful.payment_id ?? successful.id ?? gatewayOrderId) as string
+
+      if (gateway === "instamojo") {
+        let result: Record<string, unknown>
+        try {
+          result = await verifyInstamojoPayment(gatewayOrderId)
+        } catch (err) {
+          console.error("Instamojo re-verify error:", err)
+          return NextResponse.json(
+            { error: "Failed to reach Instamojo to verify payment. Check API credentials, or use Force Process." },
+            { status: 502 },
+          )
+        }
+
+        const payments =
+          (result.payment_request as Record<string, unknown>)?.payments ??
+          (result.payments as unknown[]) ??
+          []
+        const successful = (payments as Record<string, unknown>[]).find(
+          (p) => p.status === "Credit",
+        )
+        if (!successful) {
+          return NextResponse.json(
+            { error: "Instamojo does not show a successful (Credit) payment for this request. Check your Instamojo dashboard and use Force Process if the payment was received.", forceAvailable: true },
+            { status: 422 },
+          )
+        }
+        gatewayPaymentId = (successful.payment_id ?? successful.id ?? gatewayOrderId) as string
+      } else {
+        gatewayPaymentId = gatewayOrderId
+      }
     }
 
     const { invoiceId } = await processSuccessfulPayment({
@@ -92,13 +110,26 @@ export async function POST(
       userId,
       gateway: gateway as "instamojo" | "razorpay",
       gatewayPaymentId,
-      gatewayOrderId,
+      gatewayOrderId: gatewayOrderId || gatewayPaymentId,
       amount: totalPaise,
     })
 
+    // Cancel any remaining pending orders of the same type for the same user
+    // so they don't clutter the admin panel.
+    await sql`
+      UPDATE orders
+      SET status = 'cancelled', updated_at = NOW()
+      WHERE user_id = ${userId}
+        AND order_type = ${orderType}
+        AND status = 'pending'
+        AND id != ${orderId}
+    `
+
     return NextResponse.json({
       success: true,
-      message: "Order processed successfully",
+      message: force
+        ? "Order force-processed by admin. Account upgraded."
+        : "Order processed successfully",
       invoiceId,
       user: { id: userId, name: order.u_name, email: order.u_email },
     })

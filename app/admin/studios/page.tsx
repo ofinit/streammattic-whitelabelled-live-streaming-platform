@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 
-import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee, Images } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee, Images, KeyRound } from "lucide-react"
 import type { Studio } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
@@ -26,6 +26,15 @@ import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 export default function AdminStudiosPage() {
   const { impersonate } = useAuth()
@@ -37,6 +46,9 @@ export default function AdminStudiosPage() {
   const [youtubeStudio, setYoutubeStudio] = useState<Studio | null>(null)
   const [pricingStudio, setPricingStudio] = useState<Studio | null>(null)
   const [addFundsStudio, setAddFundsStudio] = useState<Studio | null>(null)
+  const [resetPwTarget, setResetPwTarget] = useState<Studio | null>(null)
+  const [resetPwValue, setResetPwValue] = useState("")
+  const [resetPwSubmitting, setResetPwSubmitting] = useState(false)
 
   const [studios, setStudios] = useState<Studio[]>([])
   const [loading, setLoading] = useState(true)
@@ -157,6 +169,36 @@ export default function AdminStudiosPage() {
     }
   }
 
+  async function handleResetPassword() {
+    if (!resetPwTarget) return
+    if (!resetPwValue || resetPwValue.length < 8) {
+      toast.error("Password must be at least 8 characters")
+      return
+    }
+    setResetPwSubmitting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${resetPwTarget.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: resetPwValue }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+      if (!res.ok) {
+        toast.error(data.error || "Failed to reset password")
+        return
+      }
+      toast.success(data.message || "Password reset successfully")
+      setResetPwTarget(null)
+      setResetPwValue("")
+    } catch (e) {
+      console.error(e)
+      toast.error("Failed to reset password")
+    } finally {
+      setResetPwSubmitting(false)
+    }
+  }
+
   const columns = [
     {
       key: "name",
@@ -225,6 +267,10 @@ export default function AdminStudiosPage() {
             <DropdownMenuItem onClick={() => setEditingStudio(item)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setResetPwTarget(item); setResetPwValue("") }}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Reset Password
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAddFundsStudio(item)}>
               <Wallet className="mr-2 h-4 w-4" />
@@ -416,6 +462,61 @@ export default function AdminStudiosPage() {
           }}
         />
       )}
+
+      {/* Reset Password Dialog */}
+      <Dialog
+        open={!!resetPwTarget}
+        onOpenChange={(open) => {
+          if (!open) { setResetPwTarget(null); setResetPwValue("") }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for this studio account. All active sessions will be cleared so they must log in again.
+            </DialogDescription>
+          </DialogHeader>
+          {resetPwTarget && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{resetPwTarget.name}</span>
+                <span className="mx-1">·</span>
+                {resetPwTarget.email}
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="studio-reset-pw-input">New Password</Label>
+                <Input
+                  id="studio-reset-pw-input"
+                  type="text"
+                  placeholder="Minimum 8 characters"
+                  value={resetPwValue}
+                  onChange={(e) => setResetPwValue(e.target.value)}
+                  className="bg-secondary border-0"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setResetPwTarget(null); setResetPwValue("") }}
+              disabled={resetPwSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleResetPassword()}
+              disabled={resetPwSubmitting || resetPwValue.length < 8}
+            >
+              {resetPwSubmitting ? "Resetting…" : "Set Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

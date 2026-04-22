@@ -1276,10 +1276,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const isEnded = event.status === "completed" || event.status === "ended"
   const showRecording = evRawTop.showRecording === true
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
-  const hasReplay = showRecording && (
-    (event.streamType === "youtube_api" && replayBroadcastId) ||
-    (event.streamType === "youtube" && event.youtubeUrl)
-  )
+  const hasReplay =
+    (showRecording && (
+      (event.streamType === "youtube_api" && replayBroadcastId) ||
+      (event.streamType === "youtube" && event.youtubeUrl)
+    )) ||
+    // youtube_embed is an external YouTube URL — always show it regardless of showRecording toggle
+    (event.streamType === "youtube_embed" && !!event.youtubeUrl)
 
   const sendReplayCommand = (command: "playVideo" | "pauseVideo") => {
     const iframe = replayIframeRef.current
@@ -1294,7 +1297,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
       replaySrc = `https://www.youtube.com/embed/${replayBroadcastId}?rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`
-    } else if (event.streamType === "youtube" && event.youtubeUrl) {
+    } else if ((event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
       replaySrc = (event.youtubeUrl as string).replace("watch?v=", "embed/") + "?rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
     }
   }
@@ -1438,7 +1441,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   </div>
                 </div>
               </div>
-            ) : event.streamType === "youtube" && event.youtubeUrl ? (
+            ) : (event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
               <iframe
                 className="h-full w-full"
                 src={(event.youtubeUrl as string).replace("watch?v=", "embed/") + "?autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&modestbranding=1"}

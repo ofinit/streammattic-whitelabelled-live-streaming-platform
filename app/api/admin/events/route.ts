@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth"
-import { getDb } from "@/lib/db"
+import { getDb, toCamel } from "@/lib/db"
+import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
 
 export async function GET(req: Request) {
   try {
@@ -12,57 +13,40 @@ export async function GET(req: Request) {
     
     const sql = getDb()
     
-    let rows;
+    let rows: Record<string, unknown>[]
     if (status) {
       rows = await sql`
-        SELECT 
-          e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
-          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
-          e.is_mock as "isMock", e.validity_expires_at as "validityExpiresAt",
-          u.id as "userId", u.name as "userName", u.email as "userEmail", u.role as "userRole"
+        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role
         FROM events e
-        JOIN users u ON e.user_id = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         WHERE e.status = ${status}
         ORDER BY e.created_at DESC
         LIMIT 100
-      `
+      ` as Record<string, unknown>[]
     } else {
       rows = await sql`
-        SELECT 
-          e.id, e.title, e.stream_type as "streamType", e.status, e.scheduled_at as "scheduledAt", 
-          e.max_viewers as "maxViewers", e.current_viewers as "currentViewers", e.created_at, e.slug, e.crew_pin_hash,
-          e.is_mock as "isMock", e.validity_expires_at as "validityExpiresAt",
-          u.id as "userId", u.name as "userName", u.email as "userEmail", u.role as "userRole"
+        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role
         FROM events e
-        JOIN users u ON e.user_id = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         ORDER BY e.created_at DESC
         LIMIT 100
-      `
+      ` as Record<string, unknown>[]
     }
 
     const events = rows.map(r => {
+      const camel = toCamel(sanitizeEventForClient(r))
       // Fallback: Default to 30 days from creation if validity_expires_at is missing (common for old mock data)
-      const createdAt = new Date(r.created_at as string)
+      const createdAt = new Date((r.created_at ?? camel.createdAt) as string)
       const fallbackExpiry = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000)
-      
+
       return {
-        id: r.id,
-        title: r.title,
-        streamType: r.streamType,
-        status: r.status,
-        scheduledAt: r.scheduledAt,
-        validityExpiresAt: r.validityExpiresAt || fallbackExpiry.toISOString(),
-        viewers: r.currentViewers || 0,
+        ...camel,
+        validityExpiresAt: (camel.validityExpiresAt as string | null) || fallbackExpiry.toISOString(),
+        viewers: (camel.currentViewers as number) || 0,
         revenue: 0,
-        studioName: r.userName, // Legacy field
-        userName: r.userName,
-        userEmail: r.userEmail,
-        userRole: r.userRole,
-        isMock: !!r.isMock,
+        studioName: camel.userName,  // Legacy field
+        isMock: !!(camel.isMock ?? r.is_mock),
         eventType: "Virtual",
-        slug: r.slug,
-        userId: r.userId,
-        hasCrewPin: !!r.crew_pin_hash
       }
     })
 

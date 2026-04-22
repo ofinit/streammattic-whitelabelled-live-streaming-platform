@@ -22,7 +22,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images, Building2 } from "lucide-react"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images, Building2, KeyRound } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
@@ -59,6 +59,10 @@ export default function AdminStreamersPage() {
   const [studioGrantTarget, setStudioGrantTarget] = useState<Streamer | null>(null)
   const [studioGrantExpiresLocal, setStudioGrantExpiresLocal] = useState("")
   const [studioGrantSubmitting, setStudioGrantSubmitting] = useState(false)
+
+  const [resetPwTarget, setResetPwTarget] = useState<Streamer | null>(null)
+  const [resetPwValue, setResetPwValue] = useState("")
+  const [resetPwSubmitting, setResetPwSubmitting] = useState(false)
 
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
@@ -215,6 +219,36 @@ export default function AdminStreamersPage() {
     }
   }
 
+  async function handleResetPassword() {
+    if (!resetPwTarget) return
+    if (!resetPwValue || resetPwValue.length < 8) {
+      toast.error("Password must be at least 8 characters")
+      return
+    }
+    setResetPwSubmitting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${resetPwTarget.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: resetPwValue }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+      if (!res.ok) {
+        toast.error(data.error || "Failed to reset password")
+        return
+      }
+      toast.success(data.message || "Password reset successfully")
+      setResetPwTarget(null)
+      setResetPwValue("")
+    } catch (e) {
+      console.error(e)
+      toast.error("Failed to reset password")
+    } finally {
+      setResetPwSubmitting(false)
+    }
+  }
+
   const columns = [
     {
       key: "name",
@@ -268,6 +302,10 @@ export default function AdminStreamersPage() {
             <DropdownMenuItem onClick={() => setEditingStreamer(item)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setResetPwTarget(item); setResetPwValue("") }}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Reset Password
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAddFundsStreamer(item)}>
               <Wallet className="mr-2 h-4 w-4" />
@@ -531,6 +569,61 @@ export default function AdminStreamersPage() {
             </Button>
             <Button type="button" onClick={() => void handleStudioGrantSubmit()} disabled={studioGrantSubmitting}>
               {studioGrantSubmitting ? "Saving…" : "Grant access"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog
+        open={!!resetPwTarget}
+        onOpenChange={(open) => {
+          if (!open) { setResetPwTarget(null); setResetPwValue("") }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for this user. All their active sessions will be cleared so they must log in again with the new password.
+            </DialogDescription>
+          </DialogHeader>
+          {resetPwTarget && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{resetPwTarget.name}</span>
+                <span className="mx-1">·</span>
+                {resetPwTarget.email}
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="reset-pw-input">New Password</Label>
+                <Input
+                  id="reset-pw-input"
+                  type="text"
+                  placeholder="Minimum 8 characters"
+                  value={resetPwValue}
+                  onChange={(e) => setResetPwValue(e.target.value)}
+                  className="bg-secondary border-0"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setResetPwTarget(null); setResetPwValue("") }}
+              disabled={resetPwSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleResetPassword()}
+              disabled={resetPwSubmitting || resetPwValue.length < 8}
+            >
+              {resetPwSubmitting ? "Resetting…" : "Set Password"}
             </Button>
           </DialogFooter>
         </DialogContent>

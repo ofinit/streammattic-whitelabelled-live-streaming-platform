@@ -17,7 +17,10 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   totalPaidPaise: number
   paymentId: string
   orderId: string
+  /** Determines description copy — "studio_upgrade" uses subscription wording, otherwise wallet recharge */
+  orderType?: string | null
 }): Promise<Uint8Array> {
+  const isStudioUpgrade = params.orderType === "studio_upgrade"
   const pdf = await PDFDocument.create()
   const page = pdf.addPage([595.28, 841.89])
   const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -61,18 +64,27 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   y -= 10
 
   const fmt = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
-  line("Description: Wallet recharge (amount to be credited to wallet)", 10)
-  line(`Taxable value: ${fmt(params.baseAmountPaise)}`, 10)
-  line(`GST @ ${params.gstPercentage}%: ${fmt(params.gstAmountPaise)}`, 10)
-  line(`Total paid (incl. GST): ${fmt(params.totalPaidPaise)}`, 11, true)
-  line(`Amount credited to wallet (excl. GST): ${fmt(params.baseAmountPaise)}`, 10)
+  if (isStudioUpgrade) {
+    line("Description: Annual Studio Subscription", 10)
+    line(`Taxable value: ${fmt(params.baseAmountPaise)}`, 10)
+    line(`GST @ ${params.gstPercentage}%: ${fmt(params.gstAmountPaise)}`, 10)
+    line(`Total paid (incl. GST): ${fmt(params.totalPaidPaise)}`, 11, true)
+  } else {
+    line("Description: Wallet recharge (amount to be credited to wallet)", 10)
+    line(`Taxable value: ${fmt(params.baseAmountPaise)}`, 10)
+    line(`GST @ ${params.gstPercentage}%: ${fmt(params.gstAmountPaise)}`, 10)
+    line(`Total paid (incl. GST): ${fmt(params.totalPaidPaise)}`, 11, true)
+    line(`Amount credited to wallet (excl. GST): ${fmt(params.baseAmountPaise)}`, 10)
+  }
   y -= 8
   line(`Payment ID: ${params.paymentId}`, 9, false, rgb(0.3, 0.3, 0.3))
   line(`Order ID: ${params.orderId}`, 9, false, rgb(0.3, 0.3, 0.3))
   y -= 12
   line("This is a computer-generated invoice.", 8, false, rgb(0.4, 0.4, 0.4))
 
-  const footer = "StreamLivee — GST invoice for wallet recharge"
+  const footer = isStudioUpgrade
+    ? "StreamLivee — GST invoice for annual studio subscription"
+    : "StreamLivee — GST invoice for wallet recharge"
   page.drawText(footer, {
     x: left,
     y: 40,

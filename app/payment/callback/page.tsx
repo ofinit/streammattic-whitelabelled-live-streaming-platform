@@ -20,7 +20,7 @@ function PaymentCallbackContent() {
     // Get params from payment gateway redirect
     const paymentId = searchParams.get("payment_id") || searchParams.get("razorpay_payment_id")
     const paymentStatus = searchParams.get("status") || searchParams.get("razorpay_payment_link_status")
-    const orderId = searchParams.get("order_id") || searchParams.get("razorpay_order_id")
+    const orderId = searchParams.get("orderId") || searchParams.get("order_id") || searchParams.get("razorpay_order_id")
     const amountParam = searchParams.get("amount")
 
     if (amountParam) {

@@ -12,7 +12,17 @@ async function findOrderIdForPayment(
   return String((r[0] as { order_id: string }).order_id ?? "")
 }
 
-/** Build wallet-recharge GST PDF bytes for a row from `invoices`. */
+async function findOrderTypeForOrder(
+  sql: ReturnType<typeof getDb>,
+  orderId: string | undefined,
+): Promise<string | null> {
+  if (!orderId) return null
+  const r = await sql`SELECT order_type FROM orders WHERE id = ${orderId} LIMIT 1`
+  if (r.length === 0) return null
+  return String((r[0] as { order_type: string }).order_type ?? "")
+}
+
+/** Build GST PDF bytes for a row from `invoices`. */
 export async function buildGstInvoicePdfFromRow(
   sql: ReturnType<typeof getDb>,
   inv: Record<string, unknown>
@@ -25,6 +35,7 @@ export async function buildGstInvoicePdfFromRow(
   const paymentIdRow = inv.payment_id as string | undefined
   const invoiceId = inv.id as string
   const orderId = await findOrderIdForPayment(sql, paymentIdRow)
+  const orderType = await findOrderTypeForOrder(sql, orderId || undefined)
 
   return buildWalletRechargeGstInvoicePdf({
     invoiceNumber: (inv.invoice_number as string) || invoiceId,
@@ -41,6 +52,7 @@ export async function buildGstInvoicePdfFromRow(
     totalPaidPaise: totalPaise,
     paymentId: paymentIdRow || "—",
     orderId: orderId || invoiceId,
+    orderType,
   })
 }
 

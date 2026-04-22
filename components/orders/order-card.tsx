@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import type { Order } from "@/lib/types"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { formatDistanceToNow } from "date-fns"
-import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock, Building2 } from "lucide-react"
+import { CreditCard, Calendar, User, AlertTriangle, CheckCircle, Wallet, Wand2, Clock, Building2, RefreshCw } from "lucide-react"
 
 const orderTypeLabels: Record<string, string> = {
   credit_purchase: "Credit Purchase",
@@ -35,9 +37,26 @@ const streamTypeLabels: Record<string, string> = {
 interface OrderCardProps {
   order: Order
   showUser?: boolean
+  onProcess?: (orderId: string) => Promise<void>
 }
 
-export function OrderCard({ order, showUser = false }: OrderCardProps) {
+export function OrderCard({ order, showUser = false, onProcess }: OrderCardProps) {
+  const [processing, setProcessing] = useState(false)
+  const [processResult, setProcessResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const handleProcess = async () => {
+    if (!onProcess) return
+    setProcessing(true)
+    setProcessResult(null)
+    try {
+      await onProcess(order.id as string)
+      setProcessResult({ ok: true, message: "Order processed — account upgraded." })
+    } catch (err) {
+      setProcessResult({ ok: false, message: err instanceof Error ? err.message : "Processing failed." })
+    } finally {
+      setProcessing(false)
+    }
+  }
   const TypeIcon = orderTypeIcons[order.orderType] || CreditCard
 
   const getTitle = () => {
@@ -145,6 +164,26 @@ export function OrderCard({ order, showUser = false }: OrderCardProps) {
               <AlertTriangle className="h-4 w-4" />
               <span>{order.failureReason}</span>
             </div>
+          </div>
+        )}
+
+        {onProcess && order.status === "pending" && order.paymentGateway && (
+          <div className="pt-1 space-y-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={handleProcess}
+              disabled={processing}
+            >
+              <RefreshCw className={`mr-2 h-3.5 w-3.5 ${processing ? "animate-spin" : ""}`} />
+              {processing ? "Processing…" : "Process Order"}
+            </Button>
+            {processResult && (
+              <p className={`text-xs text-center ${processResult.ok ? "text-green-600" : "text-destructive"}`}>
+                {processResult.message}
+              </p>
+            )}
           </div>
         )}
       </CardContent>

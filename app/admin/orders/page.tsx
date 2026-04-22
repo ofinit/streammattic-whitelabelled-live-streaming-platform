@@ -12,17 +12,26 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchOrders = () => {
     fetch("/api/admin/orders")
       .then((res) => res.json())
       .then((data) => {
-        if (data.orders) {
-          setOrders(data.orders)
-        }
+        if (data.orders) setOrders(data.orders)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { fetchOrders() }, [])
+
+  const handleProcessOrder = async (orderId: string) => {
+    const res = await fetch(`/api/admin/orders/${orderId}/process`, { method: "POST" })
+    const data = await res.json() as { success?: boolean; error?: string; message?: string }
+    if (!res.ok || !data.success) {
+      throw new Error(data.error ?? "Processing failed")
+    }
+    fetchOrders()
+  }
 
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -55,6 +64,7 @@ export default function AdminOrdersPage() {
             key={order.id}
             order={order}
             showUser
+            onProcess={handleProcessOrder}
           />
         ))}
       </div>

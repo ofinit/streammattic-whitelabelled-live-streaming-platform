@@ -252,7 +252,11 @@ export const POST = withAuth(async (user, request) => {
       })
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "https://www.streamlivee.com").replace(/\/+$/, "")
+    // redirectBase: always use the domain the user is actually on (custom domain for studios).
+    // The Origin header is sent by browsers on all POST requests (including same-origin).
+    // webhookBase: always use the main platform server URL — webhooks are server-to-server.
+    const platformBase = (process.env.NEXT_PUBLIC_APP_URL || "https://www.streamlivee.com").replace(/\/+$/, "")
+    const redirectBase = (request.headers.get("origin") || platformBase).replace(/\/+$/, "")
     const flowParam =
       orderType === "studio_upgrade"
         ? "&flow=studio_upgrade"
@@ -264,8 +268,8 @@ export const POST = withAuth(async (user, request) => {
       purpose: description || `${orderType} payment`,
       buyerName: user.name as string,
       email: user.email as string,
-      redirectUrl: `${baseUrl}/payment/callback?gateway=instamojo&orderId=${order.id}${flowParam}`,
-      webhookUrl: `${baseUrl}/api/webhooks/instamojo`,
+      redirectUrl: `${redirectBase}/payment/callback?gateway=instamojo&orderId=${order.id}${flowParam}`,
+      webhookUrl: `${platformBase}/api/webhooks/instamojo`,
     })
 
     await sql`UPDATE orders SET gateway_order_id = ${imPayment.payment_request?.id || imPayment.id} WHERE id = ${order.id}`

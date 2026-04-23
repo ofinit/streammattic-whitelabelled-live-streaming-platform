@@ -3040,14 +3040,6 @@ export function EventFormDialog({
 
               {formData.streamType && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-                  <Alert className="border-primary/40 bg-primary/5">
-                    <Lock className="h-4 w-4" />
-                    <AlertTitle>Crew credentials (FMS)</AlertTitle>
-                    <AlertDescription>
-                      Enter the RTMP/FMS URL and stream key you want to share with crew. When Crew PIN is set, these
-                      values are shown on <code className="font-mono text-[11px]">/crew</code> after PIN verification.
-                    </AlertDescription>
-                  </Alert>
                   <div className="space-y-2">
                     <Label htmlFor="fms-url">FMS URL (RTMP Server)</Label>
                     <Input
@@ -3080,6 +3072,40 @@ export function EventFormDialog({
                       </Button>
                     </div>
                   </div>
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-3">
+                      <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">Crew PIN</p>
+                        <p className="text-xs text-muted-foreground">Require PIN to see stream credentials on the crew page</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={isCrewPinEnabled}
+                      onCheckedChange={(checked) => {
+                        setIsCrewPinEnabled(checked)
+                        if (!checked) setCrewPin("")
+                      }}
+                    />
+                  </div>
+                  {isCrewPinEnabled && (
+                    <div className="space-y-2 pl-8">
+                      <Label htmlFor="crewPin">Crew PIN</Label>
+                      <Input
+                        id="crewPin"
+                        type="password"
+                        inputMode="numeric"
+                        value={crewPin}
+                        onChange={(e) => setCrewPin(e.target.value)}
+                        placeholder="Enter 4–8 digit PIN"
+                        maxLength={12}
+                        className="max-w-xs font-mono"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        RTMP URL and stream key are only visible after entering this PIN on the crew page.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3505,7 +3531,6 @@ export function EventFormDialog({
                           Add image
                         </Button>
                       </AiImagePickerDialog>
-                      <span className="text-xs text-muted-foreground">Upload images (free)</span>
                     </div>
                     {/* Uploaded thumbnails */}
                     {photoGalleryUrls.length > 0 && (
@@ -3811,41 +3836,6 @@ export function EventFormDialog({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <ShieldAlert className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">Crew PIN (stream credentials)</p>
-                      <p className="text-xs text-muted-foreground">Require PIN to see RTMP details on the crew page</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={isCrewPinEnabled}
-                    onCheckedChange={(checked) => {
-                      setIsCrewPinEnabled(checked)
-                      if (!checked) setCrewPin("")
-                    }}
-                  />
-                </div>
-
-                {isCrewPinEnabled && (
-                  <div className="space-y-2 pl-8">
-                    <Label htmlFor="crewPin">Enter Crew PIN (stream credentials)</Label>
-                    <Input
-                      id="crewPin"
-                      type="password"
-                      inputMode="numeric"
-                      value={crewPin}
-                      onChange={(e) => setCrewPin(e.target.value)}
-                      placeholder="Enter 4–8 digit PIN"
-                      maxLength={12}
-                      className="max-w-xs font-mono"
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      If set, RTMP URL and stream key are hidden on the watch page and only visible after entering this PIN on the crew page.
-                    </p>
-                  </div>
-                )}
               </div>
             </TabsContent>
             </Tabs>

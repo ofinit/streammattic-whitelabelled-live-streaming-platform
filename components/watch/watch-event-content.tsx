@@ -495,6 +495,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const replayIframeRef = useRef<HTMLIFrameElement | null>(null)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
+  const replayCurrentTimeRef = useRef(0)
+  const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const eventStatusRef = useRef<string | null>(null)
   const countdownZeroRefetchSentRef = useRef(false)
   const [gardenFlowers, setGardenFlowers] = useState<GardenFloatingFlower[]>([])
@@ -1293,6 +1295,64 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     )
   }
 
+  const seekReplay = (offsetSeconds: number) => {
+    const iframe = replayIframeRef.current
+    if (!iframe || !iframe.contentWindow) return
+    const target = Math.max(0, replayCurrentTimeRef.current + offsetSeconds)
+    replayCurrentTimeRef.current = target
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: "command", func: "seekTo", args: [target, true] }),
+      "*",
+    )
+  }
+
+  // Sync current time from YouTube IFrame API messages and tick estimate while playing
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (!e.data) return
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
+        // YouTube sends infoDelivery with currentTime when playing
+        if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
+          replayCurrentTimeRef.current = data.info.currentTime
+        }
+        // Track play/pause state from YouTube events
+        if (data?.event === "onStateChange") {
+          const playing = data?.info === 1
+          setIsReplayPlaying(playing)
+          if (!playing && replayTickRef.current) {
+            clearInterval(replayTickRef.current)
+            replayTickRef.current = null
+          }
+        }
+      } catch {
+        // non-JSON messages ignored
+      }
+    }
+    window.addEventListener("message", handler)
+    return () => window.removeEventListener("message", handler)
+  }, [])
+
+  // Tick estimate: increment current time every second while playing
+  useEffect(() => {
+    if (isReplayPlaying) {
+      replayTickRef.current = setInterval(() => {
+        replayCurrentTimeRef.current += 1
+      }, 1000)
+    } else {
+      if (replayTickRef.current) {
+        clearInterval(replayTickRef.current)
+        replayTickRef.current = null
+      }
+    }
+    return () => {
+      if (replayTickRef.current) {
+        clearInterval(replayTickRef.current)
+        replayTickRef.current = null
+      }
+    }
+  }, [isReplayPlaying])
+
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
@@ -1408,23 +1468,49 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-                <button
-                  type="button"
-                  className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/10 focus:outline-none focus-visible:opacity-100"
-                  onClick={() => {
-                    const next = !isReplayPlaying
-                    sendReplayCommand(next ? "playVideo" : "pauseVideo")
-                    setIsReplayPlaying(next)
-                  }}
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    {isReplayPlaying ? (
-                      <PauseCircle className="h-10 w-10" />
-                    ) : (
-                      <Play className="h-10 w-10 translate-x-0.5" />
-                    )}
+                {/* Centered play/pause + rewind/forward controls — bottom strip left free for YouTube's own seek bar */}
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-14 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <div className="pointer-events-auto flex items-center gap-4">
+                    <button
+                      type="button"
+                      title="Rewind 30s"
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+                      onClick={() => seekReplay(-30)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                        <path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                        <text x="7.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      title={isReplayPlaying ? "Pause" : "Play"}
+                      className="flex h-14 w-14 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+                      onClick={() => {
+                        const next = !isReplayPlaying
+                        sendReplayCommand(next ? "playVideo" : "pauseVideo")
+                        setIsReplayPlaying(next)
+                      }}
+                    >
+                      {isReplayPlaying ? (
+                        <PauseCircle className="h-10 w-10" />
+                      ) : (
+                        <Play className="h-10 w-10 translate-x-0.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      title="Forward 30s"
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+                      onClick={() => seekReplay(30)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                        <path d="M12 5V2l5 5-5 5V8c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                        <text x="16.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
+                      </svg>
+                    </button>
                   </div>
-                </button>
+                </div>
               </div>
             ) : isEnded ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">

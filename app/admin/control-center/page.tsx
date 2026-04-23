@@ -536,6 +536,10 @@ export default function AdminEventsPage() {
 
   const getEventPublicUrl = (event: Record<string, unknown>) => {
     const path = `/${(event.slug as string) || event.id}`
+    const customDomain = (event as any).studioCustomDomain as string | undefined
+    if (customDomain) {
+      return `https://${customDomain}${path}`
+    }
     if (typeof window !== "undefined") {
       return `${window.location.origin}${path}`
     }

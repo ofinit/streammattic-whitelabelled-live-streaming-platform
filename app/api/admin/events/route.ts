@@ -13,10 +13,17 @@ export async function GET(req: Request) {
     
     const sql = getDb()
     
+    const domainSubquery = sql.unsafe(`(
+      SELECT domain FROM domains
+      WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true
+      LIMIT 1
+    ) AS studio_custom_domain`)
+
     let rows: Record<string, unknown>[]
     if (status) {
       rows = await sql`
-        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role
+        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role,
+               ${domainSubquery}
         FROM events e
         LEFT JOIN users u ON e.user_id = u.id
         WHERE e.status = ${status}
@@ -25,7 +32,8 @@ export async function GET(req: Request) {
       ` as Record<string, unknown>[]
     } else {
       rows = await sql`
-        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role
+        SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role,
+               ${domainSubquery}
         FROM events e
         LEFT JOIN users u ON e.user_id = u.id
         ORDER BY e.created_at DESC

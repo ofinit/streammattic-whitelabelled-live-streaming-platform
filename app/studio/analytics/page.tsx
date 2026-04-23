@@ -79,7 +79,7 @@ export default function StudioAnalyticsPage() {
             {isLoading ? (
               <Skeleton className="h-8 w-16 mb-1" />
             ) : (
-              <div className="text-2xl font-bold">₹{(stats?.walletBalance || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold">₹{((stats?.walletBalance || 0) / 100).toLocaleString("en-IN")}</div>
             )}
             <p className="text-xs text-muted-foreground">Remaining credits</p>
           </CardContent>

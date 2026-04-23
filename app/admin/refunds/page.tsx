@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Filter, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react"
 
-import { formatCurrency } from "@/lib/refund-service"
+import { formatPaisa as formatCurrency } from "@/lib/utils"
 import type { RefundRequest } from "@/lib/types"
 
 export default function AdminRefundsPage() {

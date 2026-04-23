@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { PlusCircle, Wallet, TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react"
-import { formatCurrency } from "@/lib/refund-service"
+import { formatCurrency, formatPaisa } from "@/lib/utils"
 import type { WalletAdjustment, User } from "@/lib/types"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -96,9 +96,10 @@ export default function AdminWalletAdjustmentsPage() {
   }
 
   const selectedUser = allUsers.find((u: User) => u.id === targetUserId)
-  const currentBalance = selectedUser?.walletBalance || 0
+  const currentBalance = selectedUser?.walletBalance || 0 // in paise
+  const adjustPaise = Math.round(Number(amount || 0) * 100) // form input is rupees
   const newBalance =
-    adjustmentType === "credit" ? currentBalance + Number(amount || 0) : currentBalance - Number(amount || 0)
+    adjustmentType === "credit" ? currentBalance + adjustPaise : currentBalance - adjustPaise // in paise
 
   if (errorAdj) {
     return (
@@ -132,7 +133,7 @@ export default function AdminWalletAdjustmentsPage() {
             <CardHeader className="pb-2">
               <CardDescription>Total Credits Added</CardDescription>
               <CardTitle className="text-3xl">
-                {formatCurrency(adjustments.filter((a: any) => a.type === "credit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
+                {formatPaisa(adjustments.filter((a: any) => a.type === "credit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -140,7 +141,7 @@ export default function AdminWalletAdjustmentsPage() {
             <CardHeader className="pb-2">
               <CardDescription>Total Debits</CardDescription>
               <CardTitle className="text-3xl">
-                {formatCurrency(adjustments.filter((a: any) => a.type === "debit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
+                {formatPaisa(adjustments.filter((a: any) => a.type === "debit").reduce((sum: number, a: any) => sum + Number(a.amount), 0))}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -202,7 +203,7 @@ export default function AdminWalletAdjustmentsPage() {
                             className={`text-lg font-bold ${adjustment.type === "credit" ? "text-primary" : "text-destructive"}`}
                           >
                             {adjustment.type === "credit" ? "+" : "-"}
-                            {formatCurrency(adjustment.amount)}
+                            {formatPaisa(adjustment.amount)}
                           </p>
                         </div>
                         <p className="text-sm">{adjustment.reason}</p>
@@ -241,7 +242,7 @@ export default function AdminWalletAdjustmentsPage() {
                     {allUsers.map((user: User) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name} ({user.role})
-                        <span className="ml-2 text-xs text-muted-foreground">{formatCurrency(user.walletBalance)}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{formatPaisa(user.walletBalance || 0)}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -341,19 +342,19 @@ export default function AdminWalletAdjustmentsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label>Current Balance</Label>
-                <p className="text-lg font-bold">{formatCurrency(currentBalance)}</p>
+                <p className="text-lg font-bold">{formatPaisa(currentBalance)}</p>
               </div>
               <div>
                 <Label>Adjustment</Label>
                 <p className={`text-lg font-bold ${adjustmentType === "credit" ? "text-primary" : "text-destructive"}`}>
                   {adjustmentType === "credit" ? "+" : "-"}
-                  {formatCurrency(Number(amount))}
+                  {formatCurrency(Number(amount || 0))}
                 </p>
               </div>
             </div>
             <div>
               <Label>New Balance</Label>
-              <p className="text-2xl font-bold">{formatCurrency(newBalance)}</p>
+              <p className="text-2xl font-bold">{formatPaisa(newBalance)}</p>
             </div>
             <div>
               <Label>Category</Label>

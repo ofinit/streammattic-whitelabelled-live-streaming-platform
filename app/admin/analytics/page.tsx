@@ -37,8 +37,15 @@ export default function AdminAnalyticsPage() {
   )
 
   const overview = overviewData?.overview
-  const revenueTrend = revenueData?.revenueTrend ?? []
-  const topStudios = revenueData?.topStudios ?? []
+  // Revenue API returns values in paise — convert to rupees for display and chart
+  const revenueTrend = (revenueData?.revenueTrend ?? []).map((r: Record<string, unknown>) => ({
+    ...r,
+    revenue: Number(r.revenue) / 100,
+  }))
+  const topStudios = (revenueData?.topStudios ?? []).map((s: Record<string, unknown>) => ({
+    ...s,
+    revenue: Number(s.revenue) / 100,
+  }))
 
   return (
     <div className="space-y-6">
@@ -64,7 +71,7 @@ export default function AdminAnalyticsPage() {
                 {isOverviewLoading ? (
                   <Skeleton className="h-8 w-24 mb-1" />
                 ) : (
-                  <div className="text-2xl font-bold">₹{(overview?.platformRevenue || 0).toLocaleString()}</div>
+                  <div className="text-2xl font-bold">₹{((overview?.platformRevenue || 0) / 100).toLocaleString("en-IN")}</div>
                 )}
                 <p className="text-xs text-muted-foreground">Across all completed orders</p>
               </CardContent>
@@ -220,7 +227,7 @@ export default function AdminAnalyticsPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">₹{(studio.revenue || 0).toLocaleString()}</p>
+                        <p className="font-bold text-lg">₹{(studio.revenue || 0).toLocaleString("en-IN")}</p>
                         <p className="text-xs text-muted-foreground">Total revenue</p>
                       </div>
                     </div>

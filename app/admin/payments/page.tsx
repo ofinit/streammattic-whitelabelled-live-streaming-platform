@@ -18,7 +18,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 
-import { formatCurrency, formatDate } from "@/lib/utils"
+import { formatPaisa, formatDate } from "@/lib/utils"
 
 export default function AdminPaymentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -128,7 +128,7 @@ export default function AdminPaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.success}</div>
-            <p className="text-xs text-muted-foreground">{formatCurrency(stats.totalAmount)}</p>
+            <p className="text-xs text-muted-foreground">{formatPaisa(stats.totalAmount)}</p>
           </CardContent>
         </Card>
 
@@ -262,7 +262,7 @@ export default function AdminPaymentsPage() {
                     </div>
 
                     <div className="text-right space-y-2">
-                      <div className="text-2xl font-bold">{formatCurrency(payment.amount)}</div>
+                      <div className="text-2xl font-bold">{formatPaisa(payment.amount)}</div>
                       <Button variant="outline" size="sm">
                         <ExternalLink className="h-3 w-3 mr-1" />
                         View Details
@@ -338,7 +338,7 @@ export default function AdminPaymentsPage() {
                     </div>
 
                     <div className="text-right space-y-2">
-                      <div className="text-2xl font-bold">{formatCurrency(payment.amount)}</div>
+                      <div className="text-2xl font-bold">{formatPaisa(payment.amount)}</div>
                       <div className="space-y-2">
                         <Button size="sm" className="w-full">
                           <DollarSign className="h-3 w-3 mr-1" />

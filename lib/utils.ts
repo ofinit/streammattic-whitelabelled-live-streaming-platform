@@ -15,6 +15,11 @@ export function formatCurrency(amount: number, currency = "INR"): string {
   }).format(amount)
 }
 
+/** Format a paise value as rupees (divides by 100 then formats as INR currency). */
+export function formatPaisa(paise: number, currency = "INR"): string {
+  return formatCurrency(paise / 100, currency)
+}
+
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",

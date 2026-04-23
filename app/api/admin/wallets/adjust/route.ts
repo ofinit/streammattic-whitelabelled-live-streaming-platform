@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Type must be credit or debit" }, { status: 400 })
     }
 
-    const value = Math.abs(parseInt(amount, 10))
+    const value = Math.round(Math.abs(parseFloat(amount)) * 100) // convert rupees input to paise
     if (isNaN(value) || value <= 0) {
       return NextResponse.json({ error: "Amount must be a positive integer" }, { status: 400 })
     }

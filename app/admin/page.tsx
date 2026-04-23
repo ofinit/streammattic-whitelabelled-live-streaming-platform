@@ -69,7 +69,7 @@ export default function AdminDashboard() {
       header: "Amount",
       render: (item: Record<string, unknown>) => (
         <span className="font-mono text-foreground">
-          ₹{Number(item.total).toLocaleString()}
+          ₹{(Number(item.total) / 100).toLocaleString("en-IN")}
         </span>
       ),
     },

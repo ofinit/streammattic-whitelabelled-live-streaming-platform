@@ -274,7 +274,7 @@ export default function AdminStreamersPage() {
       key: "walletBalance",
       header: "Balance",
       render: (item: any) => (
-        <span className="font-mono text-foreground">₹{(item.walletBalance || 0).toLocaleString()}</span>
+        <span className="font-mono text-foreground">₹{((item.walletBalance || 0) / 100).toLocaleString("en-IN")}</span>
       ),
     },
     {
@@ -477,7 +477,7 @@ export default function AdminStreamersPage() {
           targetUser={{
             id: addFundsStreamer.id,
             name: addFundsStreamer.name,
-            balance: (addFundsStreamer.walletBalance ?? 0) * 100,
+            balance: addFundsStreamer.walletBalance ?? 0,
           }}
           onConfirm={async (amountInPaise, type, reason) => {
             try {

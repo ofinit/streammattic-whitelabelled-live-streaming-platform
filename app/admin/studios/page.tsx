@@ -246,7 +246,7 @@ export default function AdminStudiosPage() {
       key: "walletBalance",
       header: "Balance",
       render: (item: Studio) => (
-        <span className="font-mono text-foreground">₹{item.walletBalance.toLocaleString()}</span>
+        <span className="font-mono text-foreground">₹{((item.walletBalance || 0) / 100).toLocaleString("en-IN")}</span>
       ),
     },
     {

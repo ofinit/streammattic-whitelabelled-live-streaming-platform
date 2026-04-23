@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
@@ -8,6 +9,7 @@ import { TransactionList } from "@/components/wallet/transaction-list"
 import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-checkout"
 import { TrendingUp, ArrowUpRight, Clock, Loader2 } from "lucide-react"
 import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
+import { toast } from "sonner"
 
 export default function StudioWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
@@ -15,6 +17,16 @@ export default function StudioWalletPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [summary, setSummary] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get("recharged") === "1") {
+      toast.success("Wallet recharged successfully! Your balance has been updated.")
+      const url = new URL(window.location.href)
+      url.searchParams.delete("recharged")
+      window.history.replaceState({}, "", url.toString())
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetch("/api/wallet")

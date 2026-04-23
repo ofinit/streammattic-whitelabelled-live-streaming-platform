@@ -252,7 +252,7 @@ export const POST = withAuth(async (user, request) => {
       })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "https://www.streamlivee.com"
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "https://www.streamlivee.com").replace(/\/+$/, "")
     const flowParam =
       orderType === "studio_upgrade"
         ? "&flow=studio_upgrade"

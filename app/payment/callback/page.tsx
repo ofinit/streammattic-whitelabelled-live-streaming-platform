@@ -49,9 +49,15 @@ function PaymentCallbackContent() {
             credentials: "include",
             body: JSON.stringify({ paymentRequestId, paymentId, orderId }),
           })
+          const resData = res.ok ? await res.json() as { walletPath?: string } : null
           if (res.ok) {
             if (flow === "studio_upgrade") {
               window.location.replace("/studio/setup?upgraded=1")
+              return
+            }
+            if (flow === "wallet_recharge") {
+              const dest = resData?.walletPath ?? "/streamer/wallet"
+              window.location.replace(`${dest}?recharged=1`)
               return
             }
             setStatus("success")

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WalletCard } from "@/components/wallet/wallet-card"
@@ -9,6 +10,7 @@ import { WalletRechargeCheckout } from "@/components/wallet/wallet-recharge-chec
 import { CreditCard, AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { GstInvoicesClient } from "@/components/invoices/gst-invoices-client"
+import { toast } from "sonner"
 
 export default function StreamerWalletPage() {
   const [topUpOpen, setTopUpOpen] = useState(false)
@@ -16,6 +18,17 @@ export default function StreamerWalletPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [summary, setSummary] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get("recharged") === "1") {
+      toast.success("Wallet recharged successfully! Your balance has been updated.")
+      // Remove the query param without reloading
+      const url = new URL(window.location.href)
+      url.searchParams.delete("recharged")
+      window.history.replaceState({}, "", url.toString())
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetch("/api/wallet")

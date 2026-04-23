@@ -3407,7 +3407,6 @@ export function EventFormDialog({
                             Add image
                           </Button>
                         </AiImagePickerDialog>
-                        <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
                       </div>
                     )}
                   </div>
@@ -3444,7 +3443,6 @@ export function EventFormDialog({
                               Add image
                             </Button>
                           </AiImagePickerDialog>
-                          <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
                         </div>
                       )}
                     </div>
@@ -3488,7 +3486,6 @@ export function EventFormDialog({
                               Add image
                             </Button>
                           </AiImagePickerDialog>
-                          <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
                         </div>
                       )}
                     </div>
@@ -3548,7 +3545,6 @@ export function EventFormDialog({
                     </div>
                     <div className="space-y-2">
                       <Label>OG Share image</Label>
-                      <p className="text-xs text-muted-foreground">Used as the preview image when sharing the event link on social media.</p>
                       {ogShareImageUrl ? (
                         <div className="relative w-32 h-24 rounded border overflow-hidden">
                           <img src={ogShareImageUrl} alt="OG Share" className="w-full h-full object-cover" />
@@ -3579,7 +3575,6 @@ export function EventFormDialog({
                               Add image
                             </Button>
                           </AiImagePickerDialog>
-                          <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
                         </div>
                       )}
                     </div>

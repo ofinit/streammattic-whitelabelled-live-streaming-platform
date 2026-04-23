@@ -9,6 +9,7 @@ export type WatchEventMetaPayload = {
   timezone?: string
   status?: string
   heroImageUrl?: string
+  ogShareImageUrl?: string
   thumbnail?: string
   templateId?: string
   templateData?: unknown
@@ -143,8 +144,10 @@ export function resolveWatchOgImageUrl(
 ): string {
   const td = parseWatchTemplateData(ev.templateData)
   const couplePhoto = typeof td.couplePhoto === "string" ? td.couplePhoto.trim() : ""
+  const ogShare = typeof ev.ogShareImageUrl === "string" ? ev.ogShareImageUrl.trim() : ""
   const hero = typeof ev.heroImageUrl === "string" ? ev.heroImageUrl.trim() : ""
 
+  if (ogShare) return toAbsolutePublicAssetUrl(baseUrl, ogShare)
   if (hero) return toAbsolutePublicAssetUrl(baseUrl, hero)
   if (couplePhoto) return toAbsolutePublicAssetUrl(baseUrl, couplePhoto)
 

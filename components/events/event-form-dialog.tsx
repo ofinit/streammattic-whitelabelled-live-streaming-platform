@@ -911,6 +911,7 @@ export function EventFormDialog({
   const [playerImageUrl, setPlayerImageUrl] = useState("")
   const [photoGalleryUrls, setPhotoGalleryUrls] = useState<string[]>([])
   const [photographerLogoUrl, setPhotographerLogoUrl] = useState("")
+  const [ogShareImageUrl, setOgShareImageUrl] = useState("")
   const [photographerContact, setPhotographerContact] = useState<{ name?: string; phone?: string; email?: string; website?: string }>({})
   const [validityExtSettings, setValidityExtSettings] = useState<ParsedValidityExtensions>(() =>
     parseValidityExtensionsSetting(null),
@@ -1269,6 +1270,7 @@ export function EventFormDialog({
         setPlayerImageUrl((ev.playerImageUrl as string) || "")
         setPhotoGalleryUrls(parsePhotoGalleryUrls(ev.photoGalleryUrls))
         setPhotographerLogoUrl((ev.photographerLogoUrl as string) || "")
+        setOgShareImageUrl((ev.ogShareImageUrl as string) || "")
         setPhotographerContact(parsePhotographerContact(ev.photographerContact))
         setCrewPin("") // never load PIN
         setIsCrewPinEnabled(!!(ev.hasCrewPin ?? ev.crew_pin_hash))
@@ -1313,6 +1315,7 @@ export function EventFormDialog({
         setPlayerImageUrl("")
         setPhotoGalleryUrls([])
         setPhotographerLogoUrl("")
+        setOgShareImageUrl("")
         setPhotographerContact({})
         {
           const hasTier90 = hasEnabled90DayTier(validityExtSettings)
@@ -1877,6 +1880,7 @@ export function EventFormDialog({
       playerImageUrl: playerImageUrl.trim() ? playerImageUrl.trim() : null,
       photoGalleryUrls: [...photoGalleryUrls],
       photographerLogoUrl: photographerLogoUrl.trim() ? photographerLogoUrl.trim() : null,
+      ogShareImageUrl: ogShareImageUrl.trim() ? ogShareImageUrl.trim() : null,
       photographerContact: Object.keys(photographerContact).length ? photographerContact : undefined,
       validityExpiresAt:
         formData.streamType.trim() && validityChoiceKey === "until" && validityExpiresAt
@@ -3445,7 +3449,7 @@ export function EventFormDialog({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label>Hero image (OG share)</Label>
+                      <Label>Hero image</Label>
                       {heroUsesCircularCrop ? (
                         <p className="text-xs text-muted-foreground">
                           Memorial and Birthday templates show this image in a circle on the watch page — file uploads open
@@ -3459,7 +3463,7 @@ export function EventFormDialog({
                             <X className="h-3 w-3" />
                           </Button>
                           <AiImagePickerDialog nestedInDialog
-                            dialogTitle="Hero image (OG share)"
+                            dialogTitle="Hero image"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
                             walletUserId={creditsUserId}
@@ -3473,7 +3477,7 @@ export function EventFormDialog({
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
                           <AiImagePickerDialog nestedInDialog
-                            dialogTitle="Hero image (OG share)"
+                            dialogTitle="Hero image"
                             uploadSubdir="event-hero"
                             circularHeroCrop={heroUsesCircularCrop}
                             walletUserId={creditsUserId}
@@ -3526,20 +3530,59 @@ export function EventFormDialog({
                       </div>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Photographer logo</Label>
-                    {photographerLogoUrl ? (
-                      <div className="relative w-24 h-24 rounded border overflow-hidden">
-                        <img src={photographerLogoUrl} alt="Logo" className="w-full h-full object-contain" />
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setPhotographerLogoUrl("")}><X className="h-3 w-3" /></Button>
-                      </div>
-                    ) : (
-                      <label className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-md cursor-pointer hover:bg-muted/50 w-fit">
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleStandardUpload("event-photographer", f) }} disabled={!!standardUploading} />
-                        {standardUploading === "event-photographer" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4 text-muted-foreground" />}
-                        <span className="text-sm text-muted-foreground">Upload logo</span>
-                      </label>
-                    )}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Photographer logo</Label>
+                      {photographerLogoUrl ? (
+                        <div className="relative w-24 h-24 rounded border overflow-hidden">
+                          <img src={photographerLogoUrl} alt="Logo" className="w-full h-full object-contain" />
+                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setPhotographerLogoUrl("")}><X className="h-3 w-3" /></Button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-2 px-3 py-2 border border-dashed rounded-md cursor-pointer hover:bg-muted/50 w-fit">
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleStandardUpload("event-photographer", f) }} disabled={!!standardUploading} />
+                          {standardUploading === "event-photographer" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4 text-muted-foreground" />}
+                          <span className="text-sm text-muted-foreground">Upload logo</span>
+                        </label>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>OG Share image</Label>
+                      <p className="text-xs text-muted-foreground">Used as the preview image when sharing the event link on social media.</p>
+                      {ogShareImageUrl ? (
+                        <div className="relative w-32 h-24 rounded border overflow-hidden">
+                          <img src={ogShareImageUrl} alt="OG Share" className="w-full h-full object-cover" />
+                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setOgShareImageUrl("")}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <AiImagePickerDialog nestedInDialog
+                            dialogTitle="OG Share image"
+                            uploadSubdir="event-og-share"
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setOgShareImageUrl(url)}
+                          >
+                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                              Change
+                            </Button>
+                          </AiImagePickerDialog>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <AiImagePickerDialog nestedInDialog
+                            dialogTitle="OG Share image"
+                            uploadSubdir="event-og-share"
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setOgShareImageUrl(url)}
+                          >
+                            <Button type="button" variant="outline" size="sm" className="gap-2">
+                              <ImageIcon className="h-4 w-4" />
+                              Add image
+                            </Button>
+                          </AiImagePickerDialog>
+                          <span className="text-xs text-muted-foreground">Upload or AI (wallet)</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">

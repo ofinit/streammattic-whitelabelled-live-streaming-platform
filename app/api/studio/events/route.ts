@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData,
       youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
       additionalDates, templateId, templateData: rawTemplateData,
-      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, ogShareImageUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
     } = body
 
@@ -301,6 +301,7 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS og_share_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_contact JSONB DEFAULT '{}'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS template_data JSONB DEFAULT '{}'`.catch(() => {})
@@ -322,7 +323,7 @@ export async function POST(req: NextRequest) {
         is_password_protected, event_password, allow_chat, allow_reactions, capture_visitor_data,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
         validity_expires_at, hero_image_url, header_image_url, player_image_url, photo_gallery_urls,
-        photographer_logo_url, photographer_contact, crew_pin_hash, use_custom_domain
+        photographer_logo_url, og_share_image_url, photographer_contact, crew_pin_hash, use_custom_domain
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
         ${insertStreamType}, ${streamKey},
@@ -339,7 +340,7 @@ export async function POST(req: NextRequest) {
         ${templateDataJson}::jsonb,
         ${validityExpiresAtValue},
         ${heroImageUrl || null}, ${headerImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
-        ${photographerLogoUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
+        ${photographerLogoUrl || null}, ${ogShareImageUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
         ${user.role === 'studio'}
       )
       RETURNING *
@@ -398,7 +399,7 @@ export async function PUT(req: NextRequest) {
       id, title, subtitle, description, scheduledAt, status, slug: rawSlug,
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData, timezone, showScheduledPage, showRecording,
       additionalDates, templateId, templateData: rawTemplateData,
-      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, photographerContact,
+      heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, ogShareImageUrl, photographerContact,
       validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
       streamType, youtubeUrl, embedCode, simulcastConfig,
       isSuspended,
@@ -702,6 +703,7 @@ export async function PUT(req: NextRequest) {
     const finalHeaderImageUrl = resolveImageUrlColumn(headerImageUrl, prev.header_image_url)
     const finalPlayerImageUrl = resolveImageUrlColumn(playerImageUrl, prev.player_image_url)
     const finalPhotographerLogoUrl = resolveImageUrlColumn(photographerLogoUrl, prev.photographer_logo_url)
+    const finalOgShareImageUrl = resolveImageUrlColumn(ogShareImageUrl, prev.og_share_image_url)
 
     const finalPhotoGallery =
       photoGalleryUrls !== undefined
@@ -770,6 +772,7 @@ export async function PUT(req: NextRequest) {
         player_image_url = ${finalPlayerImageUrl},
         photo_gallery_urls = ${finalPhotoGallery}::jsonb,
         photographer_logo_url = ${finalPhotographerLogoUrl},
+        og_share_image_url = ${finalOgShareImageUrl},
         photographer_contact = ${finalPhotographerContact}::jsonb,
         crew_pin_hash = ${finalCrewPinHash},
         is_suspended = ${nextSuspended},

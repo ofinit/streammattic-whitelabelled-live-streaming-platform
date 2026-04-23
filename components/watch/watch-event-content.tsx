@@ -979,6 +979,53 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     }, 2500)
   }
 
+  // Replay: sync current time from YouTube IFrame API messages
+  // Must be before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (!e.data) return
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
+        if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
+          replayCurrentTimeRef.current = data.info.currentTime
+        }
+        if (data?.event === "onStateChange") {
+          const playing = data?.info === 1
+          setIsReplayPlaying(playing)
+          if (!playing && replayTickRef.current) {
+            clearInterval(replayTickRef.current)
+            replayTickRef.current = null
+          }
+        }
+      } catch {
+        // non-JSON messages ignored
+      }
+    }
+    window.addEventListener("message", handler)
+    return () => window.removeEventListener("message", handler)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Replay: tick estimate — increment current time every second while playing
+  useEffect(() => {
+    if (isReplayPlaying) {
+      replayTickRef.current = setInterval(() => {
+        replayCurrentTimeRef.current += 1
+      }, 1000)
+    } else {
+      if (replayTickRef.current) {
+        clearInterval(replayTickRef.current)
+        replayTickRef.current = null
+      }
+    }
+    return () => {
+      if (replayTickRef.current) {
+        clearInterval(replayTickRef.current)
+        replayTickRef.current = null
+      }
+    }
+  }, [isReplayPlaying])
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -1305,53 +1352,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       "*",
     )
   }
-
-  // Sync current time from YouTube IFrame API messages and tick estimate while playing
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (!e.data) return
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
-        // YouTube sends infoDelivery with currentTime when playing
-        if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
-          replayCurrentTimeRef.current = data.info.currentTime
-        }
-        // Track play/pause state from YouTube events
-        if (data?.event === "onStateChange") {
-          const playing = data?.info === 1
-          setIsReplayPlaying(playing)
-          if (!playing && replayTickRef.current) {
-            clearInterval(replayTickRef.current)
-            replayTickRef.current = null
-          }
-        }
-      } catch {
-        // non-JSON messages ignored
-      }
-    }
-    window.addEventListener("message", handler)
-    return () => window.removeEventListener("message", handler)
-  }, [])
-
-  // Tick estimate: increment current time every second while playing
-  useEffect(() => {
-    if (isReplayPlaying) {
-      replayTickRef.current = setInterval(() => {
-        replayCurrentTimeRef.current += 1
-      }, 1000)
-    } else {
-      if (replayTickRef.current) {
-        clearInterval(replayTickRef.current)
-        replayTickRef.current = null
-      }
-    }
-    return () => {
-      if (replayTickRef.current) {
-        clearInterval(replayTickRef.current)
-        replayTickRef.current = null
-      }
-    }
-  }, [isReplayPlaying])
 
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {

@@ -1296,9 +1296,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
-      replaySrc = `https://www.youtube.com/embed/${replayBroadcastId}?rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`
+      replaySrc = `https://www.youtube.com/embed/${replayBroadcastId}?controls=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`
     } else if ((event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
-      replaySrc = (event.youtubeUrl as string).replace("watch?v=", "embed/") + "?rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
+      replaySrc = (event.youtubeUrl as string).replace("watch?v=", "embed/") + "?controls=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
     }
   }
 
@@ -1444,14 +1444,14 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             ) : (event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
               <iframe
                 className="h-full w-full"
-                src={(event.youtubeUrl as string).replace("watch?v=", "embed/") + "?autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&modestbranding=1"}
+                src={(event.youtubeUrl as string).replace("watch?v=", "embed/") + "?autoplay=1&mute=0&controls=1&rel=0&iv_load_policy=3&modestbranding=1"}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : event.streamType === "youtube_api" && evRawTop.youtubeBroadcastId ? (
               <iframe
                 className="h-full w-full"
-                src={`https://www.youtube.com/embed/${evRawTop.youtubeBroadcastId}?autoplay=1&mute=1&controls=0&rel=0&iv_load_policy=3&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${evRawTop.youtubeBroadcastId}?autoplay=1&mute=0&controls=1&rel=0&iv_load_policy=3&modestbranding=1`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
@@ -1479,6 +1479,12 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   </p>
                 </div>
               </div>
+            ) : (event.streamType === "third_party" || event.streamType === "rtmp") && evRawTop.embedCode ? (
+              <div
+                className="h-full w-full [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{ __html: evRawTop.embedCode as string }}
+              />
             ) : (
               <div className="flex flex-col items-center justify-center gap-4 absolute inset-0">
                 {playerImageUrl && <img src={playerImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />}

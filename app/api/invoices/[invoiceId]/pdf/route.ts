@@ -29,7 +29,13 @@ export async function GET(request: Request, context: { params: Promise<{ invoice
       return jsonError("Forbidden", 403)
     }
 
-    const pdfBytes = await fetchGstInvoicePdfBytesById(invoiceId)
+    let pdfBytes: Uint8Array | null
+    try {
+      pdfBytes = await fetchGstInvoicePdfBytesById(invoiceId)
+    } catch (pdfErr: unknown) {
+      console.error("[invoices/pdf] PDF generation failed:", pdfErr)
+      return jsonError("Failed to generate PDF", 500)
+    }
     if (!pdfBytes) {
       return jsonError("Invoice not found", 404)
     }

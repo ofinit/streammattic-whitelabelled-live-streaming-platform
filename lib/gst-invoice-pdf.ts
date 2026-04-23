@@ -63,7 +63,8 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   }
   y -= 10
 
-  const fmt = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`
+  // Standard PDF fonts (Helvetica) only support Latin-1 — use "Rs." instead of the rupee symbol
+  const fmt = (paise: number) => `Rs. ${(paise / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
   if (isStudioUpgrade) {
     line("Description: Annual Studio Subscription", 10)
     line(`Taxable value: ${fmt(params.baseAmountPaise)}`, 10)

@@ -811,12 +811,6 @@ export default function StudioEventsPage() {
             Break
             </Button>
         )}
-        {(event.status === "live" || event.status === "on_break" || event.status === "scheduled" || event.status === "draft") && (
-            <Button size="sm" variant="destructive" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleForceStop(event)}>
-            <Square className="h-3 w-3" />
-            Stop
-            </Button>
-        )}
         {(event.status === "completed" || event.status === "ended") && (
             <Button
             size="sm"
@@ -878,12 +872,6 @@ export default function StudioEventsPage() {
                 <DropdownMenuItem onClick={() => handleResumeEvent(event)}>
                 <PlayCircle className="h-4 w-4 mr-2 text-green-500" />
                 Resume Stream
-                </DropdownMenuItem>
-            )}
-            {(event.status === "live" || event.status === "on_break") && (
-                <DropdownMenuItem onClick={() => handleForceStop(event)} className="text-destructive">
-                <StopCircle className="h-4 w-4 mr-2" />
-                Force Stop
                 </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

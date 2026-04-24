@@ -61,6 +61,23 @@ export async function getUserByEmail(email: string) {
  * Resolve a user for login: exact email match first, then Gmail/GoogleMail
  * dot-insensitive local part (matches how Google delivers mail).
  */
+/**
+ * Look up a user by email OR username (for login).
+ * Falls back to email lookup including Gmail alias normalization.
+ */
+export async function findUserByIdentifierForLogin(identifier: string): Promise<Record<string, unknown> | null> {
+  const trimmed = identifier.trim()
+  // If it contains "@" treat as email, otherwise try username first
+  if (trimmed.includes("@")) {
+    return findUserByEmailForLogin(trimmed)
+  }
+  // Username lookup (case-insensitive)
+  const sql = getDb()
+  const byUsername = await sql`SELECT * FROM users WHERE LOWER(username) = ${trimmed.toLowerCase()} LIMIT 1`
+  if (byUsername.length > 0) return byUsername[0] as Record<string, unknown>
+  return null
+}
+
 export async function findUserByEmailForLogin(emailInput: string): Promise<Record<string, unknown> | null> {
   const sql = getDb()
   const trimmed = emailInput.toLowerCase().trim()

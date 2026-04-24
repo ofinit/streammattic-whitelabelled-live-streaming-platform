@@ -9,6 +9,7 @@ export interface AuthUser {
   id: string
   email: string
   name: string
+  username?: string | null
   phone?: string | null
   /** Indian state code (e.g. KA) for GST billing */
   billingState?: string | null
@@ -157,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier: email, password }),
       })
       const data = (await res.json().catch(() => ({}))) as { user?: AuthUser; error?: string }
       if (res.ok && data.user) {

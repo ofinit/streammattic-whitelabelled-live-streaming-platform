@@ -45,7 +45,7 @@ export default function StudioSettingsPage() {
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
-    username: user?.email?.split("@")[0] || "",
+    username: user?.username || "",
     email: user?.email || "",
     phone: user?.phone || "",
   })
@@ -103,9 +103,14 @@ export default function StudioSettingsPage() {
           firstName: profileData.firstName,
           lastName: profileData.lastName,
           phone: profileData.phone,
+          username: profileData.username || null,
         }),
       })
-      if (!res.ok) throw new Error("Failed to update profile")
+      const data = await res.json()
+      if (!res.ok) {
+        setProfileMessage({ type: "error", text: data.error || "Failed to update profile" })
+        return
+      }
       setProfileMessage({ type: "success", text: "Profile updated successfully!" })
       setTimeout(() => setProfileMessage(null), 3000)
     } catch {
@@ -241,11 +246,12 @@ export default function StudioSettingsPage() {
                 <Input
                   id="username"
                   value={profileData.username}
-                  onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                  onChange={(e) => setProfileData({ ...profileData, username: e.target.value.toLowerCase() })}
                   className="bg-secondary border-0"
                   placeholder="studio_username"
+                  autoComplete="username"
                 />
-                <p className="text-xs text-muted-foreground">Used for your public profile URL</p>
+                <p className="text-xs text-muted-foreground">3–30 chars: letters, numbers, _ . - · Can be used to log in instead of email</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">

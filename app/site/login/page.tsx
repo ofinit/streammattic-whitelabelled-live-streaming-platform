@@ -38,7 +38,7 @@ export default function SiteLoginPage() {
         user.role === "admin" ? "/admin" : user.role === "studio" ? "/studio" : "/streamer"
       window.setTimeout(() => router.push(dest), 0)
     } else {
-      setError("Invalid email or password")
+      setError("Invalid email/username or password")
     }
   }
 
@@ -79,14 +79,15 @@ export default function SiteLoginPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email or Username</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="you@example.com"
+                    type="text"
+                    placeholder="you@example.com or yourusername"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-secondary border-0"
+                    autoComplete="username"
                     required
                   />
                 </div>

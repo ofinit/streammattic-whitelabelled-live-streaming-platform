@@ -276,7 +276,7 @@ export default function StreamerSettingsPage() {
           </CardContent>
         </Card>
 
-        <BillingGstSection />
+        <BillingGstSection initialBillingState={user?.billingState} />
 
         {/* Crew PIN Display Setting */}
         <Card className="border-border bg-card">

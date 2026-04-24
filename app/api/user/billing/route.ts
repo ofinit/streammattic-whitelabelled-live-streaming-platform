@@ -57,10 +57,13 @@ export const PUT = withAuth(async (user, request) => {
   const sql = getDb()
   const urow = await sql`SELECT phone FROM users WHERE id = ${uid} LIMIT 1`
   const storedPhone = (urow[0] as Record<string, unknown> | undefined)?.phone as string | null | undefined
-  const mobileNorm = normalizeIndianMobile(String(storedPhone ?? "").trim())
-  if (!mobileNorm) {
+  const storedPhoneStr = String(storedPhone ?? "").trim()
+  // Accept Indian mobiles OR international numbers stored as "+CC digits"
+  const mobileNorm = normalizeIndianMobile(storedPhoneStr)
+  const hasValidPhone = !!(mobileNorm || (storedPhoneStr.startsWith("+") && storedPhoneStr.replace(/\D/g, "").length >= 7))
+  if (!hasValidPhone) {
     return jsonError(
-      "Add a valid 10-digit mobile number in Profile (above) before saving billing details.",
+      "Add a valid mobile number in Profile (above) before saving billing details.",
       400,
     )
   }

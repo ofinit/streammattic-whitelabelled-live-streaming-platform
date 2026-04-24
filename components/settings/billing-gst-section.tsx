@@ -23,14 +23,14 @@ const GST_TYPE_OPTIONS: { value: GstProfileType; label: string }[] = [
   { value: "business_unregistered", label: "Business (not GST registered)" },
 ]
 
-export function BillingGstSection() {
+export function BillingGstSection({ initialBillingState }: { initialBillingState?: string | null } = {}) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   /** Mirrors `users.phone` from Profile — not edited here. */
   const [profilePhoneDisplay, setProfilePhoneDisplay] = useState<string | null>(null)
-  const [billingState, setBillingState] = useState("")
+  const [billingState, setBillingState] = useState(initialBillingState ?? "")
   const [gstType, setGstType] = useState<GstProfileType>("individual")
   const [businessName, setBusinessName] = useState("")
   const [gstNumber, setGstNumber] = useState("")
@@ -49,7 +49,9 @@ export function BillingGstSection() {
         return
       }
       setProfilePhoneDisplay(typeof data.phone === "string" && data.phone.trim() ? data.phone.trim() : null)
-      setBillingState((data.billingState as string) ?? "")
+      // Prefer DB value; fall back to the value already seeded from the auth context
+      const apiState = (data.billingState as string) ?? ""
+      setBillingState(apiState || initialBillingState || "")
       setGstType((data.gstType as GstProfileType) || "individual")
       setBusinessName((data.businessName as string) ?? "")
       setGstNumber((data.gstNumber as string) ?? "")

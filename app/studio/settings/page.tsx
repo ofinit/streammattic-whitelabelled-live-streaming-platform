@@ -357,7 +357,7 @@ export default function StudioSettingsPage() {
           </CardContent>
         </Card>
 
-        <BillingGstSection />
+        <BillingGstSection initialBillingState={user?.billingState} />
 
         {/* Crew PIN Display Setting */}
         <Card className="border-border bg-card">

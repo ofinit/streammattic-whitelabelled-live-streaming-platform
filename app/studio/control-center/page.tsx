@@ -805,13 +805,13 @@ export default function StudioEventsPage() {
             Resume
             </Button>
         )}
-        {event.status === "live" && (
+        {(event.status === "live" || event.status === "scheduled" || event.status === "draft") && (
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0 border-orange-500 text-orange-400 hover:bg-orange-500/10" onClick={() => handleBreak(event)}>
             <PauseCircle className="h-3 w-3" />
             Break
             </Button>
         )}
-        {(event.status === "live" || event.status === "on_break") && (
+        {(event.status === "live" || event.status === "on_break" || event.status === "scheduled" || event.status === "draft") && (
             <Button size="sm" variant="destructive" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleForceStop(event)}>
             <Square className="h-3 w-3" />
             Stop

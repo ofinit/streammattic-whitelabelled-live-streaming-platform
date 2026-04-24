@@ -785,7 +785,7 @@ export default function StreamerEventsPage() {
             Resume
             </Button>
         )}
-        {event.status === "live" && (
+        {(event.status === "live" || event.status === "scheduled" || event.status === "draft") && (
             <Button
             size="sm"
             variant="outline"
@@ -796,7 +796,7 @@ export default function StreamerEventsPage() {
             Break
             </Button>
         )}
-        {(event.status === "live" || event.status === "on_break") && (
+        {(event.status === "live" || event.status === "on_break" || event.status === "scheduled" || event.status === "draft") && (
             <Button size="sm" variant="destructive" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleForceStop(event)}>
             <Square className="h-3 w-3" />
             Stop

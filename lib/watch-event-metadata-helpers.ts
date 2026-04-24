@@ -119,7 +119,7 @@ export function buildWatchDocumentTitle(ev: WatchEventMetaPayload): string {
  */
 export function buildWatchShareDescription(ev: WatchEventMetaPayload, scheduleLine: string): string {
   const parts: string[] = []
-  parts.push(`When: ${scheduleLine}`)
+  parts.push(scheduleLine)
 
   return parts.join("\n\n").slice(0, 600)
 }

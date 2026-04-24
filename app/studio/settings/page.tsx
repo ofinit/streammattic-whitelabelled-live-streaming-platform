@@ -10,11 +10,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle, CreditCard, ShieldCheck } from "lucide-react"
+import { Loader2, User, Lock, Bell, Shield, CheckCircle, AlertCircle, CreditCard, ShieldCheck, ChevronsUpDown } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
 import { BillingGstSection } from "@/components/settings/billing-gst-section"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { PHONE_DIAL_OPTIONS, flagEmojiFromIso, normalizeSignupPhoneStorage, parseStoredPhone } from "@/lib/phone-country-codes"
+import { cn } from "@/lib/utils"
 import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { calendarDaysUntilSubscriptionEnd, isStudioSubscriptionPastDue } from "@/lib/studio-subscription-shared"
@@ -42,12 +46,16 @@ export default function StudioSettingsPage() {
   const subExpired = subExpiresIso != null && isStudioSubscriptionPastDue(subExpiresIso)
   const daysLeft =
     subExpiresIso && !isStudioSubscriptionPastDue(subExpiresIso) ? calendarDaysUntilSubscriptionEnd(subExpiresIso) : null
+  const parsedPhone = parseStoredPhone(user?.phone || "")
+  const [phoneDial, setPhoneDial] = useState(parsedPhone.dial)
+  const [phoneLocal, setPhoneLocal] = useState(parsedPhone.local)
+  const [dialOpen, setDialOpen] = useState(false)
+  const selectedDial = PHONE_DIAL_OPTIONS.find((o) => o.dial === phoneDial) ?? PHONE_DIAL_OPTIONS[0]!
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
     username: user?.username || "",
     email: user?.email || "",
-    phone: user?.phone || "",
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -102,7 +110,7 @@ export default function StudioSettingsPage() {
         body: JSON.stringify({
           firstName: profileData.firstName,
           lastName: profileData.lastName,
-          phone: profileData.phone,
+          phone: normalizeSignupPhoneStorage(phoneDial, phoneLocal),
           username: profileData.username || null,
         }),
       })
@@ -285,15 +293,56 @@ export default function StudioSettingsPage() {
                 <p className="text-xs text-muted-foreground">Used for login and notifications.</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  className="bg-secondary border-0"
-                  placeholder="+1 (555) 000-0000"
-                />
+                <Label>Phone Number</Label>
+                <div className="flex gap-2">
+                  <Popover open={dialOpen} onOpenChange={setDialOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        className="h-10 w-[118px] shrink-0 justify-between px-2 font-mono tabular-nums bg-secondary border-0"
+                      >
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="text-lg leading-none">{flagEmojiFromIso(selectedDial.iso)}</span>
+                          <span>{phoneDial}</span>
+                        </span>
+                        <ChevronsUpDown className="ml-0.5 h-4 w-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[min(100vw-2rem,280px)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search code or country…" className="h-9" />
+                        <CommandList className="max-h-[280px]">
+                          <CommandEmpty>No match.</CommandEmpty>
+                          <CommandGroup>
+                            {PHONE_DIAL_OPTIONS.map((o) => (
+                              <CommandItem
+                                key={`${o.iso}-${o.dial}`}
+                                value={`${o.dial} ${o.iso} ${o.name}`}
+                                onSelect={() => { setPhoneDial(o.dial); setDialOpen(false) }}
+                              >
+                                <span className="mr-2 text-lg leading-none">{flagEmojiFromIso(o.iso)}</span>
+                                <span className="font-mono tabular-nums">{o.dial}</span>
+                                <span className="ml-2 truncate text-muted-foreground text-xs">{o.name}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder={phoneDial === "+91" ? "10-digit number" : "Number"}
+                    value={phoneLocal}
+                    onChange={(e) => setPhoneLocal(e.target.value)}
+                    className="min-w-0 flex-1 bg-secondary border-0"
+                    autoComplete="tel-national"
+                  />
+                </div>
               </div>
               {profileMessage && (
                 <p className={`text-sm ${profileMessage.type === "success" ? "text-emerald-500" : "text-destructive"}`}>

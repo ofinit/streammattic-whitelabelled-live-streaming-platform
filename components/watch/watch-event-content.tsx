@@ -1149,10 +1149,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     return `${dateStr} · ${timeStr} ${tzLabel}`
   }
 
+  // If a stream type is configured, always show the full template with the player so
+  // OBS / external encoders can start streaming without requiring a manual "Go Live" click.
+  const hasStreamConfigured = !!(event.streamType)
+
   // Wedding (and other themed) layouts include their own scheduled hero + countdown — don't replace with the generic scheduled-only page.
   if (
     event.status === "scheduled" &&
     showScheduledPageEnabled &&
+    !hasStreamConfigured &&
     watchSkin !== "wedding" &&
     watchSkin !== "weddingGarden" &&
     watchSkin !== "weddingMidnight" &&

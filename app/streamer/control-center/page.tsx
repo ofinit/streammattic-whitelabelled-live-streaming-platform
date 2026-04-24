@@ -775,12 +775,6 @@ export default function StreamerEventsPage() {
       </div>
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
-        {(event.status === "scheduled" || event.status === "draft") && (
-            <Button size="sm" className="h-7 text-xs gap-1 shrink-0" onClick={() => handleGoLive(event)}>
-            <Play className="h-3 w-3" />
-            Go Live
-            </Button>
-        )}
         {event.status === "on_break" && (
             <Button
             size="sm"

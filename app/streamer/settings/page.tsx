@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/dashboard/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, User, Lock, Bell, CheckCircle, AlertCircle, ShieldCheck } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog"
@@ -34,6 +34,38 @@ export default function StreamerSettingsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // Crew PIN display mode
+  const [crewDisplayMode, setCrewDisplayMode] = useState<"crew_page" | "template_bottom">("crew_page")
+  const [crewDisplaySaving, setCrewDisplaySaving] = useState(false)
+  const [crewDisplayMessage, setCrewDisplayMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  useEffect(() => {
+    fetch("/api/settings/crew-pin-display")
+      .then((r) => r.json())
+      .then((data) => { if (data?.mode) setCrewDisplayMode(data.mode) })
+      .catch(() => {})
+  }, [])
+
+  const saveCrewDisplayMode = async (mode: "crew_page" | "template_bottom") => {
+    setCrewDisplaySaving(true)
+    setCrewDisplayMessage(null)
+    try {
+      const res = await fetch("/api/settings/crew-pin-display", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      })
+      if (!res.ok) throw new Error()
+      setCrewDisplayMode(mode)
+      setCrewDisplayMessage({ type: "success", text: "Setting saved." })
+      setTimeout(() => setCrewDisplayMessage(null), 3000)
+    } catch {
+      setCrewDisplayMessage({ type: "error", text: "Failed to save setting." })
+    } finally {
+      setCrewDisplaySaving(false)
+    }
+  }
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -190,6 +222,67 @@ export default function StreamerSettingsPage() {
         </Card>
 
         <BillingGstSection />
+
+        {/* Crew PIN Display Setting */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Crew Access Display</CardTitle>
+                <CardDescription>Choose where crew members enter their PIN to see stream credentials</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <button
+              type="button"
+              onClick={() => saveCrewDisplayMode("crew_page")}
+              disabled={crewDisplaySaving}
+              className={`w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
+                crewDisplayMode === "crew_page"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/50"
+              }`}
+            >
+              <div className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${crewDisplayMode === "crew_page" ? "border-primary" : "border-muted-foreground"}`}>
+                {crewDisplayMode === "crew_page" && <div className="h-2 w-2 rounded-full bg-primary" />}
+              </div>
+              <div>
+                <p className="font-medium text-sm">At /crew page</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Crew visits <span className="font-mono">/event-slug/crew</span> to enter PIN and view credentials</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => saveCrewDisplayMode("template_bottom")}
+              disabled={crewDisplaySaving}
+              className={`w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
+                crewDisplayMode === "template_bottom"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-muted-foreground/50"
+              }`}
+            >
+              <div className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center ${crewDisplayMode === "template_bottom" ? "border-primary" : "border-muted-foreground"}`}>
+                {crewDisplayMode === "template_bottom" && <div className="h-2 w-2 rounded-full bg-primary" />}
+              </div>
+              <div>
+                <p className="font-medium text-sm">At bottom of watch page</p>
+                <p className="text-xs text-muted-foreground mt-0.5">A minimal PIN entry appears at the bottom of every event page — crew enters PIN directly there</p>
+              </div>
+            </button>
+
+            {crewDisplaySaving && <p className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Saving…</p>}
+            {crewDisplayMessage && (
+              <p className={`text-xs ${crewDisplayMessage.type === "success" ? "text-emerald-500" : "text-destructive"}`}>
+                {crewDisplayMessage.text}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Password Settings */}
         <Card className="border-border bg-card">

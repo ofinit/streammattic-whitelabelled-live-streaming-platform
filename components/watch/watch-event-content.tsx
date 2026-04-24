@@ -32,6 +32,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getDefaultTemplateHeroBackdropUrl } from "@/lib/template-default-media"
@@ -497,6 +498,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const replayCurrentTimeRef = useRef(0)
   const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Inline crew PIN (template_bottom mode)
+  const [inlineCrewPin, setInlineCrewPin] = useState("")
+  const [inlineCrewLoading, setInlineCrewLoading] = useState(false)
+  const [inlineCrewError, setInlineCrewError] = useState("")
+  const [inlineCrewCredentials, setInlineCrewCredentials] = useState<{ rtmpUrl?: string; streamKey?: string } | null>(null)
+  const [inlineCrewKeyCopied, setInlineCrewKeyCopied] = useState<"rtmp" | "key" | null>(null)
   const eventStatusRef = useRef<string | null>(null)
   const countdownZeroRefetchSentRef = useRef(false)
   const [gardenFlowers, setGardenFlowers] = useState<GardenFloatingFlower[]>([])
@@ -2334,6 +2342,103 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               ) : null}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Inline crew PIN — only shown when owner set display mode to template_bottom */}
+      {(evRawTop.crewPinDisplayMode === "template_bottom") && !!(evRawTop as any).crewPinHash && (
+        <div className={`mt-6 border-t pt-4 ${galleryBorder}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Crew Access</span>
+          </div>
+          {inlineCrewCredentials ? (
+            <div className="space-y-2">
+              {inlineCrewCredentials.rtmpUrl && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">RTMP URL</span>
+                  <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs font-mono">
+                    {inlineCrewCredentials.rtmpUrl}
+                  </code>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 hover:bg-muted transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(inlineCrewCredentials!.rtmpUrl!)
+                      setInlineCrewKeyCopied("rtmp")
+                      setTimeout(() => setInlineCrewKeyCopied(null), 2000)
+                    }}
+                  >
+                    {inlineCrewKeyCopied === "rtmp" ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </button>
+                </div>
+              )}
+              {inlineCrewCredentials.streamKey && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">Stream Key</span>
+                  <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs font-mono">
+                    {inlineCrewCredentials.streamKey}
+                  </code>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded p-1 hover:bg-muted transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(inlineCrewCredentials!.streamKey!)
+                      setInlineCrewKeyCopied("key")
+                      setTimeout(() => setInlineCrewKeyCopied(null), 2000)
+                    }}
+                  >
+                    {inlineCrewKeyCopied === "key" ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <form
+              className="flex items-center gap-2 max-w-xs"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setInlineCrewLoading(true)
+                setInlineCrewError("")
+                try {
+                  const res = await fetch(`/api/watch/${event.id}/crew-credentials`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pin: inlineCrewPin }),
+                  })
+                  const data = await res.json()
+                  if (!res.ok) {
+                    setInlineCrewError(data.error || "Invalid PIN")
+                  } else {
+                    setInlineCrewCredentials({ rtmpUrl: data.rtmpUrl, streamKey: data.streamKey })
+                    setInlineCrewPin("")
+                  }
+                } catch {
+                  setInlineCrewError("Failed to verify PIN")
+                } finally {
+                  setInlineCrewLoading(false)
+                }
+              }}
+            >
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={12}
+                placeholder="Enter crew PIN"
+                value={inlineCrewPin}
+                onChange={(e) => { setInlineCrewPin(e.target.value); setInlineCrewError("") }}
+                className="h-8 flex-1 rounded border border-input bg-background px-3 text-sm font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                type="submit"
+                disabled={inlineCrewLoading || !inlineCrewPin.trim()}
+                className="h-8 rounded bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {inlineCrewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Go"}
+              </button>
+              {inlineCrewError && <span className="ml-1 text-xs text-destructive">{inlineCrewError}</span>}
+            </form>
+          )}
         </div>
       )}
     </div>

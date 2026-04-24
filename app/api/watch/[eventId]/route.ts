@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent } from "@/lib/favicon-resolve"
 import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
+import { getPlatformSetting } from "@/lib/db-queries"
 
 /** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
 const WATCH_EVENT_ID_SKIP = new Set(
@@ -103,7 +104,13 @@ export async function GET(
 
     const ownerId = eventRow.userId
     console.log(`[api/watch/[eventId]] Resolving favicon for owner: ${ownerId}`)
-    const faviconHref = await resolveFaviconForWatchEvent(ownerId || null)
+    const [faviconHref, crewPinDisplayRaw] = await Promise.all([
+      resolveFaviconForWatchEvent(ownerId || null),
+      ownerId ? getPlatformSetting(`crew_pin_display:${ownerId}`) : Promise.resolve(null),
+    ])
+    const crewPinDisplayMode =
+      crewPinDisplayRaw === "template_bottom" ? "template_bottom" : "crew_page"
+    eventRow.crewPinDisplayMode = crewPinDisplayMode
 
     const jsonHeaders = {
       "Cache-Control": "private, no-store, max-age=0, must-revalidate",

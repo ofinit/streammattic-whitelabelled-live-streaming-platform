@@ -4,7 +4,8 @@ import { insertFunnelEvent } from "@/lib/analytics-funnel"
 
 type Params = { params: Promise<{ eventId: string }> }
 
-async function resolveEventUuid(eventId: string): Promise<string | null> {
+async function resolveEventUuid(rawEventId: string): Promise<string | null> {
+  const eventId = rawEventId.toLowerCase()
   const sql = getDb()
   const rows = await sql`
     SELECT id FROM events WHERE id::text = ${eventId} OR slug = ${eventId} LIMIT 1

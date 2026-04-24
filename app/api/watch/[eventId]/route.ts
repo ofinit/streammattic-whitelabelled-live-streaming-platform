@@ -15,9 +15,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const { eventId } = await params
-  if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
-  if (WATCH_EVENT_ID_SKIP.has(eventId.toLowerCase()) || eventId.includes("..")) {
+  const { eventId: rawEventId } = await params
+  if (!rawEventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+  const eventId = rawEventId.toLowerCase()
+  if (WATCH_EVENT_ID_SKIP.has(eventId) || eventId.includes("..")) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 

@@ -25,8 +25,9 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { eventId } = await params
-    if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+    const { eventId: rawEventId } = await params
+    if (!rawEventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+    const eventId = rawEventId.toLowerCase()
 
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})

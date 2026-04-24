@@ -15,8 +15,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const { eventId } = await params
-  if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+  const { eventId: rawEventId } = await params
+  if (!rawEventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
+  const eventId = rawEventId.toLowerCase()
 
   let body: Record<string, unknown>
   try {

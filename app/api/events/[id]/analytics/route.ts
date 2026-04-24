@@ -28,10 +28,11 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { id: rawId } = await params
-    if (!rawId?.trim()) {
+    const { id: rawIdParam } = await params
+    if (!rawIdParam?.trim()) {
       return NextResponse.json({ error: "Missing event id" }, { status: 400 })
     }
+    const rawId = rawIdParam.toLowerCase()
 
     const { searchParams } = new URL(req.url)
     const daysRaw = searchParams.get("days")

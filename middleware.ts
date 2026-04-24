@@ -68,6 +68,16 @@ function isPublicEventSlugPath(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Normalize event slug URLs to lowercase so /Slug and /SLUG both work (301 to canonical)
+  if (isPublicEventSlugPath(pathname)) {
+    const lower = pathname.toLowerCase()
+    if (lower !== pathname) {
+      const url = request.nextUrl.clone()
+      url.pathname = lower
+      return NextResponse.redirect(url, 301)
+    }
+  }
+
   // Allow public paths, static assets, and API routes that handle their own auth
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||

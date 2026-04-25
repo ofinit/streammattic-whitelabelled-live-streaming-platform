@@ -42,10 +42,10 @@ function qs(params?: Record<string, any>): string {
 
 // Auth API
 export const authApi = {
-  login: (email: string, password: string) =>
+  login: (identifier: string, password: string) =>
     apiFetch<{ user: any }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     }),
 
   register: (data: {

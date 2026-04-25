@@ -32,7 +32,7 @@ function LoginPageContent() {
   const { isWhiteLabel, branding } = useBranding()
   const [error, setError] = useState("")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [credentialsLoading, setCredentialsLoading] = useState(false)
   const resetOk = searchParams.get("reset") === "ok"
@@ -41,7 +41,7 @@ function LoginPageContent() {
     const authError = searchParams.get("error")
     if (authError) {
       const messages: Record<string, string> = {
-        Unauthorized: "Invalid email or password.",
+        Unauthorized: "Invalid email/username or password.",
         InvalidLink: "Invalid or expired link.",
         ExpiredOrUsed: "This link has expired or was already used.",
         AccountSuspended: "Account is suspended.",
@@ -54,12 +54,12 @@ function LoginPageContent() {
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    if (!email.trim() || !password) return
+    if (!identifier.trim() || !password) return
     setCredentialsLoading(true)
     try {
-      const user = await login(email.trim(), password)
+      const user = await login(identifier.trim(), password)
       if (!user) {
-        setError("Invalid email or password.")
+        setError("Invalid email/username or password.")
         return
       }
       // Defer navigation so AuthContext commit runs before streamer layout’s guard (would send anonymous users to /).
@@ -101,7 +101,7 @@ function LoginPageContent() {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle>Sign in to your account</CardTitle>
-              <CardDescription>Use your email and password. Platform administrators use the admin login.</CardDescription>
+              <CardDescription>Use your email or username with your password. Platform administrators use the admin login.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -112,14 +112,15 @@ function LoginPageContent() {
               )}
 
               <form onSubmit={handleCredentialsSubmit} className="space-y-3">
-                <Label htmlFor="login-email">Email</Label>
+                <Label htmlFor="login-identifier">Email or username</Label>
                 <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="login-identifier"
+                  type="text"
+                  placeholder="you@example.com or yourusername"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="bg-secondary border-border"
+                  autoComplete="username"
                   required
                 />
                 <div className="flex items-center justify-between gap-2">

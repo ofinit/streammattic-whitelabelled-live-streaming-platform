@@ -33,7 +33,7 @@ interface AuthContextType {
   isImpersonating: boolean
   originalUser: AuthUser | null
   impersonatedBy: string | null
-  login: (email: string, password: string) => Promise<AuthUser | null>
+  login: (identifier: string, password: string) => Promise<AuthUser | null>
   logout: () => void
   register: (data: {
     email: string
@@ -151,14 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchCurrentUser()
   }, [fetchCurrentUser])
 
-  const login = useCallback(async (email: string, password: string): Promise<AuthUser | null> => {
+  const login = useCallback(async (identifier: string, password: string): Promise<AuthUser | null> => {
     setIsLoading(true)
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: email, password }),
+        body: JSON.stringify({ identifier, password }),
       })
       const data = (await res.json().catch(() => ({}))) as { user?: AuthUser; error?: string }
       if (res.ok && data.user) {

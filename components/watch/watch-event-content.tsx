@@ -41,6 +41,7 @@ import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { CorporateTechForwardWatchView } from "./corporate-tech-forward-watch-view"
 import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-watch-view"
 import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
+import { WeddingPapercutWatchView } from "./wedding-papercut-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
 import { cn } from "@/lib/utils"
 import {
@@ -725,7 +726,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ? "traditionalHindu"
                 : watchSkin === "weddingTheHeart"
                   ? "theHeart"
-                  : watchSkin === "weddingRoyalCircle" || watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
+                  : watchSkin === "weddingRoyalCircle" ||
+                      watchSkin === "weddingPapercut" ||
+                      watchSkin === "christianWeddingRose" ||
+                      watchSkin === "muslimWeddingNikah"
                     ? "wedding"
                     : watchSkin === "corporateTechForward"
                       ? "corporateTech"
@@ -1167,6 +1171,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     watchSkin !== "weddingTraditionalHindu" &&
     watchSkin !== "weddingTheHeart" &&
     watchSkin !== "weddingRoyalCircle" &&
+    watchSkin !== "weddingPapercut" &&
     watchSkin !== "christianWeddingRose" &&
     watchSkin !== "muslimWeddingNikah" &&
     watchSkin !== "birthdayParty" &&
@@ -2853,6 +2858,94 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : null
         }
         photographerCredit={royalPhotographerCredit}
+      />
+    )
+  }
+
+  if (watchSkin === "weddingPapercut") {
+    const papercutTeaserRaw =
+      typeof weddingFields.teaserYoutubeUrl === "string" ? weddingFields.teaserYoutubeUrl.trim() : ""
+    const papercutTeaserEmbed = papercutTeaserRaw ? youtubeUrlToEmbed(papercutTeaserRaw) : null
+    const papercutInvitationLine =
+      typeof weddingFields.invitationLine === "string" && weddingFields.invitationLine.trim()
+        ? weddingFields.invitationLine.trim()
+        : weddingHeroDescription ||
+          "We solicit your gracious virtual presence with family and friends on this auspicious occasion."
+    const papercutEventDates = eventDates.map((d) => ({
+      id: d.id,
+      label: d.label,
+      formatted: formatExtraDate(d),
+    }))
+    const papercutPhotographerCredit =
+      photographerLogoUrl ||
+      photographerContact.name ||
+      photographerContact.phone ||
+      photographerContact.email ||
+      photographerWebsitePublicUrl ? (
+        <div className="mx-auto mt-5 max-w-3xl text-center">
+          {photographerLogoUrl ? (
+            <img src={photographerLogoUrl} alt="" className="mx-auto mb-4 h-16 w-auto object-contain" />
+          ) : null}
+          {photographerContact.name ? (
+            <p className="font-serif text-2xl text-[#a93673]">Photography by {photographerContact.name}</p>
+          ) : (
+            <p className="font-serif text-2xl text-[#a93673]">Photography</p>
+          )}
+          <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-[#321722]/75">
+            {photographerContact.phone ? (
+              <a href={`tel:${photographerContact.phone}`} className="hover:underline">
+                {photographerContact.phone}
+              </a>
+            ) : null}
+            {photographerContact.email ? (
+              <a href={`mailto:${photographerContact.email}`} className="hover:underline">
+                {photographerContact.email}
+              </a>
+            ) : null}
+            {photographerWebsitePublicUrl ? (
+              <a
+                href={photographerWebsitePublicUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full truncate hover:underline"
+              >
+                {photographerWebsitePublicUrl}
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null
+
+    return (
+      <WeddingPapercutWatchView
+        globalHeaderImage={globalHeaderImage}
+        heroImageUrl={heroBackdropUrl}
+        coupleHero={coupleHero}
+        eventSubtitle={eventSubtitle}
+        eventDescription={weddingHeroDescription}
+        primaryDateFormatted={primaryDateFormatted}
+        eventDates={papercutEventDates}
+        showCountdown={event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled}
+        countdown={countdown}
+        streamPlayer={renderStreamPlayer(WEDDING_STREAM_SHELL)}
+        liveChat={renderLiveChatBody()}
+        detailsPanel={renderDetailsPanel("wedding")}
+        allowChat={allowChat}
+        showChat={showChat}
+        invitationLine={papercutInvitationLine}
+        teaserEmbed={papercutTeaserEmbed}
+        gallerySection={
+          photoGalleryUrls.length > 0 ? (
+            <div className="papercut-container">
+              <div className="papercut-heading">
+                <h2>Our Gallery</h2>
+                <div className="after" />
+              </div>
+              <WatchPhotoGallery urls={photoGalleryUrls} theme="wedding" />
+            </div>
+          ) : null
+        }
+        photographerCredit={papercutPhotographerCredit}
       />
     )
   }

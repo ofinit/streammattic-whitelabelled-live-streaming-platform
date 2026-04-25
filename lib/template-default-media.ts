@@ -26,6 +26,8 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   "tpl-wedding-the-heart": THE_HEART_DEFAULT_HERO_URL,
   /** Royal Circle — same hero as templates/Wedding Template 05/index.html (R2 CDN) */
   "tpl-wedding-royal-circle": "https://pub-c0e6eac8dc334557ba26824e1f540116.r2.dev/slide-1.jpg",
+  /** Papercut Wedding — same Revolution Slider hero as templates/Wedding Template 06/index.html (R2 CDN) */
+  "tpl-wedding-papercut": "https://pub-c5ef5a9c919b4b45bb164fa5de4a9f9d.r2.dev/rslider-c6b68-slider-1.jpg",
   /** Tech Forward Summit — dark grid + blue/cyan/neon orbs (matches watch skin `#0a0a0a` palette) */
   "tpl-corporate-tech-forward": "/templates/corporate-tech-forward-hero.svg",
   /** Classic corporate — same bundled hero as Tech Forward */

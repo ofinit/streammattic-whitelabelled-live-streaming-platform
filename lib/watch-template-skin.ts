@@ -12,6 +12,7 @@ export type WatchPageSkin =
   | "weddingTraditionalHindu"
   | "weddingTheHeart"
   | "weddingRoyalCircle"
+  | "weddingPapercut"
   | "christianWeddingRose"
   | "muslimWeddingNikah"
   | "birthdayParty"
@@ -30,6 +31,8 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-the-heart": "weddingTheHeart",
   /** Wedding Template 05 — original circular hero + floating spirit animation */
   "tpl-wedding-royal-circle": "weddingRoyalCircle",
+  /** Wedding Template 06 — Revolution Slider papercut / Merienda animation */
+  "tpl-wedding-papercut": "weddingPapercut",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
   "tpl-birthday-party": "birthdayParty",

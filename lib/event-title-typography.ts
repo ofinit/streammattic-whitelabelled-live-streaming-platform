@@ -19,6 +19,7 @@ export function getTemplateDefaultTitleRem(templateId: string): number {
     case "tpl-wedding":
     case "tpl-wedding-garden":
     case "tpl-wedding-the-heart":
+    case "tpl-wedding-royal-circle":
     case "tpl-wedding-coastal":
     case "tpl-wedding-celestial":
     case "tpl-wedding-traditional-hindu":
@@ -154,7 +155,12 @@ export function resolveTitleHeroRem(td: Record<string, unknown>, templateId: str
 
 export function titleFallbackFontClass(templateId: string, hasGoogleFont: boolean): string {
   if (hasGoogleFont) return ""
-  if (templateId === "tpl-wedding" || templateId === "tpl-wedding-garden" || templateId === "tpl-wedding-the-heart")
+  if (
+    templateId === "tpl-wedding" ||
+    templateId === "tpl-wedding-garden" ||
+    templateId === "tpl-wedding-the-heart" ||
+    templateId === "tpl-wedding-royal-circle"
+  )
     return "font-serif"
   if (templateId === "tpl-wedding-midnight") return "font-midnight-display"
   if (templateId === "tpl-wedding-coastal") return "font-coastal-script"

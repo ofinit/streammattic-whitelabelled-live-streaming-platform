@@ -40,6 +40,7 @@ import { EventTemplateBanner } from "./event-template-banner"
 import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { CorporateTechForwardWatchView } from "./corporate-tech-forward-watch-view"
 import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-watch-view"
+import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
 import { cn } from "@/lib/utils"
 import {
@@ -724,7 +725,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 ? "traditionalHindu"
                 : watchSkin === "weddingTheHeart"
                   ? "theHeart"
-                  : watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
+                  : watchSkin === "weddingRoyalCircle" || watchSkin === "christianWeddingRose" || watchSkin === "muslimWeddingNikah"
                     ? "wedding"
                     : watchSkin === "corporateTechForward"
                       ? "corporateTech"
@@ -1165,6 +1166,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     watchSkin !== "weddingCelestial" &&
     watchSkin !== "weddingTraditionalHindu" &&
     watchSkin !== "weddingTheHeart" &&
+    watchSkin !== "weddingRoyalCircle" &&
     watchSkin !== "christianWeddingRose" &&
     watchSkin !== "muslimWeddingNikah" &&
     watchSkin !== "birthdayParty" &&
@@ -2764,6 +2766,94 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
         <div className="mx-auto w-full max-w-7xl px-4 pb-10">{renderDetailsPanel("theHeart")}</div>
       </div>
+    )
+  }
+
+  if (watchSkin === "weddingRoyalCircle") {
+    const royalTeaserRaw =
+      typeof weddingFields.teaserYoutubeUrl === "string" ? weddingFields.teaserYoutubeUrl.trim() : ""
+    const royalTeaserEmbed = royalTeaserRaw ? youtubeUrlToEmbed(royalTeaserRaw) : null
+    const royalInvitationLine =
+      typeof weddingFields.invitationLine === "string" && weddingFields.invitationLine.trim()
+        ? weddingFields.invitationLine.trim()
+        : weddingHeroDescription ||
+          "We solicit your gracious virtual presence with family and friends on this auspicious occasion."
+    const royalEventDates = eventDates.map((d) => ({
+      id: d.id,
+      label: d.label,
+      formatted: formatExtraDate(d),
+    }))
+    const royalPhotographerCredit =
+      photographerLogoUrl ||
+      photographerContact.name ||
+      photographerContact.phone ||
+      photographerContact.email ||
+      photographerWebsitePublicUrl ? (
+        <div className="mx-auto max-w-3xl">
+          {photographerLogoUrl ? (
+            <img src={photographerLogoUrl} alt="" className="mx-auto mb-4 h-16 w-auto object-contain" />
+          ) : null}
+          {photographerContact.name ? (
+            <p className="text-lg font-semibold text-[#7b2234]">Photography by {photographerContact.name}</p>
+          ) : (
+            <p className="text-lg font-semibold text-[#7b2234]">Photography</p>
+          )}
+          <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-[#3f2028]/75">
+            {photographerContact.phone ? (
+              <a href={`tel:${photographerContact.phone}`} className="hover:underline">
+                {photographerContact.phone}
+              </a>
+            ) : null}
+            {photographerContact.email ? (
+              <a href={`mailto:${photographerContact.email}`} className="hover:underline">
+                {photographerContact.email}
+              </a>
+            ) : null}
+            {photographerWebsitePublicUrl ? (
+              <a
+                href={photographerWebsitePublicUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full truncate hover:underline"
+              >
+                {photographerWebsitePublicUrl}
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null
+
+    return (
+      <WeddingRoyalCircleWatchView
+        globalHeaderImage={globalHeaderImage}
+        heroImageUrl={heroBackdropUrl}
+        coupleHero={coupleHero}
+        coupleParts={coupleParts}
+        eventSubtitle={eventSubtitle}
+        eventDescription={weddingHeroDescription}
+        primaryDateFormatted={primaryDateFormatted}
+        eventDates={royalEventDates}
+        showCountdown={event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled}
+        countdown={countdown}
+        streamPlayer={renderStreamPlayer(WEDDING_STREAM_SHELL)}
+        liveChat={renderLiveChatBody()}
+        detailsPanel={renderDetailsPanel("wedding")}
+        allowChat={allowChat}
+        showChat={showChat}
+        invitationLine={royalInvitationLine}
+        teaserEmbed={royalTeaserEmbed}
+        gallerySection={
+          photoGalleryUrls.length > 0 ? (
+            <div className="royal-container">
+              <div className="royal-section-heading">
+                <h2>Photo Gallery</h2>
+              </div>
+              <WatchPhotoGallery urls={photoGalleryUrls} theme="wedding" />
+            </div>
+          ) : null
+        }
+        photographerCredit={royalPhotographerCredit}
+      />
     )
   }
 

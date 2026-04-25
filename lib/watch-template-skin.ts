@@ -11,6 +11,7 @@ export type WatchPageSkin =
   | "weddingCelestial"
   | "weddingTraditionalHindu"
   | "weddingTheHeart"
+  | "weddingRoyalCircle"
   | "christianWeddingRose"
   | "muslimWeddingNikah"
   | "birthdayParty"
@@ -27,6 +28,8 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-traditional-hindu": "weddingTraditionalHindu",
   /** Wedding Template 03 ("The Heart") — requires `templateData.templateId` (or legacy `template_id`) on the event */
   "tpl-wedding-the-heart": "weddingTheHeart",
+  /** Wedding Template 05 — original circular hero + floating spirit animation */
+  "tpl-wedding-royal-circle": "weddingRoyalCircle",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
   "tpl-birthday-party": "birthdayParty",

@@ -1619,7 +1619,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       onPointerMove={revealYouTubeControls}
       onFocus={revealYouTubeControls}
     >
-      <div />
+      <div className={cn("flex justify-end p-3", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
+        <button
+          type="button"
+          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+          onClick={toggleFullscreen}
+        >
+          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+        </button>
+      </div>
       <div className={cn("mx-auto flex items-center gap-4", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
         <button
           type="button"

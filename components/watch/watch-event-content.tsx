@@ -125,6 +125,16 @@ function buildYouTubeEmbedUrl(
   return url.toString()
 }
 
+function formatPlaybackTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00"
+  const total = Math.floor(seconds)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+  return `${m}:${String(s).padStart(2, "0")}`
+}
+
 interface ChatMessage {
   id: string
   user: string
@@ -544,7 +554,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const replayIframeRef = useRef<HTMLIFrameElement | null>(null)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
+  const [replayCurrentTime, setReplayCurrentTime] = useState(0)
+  const [replayDuration, setReplayDuration] = useState(0)
   const replayCurrentTimeRef = useRef(0)
+  const replayDurationRef = useRef(0)
   const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Inline crew PIN (template_bottom mode)
@@ -1047,6 +1060,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
         if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
           replayCurrentTimeRef.current = data.info.currentTime
+          setReplayCurrentTime(data.info.currentTime)
+        }
+        if (data?.event === "infoDelivery" && typeof data?.info?.duration === "number" && data.info.duration > 0) {
+          replayDurationRef.current = data.info.duration
+          setReplayDuration(data.info.duration)
         }
         if (data?.event === "onStateChange") {
           const playing = data?.info === 1
@@ -1069,7 +1087,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   useEffect(() => {
     if (isReplayPlaying) {
       replayTickRef.current = setInterval(() => {
-        replayCurrentTimeRef.current += 1
+        replayCurrentTimeRef.current = Math.min(
+          replayDurationRef.current || Number.POSITIVE_INFINITY,
+          replayCurrentTimeRef.current + 1,
+        )
+        setReplayCurrentTime(replayCurrentTimeRef.current)
       }, 1000)
     } else {
       if (replayTickRef.current) {
@@ -1412,8 +1434,23 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const seekReplay = (offsetSeconds: number) => {
     const iframe = replayIframeRef.current
     if (!iframe || !iframe.contentWindow) return
-    const target = Math.max(0, replayCurrentTimeRef.current + offsetSeconds)
+    const max = replayDurationRef.current > 0 ? replayDurationRef.current : Number.POSITIVE_INFINITY
+    const target = Math.min(max, Math.max(0, replayCurrentTimeRef.current + offsetSeconds))
     replayCurrentTimeRef.current = target
+    setReplayCurrentTime(target)
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: "command", func: "seekTo", args: [target, true] }),
+      "*",
+    )
+  }
+
+  const seekReplayTo = (targetSeconds: number) => {
+    const iframe = replayIframeRef.current
+    if (!iframe || !iframe.contentWindow) return
+    const max = replayDurationRef.current > 0 ? replayDurationRef.current : Number.POSITIVE_INFINITY
+    const target = Math.min(max, Math.max(0, targetSeconds))
+    replayCurrentTimeRef.current = target
+    setReplayCurrentTime(target)
     iframe.contentWindow.postMessage(
       JSON.stringify({ event: "command", func: "seekTo", args: [target, true] }),
       "*",
@@ -1423,11 +1460,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
-      replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { enablejsapi: 1, start: 0 })
+      replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { controls: 0, enablejsapi: 1, start: 0 })
     } else if ((streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
-      replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { enablejsapi: 1, start: 0 })
+      replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { controls: 0, enablejsapi: 1, start: 0 })
     }
   }
+  const isYouTubePlayer =
+    Boolean(isEnded && hasReplay && replaySrc) ||
+    (!isEnded && (
+      ((streamType === "youtube" || event.streamType === "youtube_embed") && !!event.youtubeUrl) ||
+      (event.streamType === "youtube_api" && !!evRawTop.youtubeBroadcastId)
+    ))
 
   const heroImageUrl =
     (evRawTop.heroImageUrl as string | undefined) ||
@@ -1524,8 +1567,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         : "text-sm text-white/60"
 
   const renderYouTubeOverlayControls = () => (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-14 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
-      <div className="pointer-events-auto flex items-center gap-4">
+    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
+      <div />
+      <div className="pointer-events-auto mx-auto flex items-center gap-4">
         <button
           type="button"
           title="Rewind 30s"
@@ -1565,11 +1609,36 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           </svg>
         </button>
       </div>
+      <div className="pointer-events-auto px-4 pb-3">
+        <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-white/90">
+          <span>{formatPlaybackTime(replayCurrentTime)}</span>
+          <span>{replayDuration > 0 ? formatPlaybackTime(replayDuration) : "Live"}</span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={Math.max(1, Math.floor(replayDuration || replayCurrentTime || 1))}
+          step={1}
+          value={Math.min(replayCurrentTime, Math.max(1, Math.floor(replayDuration || replayCurrentTime || 1)))}
+          aria-label="Seek video"
+          className="h-1.5 w-full cursor-pointer accent-rose-500"
+          onChange={(e) => seekReplayTo(Number(e.currentTarget.value))}
+        />
+      </div>
     </div>
   )
 
+  const renderViewerCountBelowPlayer = () =>
+    isEnded ? null : (
+      <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+        <Users className="h-4 w-4" />
+        <span>{viewerCount.toLocaleString()} watching live</span>
+      </div>
+    )
+
   const renderStreamPlayer = (shellClassName: string) => (
-    <div ref={videoContainerRef} className={shellClassName}>
+    <div>
+      <div ref={videoContainerRef} className={shellClassName}>
           <div className="absolute inset-0 flex items-center justify-center">
             {isEnded && hasReplay && replaySrc ? (
               <div className="group relative h-full w-full">
@@ -1603,7 +1672,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <iframe
                   ref={replayIframeRef}
                   className="h-full w-full"
-                  src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0, enablejsapi: 1 }) ?? ""}
+                  src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0, controls: 0, enablejsapi: 1 }) ?? ""}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
@@ -1614,7 +1683,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <iframe
                   ref={replayIframeRef}
                   className="h-full w-full"
-                  src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0, enablejsapi: 1 }) ?? ""}
+                  src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0, controls: 0, enablejsapi: 1 }) ?? ""}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
@@ -1694,39 +1763,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               <Badge variant="secondary" className="bg-black/60 text-white/70 border-white/20">
                 Ended
               </Badge>
-            ) : (
-              <>
-                <Badge className="border border-zinc-500/50 bg-zinc-600 text-white shadow-none">
-                  <span className="mr-1 inline-block h-2 w-2 animate-pulse rounded-full bg-zinc-200" />
-                  LIVE
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={
-                    streamChrome === "wedding" || streamChrome === "theHeart"
-                      ? "border-rose-200/60 bg-rose-900/45 text-rose-50"
-                      : streamChrome === "garden"
-                        ? "border-emerald-200/50 bg-emerald-950/50 text-emerald-50"
-                        : streamChrome === "midnight"
-                          ? "border-amber-500/40 bg-black/70 font-mono text-xs text-amber-100"
-                          : streamChrome === "coastal"
-                            ? "border-white/60 bg-white/70 font-coastal-sans text-xs text-[#006d77]"
-                            : streamChrome === "celestial"
-                              ? "border-yellow-500/35 bg-black/65 font-mono text-xs text-yellow-200/90"
-                              : streamChrome === "traditionalHindu"
-                                ? "border-amber-400/70 bg-[#FFF8DC]/90 font-hindu-wedding-display text-xs text-red-900"
-                                : streamChrome === "corporateTech"
-                                  ? "border-blue-500/35 bg-black/70 font-corporate-tech-display text-xs text-blue-100"
-                                    : streamChrome === "memorial"
-                                    ? "border-[#c9a961]/70 bg-black/60 font-memorial-display text-xs text-[#f5e6c8]"
-                                    : "border-white/30 bg-black/50 text-white"
-                  }
-                >
-                  <Eye className="mr-1 h-3 w-3" />
-                  {viewerCount.toLocaleString()}
-                </Badge>
-              </>
-            )}
+            ) : null}
           </div>
 
           {!isEnded && floatingEmojis.map((e) => (
@@ -1739,8 +1776,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             </span>
           ))}
 
-          <div
-            className={`absolute bottom-0 left-0 right-0 p-4 ${
+          {!isYouTubePlayer && (
+            <div
+              className={`absolute bottom-0 left-0 right-0 p-4 ${
               streamChrome === "wedding" || streamChrome === "theHeart"
                 ? "bg-gradient-to-t from-rose-950/80 via-rose-900/40 to-transparent"
                 : streamChrome === "garden"
@@ -1759,7 +1797,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                               ? "bg-gradient-to-t from-[#1e3c72]/95 via-[#2a5298]/45 to-transparent"
                               : "bg-gradient-to-t from-black/80 to-transparent"
             }`}
-          >
+            >
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
                 <Button
@@ -1835,7 +1873,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 </Button>
               </div>
             </div>
-          </div>
+            </div>
+          )}
+      </div>
+      {renderViewerCountBelowPlayer()}
     </div>
   )
 

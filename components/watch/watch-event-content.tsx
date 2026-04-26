@@ -556,9 +556,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const [replayCurrentTime, setReplayCurrentTime] = useState(0)
   const [replayDuration, setReplayDuration] = useState(0)
+  const [replaySeekMax, setReplaySeekMax] = useState(0)
   const [youtubeControlsVisible, setYoutubeControlsVisible] = useState(true)
   const replayCurrentTimeRef = useRef(0)
   const replayDurationRef = useRef(0)
+  const replaySeekMaxRef = useRef(0)
   const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const youtubeControlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -1061,12 +1063,19 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
         if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
-          replayCurrentTimeRef.current = data.info.currentTime
-          setReplayCurrentTime(data.info.currentTime)
+          const currentTime = data.info.currentTime
+          replayCurrentTimeRef.current = currentTime
+          setReplayCurrentTime(currentTime)
+          if (currentTime > replaySeekMaxRef.current) {
+            replaySeekMaxRef.current = currentTime
+            setReplaySeekMax(currentTime)
+          }
         }
         if (data?.event === "infoDelivery" && typeof data?.info?.duration === "number" && data.info.duration > 0) {
           replayDurationRef.current = data.info.duration
+          replaySeekMaxRef.current = data.info.duration
           setReplayDuration(data.info.duration)
+          setReplaySeekMax(data.info.duration)
         }
         if (data?.event === "onStateChange") {
           const playing = data?.info === 1
@@ -1094,6 +1103,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           replayCurrentTimeRef.current + 1,
         )
         setReplayCurrentTime(replayCurrentTimeRef.current)
+        if (!replayDurationRef.current && replayCurrentTimeRef.current > replaySeekMaxRef.current) {
+          replaySeekMaxRef.current = replayCurrentTimeRef.current
+          setReplaySeekMax(replayCurrentTimeRef.current)
+        }
       }, 1000)
     } else {
       if (replayTickRef.current) {
@@ -1460,7 +1473,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const seekReplay = (offsetSeconds: number) => {
     const iframe = replayIframeRef.current
     if (!iframe || !iframe.contentWindow) return
-    const max = replayDurationRef.current > 0 ? replayDurationRef.current : Number.POSITIVE_INFINITY
+    const max = replayDurationRef.current > 0 ? replayDurationRef.current : replaySeekMaxRef.current || Number.POSITIVE_INFINITY
     const target = Math.min(max, Math.max(0, replayCurrentTimeRef.current + offsetSeconds))
     replayCurrentTimeRef.current = target
     setReplayCurrentTime(target)
@@ -1473,7 +1486,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const seekReplayTo = (targetSeconds: number) => {
     const iframe = replayIframeRef.current
     if (!iframe || !iframe.contentWindow) return
-    const max = replayDurationRef.current > 0 ? replayDurationRef.current : Number.POSITIVE_INFINITY
+    const max = replayDurationRef.current > 0 ? replayDurationRef.current : replaySeekMaxRef.current || Number.POSITIVE_INFINITY
     const target = Math.min(max, Math.max(0, targetSeconds))
     replayCurrentTimeRef.current = target
     setReplayCurrentTime(target)
@@ -1592,7 +1605,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
         : "text-sm text-white/60"
 
-  const renderYouTubeOverlayControls = () => (
+  const renderYouTubeOverlayControls = () => {
+    const seekMax = Math.max(1, Math.floor(replayDuration || replaySeekMax || replayCurrentTime || 1))
+    const seekValue = Math.min(replayCurrentTime, seekMax)
+
+    return (
     <div
       className={cn(
         "pointer-events-auto absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 sm:group-hover:opacity-100",
@@ -1651,16 +1668,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         <input
           type="range"
           min={0}
-          max={Math.max(1, Math.floor(replayDuration || replayCurrentTime || 1))}
+          max={seekMax}
           step={1}
-          value={Math.min(replayCurrentTime, Math.max(1, Math.floor(replayDuration || replayCurrentTime || 1)))}
+          value={seekValue}
           aria-label="Seek video"
           className="h-1.5 w-full cursor-pointer accent-rose-500"
           onChange={(e) => seekReplayTo(Number(e.currentTarget.value))}
         />
       </div>
     </div>
-  )
+    )
+  }
 
   const renderViewerCountBelowPlayer = () =>
     isEnded ? null : (

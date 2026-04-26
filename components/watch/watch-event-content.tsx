@@ -580,9 +580,21 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     }
   }, [eventId])
 
+  const fetchViewerCount = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/watch/${encodeURIComponent(eventId)}/presence`, { cache: "no-store" })
+      if (!res.ok) return
+      const data = (await res.json()) as { currentViewers?: number }
+      if (typeof data.currentViewers === "number") {
+        setViewerCount(Math.max(0, data.currentViewers))
+      }
+    } catch {
+      // Keep the last known value if the lightweight presence poll fails.
+    }
+  }, [eventId])
+
   const applyPolledEvent = useCallback((ev: LiveEvent) => {
     setEvent(ev)
-    setViewerCount(ev.currentViewers ?? 0)
     eventStatusRef.current = ev.status
   }, [])
 
@@ -665,6 +677,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         setIsPasswordProtected(!!ev.isPasswordProtected)
         setIsAuthenticated(!ev.isPasswordProtected)
         setViewerCount(ev.currentViewers ?? 0)
+        void fetchViewerCount()
       }
       setLoading(false)
     })
@@ -674,6 +687,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       const ev = await fetchWatchEvent()
       if (!ev) return
       applyPolledEvent(ev)
+      void fetchViewerCount()
       if (ev.status === "ended" || ev.status === "completed") {
         clearInterval(intervalId)
       }
@@ -683,7 +697,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       cancelled = true
       clearInterval(intervalId)
     }
-  }, [eventId, fetchWatchEvent, applyPolledEvent, watchPollIntervalMs])
+  }, [eventId, fetchWatchEvent, fetchViewerCount, applyPolledEvent, watchPollIntervalMs])
 
   // After backgrounding, sync event (status / viewers) when the tab is visible again.
   useEffect(() => {
@@ -692,6 +706,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       void fetchWatchEvent().then((ev) => {
         if (ev) applyPolledEvent(ev)
       })
+      void fetchViewerCount()
     }
     document.addEventListener("visibilitychange", onVisibleOrFocus)
     window.addEventListener("focus", onVisibleOrFocus)
@@ -699,7 +714,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       document.removeEventListener("visibilitychange", onVisibleOrFocus)
       window.removeEventListener("focus", onVisibleOrFocus)
     }
-  }, [fetchWatchEvent, applyPolledEvent])
+  }, [fetchWatchEvent, fetchViewerCount, applyPolledEvent])
 
   const handlePasswordSubmit = (e: FormEvent) => {
     e.preventDefault()

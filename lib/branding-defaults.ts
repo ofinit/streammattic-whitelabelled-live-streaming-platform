@@ -3,9 +3,9 @@ import type { Branding } from "./types"
 export const DEFAULT_PLATFORM_BRANDING: Branding = {
   id: "brand-default",
   brandName: "StreamLivee",
-  companyLogo: "/logo.png",
-  companyLogoDark: "/logo-dark.png",
-  favicon: "/favicon.png",
+  companyLogo: "/icon.svg",
+  companyLogoDark: "/icon.svg",
+  favicon: "/icon.svg",
   themeColor: "#10b981",
   accentColor: "#059669",
   email: "support@streamlivee.com",

@@ -59,7 +59,7 @@ export async function getBrandingLookupByHost(hostname: string): Promise<Brandin
     branding: {
       brandName: resolvePlatformDisplayName(settings.platform_name),
       themeColor: settings.primary_color || "#10b981",
-      companyLogo: settings.platform_logo || "/placeholder.svg?height=40&width=200",
+      companyLogo: settings.platform_logo || "/icon.svg",
       supportEmail: settings.support_email || "support@streamlivee.com",
     },
   }

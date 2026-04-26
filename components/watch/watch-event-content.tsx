@@ -1038,7 +1038,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     }, 2500)
   }
 
-  // Replay: sync current time from YouTube IFrame API messages
+  // YouTube controls: sync current time from IFrame API messages for replay and DVR-enabled live streams.
   // Must be before any early returns to satisfy Rules of Hooks
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -1065,7 +1065,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Replay: tick estimate — increment current time every second while playing
+  // YouTube controls: tick estimate — increment current time every second while playing.
   useEffect(() => {
     if (isReplayPlaying) {
       replayTickRef.current = setInterval(() => {
@@ -1523,6 +1523,51 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
         : "text-sm text-white/60"
 
+  const renderYouTubeOverlayControls = () => (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-14 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
+      <div className="pointer-events-auto flex items-center gap-4">
+        <button
+          type="button"
+          title="Rewind 30s"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+          onClick={() => seekReplay(-30)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+            <path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+            <text x="7.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
+          </svg>
+        </button>
+        <button
+          type="button"
+          title={isReplayPlaying ? "Pause" : "Play"}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+          onClick={() => {
+            const next = !isReplayPlaying
+            sendReplayCommand(next ? "playVideo" : "pauseVideo")
+            setIsReplayPlaying(next)
+          }}
+        >
+          {isReplayPlaying ? (
+            <PauseCircle className="h-10 w-10" />
+          ) : (
+            <Play className="h-10 w-10 translate-x-0.5" />
+          )}
+        </button>
+        <button
+          type="button"
+          title="Forward 30s"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
+          onClick={() => seekReplay(30)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+            <path d="M12 5V2l5 5-5 5V8c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+            <text x="16.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+
   const renderStreamPlayer = (shellClassName: string) => (
     <div ref={videoContainerRef} className={shellClassName}>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -1535,49 +1580,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-                {/* Centered play/pause + rewind/forward controls — bottom strip left free for YouTube's own seek bar */}
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-14 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  <div className="pointer-events-auto flex items-center gap-4">
-                    <button
-                      type="button"
-                      title="Rewind 30s"
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-                      onClick={() => seekReplay(-30)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                        <path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                        <text x="7.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      title={isReplayPlaying ? "Pause" : "Play"}
-                      className="flex h-14 w-14 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-                      onClick={() => {
-                        const next = !isReplayPlaying
-                        sendReplayCommand(next ? "playVideo" : "pauseVideo")
-                        setIsReplayPlaying(next)
-                      }}
-                    >
-                      {isReplayPlaying ? (
-                        <PauseCircle className="h-10 w-10" />
-                      ) : (
-                        <Play className="h-10 w-10 translate-x-0.5" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      title="Forward 30s"
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-                      onClick={() => seekReplay(30)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                        <path d="M12 5V2l5 5-5 5V8c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-                        <text x="16.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                {/* Centered play/pause + rewind/forward controls. Mobile cannot hover, so keep them tappable there. */}
+                {renderYouTubeOverlayControls()}
               </div>
             ) : isEnded ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">
@@ -1595,19 +1599,27 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 </div>
               </div>
             ) : (streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
-              <iframe
-                className="h-full w-full"
-                src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0 }) ?? ""}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              <div className="group relative h-full w-full">
+                <iframe
+                  ref={replayIframeRef}
+                  className="h-full w-full"
+                  src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0, enablejsapi: 1 }) ?? ""}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+                {renderYouTubeOverlayControls()}
+              </div>
             ) : event.streamType === "youtube_api" && evRawTop.youtubeBroadcastId ? (
-              <iframe
-                className="h-full w-full"
-                src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0 }) ?? ""}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              <div className="group relative h-full w-full">
+                <iframe
+                  ref={replayIframeRef}
+                  className="h-full w-full"
+                  src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0, enablejsapi: 1 }) ?? ""}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+                {renderYouTubeOverlayControls()}
+              </div>
             ) : event.streamType === "youtube_api" ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0">
                 {playerImageUrl && <img src={playerImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />}

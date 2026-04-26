@@ -1382,74 +1382,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     )
   }
 
-  if ((event.status as string) === "on_break") {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        {globalHeaderImage}
-        <div className="relative w-full aspect-video max-h-[60vh] bg-gradient-to-br from-orange-950/40 via-background to-orange-900/10 flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent" />
-          <div className="relative flex items-center justify-center">
-            <span className="absolute h-48 w-48 rounded-full bg-orange-500/10 animate-ping [animation-duration:2s]" />
-            <span className="absolute h-32 w-32 rounded-full bg-orange-500/15 animate-ping [animation-duration:2s] [animation-delay:0.6s]" />
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-orange-500/20 border border-orange-500/40">
-              <PauseCircle className="h-10 w-10 text-orange-400 animate-pulse" />
-            </div>
-          </div>
-          <div className="absolute top-4 left-4">
-            <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 gap-1">
-              <PauseCircle className="h-3 w-3" /> On Break
-            </Badge>
-          </div>
-          <div className="absolute top-4 right-4">
-            <Badge className="border border-zinc-500/40 bg-zinc-600/90 text-white gap-1">
-              <span className="h-2 w-2 rounded-full bg-zinc-200 animate-pulse inline-block" />
-              LIVE
-            </Badge>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center px-4 py-8 gap-4 max-w-2xl mx-auto w-full text-center">
-          <div className="space-y-1">
-            <h1
-              className={cn("font-bold", titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
-              style={{
-                ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
-                ...pageTitleFontSizeStyle(titleHeroRem),
-              }}
-            >
-              {event.title}
-            </h1>
-            {event.description && <p className="text-muted-foreground">{event.description}</p>}
-          </div>
-          {eventDates.length > 0 && (
-            <div className="w-full max-w-sm border border-border rounded-lg overflow-hidden text-left">
-              <div className="px-3 py-2 bg-muted/40 border-b border-border">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Schedule</p>
-              </div>
-              <ul className="divide-y divide-border">
-                {eventDates.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
-                    <span className="text-sm font-medium truncate">{d.label || "Session"}</span>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formatExtraDate(d)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="space-y-1 py-2">
-            <p className="text-xl font-semibold text-orange-400">Be Right Back</p>
-            <p className="text-muted-foreground text-sm">The streamer is on a short break. We&apos;ll resume shortly — stay tuned!</p>
-          </div>
-          <Button className="gap-2 mt-2" onClick={handleShare}>
-            {shareCopied ? <Check className="h-4 w-4 text-green-400" /> : <Share2 className="h-4 w-4" />}
-            {shareCopied ? "Link Copied!" : "Share Event"}
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   const isEnded = event.status === "completed" || event.status === "ended"
+  const isOnBreak = (event.status as string) === "on_break"
   const streamType = String(event.streamType)
   const showRecording = evRawTop.showRecording === true
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
@@ -1690,18 +1624,74 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   }
 
   const renderViewerCountBelowPlayer = () =>
-    isEnded ? null : (
+    isEnded || isOnBreak ? null : (
       <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
         <Users className="h-4 w-4" />
         <span>{viewerCount.toLocaleString()} watching live</span>
       </div>
     )
 
+  const renderMockPlayerContent = () => (
+    <div className="flex flex-col items-center justify-center gap-4 absolute inset-0 px-6 text-center">
+      {playerImageUrl && <img src={playerImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />}
+      <div className="relative flex flex-col items-center gap-4">
+        <div className="relative flex h-24 w-24 items-center justify-center">
+          <span
+            className={cn(
+              "absolute h-[4.5rem] w-[4.5rem] rounded-full animate-ping [animation-duration:2s]",
+              isOnBreak ? "bg-orange-500/30" : "bg-red-500/35",
+            )}
+            aria-hidden
+          />
+          <span
+            className={cn(
+              "absolute h-16 w-16 rounded-full animate-pulse",
+              isOnBreak ? "bg-orange-600/25" : "bg-red-600/25",
+            )}
+            aria-hidden
+          />
+          <div
+            className={cn(
+              "relative flex h-20 w-20 items-center justify-center rounded-full border bg-red-950/50 shadow-[0_0_28px_rgba(239,68,68,0.45)]",
+              isOnBreak ? "border-orange-500/45 bg-orange-950/50 shadow-[0_0_28px_rgba(249,115,22,0.45)]" : "border-red-500/45",
+            )}
+          >
+            {isOnBreak ? (
+              <PauseCircle className="h-10 w-10 text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.9)] animate-pulse [animation-duration:1.5s]" />
+            ) : (
+              <Radio className="h-10 w-10 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse [animation-duration:1.5s]" />
+            )}
+          </div>
+        </div>
+        <div className="flex max-w-lg flex-col items-center gap-1 px-2 text-center">
+          {isOnBreak ? (
+            <>
+              <p className={cn(streamPlaceholderTitleClass, "text-orange-400")}>Be Right Back</p>
+              <p className={streamPlaceholderSubClass}>The streamer is on a short break. We&apos;ll resume shortly.</p>
+            </>
+          ) : streamPlaceholderSchedule ? (
+            <>
+              <p className={streamPlaceholderTitleClass}>{streamPlaceholderSchedule.dateLine}</p>
+              <p className={streamPlaceholderSubClass}>{streamPlaceholderSchedule.timeLine}</p>
+            </>
+          ) : (
+            <>
+              <p className={streamPlaceholderTitleClass}>Stream Starting Soon</p>
+              <p className={streamPlaceholderSubClass}>The player will appear here once a video URL or embed code is added.</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
   const renderStreamPlayer = (shellClassName: string) => (
     <div>
       <div ref={videoContainerRef} className={shellClassName}>
           <div className="absolute inset-0 flex items-center justify-center">
-            {isEnded && hasReplay && replaySrc ? (
+            {isOnBreak ? (
+              renderMockPlayerContent()
+            ) : isEnded && hasReplay && replaySrc ? (
               <div className="group relative h-full w-full">
                 <iframe
                   ref={replayIframeRef}
@@ -1751,29 +1741,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 {renderYouTubeOverlayControls()}
               </div>
             ) : event.streamType === "youtube_api" ? (
-              <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0">
-                {playerImageUrl && <img src={playerImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
-                <div className="relative flex flex-col items-center gap-4">
-                  <div className="relative flex h-24 w-24 items-center justify-center">
-                    <span
-                      className="absolute h-[4.5rem] w-[4.5rem] rounded-full bg-red-500/35 animate-ping [animation-duration:2s]"
-                      aria-hidden
-                    />
-                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-red-500/45 bg-red-950/50 shadow-[0_0_28px_rgba(239,68,68,0.45)]">
-                      <Radio className="h-10 w-10 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse [animation-duration:1.5s]" />
-                    </div>
-                  </div>
-                  <p className={streamPlaceholderTitleClass}>Stream Starting Soon</p>
-                  <p
-                    className={cn(
-                      streamPlaceholderSubClass,
-                      (streamChrome === "garden" || streamChrome === "coastal") && "max-w-sm text-center",
-                    )}
-                  >
-                    The YouTube broadcast is being set up. Please wait a moment and refresh.
-                  </p>
-                </div>
-              </div>
+              renderMockPlayerContent()
             ) : (event.streamType === "third_party" || event.streamType === "rtmp") && evRawTop.embedCode ? (
               <div
                 className="h-full w-full [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
@@ -1781,37 +1749,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 dangerouslySetInnerHTML={{ __html: evRawTop.embedCode as string }}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-4 absolute inset-0">
-                {playerImageUrl && <img src={playerImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />}
-                <div className="relative flex flex-col items-center gap-4">
-                  <div className="relative flex h-24 w-24 items-center justify-center">
-                    <span
-                      className="absolute h-[4.5rem] w-[4.5rem] rounded-full bg-red-500/35 animate-ping [animation-duration:2s]"
-                      aria-hidden
-                    />
-                    <span
-                      className="absolute h-16 w-16 rounded-full bg-red-600/25 animate-pulse"
-                      aria-hidden
-                    />
-                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-red-500/45 bg-red-950/50 shadow-[0_0_28px_rgba(239,68,68,0.45)]">
-                      <Radio className="h-10 w-10 text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse [animation-duration:1.5s]" />
-                    </div>
-                  </div>
-                  <div className="flex max-w-lg flex-col items-center gap-1 px-2 text-center">
-                    {streamPlaceholderSchedule ? (
-                      <>
-                        <p className={streamPlaceholderTitleClass}>{streamPlaceholderSchedule.dateLine}</p>
-                        <p className={streamPlaceholderSubClass}>{streamPlaceholderSchedule.timeLine}</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className={streamPlaceholderTitleClass}>Date to be announced</p>
-                        <p className={streamPlaceholderSubClass}>Time to be announced</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+              renderMockPlayerContent()
             )}
           </div>
 

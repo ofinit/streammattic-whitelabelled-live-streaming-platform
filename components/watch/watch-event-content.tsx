@@ -125,16 +125,6 @@ function buildYouTubeEmbedUrl(
   return url.toString()
 }
 
-function formatPlaybackTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00"
-  const total = Math.floor(seconds)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-  return `${m}:${String(s).padStart(2, "0")}`
-}
-
 interface ChatMessage {
   id: string
   user: string
@@ -552,17 +542,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [showSettings, setShowSettings] = useState(false)
   const [quality, setQuality] = useState("Auto")
   const videoContainerRef = useRef<HTMLDivElement>(null)
-  const replayIframeRef = useRef<HTMLIFrameElement | null>(null)
-  const [isReplayPlaying, setIsReplayPlaying] = useState(false)
-  const [replayCurrentTime, setReplayCurrentTime] = useState(0)
-  const [replayDuration, setReplayDuration] = useState(0)
-  const [replaySeekMax, setReplaySeekMax] = useState(0)
-  const [youtubeControlsVisible, setYoutubeControlsVisible] = useState(true)
-  const replayCurrentTimeRef = useRef(0)
-  const replayDurationRef = useRef(0)
-  const replaySeekMaxRef = useRef(0)
-  const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const youtubeControlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Inline crew PIN (template_bottom mode)
   const [inlineCrewPin, setInlineCrewPin] = useState("")
@@ -1055,97 +1034,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     }, 2500)
   }
 
-  // YouTube controls: sync current time from IFrame API messages for replay and DVR-enabled live streams.
-  // Must be before any early returns to satisfy Rules of Hooks
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (!e.data) return
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data
-        if (data?.event === "infoDelivery" && typeof data?.info?.currentTime === "number") {
-          const currentTime = data.info.currentTime
-          replayCurrentTimeRef.current = currentTime
-          setReplayCurrentTime(currentTime)
-          if (currentTime > replaySeekMaxRef.current) {
-            replaySeekMaxRef.current = currentTime
-            setReplaySeekMax(currentTime)
-          }
-        }
-        if (data?.event === "infoDelivery" && typeof data?.info?.duration === "number" && data.info.duration > 0) {
-          replayDurationRef.current = data.info.duration
-          replaySeekMaxRef.current = data.info.duration
-          setReplayDuration(data.info.duration)
-          setReplaySeekMax(data.info.duration)
-        }
-        if (data?.event === "onStateChange") {
-          const playing = data?.info === 1
-          setIsReplayPlaying(playing)
-          if (!playing && replayTickRef.current) {
-            clearInterval(replayTickRef.current)
-            replayTickRef.current = null
-          }
-        }
-      } catch {
-        // non-JSON messages ignored
-      }
-    }
-    window.addEventListener("message", handler)
-    return () => window.removeEventListener("message", handler)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // YouTube controls: tick estimate — increment current time every second while playing.
-  useEffect(() => {
-    if (isReplayPlaying) {
-      replayTickRef.current = setInterval(() => {
-        replayCurrentTimeRef.current = Math.min(
-          replayDurationRef.current || Number.POSITIVE_INFINITY,
-          replayCurrentTimeRef.current + 1,
-        )
-        setReplayCurrentTime(replayCurrentTimeRef.current)
-        if (!replayDurationRef.current && replayCurrentTimeRef.current > replaySeekMaxRef.current) {
-          replaySeekMaxRef.current = replayCurrentTimeRef.current
-          setReplaySeekMax(replayCurrentTimeRef.current)
-        }
-      }, 1000)
-    } else {
-      if (replayTickRef.current) {
-        clearInterval(replayTickRef.current)
-        replayTickRef.current = null
-      }
-    }
-    return () => {
-      if (replayTickRef.current) {
-        clearInterval(replayTickRef.current)
-        replayTickRef.current = null
-      }
-    }
-  }, [isReplayPlaying])
-
-  const revealYouTubeControls = useCallback(() => {
-    setYoutubeControlsVisible(true)
-    if (youtubeControlsHideTimerRef.current) {
-      clearTimeout(youtubeControlsHideTimerRef.current)
-      youtubeControlsHideTimerRef.current = null
-    }
-    if (isReplayPlaying) {
-      youtubeControlsHideTimerRef.current = setTimeout(() => {
-        setYoutubeControlsVisible(false)
-        youtubeControlsHideTimerRef.current = null
-      }, 2500)
-    }
-  }, [isReplayPlaying])
-
-  useEffect(() => {
-    revealYouTubeControls()
-    return () => {
-      if (youtubeControlsHideTimerRef.current) {
-        clearTimeout(youtubeControlsHideTimerRef.current)
-        youtubeControlsHideTimerRef.current = null
-      }
-    }
-  }, [revealYouTubeControls])
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -1395,47 +1283,12 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     // youtube_embed is an external YouTube URL — always show it regardless of showRecording toggle
     (event.streamType === "youtube_embed" && !!event.youtubeUrl)
 
-  const sendReplayCommand = (command: "playVideo" | "pauseVideo") => {
-    const iframe = replayIframeRef.current
-    if (!iframe || !iframe.contentWindow) return
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: "command", func: command, args: [] }),
-      "*",
-    )
-  }
-
-  const seekReplay = (offsetSeconds: number) => {
-    const iframe = replayIframeRef.current
-    if (!iframe || !iframe.contentWindow) return
-    const max = replayDurationRef.current > 0 ? replayDurationRef.current : replaySeekMaxRef.current || Number.POSITIVE_INFINITY
-    const target = Math.min(max, Math.max(0, replayCurrentTimeRef.current + offsetSeconds))
-    replayCurrentTimeRef.current = target
-    setReplayCurrentTime(target)
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: "command", func: "seekTo", args: [target, true] }),
-      "*",
-    )
-  }
-
-  const seekReplayTo = (targetSeconds: number) => {
-    const iframe = replayIframeRef.current
-    if (!iframe || !iframe.contentWindow) return
-    const max = replayDurationRef.current > 0 ? replayDurationRef.current : replaySeekMaxRef.current || Number.POSITIVE_INFINITY
-    const target = Math.min(max, Math.max(0, targetSeconds))
-    replayCurrentTimeRef.current = target
-    setReplayCurrentTime(target)
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: "command", func: "seekTo", args: [target, true] }),
-      "*",
-    )
-  }
-
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
-      replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { controls: 0, enablejsapi: 1, start: 0 })
+      replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { controls: 1, start: 0 })
     } else if ((streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
-      replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { controls: 0, enablejsapi: 1, start: 0 })
+      replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { controls: 1, start: 0 })
     }
   }
   const isYouTubePlayer =
@@ -1539,90 +1392,6 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
         : "text-sm text-white/60"
 
-  const renderYouTubeOverlayControls = () => {
-    const seekMax = Math.max(1, Math.floor(replayDuration || replaySeekMax || replayCurrentTime || 1))
-    const seekValue = Math.min(replayCurrentTime, seekMax)
-
-    return (
-    <div
-      className={cn(
-        "pointer-events-auto absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 sm:group-hover:opacity-100",
-        youtubeControlsVisible ? "opacity-100" : "opacity-0",
-      )}
-      onPointerDown={revealYouTubeControls}
-      onPointerMove={revealYouTubeControls}
-      onFocus={revealYouTubeControls}
-    >
-      <div className={cn("flex justify-end p-3", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
-        <button
-          type="button"
-          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-          onClick={toggleFullscreen}
-        >
-          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-        </button>
-      </div>
-      <div className={cn("mx-auto flex items-center gap-4", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
-        <button
-          type="button"
-          title="Rewind 30s"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-          onClick={() => seekReplay(-30)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-            <path d="M12 5V2L7 7l5 5V8c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-            <text x="7.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
-          </svg>
-        </button>
-        <button
-          type="button"
-          title={isReplayPlaying ? "Pause" : "Play"}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-          onClick={() => {
-            const next = !isReplayPlaying
-            sendReplayCommand(next ? "playVideo" : "pauseVideo")
-            setIsReplayPlaying(next)
-          }}
-        >
-          {isReplayPlaying ? (
-            <PauseCircle className="h-10 w-10" />
-          ) : (
-            <Play className="h-10 w-10 translate-x-0.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          title="Forward 30s"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90 transition-colors"
-          onClick={() => seekReplay(30)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-            <path d="M12 5V2l5 5-5 5V8c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-            <text x="16.5" y="15.5" fontSize="5" fontWeight="bold" fill="currentColor" textAnchor="middle">30</text>
-          </svg>
-        </button>
-      </div>
-      <div className={cn("px-4 pb-3", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
-        <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-white/90">
-          <span>{formatPlaybackTime(replayCurrentTime)}</span>
-          <span>{replayDuration > 0 ? formatPlaybackTime(replayDuration) : "Live"}</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={seekMax}
-          step={1}
-          value={seekValue}
-          aria-label="Seek video"
-          className="h-1.5 w-full cursor-pointer accent-rose-500"
-          onChange={(e) => seekReplayTo(Number(e.currentTarget.value))}
-        />
-      </div>
-    </div>
-    )
-  }
-
   const renderViewerCountBelowPlayer = () =>
     isEnded || isOnBreak ? null : (
       <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
@@ -1694,14 +1463,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             ) : isEnded && hasReplay && replaySrc ? (
               <div className="group relative h-full w-full">
                 <iframe
-                  ref={replayIframeRef}
                   className="h-full w-full"
                   src={replaySrc}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-                {/* Centered play/pause + rewind/forward controls. Mobile cannot hover, so keep them tappable there. */}
-                {renderYouTubeOverlayControls()}
               </div>
             ) : isEnded ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">
@@ -1721,24 +1487,20 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             ) : (streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
               <div className="group relative h-full w-full">
                 <iframe
-                  ref={replayIframeRef}
                   className="h-full w-full"
-                  src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0, controls: 0, enablejsapi: 1 }) ?? ""}
+                  src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0, controls: 1 }) ?? ""}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-                {renderYouTubeOverlayControls()}
               </div>
             ) : event.streamType === "youtube_api" && evRawTop.youtubeBroadcastId ? (
               <div className="group relative h-full w-full">
                 <iframe
-                  ref={replayIframeRef}
                   className="h-full w-full"
-                  src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0, controls: 0, enablejsapi: 1 }) ?? ""}
+                  src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0, controls: 1 }) ?? ""}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
-                {renderYouTubeOverlayControls()}
               </div>
             ) : event.streamType === "youtube_api" ? (
               renderMockPlayerContent()

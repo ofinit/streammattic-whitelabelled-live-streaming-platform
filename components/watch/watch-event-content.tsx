@@ -66,17 +66,63 @@ import { THE_HEART_GALLERY_BG_URL } from "@/lib/the-heart-template-assets"
 import { parseWatchTemplateData, resolveWatchTemplateId } from "@/lib/watch-template-data"
 import "@/styles/the-heart-template.css"
 
-/** templateData.teaserYoutubeUrl — watch URL, short URL, or embed URL */
-function youtubeUrlToEmbed(url: string): string | null {
-  const u = url.trim()
-  if (!u) return null
-  const embed = u.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/)
-  if (embed) return `https://www.youtube.com/embed/${embed[1]}`
-  const v = u.match(/[?&]v=([a-zA-Z0-9_-]{11})/)
-  if (v) return `https://www.youtube.com/embed/${v[1]}`
-  const shortM = u.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
-  if (shortM) return `https://www.youtube.com/embed/${shortM[1]}`
+const YOUTUBE_VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
+const YOUTUBE_EMBED_DEFAULT_PARAMS = {
+  controls: "1",
+  rel: "0",
+  iv_load_policy: "3",
+  modestbranding: "1",
+  playsinline: "1",
+} as const
+
+function extractYouTubeVideoId(input: string): string | null {
+  const raw = input.trim()
+  if (!raw) return null
+  if (YOUTUBE_VIDEO_ID_RE.test(raw)) return raw
+
+  try {
+    const url = new URL(raw)
+    const hostname = url.hostname.replace(/^www\./, "").replace(/^m\./, "")
+    const pathParts = url.pathname.split("/").filter(Boolean)
+
+    if (hostname === "youtu.be" && YOUTUBE_VIDEO_ID_RE.test(pathParts[0] ?? "")) {
+      return pathParts[0]
+    }
+
+    if (hostname === "youtube.com" || hostname === "youtube-nocookie.com") {
+      const videoId = url.searchParams.get("v")
+      if (videoId && YOUTUBE_VIDEO_ID_RE.test(videoId)) return videoId
+
+      if (["embed", "live", "shorts"].includes(pathParts[0] ?? "") && YOUTUBE_VIDEO_ID_RE.test(pathParts[1] ?? "")) {
+        return pathParts[1]
+      }
+    }
+  } catch {
+    const fallback = raw.match(/(?:youtube\.com\/(?:embed|live|shorts)\/|youtu\.be\/|[?&]v=)([a-zA-Z0-9_-]{11})/)
+    return fallback?.[1] ?? null
+  }
+
   return null
+}
+
+/** templateData.teaserYoutubeUrl — watch URL, short URL, live URL, embed URL, or raw video ID */
+function youtubeUrlToEmbed(url: string): string | null {
+  const videoId = extractYouTubeVideoId(url)
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null
+}
+
+function buildYouTubeEmbedUrl(
+  urlOrId: string,
+  params: Record<string, string | number | boolean | undefined> = {},
+): string | null {
+  const embedUrl = youtubeUrlToEmbed(urlOrId)
+  if (!embedUrl) return null
+
+  const url = new URL(embedUrl)
+  Object.entries({ ...YOUTUBE_EMBED_DEFAULT_PARAMS, ...params }).forEach(([key, value]) => {
+    if (value !== undefined) url.searchParams.set(key, String(value))
+  })
+  return url.toString()
 }
 
 interface ChatMessage {
@@ -1343,12 +1389,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   }
 
   const isEnded = event.status === "completed" || event.status === "ended"
+  const streamType = String(event.streamType)
   const showRecording = evRawTop.showRecording === true
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
   const hasReplay =
     (showRecording && (
       (event.streamType === "youtube_api" && replayBroadcastId) ||
-      (event.streamType === "youtube" && event.youtubeUrl)
+      (streamType === "youtube" && event.youtubeUrl)
     )) ||
     // youtube_embed is an external YouTube URL — always show it regardless of showRecording toggle
     (event.streamType === "youtube_embed" && !!event.youtubeUrl)
@@ -1376,9 +1423,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
     if (event.streamType === "youtube_api" && replayBroadcastId) {
-      replaySrc = `https://www.youtube.com/embed/${replayBroadcastId}?controls=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1`
-    } else if ((event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
-      replaySrc = (event.youtubeUrl as string).replace("watch?v=", "embed/") + "?controls=1&rel=0&iv_load_policy=3&modestbranding=1&enablejsapi=1"
+      replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { enablejsapi: 1, start: 0 })
+    } else if ((streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
+      replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { enablejsapi: 1, start: 0 })
     }
   }
 
@@ -1547,17 +1594,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   </div>
                 </div>
               </div>
-            ) : (event.streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
+            ) : (streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl ? (
               <iframe
                 className="h-full w-full"
-                src={(event.youtubeUrl as string).replace("watch?v=", "embed/") + "?autoplay=1&mute=0&controls=1&rel=0&iv_load_policy=3&modestbranding=1"}
+                src={buildYouTubeEmbedUrl(event.youtubeUrl as string, { autoplay: 1, mute: 0 }) ?? ""}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : event.streamType === "youtube_api" && evRawTop.youtubeBroadcastId ? (
               <iframe
                 className="h-full w-full"
-                src={`https://www.youtube.com/embed/${evRawTop.youtubeBroadcastId}?autoplay=1&mute=0&controls=1&rel=0&iv_load_policy=3&modestbranding=1`}
+                src={buildYouTubeEmbedUrl(evRawTop.youtubeBroadcastId as string, { autoplay: 1, mute: 0 }) ?? ""}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />

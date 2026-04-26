@@ -556,9 +556,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const [replayCurrentTime, setReplayCurrentTime] = useState(0)
   const [replayDuration, setReplayDuration] = useState(0)
+  const [youtubeControlsVisible, setYoutubeControlsVisible] = useState(true)
   const replayCurrentTimeRef = useRef(0)
   const replayDurationRef = useRef(0)
   const replayTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const youtubeControlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Inline crew PIN (template_bottom mode)
   const [inlineCrewPin, setInlineCrewPin] = useState("")
@@ -1107,6 +1109,30 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     }
   }, [isReplayPlaying])
 
+  const revealYouTubeControls = useCallback(() => {
+    setYoutubeControlsVisible(true)
+    if (youtubeControlsHideTimerRef.current) {
+      clearTimeout(youtubeControlsHideTimerRef.current)
+      youtubeControlsHideTimerRef.current = null
+    }
+    if (isReplayPlaying) {
+      youtubeControlsHideTimerRef.current = setTimeout(() => {
+        setYoutubeControlsVisible(false)
+        youtubeControlsHideTimerRef.current = null
+      }, 2500)
+    }
+  }, [isReplayPlaying])
+
+  useEffect(() => {
+    revealYouTubeControls()
+    return () => {
+      if (youtubeControlsHideTimerRef.current) {
+        clearTimeout(youtubeControlsHideTimerRef.current)
+        youtubeControlsHideTimerRef.current = null
+      }
+    }
+  }, [revealYouTubeControls])
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -1567,9 +1593,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         : "text-sm text-white/60"
 
   const renderYouTubeOverlayControls = () => (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
+    <div
+      className={cn(
+        "pointer-events-auto absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 sm:group-hover:opacity-100",
+        youtubeControlsVisible ? "opacity-100" : "opacity-0",
+      )}
+      onPointerDown={revealYouTubeControls}
+      onPointerMove={revealYouTubeControls}
+      onFocus={revealYouTubeControls}
+    >
       <div />
-      <div className="pointer-events-auto mx-auto flex items-center gap-4">
+      <div className={cn("mx-auto flex items-center gap-4", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
         <button
           type="button"
           title="Rewind 30s"
@@ -1609,7 +1643,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           </svg>
         </button>
       </div>
-      <div className="pointer-events-auto px-4 pb-3">
+      <div className={cn("px-4 pb-3", youtubeControlsVisible ? "pointer-events-auto" : "pointer-events-none")}>
         <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-white/90">
           <span>{formatPlaybackTime(replayCurrentTime)}</span>
           <span>{replayDuration > 0 ? formatPlaybackTime(replayDuration) : "Live"}</span>

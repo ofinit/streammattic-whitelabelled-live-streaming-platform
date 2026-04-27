@@ -1,18 +1,10 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="38" fill="#020617"/>
-  <circle cx="90" cy="90" r="58" fill="url(#streamGlow)" opacity="0.95"/>
-  <circle cx="90" cy="90" r="42" fill="#0f172a" stroke="#38bdf8" stroke-width="6"/>
-  <path d="M79 67.5C79 62.9 84 60 88 62.4L121.5 82.6C125.3 84.9 125.3 90.5 121.5 92.8L88 113C84 115.4 79 112.5 79 107.9V67.5Z" fill="#f8fafc"/>
-  <path d="M50 67C42.8 74.2 38.8 83.9 38.8 94C38.8 104.1 42.8 113.8 50 121" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
-  <path d="M130 67C137.2 74.2 141.2 83.9 141.2 94C141.2 104.1 137.2 113.8 130 121" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
-  <path d="M35 48C22.8 60.2 16 76.7 16 94C16 111.3 22.8 127.8 35 140" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
-  <path d="M145 48C157.2 60.2 164 76.7 164 94C164 111.3 157.2 127.8 145 140" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
-  <circle cx="90" cy="90" r="72" stroke="white" stroke-opacity="0.08" stroke-width="2"/>
-  <defs>
-    <radialGradient id="streamGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 90) rotate(90) scale(58)">
-      <stop stop-color="#0ea5e9"/>
-      <stop offset="0.62" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#0f172a"/>
-    </radialGradient>
-  </defs>
+  <rect width="180" height="180" rx="40" fill="#020617"/>
+  <circle cx="90" cy="90" r="62" fill="#0f172a"/>
+  <circle cx="90" cy="90" r="52" stroke="#0ea5e9" stroke-width="10"/>
+  <circle cx="90" cy="90" r="36" fill="#020617"/>
+  <path d="M78 67.5C78 62.8 83.2 59.9 87.2 62.4L119.8 82.9C123.5 85.2 123.5 90.8 119.8 93.1L87.2 113.6C83.2 116.1 78 113.2 78 108.5V67.5Z" fill="#f8fafc"/>
+  <path d="M55 58C46.8 66.2 42 77.6 42 90C42 102.4 46.8 113.8 55 122" stroke="#22c55e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M125 58C133.2 66.2 138 77.6 138 90C138 102.4 133.2 113.8 125 122" stroke="#22c55e" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="90" cy="90" r="73" stroke="#1e293b" stroke-width="4"/>
 </svg>

@@ -9,7 +9,12 @@ import { Separator } from "@/components/ui/separator"
 import { Globe, CheckCircle, Clock, AlertCircle, ExternalLink, Info, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
-import { getVerificationTxtHostDisplay, parseDomainLayout, getPlatformCnameTarget } from "@/lib/platform-dns"
+import {
+  CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT,
+  getCameraIngestDnsRecordForDomain,
+  getVerificationTxtHostDisplay,
+  parseDomainLayout,
+} from "@/lib/platform-dns"
 
 export default function StudioDomainsPage() {
   const [domain, setDomain] = useState("")
@@ -165,23 +170,45 @@ export default function StudioDomainsPage() {
                   <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
                     {(() => {
                       const { isSubdomain, subdomain } = parseDomainLayout(savedDomain.domain)
+                      const cameraIngestRecord = getCameraIngestDnsRecordForDomain(savedDomain.domain)
                       
                       if (isSubdomain) {
                         return (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                            <div>
-                              <p className="text-muted-foreground uppercase mb-1">Type</p>
-                              <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                              <div>
+                                <p className="text-muted-foreground uppercase mb-1">Type</p>
+                                <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">A</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
+                                <p className="font-mono">{subdomain}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                                <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-muted-foreground uppercase mb-1">Host/Name</p>
-                              <p className="font-mono">{subdomain}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
-                              <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
-                            </div>
-                          </div>
+                            {cameraIngestRecord ? (
+                              <>
+                                <Separator />
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground uppercase mb-1">Type</p>
+                                    <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">{cameraIngestRecord.type}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground uppercase mb-1">Camera Upload Host</p>
+                                    <p className="font-mono">{cameraIngestRecord.host}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                                    <p className="font-mono text-primary font-bold">{cameraIngestRecord.value}</p>
+                                  </div>
+                                </div>
+                              </>
+                            ) : null}
+                          </>
                         )
                       }
                       
@@ -216,6 +243,25 @@ export default function StudioDomainsPage() {
                               <p className="font-mono text-primary font-bold">{platformSettings.platformIp}</p>
                             </div>
                           </div>
+                          {cameraIngestRecord ? (
+                            <>
+                              <Separator />
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground uppercase mb-1">Type</p>
+                                  <p className="font-mono bg-secondary px-2 py-0.5 rounded w-fit">{cameraIngestRecord.type}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground uppercase mb-1">Camera Upload Host</p>
+                                  <p className="font-mono">{cameraIngestRecord.host}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground uppercase mb-1">Value/Points To</p>
+                                  <p className="font-mono text-primary font-bold">{cameraIngestRecord.value}</p>
+                                </div>
+                              </div>
+                            </>
+                          ) : null}
                         </>
                       )
                     })()}
@@ -237,6 +283,8 @@ export default function StudioDomainsPage() {
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     * Ensure proxy (Cloudflare orange cloud) is **disabled** while points are being verified.
+                    Camera FTP/SFTP DNS is optional and appears when `CLIENT_GALLERY_CAMERA_INGEST_HOST` is configured.
+                    {` ${CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT}`}
                   </p>
                 </div>
               </div>

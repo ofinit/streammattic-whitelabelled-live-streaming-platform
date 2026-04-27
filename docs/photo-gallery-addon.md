@@ -29,6 +29,65 @@ When the legacy URL is **empty**, that link opens **`/client-gallery`** (or your
 
 **Public access:** `/client-gallery` is a **public** route (guests are not redirected to login for v1). The page uses the **same theme tokens** as the rest of the app (welcome hero, stat placeholders, activity placeholders, help accordion); signed-in streamers/studios see add-on status from `/api/photo-gallery-addon/status` and the **same app sidebar** as `/streamer/*` and `/studio/*` (this path is not nested under those layouts, so the page wraps the gallery content with the shared sidebar shell). Later you can gate specific albums with query tokens or path segments without changing the “public route” rule.
 
+## Camera FTP/SFTP ingest
+
+AI Client Photo Gallery album pages include a **Camera FTP/SFTP upload** panel for entitled streamer/studio users. Each camera access entry is scoped to one album and stores:
+
+- photographer/camera label
+- generated username
+- one-time generated password (shown only after create/reset)
+- album-specific incoming prefix
+- enabled/disabled state
+- optional expiry
+- last upload/import counters for the gateway or import worker to update
+
+Apply DB changes:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/ensure-client-gallery-camera-ingest-schema.sql
+```
+
+The app does **not** expose streamer/studio Wasabi keys to cameras. Cameras receive only generated FTP/SFTP credentials. The gateway service, for example SFTPGo deployed in Coolify, should map those credentials to the album owner’s BYOS storage prefix.
+
+Optional gateway display settings:
+
+| Variable | Meaning |
+| --- | --- |
+| `CLIENT_GALLERY_CAMERA_INGEST_HOST` | Public hostname shown to streamers/studios for camera setup. |
+| `CLIENT_GALLERY_CAMERA_INGEST_DNS_TARGET` | Optional DNS target for branded studio upload hosts. Defaults to `CLIENT_GALLERY_CAMERA_INGEST_HOST`. |
+| `NEXT_PUBLIC_CLIENT_GALLERY_CAMERA_INGEST_HOST` | Public display copy of the gateway host for browser-side manual DNS instructions. |
+| `NEXT_PUBLIC_CLIENT_GALLERY_CAMERA_INGEST_DNS_TARGET` | Public display copy of the DNS target for browser-side manual DNS instructions. |
+| `CLIENT_GALLERY_CAMERA_INGEST_PROTOCOL` | Preferred protocol shown in setup copy: `sftp`, `ftps`, or `ftp` (default `sftp`). |
+| `CLIENT_GALLERY_CAMERA_INGEST_SFTP_PORT` | SFTP port shown to users (default `22`). |
+| `CLIENT_GALLERY_CAMERA_INGEST_FTP_PORT` | FTP port shown to users (default `21`). |
+| `CLIENT_GALLERY_CAMERA_INGEST_FTPS_PORT` | FTPS port shown to users (default `990`). |
+| `CLIENT_GALLERY_CAMERA_INGEST_WEBHOOK_SECRET` | Shared secret required by `POST /api/client-gallery/camera-ingest/import` when SFTPGo or a worker registers an uploaded object. |
+
+The current app implementation manages album-scoped credential records and setup details. SFTPGo or a worker can register a completed upload by calling:
+
+```http
+POST /api/client-gallery/camera-ingest/import
+x-client-gallery-camera-ingest-secret: <CLIENT_GALLERY_CAMERA_INGEST_WEBHOOK_SECRET>
+content-type: application/json
+
+{
+  "username": "cg_...",
+  "key": "cg/<owner>/<album>/incoming/<credentialId>/image.jpg",
+  "contentType": "image/jpeg",
+  "byteSize": 1234567
+}
+```
+
+The import endpoint validates the username, enabled/expiry state, and object prefix before inserting into `client_gallery_assets`.
+
+For studios with custom domains, the setup wizard and Studio → Domains manual instructions include an optional branded camera upload hostname:
+
+```text
+sftp.<studio-domain>  CNAME  <CLIENT_GALLERY_CAMERA_INGEST_DNS_TARGET or CLIENT_GALLERY_CAMERA_INGEST_HOST>
+```
+
+If the configured target is an IPv4 address, the UI/API uses an `A` record instead of `CNAME`. Cloudflare auto-setup creates this record along with the normal platform routing and TXT verification records. The client gallery camera setup panel prefers the branded `sftp.<studio-domain>` host and shows the central gateway host as a fallback.
+
 ## Face index credit
 
 | Field | Meaning |

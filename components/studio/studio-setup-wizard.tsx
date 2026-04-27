@@ -33,6 +33,8 @@ import {
   getVerificationTxtHostDisplay,
   parseDomainLayout,
   getPlatformARecordDisplay,
+  getCameraIngestDnsRecordForDomain,
+  CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT,
 } from "@/lib/platform-dns"
 import {
   validateBrandingStep,
@@ -91,6 +93,7 @@ function DnsSetupHint({ domain }: { domain: string }) {
   const txtHost = getVerificationTxtHostDisplay(domain)
   const aRecordIp = getPlatformARecordDisplay()
   const apex = apexHostForWww(domain)
+  const cameraIngestRecord = getCameraIngestDnsRecordForDomain(domain)
   return (
     <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
       <p className="font-medium text-sm">DNS Configuration Required</p>
@@ -115,7 +118,17 @@ function DnsSetupHint({ domain }: { domain: string }) {
         <p>
           <span className="text-muted-foreground">TXT:</span> {txtHost} → (verification token from dashboard)
         </p>
+        {cameraIngestRecord ? (
+          <p>
+            <span className="text-muted-foreground">{cameraIngestRecord.type} camera upload:</span>{" "}
+            {cameraIngestRecord.host} → {cameraIngestRecord.value}
+          </p>
+        ) : null}
       </div>
+      <p className="text-xs text-muted-foreground">
+        Camera FTP/SFTP uploads can use <span className="font-mono">{cameraIngestRecord?.fullHost ?? `sftp.${apex}`}</span>{" "}
+        when the gateway DNS target is configured. {cameraIngestRecord ? null : CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT}
+      </p>
     </div>
   )
 }
@@ -927,7 +940,8 @@ export function StudioSetupWizard({
                   <div className="space-y-0.5">
                     <Label className="text-base">Cloudflare Auto-Setup</Label>
                     <p className="text-xs text-muted-foreground">
-                      Automatically configure DNS records if your domain is on Cloudflare
+                      Automatically configure site, verification, and camera upload DNS records if your domain is on
+                      Cloudflare
                     </p>
                   </div>
                   <Switch

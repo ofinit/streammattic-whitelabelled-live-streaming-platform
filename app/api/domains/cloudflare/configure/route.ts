@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server"
 import { autoConfigureDomain } from "@/lib/cloudflare-dns"
+import {
+  getCameraIngestDnsTarget,
+  getPlatformARecordIp,
+  getPlatformCnameTarget,
+  PLATFORM_DNS_CONFIGURE_ENV_HINT,
+} from "@/lib/platform-dns"
 
 export async function POST(req: Request) {
   try {
@@ -22,11 +28,26 @@ export async function POST(req: Request) {
       )
     }
 
+    const platformIp = getPlatformARecordIp() ?? ""
+    if (!platformIp) {
+      return NextResponse.json(
+        { error: `Platform A record IP is not set. ${PLATFORM_DNS_CONFIGURE_ENV_HINT}` },
+        { status: 503 },
+      )
+    }
+    const cameraIngestTarget = getCameraIngestDnsTarget()
+
     const result = await autoConfigureDomain(
       cfApiToken,
       cfZoneId,
       domain,
-      verificationToken
+      verificationToken,
+      platformIp,
+      getPlatformCnameTarget(),
+      {
+        includeCameraIngest: Boolean(cameraIngestTarget),
+        cameraIngestTarget,
+      },
     )
 
     if (!result.success) {

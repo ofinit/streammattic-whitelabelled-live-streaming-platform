@@ -8,6 +8,8 @@ import { Copy, Check, Cloud, Loader2, CheckCircle, AlertCircle } from "lucide-re
 import { useState } from "react"
 import type { Domain, DNSRecord } from "@/lib/types"
 import {
+  CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT,
+  getCameraIngestDnsRecordForDomain,
   getRoutingTargetDisplayForDomain,
   getVerificationTxtHostDisplay,
   PLATFORM_DNS_CONFIGURE_ENV_HINT,
@@ -69,16 +71,23 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
 
   const routingDisplay = getRoutingTargetDisplayForDomain(domain.domain)
   const txtHost = getVerificationTxtHostDisplay(domain.domain)
+  const cameraIngestRecord = getCameraIngestDnsRecordForDomain(domain.domain)
 
   // Build records based on domain type
   const records: DNSRecord[] = isSubdomain
     ? [
         { type: "CNAME", host: subdomain, value: routingDisplay, ttl: 3600 },
         { type: "TXT", host: txtHost, value: domain.verificationToken, ttl: 3600 },
+        ...(cameraIngestRecord
+          ? [{ type: cameraIngestRecord.type, host: cameraIngestRecord.host, value: cameraIngestRecord.value, ttl: 3600 }]
+          : []),
       ]
     : [
         { type: "A", host: "@", value: routingDisplay, ttl: 3600 },
         { type: "TXT", host: txtHost, value: domain.verificationToken, ttl: 3600 },
+        ...(cameraIngestRecord
+          ? [{ type: cameraIngestRecord.type, host: cameraIngestRecord.host, value: cameraIngestRecord.value, ttl: 3600 }]
+          : []),
       ]
 
   const copyValue = (value: string, id: string) => {
@@ -159,6 +168,13 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
             They point traffic at your platform host (e.g. Coolify / Traefik) and verify ownership.{" "}
             <span className="text-muted-foreground/90">{PLATFORM_DNS_CONFIGURE_ENV_HINT}</span>
           </p>
+          <p className="text-xs text-muted-foreground">
+            For camera FTP/SFTP uploads, use{" "}
+            <span className="font-mono text-foreground">
+              {cameraIngestRecord?.fullHost ?? `sftp.${domain.domain}`}
+            </span>
+            . {cameraIngestRecord ? "The required DNS record is included below." : CAMERA_INGEST_DNS_CONFIGURE_ENV_HINT}
+          </p>
 
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
@@ -212,6 +228,9 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
                   <li>Navigate to DNS management for <span className="font-mono text-foreground">{domainParts.slice(-2).join(".")}</span></li>
                   <li>Add a <span className="font-semibold text-foreground">CNAME</span> record with host <span className="font-mono text-foreground">{subdomain}</span> pointing to <span className="font-mono text-foreground">{routingDisplay}</span></li>
                   <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">{txtHost}</span> and the verification value above</li>
+                  {cameraIngestRecord ? (
+                    <li>Add the camera upload <span className="font-semibold text-foreground">{cameraIngestRecord.type}</span> record with host <span className="font-mono text-foreground">{cameraIngestRecord.host}</span> pointing to <span className="font-mono text-foreground">{cameraIngestRecord.value}</span></li>
+                  ) : null}
                   <li>Wait for DNS propagation (usually 5-30 minutes, up to 48 hours)</li>
                   <li>Come back here and click <span className="font-semibold text-foreground">Verify Now</span></li>
                 </>
@@ -221,6 +240,9 @@ export function DNSInstructionsDialog({ open, onOpenChange, domain, cfAvailable,
                   <li>Navigate to DNS management for <span className="font-mono text-foreground">{domain.domain}</span></li>
                   <li>Add an <span className="font-semibold text-foreground">A</span> record with host <span className="font-mono text-foreground">@</span> pointing to <span className="font-mono text-foreground">{routingDisplay}</span></li>
                   <li>Add a <span className="font-semibold text-foreground">TXT</span> record with host <span className="font-mono text-foreground">{txtHost}</span> and the verification value above</li>
+                  {cameraIngestRecord ? (
+                    <li>Add the camera upload <span className="font-semibold text-foreground">{cameraIngestRecord.type}</span> record with host <span className="font-mono text-foreground">{cameraIngestRecord.host}</span> pointing to <span className="font-mono text-foreground">{cameraIngestRecord.value}</span></li>
+                  ) : null}
                   <li>Wait for DNS propagation (usually 5-30 minutes, up to 48 hours)</li>
                   <li>Come back here and click <span className="font-semibold text-foreground">Verify Now</span></li>
                 </>

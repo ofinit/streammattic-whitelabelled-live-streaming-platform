@@ -1,6 +1,7 @@
 import {
   getPlatformARecordIp,
   getPlatformCnameTarget,
+  getCameraIngestDnsRecordForDomain,
   getVerificationTxtNameForCloudflare,
   parseDomainLayout,
   PLATFORM_DNS_CONFIGURE_ENV_HINT,
@@ -154,7 +155,11 @@ export async function autoConfigureDomain(
   domain: string,
   verificationToken: string,
   platformIp: string,
-  cnameTarget?: string
+  cnameTarget?: string,
+  options?: {
+    includeCameraIngest?: boolean
+    cameraIngestTarget?: string
+  },
 ): Promise<{
   success: boolean
   records: CloudflareDnsRecord[]
@@ -246,6 +251,27 @@ export async function autoConfigureDomain(
       proxied: false,
     })
     createdRecords.push(txt)
+
+    if (options?.includeCameraIngest) {
+      const cameraRecord = getCameraIngestDnsRecordForDomain(domain, options.cameraIngestTarget)
+      if (cameraRecord) {
+        const existingCameraRecords = await listDnsRecords(apiToken, zoneId, {
+          name: cameraRecord.fullHost,
+        })
+        for (const rec of existingCameraRecords) {
+          if (rec.type === "A" || rec.type === "CNAME") {
+            await deleteDnsRecord(apiToken, zoneId, rec.id)
+          }
+        }
+        const record = await createDnsRecord(apiToken, zoneId, {
+          type: cameraRecord.type,
+          name: cameraRecord.host,
+          content: cameraRecord.value,
+          proxied: false,
+        })
+        createdRecords.push(record)
+      }
+    }
   } catch (err) {
     errors.push(err instanceof Error ? err.message : "Unknown error creating DNS records")
   }

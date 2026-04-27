@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { CLIENT_GALLERY_BASE } from "@/lib/client-gallery-nav-items"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryTemplatePicker } from "@/components/client-gallery/gallery-template-picker"
+import { ClientGalleryCameraIngestPanel } from "@/components/client-gallery/client-gallery-camera-ingest-panel"
 import {
   downloadAlbumQrPngPrint,
   downloadAlbumQrSvg,
@@ -729,6 +730,8 @@ export function ClientGalleryAlbumWorkspace({ albumId }: { albumId: string }) {
           </CardContent>
         </Card>
       ) : null}
+
+      <ClientGalleryCameraIngestPanel albumId={albumId} storageConfigured={album.storageConfigured === true} />
 
       <Card className="border-border bg-card">
         <CardHeader>

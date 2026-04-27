@@ -3,7 +3,12 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { autoConfigureDomain, verifyApiToken, getZonesByToken } from "@/lib/cloudflare-dns"
 import { jsonOk, jsonError, withRole } from "@/lib/api-helpers"
 import { isValidHostname } from "@/lib/studio-setup-validation"
-import { getPlatformARecordIp, getPlatformCnameTarget, PLATFORM_DNS_CONFIGURE_ENV_HINT } from "@/lib/platform-dns"
+import {
+  getCameraIngestDnsTarget,
+  getPlatformARecordIp,
+  getPlatformCnameTarget,
+  PLATFORM_DNS_CONFIGURE_ENV_HINT,
+} from "@/lib/platform-dns"
 
 export const POST = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
@@ -71,6 +76,7 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
     const cnameTarget = getPlatformCnameTarget(
       typeof cnameFromDb === "string" && cnameFromDb.trim() !== "" ? cnameFromDb.trim() : undefined,
     )
+    const cameraIngestTarget = getCameraIngestDnsTarget()
 
     if (!platformIp) {
       return jsonError(
@@ -85,7 +91,11 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
       domainName,
       verificationToken,
       platformIp,
-      cnameTarget
+      cnameTarget,
+      {
+        includeCameraIngest: Boolean(cameraIngestTarget),
+        cameraIngestTarget,
+      },
     )
 
     if (!result.success) {

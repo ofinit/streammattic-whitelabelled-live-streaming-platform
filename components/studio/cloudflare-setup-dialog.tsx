@@ -110,7 +110,8 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
         <DialogHeader>
           <DialogTitle>Cloudflare Auto-Setup</DialogTitle>
           <DialogDescription>
-            We will automatically add the required A and TXT records to your Cloudflare account.
+            We will automatically add the required site, verification, and camera upload DNS records to your Cloudflare
+            account.
           </DialogDescription>
         </DialogHeader>
 
@@ -228,7 +229,7 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold">Successfully Configured!</h3>
                   <p className="text-sm text-muted-foreground">
-                    We&apos;ve added the required A and TXT records to your Cloudflare account.
+                    We&apos;ve added the required site, verification, and camera upload records to your Cloudflare account.
                   </p>
                 </div>
 
@@ -267,7 +268,7 @@ export function CloudflareSetupDialog({ domainId, domainName, onSuccess }: Cloud
 
         {step !== 3 && (
           <DialogFooter className="text-[10px] text-muted-foreground text-center sm:text-left pt-2 border-t">
-            * Warning: This will replace any existing A records for this domain on Cloudflare.
+            * Warning: This will replace existing A/CNAME records for the configured site host and camera upload host.
           </DialogFooter>
         )}
       </DialogContent>

@@ -1,26 +1,18 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
-    }
-  </style>
-  <g clip-path="url(#clip0_7960_43945)">
-    <rect class="background" width="180" height="180" rx="37" />
-    <g style="transform: scale(95%); transform-origin: center">
-      <path class="foreground"
-        d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
-      <path class="foreground"
-        d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
-    </g>
-  </g>
+  <rect width="180" height="180" rx="38" fill="#020617"/>
+  <circle cx="90" cy="90" r="58" fill="url(#streamGlow)" opacity="0.95"/>
+  <circle cx="90" cy="90" r="42" fill="#0f172a" stroke="#38bdf8" stroke-width="6"/>
+  <path d="M79 67.5C79 62.9 84 60 88 62.4L121.5 82.6C125.3 84.9 125.3 90.5 121.5 92.8L88 113C84 115.4 79 112.5 79 107.9V67.5Z" fill="#f8fafc"/>
+  <path d="M50 67C42.8 74.2 38.8 83.9 38.8 94C38.8 104.1 42.8 113.8 50 121" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+  <path d="M130 67C137.2 74.2 141.2 83.9 141.2 94C141.2 104.1 137.2 113.8 130 121" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+  <path d="M35 48C22.8 60.2 16 76.7 16 94C16 111.3 22.8 127.8 35 140" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+  <path d="M145 48C157.2 60.2 164 76.7 164 94C164 111.3 157.2 127.8 145 140" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="90" cy="90" r="72" stroke="white" stroke-opacity="0.08" stroke-width="2"/>
   <defs>
-    <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
-    </clipPath>
+    <radialGradient id="streamGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90 90) rotate(90) scale(58)">
+      <stop stop-color="#0ea5e9"/>
+      <stop offset="0.62" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </radialGradient>
   </defs>
 </svg>

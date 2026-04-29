@@ -25,7 +25,28 @@ export interface CalendarEvent {
   createdAt: string
   status: string
   streamType: string
+  slug?: string
+  userName?: string
+  userRole?: string
+  studioName?: string
+  studioCustomDomain?: string
+  publicUrl?: string
+  timezone?: string
+  templateId?: string
+  templateData?: Record<string, unknown>
+  currentViewers?: number
+  maxViewers?: number
   totalViews?: number
+  validityExpiresAt?: string
+  startedAt?: string
+  endedAt?: string
+  photographerContact?: {
+    name?: string
+    phone?: string
+    email?: string
+    website?: string
+  }
+  hasCrewPin?: boolean
 }
 
 interface FullCalendarProps {
@@ -38,10 +59,12 @@ interface FullCalendarProps {
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "live":
+    case "on_break":
       return "bg-red-500 text-white hover:bg-red-600"
     case "scheduled":
       return "bg-blue-500 text-white hover:bg-blue-600"
     case "completed":
+    case "ended":
       return "bg-emerald-500 text-white hover:bg-emerald-600"
     case "cancelled":
       return "bg-muted-foreground text-primary-foreground hover:bg-muted-foreground/80"
@@ -61,6 +84,8 @@ const getTypeIcon = (type: string) => {
       return <Youtube className="h-3 w-3 shrink-0" />
     case "hls":
       return <MonitorPlay className="h-3 w-3 shrink-0" />
+    case "pending":
+      return <Video className="h-3 w-3 shrink-0" />
     default:
       return <Globe className="h-3 w-3 shrink-0" />
   }

@@ -27,10 +27,12 @@ interface EventCalendarProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "live":
+    case "on_break":
       return "bg-red-500"
     case "scheduled":
       return "bg-yellow-500"
     case "completed":
+    case "ended":
       return "bg-green-500"
     case "cancelled":
       return "bg-gray-500"

@@ -281,6 +281,12 @@ export interface LiveEvent {
   isSuspended?: boolean
   slug?: string
   publicUrl?: string
+  photographerContact?: {
+    name?: string
+    phone?: string
+    email?: string
+    website?: string
+  }
   crewPinHash?: string
   hasCrewPin?: boolean
 }

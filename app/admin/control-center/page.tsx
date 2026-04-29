@@ -57,6 +57,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
+import { getEventPhotographerName } from "@/lib/event-photographer"
 import { formatEventScheduledDisplay } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -546,7 +547,10 @@ export default function AdminEventsPage() {
     return path
   }
 
-  const renderEventCard = (event: Record<string, unknown>) => (
+  const renderEventCard = (event: Record<string, unknown>) => {
+    const photographerName = getEventPhotographerName(event)
+
+    return (
     <div
       key={event.id as string}
       className="flex flex-col sm:flex-row items-start sm:items-center gap-3 gap-y-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
@@ -588,6 +592,11 @@ export default function AdminEventsPage() {
                     <span className="text-[10px] text-primary/80 font-semibold truncate leading-none">
                         {(event as any).userName || 'Unknown'} ({(event as any).userRole || 'user'})
                     </span>
+                    {photographerName && (
+                        <span className="text-[10px] text-muted-foreground truncate leading-none">
+                            Photographer: {photographerName}
+                        </span>
+                    )}
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
                         <span className="flex items-center gap-1">
                             <Eye className="h-2.5 w-2.5" />
@@ -635,6 +644,11 @@ export default function AdminEventsPage() {
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary/80 bg-primary/5 font-medium">
             {(event as any).userRole === 'studio' ? 'Studio' : 'Streamer'}: {(event as any).userName || 'Unknown'}
           </Badge>
+          {photographerName && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-muted-foreground/25 text-muted-foreground bg-muted/30 font-medium">
+              Photographer: {photographerName}
+            </Badge>
+          )}
         </div>
         <div className="flex flex-col gap-0.5 mt-0.5">
           <a
@@ -799,7 +813,8 @@ export default function AdminEventsPage() {
         </DropdownMenu>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <div className="space-y-6">

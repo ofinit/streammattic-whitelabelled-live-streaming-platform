@@ -18,6 +18,7 @@ interface EventTemplateBannerProps {
   headlineTypography?: {
     titleHeroRem: number
     googleTitleFont: string | null
+    titleFontColor: string | null
     fallbackFontClass: string
   }
 }
@@ -366,6 +367,7 @@ export function EventTemplateBanner({ event, templateId, templateData, headlineT
                   ...(headlineTypography.googleTitleFont
                     ? { fontFamily: `"${headlineTypography.googleTitleFont}", system-ui, sans-serif` }
                     : {}),
+                  ...(headlineTypography.titleFontColor ? { color: headlineTypography.titleFontColor } : {}),
                   ...heroTitleFontSizeStyle(headlineTypography.titleHeroRem),
                 }
               : undefined

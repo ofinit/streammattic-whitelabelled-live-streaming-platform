@@ -54,6 +54,7 @@ export type WeddingTraditionalHinduWatchViewProps = {
   heroBackdropUrl: string
   titleHeroRem: number
   googleTitleFont: string | null
+  titleFontColor: string | null
 }
 
 function useRevealOnScroll() {
@@ -100,6 +101,7 @@ export function WeddingTraditionalHinduWatchView({
   heroBackdropUrl,
   titleHeroRem,
   googleTitleFont,
+  titleFontColor,
 }: WeddingTraditionalHinduWatchViewProps) {
   const rootRef = useRevealOnScroll()
 
@@ -132,6 +134,7 @@ export function WeddingTraditionalHinduWatchView({
 
   const heroTitleStyle = {
     ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+    ...(titleFontColor ? { color: titleFontColor } : {}),
     ...heroTitleFontSizeStyle(titleHeroRem),
   }
 

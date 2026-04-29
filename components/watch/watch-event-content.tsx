@@ -50,6 +50,7 @@ import {
   heroTitleFontSizeStyle,
   heroTitleFontSizeStyleForTheHeart,
   pageTitleFontSizeStyle,
+  resolveTitleFontColor,
   resolveTitleGoogleFontFamily,
   resolveTitleHeroRem,
   titleFallbackFontClass,
@@ -1148,6 +1149,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const titleMeta = templateData as Record<string, unknown>
   const googleTitleFont = resolveTitleGoogleFontFamily(titleMeta)
   const titleHeroRem = resolveTitleHeroRem(titleMeta, watchTemplateId)
+  const titleFontColor = resolveTitleFontColor(titleMeta)
+  const titleFontColorStyle = titleFontColor ? { color: titleFontColor } : {}
 
   type EventDate = { id: string; label: string; scheduledAt: string; timezone: string; sortOrder: number }
   const eventDates: EventDate[] = Array.isArray(evRawTop.eventDates)
@@ -1223,6 +1226,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               className={cn("font-bold", titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
               style={{
                 ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...titleFontColorStyle,
                 ...pageTitleFontSizeStyle(titleHeroRem),
               }}
             >
@@ -2135,6 +2139,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 )}
                 style={{
                   ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                  ...titleFontColorStyle,
                   ...cardTitleFontSizeStyle(titleHeroRem),
                 }}
               >
@@ -2405,6 +2410,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     )}
                     style={{
                       ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                      ...titleFontColorStyle,
                       ...heroTitleFontSizeStyleForTheHeart(titleHeroRem),
                     }}
                   >
@@ -2883,6 +2889,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               )}
               style={{
                 ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...titleFontColorStyle,
                 ...heroTitleFontSizeStyle(titleHeroRem),
               }}
             >
@@ -3011,6 +3018,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       )}
                       style={{
                         ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...titleFontColorStyle,
                         ...cardTitleFontSizeStyle(titleHeroRem),
                       }}
                     >
@@ -3117,6 +3125,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               )}
               style={{
                 ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...titleFontColorStyle,
                 ...heroTitleFontSizeStyle(titleHeroRem),
               }}
             >
@@ -3236,6 +3245,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       )}
                       style={{
                         ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...titleFontColorStyle,
                         ...cardTitleFontSizeStyle(titleHeroRem),
                       }}
                     >
@@ -3404,6 +3414,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               )}
               style={{
                 ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...titleFontColorStyle,
                 ...heroTitleFontSizeStyle(titleHeroRem),
                 textShadow:
                   "0 0 2px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.88), 0 4px 24px rgba(0,0,0,0.72), 0 8px 44px rgba(0,0,0,0.5), 0 14px 64px rgba(0,0,0,0.32), 0 1px 0 rgba(0,0,0,0.55)",
@@ -3569,6 +3580,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       )}
                       style={{
                         ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...titleFontColorStyle,
                         ...cardTitleFontSizeStyle(titleHeroRem),
                       }}
                     >
@@ -3769,6 +3781,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               )}
               style={{
                 ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                ...titleFontColorStyle,
                 ...heroTitleFontSizeStyle(titleHeroRem),
               }}
             >
@@ -3920,6 +3933,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       style={{
                         color: nikahEmerald,
                         ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...titleFontColorStyle,
                         ...cardTitleFontSizeStyle(titleHeroRem),
                       }}
                     >
@@ -4113,6 +4127,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 )}
                 style={{
                   ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                  ...titleFontColorStyle,
                   textShadow: `3px 3px 0 ${bpPurple}, 6px 6px 0 ${bpPink}, 8px 8px 18px rgba(0,0,0,0.25)`,
                 }}
               >
@@ -4283,6 +4298,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                       className={cn("whitespace-pre-wrap text-[#2d3436]", titleFallbackFontClass(watchTemplateId, !!googleTitleFont))}
                       style={{
                         ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", system-ui, sans-serif` } : {}),
+                        ...titleFontColorStyle,
                         ...cardTitleFontSizeStyle(titleHeroRem),
                       }}
                     >
@@ -4373,7 +4389,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             {/* Always Italiana for couple display; title Google Font is not applied here (was replacing serif with sans). */}
             <h1
               className="mt-6 font-midnight-display font-normal leading-[1.08] tracking-tight"
-              style={heroTitleFontSizeStyle(titleHeroRem)}
+              style={{ ...heroTitleFontSizeStyle(titleHeroRem), ...titleFontColorStyle }}
             >
               {coupleParts && coupleParts.length === 2 ? (
                 <>
@@ -4570,7 +4586,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
             <h1
               className="mt-4 font-coastal-script font-normal leading-[1.1] tracking-tight text-[#006d77]"
-              style={heroTitleFontSizeStyle(titleHeroRem)}
+              style={{ ...heroTitleFontSizeStyle(titleHeroRem), ...titleFontColorStyle }}
             >
               {coupleParts && coupleParts.length === 2 ? (
                 <>
@@ -4872,7 +4888,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
             <h1
               className="mt-8 bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-200 bg-clip-text font-celestial-display font-semibold leading-[1.05] tracking-tight text-transparent"
-              style={heroTitleFontSizeStyle(titleHeroRem)}
+              style={{ ...heroTitleFontSizeStyle(titleHeroRem), ...titleFontColorStyle }}
             >
               {coupleParts && coupleParts.length === 2 ? (
                 <>
@@ -5046,6 +5062,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         heroBackdropUrl={hinduHeroBackdrop}
         titleHeroRem={titleHeroRem}
         googleTitleFont={googleTitleFont}
+        titleFontColor={titleFontColor}
       />
     )
   }
@@ -5095,6 +5112,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         photoGalleryUrls={photoGalleryUrls}
         titleHeroRem={titleHeroRem}
         googleTitleFont={googleTitleFont}
+        titleFontColor={titleFontColor}
         titleFallbackFontClass={titleFallbackFontClass(watchTemplateId, !!googleTitleFont)}
         heroTitleFontSizeStyle={heroTitleFontSizeStyle}
       />
@@ -5118,6 +5136,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             headlineTypography={{
               titleHeroRem,
               googleTitleFont,
+              titleFontColor,
               fallbackFontClass: titleFallbackFontClass(watchTemplateId, !!googleTitleFont),
             }}
           />

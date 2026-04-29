@@ -20,6 +20,7 @@ import {
   Lock,
 } from "lucide-react"
 import type { LiveEvent } from "@/lib/types"
+import { getEventPhotographerName } from "@/lib/event-photographer"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 
@@ -33,6 +34,7 @@ interface EventCardProps {
 
 export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCardProps) {
   const router = useRouter()
+  const photographerName = getEventPhotographerName(event)
 
   const openControlRoom = () => {
     router.push(`/streamer/control-center/${event.id}/stream`)
@@ -144,6 +146,12 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
         </div>
 
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{event.description || "No description"}</p>
+
+        {photographerName && (
+          <p className="text-xs font-medium text-muted-foreground mb-3">
+            Photographer: {photographerName}
+          </p>
+        )}
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           <div className="flex items-center gap-1">

@@ -69,6 +69,7 @@ import {
   TITLE_SIZE_SLIDER_MAX,
   TITLE_SIZE_SLIDER_MIN,
   TITLE_SIZE_SLIDER_STEP,
+  resolveTitleFontColor,
 } from "@/lib/event-title-typography"
 import { EventTitleFontPicker } from "@/components/events/event-title-font-picker"
 import { AiImagePickerDialog } from "@/components/media/ai-image-picker-dialog"
@@ -394,6 +395,51 @@ function TitleSizeSliderBlock({
         Each template has its own default size ({titleDefaultRem.toFixed(2)}rem). Match the thumb to that value to use the
         default.
       </p>
+    </div>
+  )
+}
+
+function TitleFontColorPickerBlock({
+  templateData,
+  setTemplateData,
+}: {
+  templateData: TemplateData
+  setTemplateData: Dispatch<SetStateAction<TemplateData>>
+}) {
+  const color = resolveTitleFontColor(templateData)
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground">Title color (watch page)</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          type="color"
+          aria-label="Title font color"
+          value={color ?? "#ffffff"}
+          onChange={(e) => {
+            const nextColor = e.target.value
+            setTemplateData((prev) => ({ ...prev, titleFontColor: nextColor }))
+          }}
+          className="h-9 w-14 cursor-pointer p-1"
+        />
+        {color && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 px-2 text-xs"
+            onClick={() => {
+              setTemplateData((prev) => {
+                const next = { ...prev }
+                delete next.titleFontColor
+                return next
+              })
+            }}
+          >
+            Reset
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
@@ -2080,23 +2126,29 @@ export function EventFormDialog({
                   </p>
                 )}
                 <div className="flex flex-col gap-4 pt-1">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Title font (watch page)</Label>
-                    <EventTitleFontPicker
-                      value={
-                        typeof templateData.titleGoogleFont === "string" && templateData.titleGoogleFont.trim()
-                          ? String(templateData.titleGoogleFont).trim()
-                          : null
-                      }
-                      onChange={(fam) => {
-                        setTemplateData((prev) => {
-                          const next = { ...prev }
-                          delete next.titleFontFamily
-                          if (!fam) delete next.titleGoogleFont
-                          else next.titleGoogleFont = fam
-                          return next
-                        })
-                      }}
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Title font (watch page)</Label>
+                      <EventTitleFontPicker
+                        value={
+                          typeof templateData.titleGoogleFont === "string" && templateData.titleGoogleFont.trim()
+                            ? String(templateData.titleGoogleFont).trim()
+                            : null
+                        }
+                        onChange={(fam) => {
+                          setTemplateData((prev) => {
+                            const next = { ...prev }
+                            delete next.titleFontFamily
+                            if (!fam) delete next.titleGoogleFont
+                            else next.titleGoogleFont = fam
+                            return next
+                          })
+                        }}
+                      />
+                    </div>
+                    <TitleFontColorPickerBlock
+                      templateData={templateData}
+                      setTemplateData={setTemplateData}
                     />
                   </div>
                   <TitleSizeSliderBlock
@@ -2106,7 +2158,8 @@ export function EventFormDialog({
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Optional. Font loads on the watch page only. Size default follows the selected template until you move the slider.
+                  Optional. Font and color apply on the watch page only. Size default follows the selected template until you
+                  move the slider.
                 </p>
               </div>
 

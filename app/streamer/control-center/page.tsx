@@ -62,6 +62,7 @@ import { useAuth } from "@/lib/auth-context"
 import { toastEventAnalyticsUrl } from "@/lib/toast-event-analytics-url"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
+import { getEventPhotographerName } from "@/lib/event-photographer"
 import { formatEventScheduledDisplay } from "@/lib/utils"
 import { toast } from "sonner"
 import { isSampleEvent } from "@/lib/event-sample"
@@ -607,6 +608,7 @@ export default function StreamerEventsPage() {
   const renderEventCard = (event: any) => {
     const sample = isSampleEvent(event as { isMock?: boolean; title?: string })
     const isSuspended = event.isSuspended === true
+    const photographerName = getEventPhotographerName(event)
     return (
     <div
       key={event.id as string}
@@ -662,6 +664,11 @@ export default function StreamerEventsPage() {
                     )}
                 </div>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
+                    {photographerName && (
+                        <span className="truncate">
+                            Photographer: {photographerName}
+                        </span>
+                    )}
                     <span className="flex items-center gap-1">
                         <Eye className="h-2.5 w-2.5 text-primary/70" />
                         {Number((event as any).viewers) || 0}
@@ -697,6 +704,11 @@ export default function StreamerEventsPage() {
            {event.templateData?.category && (
              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-primary/30 text-primary/80 bg-primary/5">
                {event.templateData.category as string}
+             </Badge>
+           )}
+           {photographerName && (
+             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0 border-muted-foreground/25 text-muted-foreground bg-muted/30">
+               Photographer: {photographerName}
              </Badge>
            )}
            {sample && (

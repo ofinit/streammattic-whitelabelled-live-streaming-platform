@@ -39,6 +39,7 @@ export type MemorialWatchViewProps = {
   photoGalleryUrls: string[]
   titleHeroRem: number
   googleTitleFont: string | null
+  titleFontColor: string | null
   titleFallbackFontClass: string
   heroTitleFontSizeStyle: (rem: number) => CSSProperties
 }
@@ -91,6 +92,7 @@ export function MemorialServiceWatchView({
   photoGalleryUrls,
   titleHeroRem,
   googleTitleFont,
+  titleFontColor,
   titleFallbackFontClass,
   heroTitleFontSizeStyle,
 }: MemorialWatchViewProps) {
@@ -178,6 +180,7 @@ export function MemorialServiceWatchView({
             )}
             style={{
               ...(googleTitleFont ? { fontFamily: `"${googleTitleFont}", ui-serif, Georgia, serif` } : {}),
+              ...(titleFontColor ? { color: titleFontColor } : {}),
               ...heroTitleFontSizeStyle(titleHeroRem),
             }}
           >

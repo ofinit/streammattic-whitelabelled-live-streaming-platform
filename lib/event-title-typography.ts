@@ -2,6 +2,7 @@
  * Event title typography for the public watch page (stored in template_data).
  * - titleGoogleFont: Google Font family name, or omit for template default stack
  * - titleFontSizeRem: optional hero base size in rem; omit to use template default
+ * - titleFontColor: optional hex color; omit to use the template default
  */
 
 export type { GoogleFontEntry } from "./google-title-fonts"
@@ -84,6 +85,7 @@ const PREVIEW_BASE = "https://fonts.googleapis.com/css2?"
 const PREVIEW_SUFFIX = "&display=swap"
 /** Max URL length to stay under browser limits when batching many families */
 const PREVIEW_URL_MAX = 1900
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
 function familyPreviewParam(family: string): string {
   const q = encodeURIComponent(family).replace(/%20/g, "+")
@@ -152,6 +154,13 @@ export function resolveTitleHeroRem(td: Record<string, unknown>, templateId: str
     default:
       return def
   }
+}
+
+export function resolveTitleFontColor(td: Record<string, unknown>): string | null {
+  const raw = td.titleFontColor
+  if (typeof raw !== "string") return null
+  const color = raw.trim()
+  return HEX_COLOR_RE.test(color) ? color : null
 }
 
 export function titleFallbackFontClass(templateId: string, hasGoogleFont: boolean): string {

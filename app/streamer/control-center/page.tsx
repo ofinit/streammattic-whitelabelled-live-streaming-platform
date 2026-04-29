@@ -230,7 +230,7 @@ export default function StreamerEventsPage() {
   const handleSeedMockTemplates = async () => {
     setSeedMockLoading(true)
     try {
-      const res = await fetch("/api/studio/events/seed-mock", {
+      const res = await fetch(`/api/studio/events/seed-mock?studioId=${encodeURIComponent(ownerId)}`, {
         method: "POST",
         credentials: "include",
       })
@@ -258,7 +258,7 @@ export default function StreamerEventsPage() {
   const handleClearMockTemplates = async () => {
     setClearMockLoading(true)
     try {
-      const res = await fetch("/api/studio/events/seed-mock", {
+      const res = await fetch(`/api/studio/events/seed-mock?studioId=${encodeURIComponent(ownerId)}`, {
         method: "DELETE",
         credentials: "include",
       })

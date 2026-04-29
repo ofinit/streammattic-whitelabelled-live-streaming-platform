@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { checkStudioSubscriptionActiveForEventManagement } from "@/lib/studio-subscription"
@@ -32,16 +32,54 @@ async function ensureUniqueSlug(
   }
 }
 
+async function resolveTargetUser(req: NextRequest, sql: ReturnType<typeof getDb>) {
+  const sessionUser = await getCurrentUser()
+  if (!sessionUser) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+
+  const requestedUserId = req.nextUrl.searchParams.get("studioId") || req.nextUrl.searchParams.get("userId")
+  const targetUserId =
+    sessionUser.role === "admin" && requestedUserId
+      ? requestedUserId
+      : (sessionUser.id as string)
+
+  if (sessionUser.role !== "admin" && requestedUserId && requestedUserId !== sessionUser.id) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+  }
+
+  const rows = await sql`
+    SELECT id, role
+    FROM users
+    WHERE id = ${targetUserId}
+    LIMIT 1
+  `
+  const targetUser = rows[0] as { id?: string; role?: string } | undefined
+  if (!targetUser?.id) {
+    return { error: NextResponse.json({ error: "User not found" }, { status: 404 }) }
+  }
+
+  return {
+    sessionUser,
+    targetUser: {
+      id: targetUser.id,
+      role: targetUser.role || "streamer",
+    },
+  }
+}
+
 /**
  * Creates one scheduled "pending stream" event per selectable template (no credits).
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const sql = getDb()
-    const sub = await checkStudioSubscriptionActiveForEventManagement(sql, user.id as string, user.role as string)
+    const resolved = await resolveTargetUser(req, sql)
+    if ("error" in resolved) return resolved.error
+
+    const sub = await checkStudioSubscriptionActiveForEventManagement(
+      sql,
+      resolved.targetUser.id,
+      resolved.targetUser.role,
+    )
     if (!sub.ok) {
       return NextResponse.json({ error: sub.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" }, { status: 403 })
     }
@@ -58,8 +96,8 @@ export async function POST() {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS crew_pin_hash TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
-    const userId = user.id as string
-    const isStudio = user.role === "studio"
+    const userId = resolved.targetUser.id
+    const isStudio = resolved.targetUser.role === "studio"
     const created: { id: string; title: string; templateId: string }[] = []
     const baseTime = Date.now()
 
@@ -127,20 +165,24 @@ export async function POST() {
 /**
  * Removes seeded sample events for the current user (flagged `is_mock` or legacy title/description match).
  */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const sql = getDb()
-    const sub = await checkStudioSubscriptionActiveForEventManagement(sql, user.id as string, user.role as string)
+    const resolved = await resolveTargetUser(req, sql)
+    if ("error" in resolved) return resolved.error
+
+    const sub = await checkStudioSubscriptionActiveForEventManagement(
+      sql,
+      resolved.targetUser.id,
+      resolved.targetUser.role,
+    )
     if (!sub.ok) {
       return NextResponse.json({ error: sub.message, code: "STUDIO_SUBSCRIPTION_EXPIRED" }, { status: 403 })
     }
 
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
 
-    const userId = user.id as string
+    const userId = resolved.targetUser.id
     const legacyDesc = "%Edit the event to choose a stream type and go live.%"
     const rows = await sql`
       DELETE FROM events

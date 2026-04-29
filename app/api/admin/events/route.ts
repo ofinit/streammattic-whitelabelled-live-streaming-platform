@@ -15,7 +15,10 @@ export async function GET(req: Request) {
     
     const domainSubquery = sql.unsafe(`(
       SELECT domain FROM domains
-      WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true
+      WHERE user_id = COALESCE(e.studio_id, e.user_id, u.id)
+        AND verification_status IN ('verified', 'pending')
+        AND is_primary = true
+      ORDER BY CASE WHEN verification_status = 'verified' THEN 0 ELSE 1 END, created_at DESC
       LIMIT 1
     ) AS studio_custom_domain`)
 

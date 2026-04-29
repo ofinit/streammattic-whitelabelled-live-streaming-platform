@@ -267,7 +267,7 @@ export default function StudioEventsPage() {
     }
     setSeedMockLoading(true)
     try {
-      const res = await fetch("/api/studio/events/seed-mock", {
+      const res = await fetch(`/api/studio/events/seed-mock?studioId=${encodeURIComponent(studioId)}`, {
         method: "POST",
         credentials: "include",
       })
@@ -297,7 +297,7 @@ export default function StudioEventsPage() {
     }
     setClearMockLoading(true)
     try {
-      const res = await fetch("/api/studio/events/seed-mock", {
+      const res = await fetch(`/api/studio/events/seed-mock?studioId=${encodeURIComponent(studioId)}`, {
         method: "DELETE",
         credentials: "include",
       })

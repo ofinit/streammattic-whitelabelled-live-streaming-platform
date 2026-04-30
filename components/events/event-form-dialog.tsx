@@ -88,6 +88,7 @@ import {
   thirdPartyEmbedCodeContainsYouTube,
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
 } from "@/lib/third-party-embed-validation"
+import { datetimeLocalToUtcIso, utcIsoToDatetimeLocal } from "@/lib/datetime-local-timezone"
 import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
 
@@ -691,51 +692,6 @@ export function EventFormDialog({
   const [creditInfo, setCreditInfo] = useState<{ need: number; have: number } | null>(null)
   const creditCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Helper: convert local wall-clock + timezone to UTC ISO
-  const localToUtc = (localDt: string, tz: string): string => {
-    const [datePart, timePart] = localDt.split("T")
-    const [y, mo, d] = datePart.split("-").map(Number)
-    const [h, mi] = (timePart || "00:00").split(":").map(Number)
-    const fmt = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
-    })
-    const candidate = new Date(Date.UTC(y, mo - 1, d, h, mi, 0))
-    const parts = fmt.formatToParts(candidate)
-    const p = Object.fromEntries(parts.filter(x => x.type !== "literal").map(x => [x.type, x.value]))
-    const tzHour = Number(p.hour === "24" ? 0 : p.hour)
-    const diffMin = (h - tzHour) * 60 + (mi - Number(p.minute)) + (d - Number(p.day)) * 24 * 60
-    candidate.setUTCMinutes(candidate.getUTCMinutes() + diffMin)
-    return candidate.toISOString()
-  }
-
-  // Helper: convert UTC/ISO timestamp from DB into a datetime-local value for a specific timezone.
-  const utcToLocalInput = (utcIso: string, tz: string): string => {
-    const raw = String(utcIso || "").trim()
-    if (!raw) return ""
-    const parsed = new Date(raw)
-    if (Number.isNaN(parsed.getTime())) {
-      return raw.length >= 16 ? raw.slice(0, 16) : ""
-    }
-    const fmt = new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    })
-    const parts = fmt.formatToParts(parsed)
-    const p = Object.fromEntries(parts.filter((x) => x.type !== "literal").map((x) => [x.type, x.value]))
-    const hour = p.hour === "24" ? "00" : String(p.hour || "00")
-    const year = String(p.year || "0000")
-    const month = String(p.month || "01")
-    const day = String(p.day || "01")
-    const minute = String(p.minute || "00")
-    return `${year}-${month}-${day}T${hour}:${minute}`
-  }
-
   const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
   function toSlug(text: string) {
@@ -1289,7 +1245,7 @@ export function EventFormDialog({
           streamType: (event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) as StreamType,
           youtubeUrl: event.youtubeUrl || "",
           embedCode: event.embedCode || "",
-          scheduledAt: event.scheduledAt ? utcToLocalInput(String(event.scheduledAt), eventTimezone) : "",
+          scheduledAt: event.scheduledAt ? utcIsoToDatetimeLocal(String(event.scheduledAt), eventTimezone) : "",
           isPasswordProtected: event.isPasswordProtected,
           password: event.password || "",
           captureVisitorData: coerceEventBooleanFlag(
@@ -1875,7 +1831,7 @@ export function EventFormDialog({
     setFieldErrors({})
 
     // Convert local datetime string to UTC ISO using the selected timezone
-    const scheduledAtUtc = formData.scheduledAt ? localToUtc(formData.scheduledAt, timezone) : null
+    const scheduledAtUtc = formData.scheduledAt ? datetimeLocalToUtcIso(formData.scheduledAt, timezone) : null
 
     // Convert additional dates to UTC (each uses its own timezone if set)
     const additionalDatesUtc = hasConcreteStreamType
@@ -1885,7 +1841,7 @@ export function EventFormDialog({
             const tz = d.timezone ?? timezone
             return {
               label: d.label || `Day ${i + 2}`,
-              scheduledAt: localToUtc(d.scheduledAt, tz),
+              scheduledAt: datetimeLocalToUtcIso(d.scheduledAt, tz),
               timezone: tz,
             }
           })

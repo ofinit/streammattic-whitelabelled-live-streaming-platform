@@ -39,15 +39,18 @@ export const POST = withRole(["admin"], async (_user, request) => {
 
   try {
     const baseUrl = buildSrsApiBaseUrl(input, settings)
-    const res = await fetch(buildSrsApiUrl(baseUrl, "/api/v1/summaries"), {
+    const testUrl = buildSrsApiUrl(baseUrl, "/api/v1/summaries")
+    const res = await fetch(testUrl, {
       headers,
       cache: "no-store",
     })
     if (!res.ok) {
-      return jsonOk({ ok: false, status: res.status, message: `SRS API returned ${res.status}` }, 503)
+      return jsonOk({ ok: false, status: res.status, url: testUrl, message: `SRS API returned ${res.status} for ${testUrl}` }, 503)
     }
-    return jsonOk({ ok: true, status: res.status, message: "SRS API is reachable" })
+    return jsonOk({ ok: true, status: res.status, url: testUrl, message: `SRS API is reachable at ${testUrl}` })
   } catch (error) {
-    return jsonOk({ ok: false, message: (error as Error).message }, 503)
+    const baseUrl = buildSrsApiBaseUrl(input, settings)
+    const testUrl = buildSrsApiUrl(baseUrl, "/api/v1/summaries")
+    return jsonOk({ ok: false, url: testUrl, message: `${(error as Error).message} while fetching ${testUrl}` }, 503)
   }
 })

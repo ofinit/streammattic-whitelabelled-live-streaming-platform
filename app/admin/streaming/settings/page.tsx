@@ -28,6 +28,51 @@ import type { TranscodingProfile, StreamingBackendType } from "@/lib/types"
 import { BACKEND_INFO } from "@/lib/streaming"
 import type { StreamingBackendInfo } from "@/lib/streaming"
 
+type ServerConfig = {
+  name: string
+  host: string
+  rtmpPort: number
+  httpPort: number | ""
+  apiKey: string
+  rtmpBaseUrl: string
+  playbackBaseUrl: string
+}
+
+function apiUrlFromConfig(config: ServerConfig, backend: StreamingBackendType) {
+  const host = config.host.trim().replace(/\/$/, "")
+  if (!host) return ""
+  if (/^https?:\/\//i.test(host)) return host
+
+  const port = config.httpPort
+  if (backend === "srs" && port === "") return `https://${host}/api`
+  return `http://${host}:${port || BACKEND_INFO[backend].defaultPorts.api}`
+}
+
+function configFromSavedSettings(s: Record<string, any>): ServerConfig {
+  let host = s.host || "rtmplive.in"
+  let httpPort: number | "" = s.httpPort || 1985
+
+  if (typeof s.apiUrl === "string" && /^https?:\/\//i.test(s.apiUrl)) {
+    try {
+      const url = new URL(s.apiUrl)
+      host = url.hostname
+      httpPort = url.port ? Number(url.port) : ""
+    } catch {
+      // Keep the saved host/port fallback if apiUrl is malformed.
+    }
+  }
+
+  return {
+    name: s.serverName || "Primary SRS Server",
+    host,
+    rtmpPort: s.rtmpPort || 1935,
+    httpPort,
+    apiKey: s.apiKey || "",
+    rtmpBaseUrl: s.rtmpBaseUrl || "rtmp://rtmplive.in/live",
+    playbackBaseUrl: s.playbackBaseUrl || "https://rtmplive.in/live",
+  }
+}
+
 export default function StreamingSettingsPage() {
   const router = useRouter()
 
@@ -36,7 +81,7 @@ export default function StreamingSettingsPage() {
   const backendInfo: StreamingBackendInfo = BACKEND_INFO[activeBackend]
 
   // Server connection - defaults from active backend
-  const [serverConfig, setServerConfig] = useState(() => ({ ...backendInfo.defaultConfig }))
+  const [serverConfig, setServerConfig] = useState<ServerConfig>(() => ({ ...backendInfo.defaultConfig }))
 
   // Reset server config when backend changes
   const handleBackendChange = (key: StreamingBackendType) => {
@@ -106,6 +151,33 @@ export default function StreamingSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("connected")
 
+  const buildSettingsPayload = () => {
+    const apiUrl = apiUrlFromConfig(serverConfig, activeBackend)
+
+    return {
+      backendType: activeBackend,
+      enabled: activeBackend === "srs",
+      serverName: serverConfig.name,
+      host: serverConfig.host,
+      apiUrl,
+      apiKey: serverConfig.apiKey,
+      rtmpPort: serverConfig.rtmpPort,
+      httpPort: serverConfig.httpPort || backendInfo.defaultPorts.api,
+      rtmpBaseUrl: serverConfig.rtmpBaseUrl,
+      playbackBaseUrl: serverConfig.playbackBaseUrl,
+      hookSecret: srsRuntime.hookSecret,
+      workerSecret: srsRuntime.workerSecret,
+      tokenExpirySeconds: security.tokenExpiry,
+      sessionResumeSeconds: srsRuntime.sessionResumeSeconds,
+      mergeInactivitySeconds: srsRuntime.mergeInactivitySeconds,
+      creditBlockMinutes: srsRuntime.creditBlockMinutes,
+      recordingsRoot: srsRuntime.recordingsRoot,
+      liveRecordingsDir: srsRuntime.liveRecordingsDir,
+      finalRecordingsDir: srsRuntime.finalRecordingsDir,
+      publicRecordingsBaseUrl: srsRuntime.publicRecordingsBaseUrl,
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
     async function loadSettings() {
@@ -116,15 +188,7 @@ export default function StreamingSettingsPage() {
         const s = data.settings
         if (!s || cancelled) return
         setActiveBackend(s.backendType || "srs")
-        setServerConfig({
-          name: s.serverName || "Primary SRS Server",
-          host: s.host || "rtmplive.in",
-          rtmpPort: s.rtmpPort || 1935,
-          httpPort: s.httpPort || 1985,
-          apiKey: s.apiKey || "",
-          rtmpBaseUrl: s.rtmpBaseUrl || "rtmp://rtmplive.in/live",
-          playbackBaseUrl: s.playbackBaseUrl || "https://rtmplive.in/live",
-        })
+        setServerConfig(configFromSavedSettings(s))
         setSecurity((prev) => ({
           ...prev,
           requireStreamAuth: true,
@@ -161,7 +225,11 @@ export default function StreamingSettingsPage() {
     setIsTesting(true)
     setConnectionStatus("testing")
     try {
-      const res = await fetch("/api/admin/streaming/test", { method: "POST" })
+      const res = await fetch("/api/admin/streaming/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: buildSettingsPayload() }),
+      })
       const data = await res.json().catch(() => ({}))
       setConnectionStatus(res.ok && data.ok ? "connected" : "disconnected")
       toast({
@@ -177,35 +245,11 @@ export default function StreamingSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const apiUrl = serverConfig.host
-        ? `http://${serverConfig.host.replace(/^https?:\/\//, "").replace(/\/$/, "")}:${serverConfig.httpPort}`
-        : ""
       const res = await fetch("/api/admin/streaming/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          settings: {
-            backendType: activeBackend,
-            enabled: activeBackend === "srs",
-            serverName: serverConfig.name,
-            host: serverConfig.host,
-            apiUrl,
-            apiKey: serverConfig.apiKey,
-            rtmpPort: serverConfig.rtmpPort,
-            httpPort: serverConfig.httpPort,
-            rtmpBaseUrl: serverConfig.rtmpBaseUrl,
-            playbackBaseUrl: serverConfig.playbackBaseUrl,
-            hookSecret: srsRuntime.hookSecret,
-            workerSecret: srsRuntime.workerSecret,
-            tokenExpirySeconds: security.tokenExpiry,
-            sessionResumeSeconds: srsRuntime.sessionResumeSeconds,
-            mergeInactivitySeconds: srsRuntime.mergeInactivitySeconds,
-            creditBlockMinutes: srsRuntime.creditBlockMinutes,
-            recordingsRoot: srsRuntime.recordingsRoot,
-            liveRecordingsDir: srsRuntime.liveRecordingsDir,
-            finalRecordingsDir: srsRuntime.finalRecordingsDir,
-            publicRecordingsBaseUrl: srsRuntime.publicRecordingsBaseUrl,
-          },
+          settings: buildSettingsPayload(),
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -403,10 +447,14 @@ export default function StreamingSettingsPage() {
               <Label htmlFor="http-port">HTTP API Port <HelpTip text={backendInfo.helpTexts.httpPort} /></Label>
               <Input
                 id="http-port"
-                type="number"
+                type="text"
                 value={serverConfig.httpPort}
-                onChange={(e) => setServerConfig({ ...serverConfig, httpPort: parseInt(e.target.value) || 8082 })}
+                onChange={(e) => setServerConfig({
+                  ...serverConfig,
+                  httpPort: e.target.value.trim() === "" ? "" : parseInt(e.target.value, 10) || backendInfo.defaultPorts.api,
+                })}
                 className="bg-secondary border-0"
+                placeholder={activeBackend === "srs" ? "Leave empty for https://host/api" : String(backendInfo.defaultPorts.api)}
               />
             </div>
             <div className="space-y-2">

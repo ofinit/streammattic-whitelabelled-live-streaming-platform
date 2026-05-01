@@ -50,7 +50,7 @@ export const DEFAULT_SRS_SETTINGS: SrsSettings = {
   enabled: true,
   serverName: "Primary SRS Server",
   host: "rtmplive.in",
-  apiUrl: "http://rtmplive.in:1985",
+  apiUrl: "https://rtmplive.in/api",
   apiKey: "",
   rtmpPort: 1935,
   httpPort: 1985,

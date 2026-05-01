@@ -239,11 +239,11 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       playbackBaseUrl: "",
     },
     helpTexts: {
-      apiHost: "The hostname or IP of your SRS server. SRS exposes its HTTP API on port 1985 by default. Verify by visiting http://{your-server}:1985/api/v1/versions in a browser.",
+      apiHost: "The hostname or HTTPS API base URL for your SRS server. If the HTTP API is proxied through Nginx, enter the host and leave the API port empty to use https://{host}/api.",
       apiHostLink: "https://ossrs.io/lts/en-us/docs/v5/doc/getting-started",
       apiHostLinkLabel: "SRS Getting Started",
       rtmpPort: "Default RTMP port is 1935. Change in srs.conf under 'listen'. Only modify if you run multiple instances or have port conflicts.",
-      httpPort: "SRS HTTP API port. Default is 1985. Change in srs.conf under 'http_api { listen }'. This port is used for the management API, not HLS delivery.",
+      httpPort: "SRS HTTP API port. Default is 1985 for direct access. Leave empty when the API is proxied through HTTPS, for example https://rtmplive.in/api.",
       apiKey: "SRS does not require an API key by default. If you've configured HTTP API authentication via 'http_api { auth }' in srs.conf, enter the token here. Otherwise, leave empty.",
       rtmpUrl: "The base URL encoders use to push RTMP streams. Format: rtmp://{your-server}/live. The '/live' is the SRS vhost application. Defined in srs.conf under 'vhost __defaultVhost__ { }'.",
       rtmpUrlLink: "https://ossrs.io/lts/en-us/docs/v5/doc/rtmp",

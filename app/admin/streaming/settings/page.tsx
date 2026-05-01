@@ -50,13 +50,17 @@ function apiUrlFromConfig(config: ServerConfig, backend: StreamingBackendType) {
 
 function configFromSavedSettings(s: Record<string, any>): ServerConfig {
   let host = s.host || "rtmplive.in"
-  let httpPort: number | "" = s.httpPort || 1985
+  let httpPort: number | "" = s.httpPort === "" ? "" : s.httpPort || 1985
 
   if (typeof s.apiUrl === "string" && /^https?:\/\//i.test(s.apiUrl)) {
     try {
       const url = new URL(s.apiUrl)
       host = url.hostname
-      httpPort = url.port ? Number(url.port) : ""
+      if (url.port) {
+        httpPort = Number(url.port)
+      } else if (url.protocol === "https:" && url.pathname.replace(/\/+$/, "") === "/api") {
+        httpPort = ""
+      }
     } catch {
       // Keep the saved host/port fallback if apiUrl is malformed.
     }
@@ -177,6 +181,12 @@ export default function StreamingSettingsPage() {
       publicRecordingsBaseUrl: srsRuntime.publicRecordingsBaseUrl,
     }
   }
+
+  const srsApiBaseUrl = apiUrlFromConfig(serverConfig, activeBackend).replace(/\/+$/, "")
+  const srsTestUrl =
+    activeBackend === "srs" && srsApiBaseUrl
+      ? `${srsApiBaseUrl}${srsApiBaseUrl.endsWith("/api") ? "/v1/summaries" : "/api/v1/summaries"}`
+      : ""
 
   useEffect(() => {
     let cancelled = false
@@ -456,6 +466,9 @@ export default function StreamingSettingsPage() {
                 className="bg-secondary border-0"
                 placeholder={activeBackend === "srs" ? "Leave empty for https://host/api" : String(backendInfo.defaultPorts.api)}
               />
+              {srsTestUrl ? (
+                <p className="text-xs text-muted-foreground">Test URL: {srsTestUrl}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="api-key">API Key <HelpTip text={backendInfo.helpTexts.apiKey} link={backendInfo.helpTexts.apiKeyLink} linkLabel={backendInfo.helpTexts.apiKeyLinkLabel} /></Label>

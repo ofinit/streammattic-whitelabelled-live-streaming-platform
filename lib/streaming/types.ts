@@ -47,7 +47,7 @@ export interface StreamingBackendInfo {
     name: string
     host: string
     rtmpPort: number
-    httpPort: number
+    httpPort: number | ""
     apiKey: string
     rtmpBaseUrl: string
     playbackBaseUrl: string
@@ -233,7 +233,7 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       name: "Primary SRS Server",
       host: "",
       rtmpPort: 1935,
-      httpPort: 1985,
+      httpPort: "",
       apiKey: "",
       rtmpBaseUrl: "",
       playbackBaseUrl: "",

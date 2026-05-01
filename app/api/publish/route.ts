@@ -15,9 +15,12 @@ async function isAuthorized(request: Request): Promise<boolean> {
 
 export async function POST(request: Request) {
   if (!(await isAuthorized(request))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    return NextResponse.json({ code: 403, error: "Forbidden" }, { status: 403 })
   }
   const payload = (await request.json().catch(() => ({}))) as SrsHookPayload
   const result = await handleSrsPublish(payload)
-  return NextResponse.json({ ok: result.ok, reason: result.reason }, { status: result.status })
+  if (result.ok) {
+    return NextResponse.json({ code: 0, ok: true, reason: result.reason }, { status: 200 })
+  }
+  return NextResponse.json({ code: result.status || 403, ok: false, reason: result.reason }, { status: result.status })
 }

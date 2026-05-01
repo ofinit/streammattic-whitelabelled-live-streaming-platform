@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto"
 import { getDb } from "@/lib/db"
 import { decrypt, encrypt } from "@/lib/encryption"
-import { buildSrsApiUrl } from "@/lib/srs-api-url"
+import { fetchSrsApiJson } from "@/lib/srs-api-url"
 import type { StreamingBackendType } from "@/lib/streaming/types"
 
 export const SRS_SETTINGS_KEY = "srs_streaming_settings"
@@ -16,7 +16,7 @@ export type SrsSettings = {
   apiUrl: string
   apiKey: string
   rtmpPort: number
-  httpPort: number
+  httpPort: number | ""
   rtmpBaseUrl: string
   playbackBaseUrl: string
   hookSecret: string
@@ -54,7 +54,7 @@ export const DEFAULT_SRS_SETTINGS: SrsSettings = {
   apiUrl: "https://rtmplive.in/api",
   apiKey: "",
   rtmpPort: 1935,
-  httpPort: 1985,
+  httpPort: "",
   rtmpBaseUrl: "rtmp://rtmplive.in/live",
   playbackBaseUrl: "https://rtmplive.in/live",
   hookSecret: "",
@@ -78,6 +78,13 @@ function numberOr(value: unknown, fallback: number, min = 0): number {
   return Number.isFinite(n) && n >= min ? Math.floor(n) : fallback
 }
 
+function portOr(value: unknown, fallback: number | ""): number | "" {
+  if (value === "") return ""
+  if (value === undefined || value === null) return fallback
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback
+}
+
 function decryptSecret(value: unknown): string {
   return typeof value === "string" && value ? decrypt(value) || "" : ""
 }
@@ -93,7 +100,7 @@ function normalizeStored(raw: unknown): SrsSettings {
     apiUrl: stringOr(data.apiUrl, defaults.apiUrl),
     apiKey: decryptSecret(data.apiKeyEncrypted),
     rtmpPort: numberOr(data.rtmpPort, defaults.rtmpPort, 1),
-    httpPort: numberOr(data.httpPort, defaults.httpPort, 1),
+    httpPort: portOr(data.httpPort, defaults.httpPort),
     rtmpBaseUrl: stringOr(data.rtmpBaseUrl, defaults.rtmpBaseUrl).replace(/\/$/, ""),
     playbackBaseUrl: stringOr(data.playbackBaseUrl, defaults.playbackBaseUrl).replace(/\/$/, ""),
     hookSecret: decryptSecret(data.hookSecretEncrypted),
@@ -163,7 +170,7 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
         ? input.apiKey.trim()
         : current.apiKey,
     rtmpPort: numberOr(input.rtmpPort, current.rtmpPort, 1),
-    httpPort: numberOr(input.httpPort, current.httpPort, 1),
+    httpPort: portOr(input.httpPort, current.httpPort),
     rtmpBaseUrl: stringOr(input.rtmpBaseUrl, current.rtmpBaseUrl).replace(/\/$/, ""),
     playbackBaseUrl: stringOr(input.playbackBaseUrl, current.playbackBaseUrl).replace(/\/$/, ""),
     hookSecret:
@@ -196,21 +203,19 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
 export async function testSrsConnection(settings?: SrsSettings): Promise<{
   ok: boolean
   status?: number
+  url?: string
+  usedFallback?: boolean
+  fallbackAddress?: string
   message: string
 }> {
   const resolvedSettings = settings ?? await getSrsSettings()
-  try {
-    const headers: Record<string, string> = { Accept: "application/json" }
-    if (resolvedSettings.apiKey) headers.Authorization = `Bearer ${resolvedSettings.apiKey}`
-    const res = await fetch(buildSrsApiUrl(resolvedSettings.apiUrl, "/api/v1/summaries"), {
-      headers,
-      cache: "no-store",
-    })
-    if (!res.ok) {
-      return { ok: false, status: res.status, message: `SRS API returned ${res.status}` }
-    }
-    return { ok: true, status: res.status, message: "SRS API is reachable" }
-  } catch (error) {
-    return { ok: false, message: (error as Error).message }
+  const result = await fetchSrsApiJson(resolvedSettings, "/api/v1/summaries")
+  return {
+    ok: result.ok,
+    status: result.status,
+    url: result.url,
+    usedFallback: result.usedFallback,
+    fallbackAddress: result.fallbackAddress,
+    message: result.message,
   }
 }

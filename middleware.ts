@@ -87,6 +87,9 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/health") ||
     /** Public event payload for watch pages + generateMetadata (no cookies on internal fetch) */
     pathname.startsWith("/api/watch/") ||
+    /** SRS RTMP hooks are called by the streaming server without browser cookies. */
+    pathname === "/api/publish" ||
+    pathname === "/api/unpublish" ||
     /** Host-based studio / platform branding lookup (login page, marketing — no session yet) */
     pathname.startsWith("/api/branding") ||
     /**

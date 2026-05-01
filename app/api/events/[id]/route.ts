@@ -1,6 +1,7 @@
 import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
+import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
 
 export const GET = withAuth(async (user, request) => {
   const url = new URL(request.url)
@@ -66,6 +67,9 @@ export const DELETE = withAuth(async (user, request) => {
     return jsonError("Forbidden", 403)
   }
 
+  await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
+    console.error("[events DELETE] Failed to queue SRS DVR deletion:", err)
+  })
   await sql`DELETE FROM events WHERE id = ${id}`
   await insertDeletedEventLog(sql, {
     eventId: id,

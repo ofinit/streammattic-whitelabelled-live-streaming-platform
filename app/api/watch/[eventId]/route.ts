@@ -64,10 +64,19 @@ export async function GET(
                )
                FROM event_dates ed
                WHERE ed.event_id = e.id
-             ) AS event_dates
+             ) AS event_dates,
+             sr.public_url AS final_recording_url,
+             sr.output_path AS final_recording_path
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
       LEFT JOIN studio_branding sb ON sb.user_id = u.id
+      LEFT JOIN LATERAL (
+        SELECT public_url, output_path
+        FROM stream_recordings
+        WHERE event_id = e.id AND status = 'merged'
+        ORDER BY merged_at DESC
+        LIMIT 1
+      ) sr ON true
       WHERE e.id::text = $1 OR e.slug = $1`,
       [eventId],
     )

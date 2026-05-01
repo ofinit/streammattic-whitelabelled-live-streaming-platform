@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { verifyCrewPin } from "@/lib/crew-pin"
+import { buildRtmpStreamId, ensureRtmpTokenForStream, extractTokenFromSrsParam, hashRtmpToken } from "@/lib/rtmp-auth"
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function POST(
 
     const sql = getDb()
     const rows = await sql`
-      SELECT e.id, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key
+      SELECT e.id, e.user_id, e.slug, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key
       FROM events e
       WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
     `
@@ -49,6 +50,36 @@ export async function POST(
         }
       } catch {
         // table may not exist
+      }
+    }
+
+    if (streamType === "rtmp") {
+      const currentKey = streamKey || ""
+      const canonicalStreamId = buildRtmpStreamId((row.slug as string | null) || (row.id as string))
+      const streamId = currentKey.split("?")[0] || canonicalStreamId
+      const currentToken = extractTokenFromSrsParam(currentKey.includes("?") ? currentKey.slice(currentKey.indexOf("?")) : "")
+      const tokenHash = currentToken ? hashRtmpToken(currentToken) : ""
+      const tokenRows = tokenHash
+        ? await sql`
+            SELECT id FROM stream_tokens
+            WHERE stream_id = ${streamId}
+              AND token_hash = ${tokenHash}
+              AND is_active = true
+              AND expires_at > NOW()
+            LIMIT 1
+          `
+        : []
+      if (tokenRows.length === 0) {
+        const generated = await ensureRtmpTokenForStream({
+          sql,
+          userId: row.user_id as string,
+          eventId: row.id as string,
+          streamId: canonicalStreamId,
+          currentStreamKey: currentKey,
+          updateCredentialTarget: true,
+        })
+        rtmpUrl = generated.rtmpUrl
+        streamKey = generated.streamKey
       }
     }
 

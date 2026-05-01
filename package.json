@@ -16,7 +16,8 @@
     "db:setup-local": "node --env-file=.env.local scripts/setup-local-from-backup.js",
     "docs:generate": "node scripts/generate-dev-handbook.js",
     "seed:admin": "node scripts/seed-production-admin.js",
-    "hash:password": "node scripts/print-password-hash.js"
+    "hash:password": "node scripts/print-password-hash.js",
+    "srs:merge-worker": "node scripts/srs-merge-worker.js"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1032.0",

@@ -3,6 +3,7 @@ import path from "path"
 import crypto from "crypto"
 import { getDb } from "@/lib/db"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
+import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 
@@ -80,6 +81,13 @@ export async function runEventCleanupTask() {
           console.error(`[Cleanup Service] Failed to delete file: ${filepath}`, err.message)
         }
       }
+
+      await enqueueSrsRecordingDeletion(sql, {
+        eventId: event.id as string,
+        reason: "expired",
+      }).catch((err) => {
+        console.error(`[Cleanup Service] Failed to queue SRS DVR deletion for event ${event.id}:`, err)
+      })
 
       // 4. Break optional FK links (orders/refund_requests do not use ON DELETE CASCADE)
       await sql`UPDATE orders SET event_id = NULL WHERE event_id = ${event.id as string}`

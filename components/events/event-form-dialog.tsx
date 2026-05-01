@@ -555,7 +555,7 @@ export function EventFormDialog({
     broadcastId?: string
     eventTitle?: string
   } | null>(null)
-  const [copied, setCopied] = useState<"rtmp" | "key" | null>(null)
+  const [copied, setCopied] = useState<"rtmp" | "key" | "playback" | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
 
   // YouTube broadcast credentials (real FMS/stream key from youtube_broadcasts when editing)
@@ -590,7 +590,7 @@ export function EventFormDialog({
     simulcastPricing?: SimulcastPricing
   }>(
     open ? "/api/credits/pricing" : null,
-    (url) =>
+    (url: string) =>
       fetch(url).then((r) => {
         if (!r.ok) throw new Error("Failed to load pricing")
         return r.json()
@@ -598,6 +598,10 @@ export function EventFormDialog({
   )
   const streamTypePricing = creditPricingJson?.streamTypePricing
   const simulcastPricingFromApi = creditPricingJson?.simulcastPricing
+  const { data: streamingBackendJson } = useSWR<{ settings?: { rtmpBaseUrl?: string; playbackBaseUrl?: string } }>(
+    open ? "/api/streaming/backend-info" : null,
+    (url: string) => fetch(url).then((r) => r.json()),
+  )
 
   const [timezone, setTimezone] = useState("Asia/Kolkata")
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
@@ -1663,11 +1667,34 @@ export function EventFormDialog({
   const hasCredentials = formData.rtmpUrl && formData.streamKey
   const showRtmpCredentials = hasCredentials
 
-  const copyToClipboard = (text: string, type: "rtmp" | "key") => {
+  const copyToClipboard = (text: string, type: "rtmp" | "key" | "playback") => {
     navigator.clipboard.writeText(text)
     setCopied(type)
     setTimeout(() => setCopied(null), 2000)
   }
+
+  const rtmpBaseUrl = streamingBackendJson?.settings?.rtmpBaseUrl || "rtmp://rtmplive.in/live"
+  const playbackBaseUrl = streamingBackendJson?.settings?.playbackBaseUrl || "https://rtmplive.in/live"
+  const rtmpStreamId = slug.trim().toLowerCase()
+  const autoRtmpStreamKey =
+    formData.streamType === "rtmp"
+      ? formData.streamKey && formData.streamKey.startsWith(`${rtmpStreamId}?token=`)
+        ? formData.streamKey
+        : rtmpStreamId
+      : formData.streamKey
+  const autoRtmpPlaybackUrl = rtmpStreamId ? `${playbackBaseUrl.replace(/\/$/, "")}/${rtmpStreamId}.m3u8` : ""
+
+  useEffect(() => {
+    if (!open || formData.streamType !== "rtmp") return
+    setFormData((prev) => {
+      const nextStreamKey =
+        prev.streamKey && prev.streamKey.startsWith(`${rtmpStreamId}?token=`)
+          ? prev.streamKey
+          : rtmpStreamId
+      if (prev.rtmpUrl === rtmpBaseUrl && prev.streamKey === nextStreamKey) return prev
+      return { ...prev, rtmpUrl: rtmpBaseUrl, streamKey: nextStreamKey }
+    })
+  }, [open, formData.streamType, rtmpBaseUrl, rtmpStreamId])
 
   // Credit check effect: fires when additionalDates or primary date changes
   useEffect(() => {
@@ -3054,17 +3081,24 @@ export function EventFormDialog({
                     <Input
                       id="fms-url"
                       value={formData.rtmpUrl || ""}
+                      readOnly={formData.streamType === "rtmp"}
                       onChange={(e) => setFormData((prev) => ({ ...prev, rtmpUrl: e.target.value }))}
                       placeholder="rtmp://your-fms-server/live"
                       className="font-mono text-sm"
                     />
+                    {formData.streamType === "rtmp" && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Auto-filled from SRS settings. Use this as the OBS Server / FMS URL.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fms-stream-key">Stream Key</Label>
                     <div className="relative">
                       <Input
                         id="fms-stream-key"
-                        value={formData.streamKey || ""}
+                        value={formData.streamType === "rtmp" ? autoRtmpStreamKey : formData.streamKey || ""}
+                        readOnly={formData.streamType === "rtmp"}
                         onChange={(e) => setFormData((prev) => ({ ...prev, streamKey: e.target.value }))}
                         type={showStreamKey ? "text" : "password"}
                         placeholder="Enter stream key"
@@ -3080,7 +3114,38 @@ export function EventFormDialog({
                         {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
+                    {formData.streamType === "rtmp" && (
+                      <p className="text-[11px] text-muted-foreground">
+                        The Event URL slug is the SRS stream key. After save, a secure token is appended for crew/OBS access.
+                      </p>
+                    )}
                   </div>
+                  {formData.streamType === "rtmp" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="rtmp-playback-url">Auto DVR / HLS Playback URL</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="rtmp-playback-url"
+                          readOnly
+                          value={autoRtmpPlaybackUrl}
+                          className="font-mono text-sm"
+                          placeholder="Created from the Event URL slug"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={!autoRtmpPlaybackUrl}
+                          onClick={() => autoRtmpPlaybackUrl && copyToClipboard(autoRtmpPlaybackUrl, "playback")}
+                        >
+                          {copied === "playback" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Template watch pages use this player URL automatically while live. Final DVR MP4 playback is used after the merge worker completes.
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2 border-t">
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="h-5 w-5 text-muted-foreground" />

@@ -28,8 +28,11 @@ import {
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
 } from "@/lib/third-party-embed-validation"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
+import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
 import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
 import { templateIdFromTemplateDataRecord } from "@/lib/watch-template-data"
+import { buildRtmpStreamId, createRtmpTokenForStream, ensureRtmpTokenForStream } from "@/lib/rtmp-auth"
+import { getSrsSettings } from "@/lib/srs-settings"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -253,8 +256,12 @@ export async function POST(req: NextRequest) {
       typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim() ? bodyRtmpUrl.trim() : null
     const providedStreamKey =
       typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null
-    const streamKey = isPendingCreate ? null : (providedStreamKey || generateStreamKey())
-    const rtmpUrl = providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
+    const srsSettings = insertStreamType === "rtmp" ? await getSrsSettings() : null
+    const streamKey = isPendingCreate || insertStreamType === "rtmp" ? null : (providedStreamKey || generateStreamKey())
+    const rtmpUrl =
+      insertStreamType === "rtmp"
+        ? srsSettings?.rtmpBaseUrl || providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://rtmplive.in/live"
+        : providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
 
     // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
     const resolvedTemplateId =
@@ -346,8 +353,22 @@ export async function POST(req: NextRequest) {
       RETURNING *
     `
 
-    const event = rows[0] as Record<string, unknown>
+    let event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
+
+    if (insertStreamType === "rtmp") {
+      const token = await createRtmpTokenForStream({
+        sql,
+        userId: targetUserId,
+        eventId,
+        streamId: buildRtmpStreamId(finalSlug),
+        updateCredentialTarget: true,
+      })
+      const hlsUrl = `${srsSettings?.playbackBaseUrl || "https://rtmplive.in/live"}/${token.streamId}.m3u8`
+      await sql`UPDATE events SET hls_url = ${hlsUrl} WHERE id = ${eventId}`
+      const refreshed = await sql`SELECT * FROM events WHERE id = ${eventId}`
+      event = (refreshed[0] || event) as Record<string, unknown>
+    }
 
     const vk = await visitorKeyForUser(targetUserId)
     await insertFunnelEvent({
@@ -372,12 +393,28 @@ export async function POST(req: NextRequest) {
     // Insert additional date rows
     for (let i = 0; i < extraDates.length; i++) {
       const d = extraDates[i]
-      const extraKey = needsOwnKey ? generateStreamKey() : null
+      const extraKey = needsOwnKey && insertStreamType !== "rtmp" ? generateStreamKey() : null
       const extraRtmp = needsOwnKey ? rtmpUrl : null
-      await sql`
+      const insertedDate = await sql`
         INSERT INTO event_dates (event_id, label, scheduled_at, timezone, stream_key, rtmp_url, sort_order)
         VALUES (${eventId}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
+        RETURNING id
       `
+      if (insertStreamType === "rtmp") {
+        const token = await createRtmpTokenForStream({
+          sql,
+          userId: targetUserId,
+          eventId,
+          eventDateId: insertedDate[0].id as string,
+          streamId: buildRtmpStreamId(finalSlug, insertedDate[0].id as string),
+          updateCredentialTarget: true,
+        })
+        await sql`
+          UPDATE event_dates
+          SET rtmp_url = ${token.rtmpUrl}
+          WHERE id = ${insertedDate[0].id as string}
+        `
+      }
     }
 
     return NextResponse.json({ event: toCamel(event) }, { status: 201 })
@@ -714,14 +751,24 @@ export async function PUT(req: NextRequest) {
         ? (typeof photographerContact === "object" && photographerContact ? JSON.stringify(photographerContact) : "{}")
         : JSON.stringify(typeof prevPhotographer === "object" && prevPhotographer ? prevPhotographer : {})
     const finalCrewPinHash = crewPinHash !== undefined ? crewPinHash : (prev.crew_pin_hash as string | null) ?? null
-    const finalRtmpUrl =
+    let finalRtmpUrl =
       bodyRtmpUrl === undefined
         ? ((prev.rtmp_url as string | null) ?? null)
         : (typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim() ? bodyRtmpUrl.trim() : null)
-    const finalStreamKey =
+    let finalStreamKey =
       bodyStreamKey === undefined
         ? ((prev.stream_key as string | null) ?? null)
         : (typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null)
+    const finalDbStreamType = streamTypeForUpdate ?? ((existingRow.stream_type as string | null) || null)
+    if (finalDbStreamType === "rtmp") {
+      const srsSettings = await getSrsSettings()
+      finalRtmpUrl = srsSettings.rtmpBaseUrl
+      const nextSlugForStream = finalSlug || (existingRow.slug as string | null) || String(id)
+      finalStreamKey = buildRtmpStreamId(nextSlugForStream)
+      if (streamTypeForUpdate === "rtmp" && bodyStreamKey === undefined) {
+        finalStreamKey = buildRtmpStreamId(nextSlugForStream)
+      }
+    }
 
     const nextSimulcastPersisted =
       simulcastConfig !== undefined || streamTypeForUpdate !== undefined ? storedSimulcastJson : existingSim
@@ -781,7 +828,26 @@ export async function PUT(req: NextRequest) {
       RETURNING *
     `
 
-    const updatedEvent = rows[0] as Record<string, unknown>
+    let updatedEvent = rows[0] as Record<string, unknown>
+    if (finalDbStreamType === "rtmp") {
+      const currentSlug = (updatedEvent.slug as string | null) || String(id)
+      const token = await ensureRtmpTokenForStream({
+        sql,
+        userId: targetUserId,
+        eventId: id,
+        streamId: buildRtmpStreamId(currentSlug),
+        currentStreamKey: updatedEvent.stream_key as string | null,
+        updateCredentialTarget: true,
+      })
+      const srsSettings = await getSrsSettings()
+      await sql`
+        UPDATE events
+        SET hls_url = ${`${srsSettings.playbackBaseUrl}/${token.streamId}.m3u8`}
+        WHERE id = ${id}
+      `
+      const refreshed = await sql`SELECT * FROM events WHERE id = ${id}`
+      updatedEvent = (refreshed[0] || updatedEvent) as Record<string, unknown>
+    }
 
     // Sync additional dates if provided
     if (Array.isArray(additionalDates)) {
@@ -789,17 +855,31 @@ export async function PUT(req: NextRequest) {
       const existing = await sql`SELECT stream_type FROM events WHERE id = ${id}`
       const evStreamType =
         ((existing[0] as Record<string, unknown>)?.stream_type as string) || resolvedStreamType || PENDING_STREAM_DB
-      const rtmpUrl = process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
+      const rtmpUrl =
+        evStreamType === "rtmp"
+          ? (await getSrsSettings()).rtmpBaseUrl
+          : process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
       const needsOwnKey = ["rtmp", "youtube_api"].includes(evStreamType)
       for (let i = 0; i < additionalDates.length; i++) {
         const d = additionalDates[i] as { label?: string; scheduledAt?: string; timezone?: string }
         if (!d.scheduledAt) continue
-        const extraKey = needsOwnKey ? generateStreamKey() : null
+        const extraKey = needsOwnKey && evStreamType !== "rtmp" ? generateStreamKey() : null
         const extraRtmp = needsOwnKey ? rtmpUrl : null
-        await sql`
+        const insertedDate = await sql`
           INSERT INTO event_dates (event_id, label, scheduled_at, timezone, stream_key, rtmp_url, sort_order)
           VALUES (${id}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
+          RETURNING id
         `
+        if (evStreamType === "rtmp") {
+          await createRtmpTokenForStream({
+            sql,
+            userId: targetUserId,
+            eventId: id,
+            eventDateId: insertedDate[0].id as string,
+            streamId: buildRtmpStreamId((updatedEvent.slug as string | null) || String(id), insertedDate[0].id as string),
+            updateCredentialTarget: true,
+          })
+        }
       }
     }
 
@@ -857,6 +937,9 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
+    await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
+      console.error("[studio/events DELETE] Failed to queue SRS DVR deletion:", err)
+    })
     await sql`DELETE FROM events WHERE id = ${id}`
     await insertDeletedEventLog(sql, {
       eventId: id,

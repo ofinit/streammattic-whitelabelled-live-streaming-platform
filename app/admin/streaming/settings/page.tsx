@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,7 +32,7 @@ export default function StreamingSettingsPage() {
   const router = useRouter()
 
   // Active streaming backend
-  const [activeBackend, setActiveBackend] = useState<StreamingBackendType>("nimble")
+  const [activeBackend, setActiveBackend] = useState<StreamingBackendType>("srs")
   const backendInfo: StreamingBackendInfo = BACKEND_INFO[activeBackend]
 
   // Server connection - defaults from active backend
@@ -85,31 +85,145 @@ export default function StreamingSettingsPage() {
   const [recording, setRecording] = useState({
     enabled: true,
     format: "mp4",
-    storagePath: "/recordings",
+    storagePath: "/root/recordings",
     maxDuration: 480,
     autoDelete: false,
     autoDeleteDays: 30,
+  })
+  const [srsRuntime, setSrsRuntime] = useState({
+    recordingsRoot: "/root/recordings",
+    liveRecordingsDir: "/root/recordings/recordings/live",
+    finalRecordingsDir: "/root/recordings/final",
+    publicRecordingsBaseUrl: "https://rtmplive.in/recordings",
+    mergeInactivitySeconds: 600,
+    sessionResumeSeconds: 300,
+    creditBlockMinutes: 360,
+    hookSecret: "",
+    workerSecret: "",
   })
 
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("connected")
 
+  useEffect(() => {
+    let cancelled = false
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/admin/streaming/settings", { cache: "no-store" })
+        if (!res.ok) throw new Error("Unable to load streaming settings")
+        const data = await res.json()
+        const s = data.settings
+        if (!s || cancelled) return
+        setActiveBackend(s.backendType || "srs")
+        setServerConfig({
+          name: s.serverName || "Primary SRS Server",
+          host: s.host || "rtmplive.in",
+          rtmpPort: s.rtmpPort || 1935,
+          httpPort: s.httpPort || 1985,
+          apiKey: s.apiKey || "",
+          rtmpBaseUrl: s.rtmpBaseUrl || "rtmp://rtmplive.in/live",
+          playbackBaseUrl: s.playbackBaseUrl || "https://rtmplive.in/live",
+        })
+        setSecurity((prev) => ({
+          ...prev,
+          requireStreamAuth: true,
+          tokenBasedAuth: true,
+          tokenSecret: s.hookSecret || prev.tokenSecret,
+        }))
+        setRecording((prev) => ({
+          ...prev,
+          storagePath: s.recordingsRoot || "/root/recordings",
+        }))
+        setSrsRuntime({
+          recordingsRoot: s.recordingsRoot || "/root/recordings",
+          liveRecordingsDir: s.liveRecordingsDir || "/root/recordings/recordings/live",
+          finalRecordingsDir: s.finalRecordingsDir || "/root/recordings/final",
+          publicRecordingsBaseUrl: s.publicRecordingsBaseUrl || "https://rtmplive.in/recordings",
+          mergeInactivitySeconds: s.mergeInactivitySeconds || 600,
+          sessionResumeSeconds: s.sessionResumeSeconds || 300,
+          creditBlockMinutes: s.creditBlockMinutes || 360,
+          hookSecret: s.hookSecret || "",
+          workerSecret: s.workerSecret || "",
+        })
+      } catch (error) {
+        setConnectionStatus("disconnected")
+        toast({ title: "Unable to load settings", description: (error as Error).message, variant: "destructive" })
+      }
+    }
+    loadSettings()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const handleTestConnection = async () => {
     setIsTesting(true)
     setConnectionStatus("testing")
-    // Simulate connection test
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setConnectionStatus("connected")
-    setIsTesting(false)
-    toast({ title: "Connection successful", description: backendInfo.helpTexts.testConnection })
+    try {
+      const res = await fetch("/api/admin/streaming/test", { method: "POST" })
+      const data = await res.json().catch(() => ({}))
+      setConnectionStatus(res.ok && data.ok ? "connected" : "disconnected")
+      toast({
+        title: res.ok && data.ok ? "Connection successful" : "Connection failed",
+        description: data.message || backendInfo.helpTexts.testConnection,
+        variant: res.ok && data.ok ? "default" : "destructive",
+      })
+    } finally {
+      setIsTesting(false)
+    }
   }
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsSaving(false)
-    toast({ title: "Settings saved", description: "Streaming server configuration has been updated" })
+    try {
+      const apiUrl = serverConfig.host
+        ? `http://${serverConfig.host.replace(/^https?:\/\//, "").replace(/\/$/, "")}:${serverConfig.httpPort}`
+        : ""
+      const res = await fetch("/api/admin/streaming/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: {
+            backendType: activeBackend,
+            enabled: activeBackend === "srs",
+            serverName: serverConfig.name,
+            host: serverConfig.host,
+            apiUrl,
+            apiKey: serverConfig.apiKey,
+            rtmpPort: serverConfig.rtmpPort,
+            httpPort: serverConfig.httpPort,
+            rtmpBaseUrl: serverConfig.rtmpBaseUrl,
+            playbackBaseUrl: serverConfig.playbackBaseUrl,
+            hookSecret: srsRuntime.hookSecret,
+            workerSecret: srsRuntime.workerSecret,
+            tokenExpirySeconds: security.tokenExpiry,
+            sessionResumeSeconds: srsRuntime.sessionResumeSeconds,
+            mergeInactivitySeconds: srsRuntime.mergeInactivitySeconds,
+            creditBlockMinutes: srsRuntime.creditBlockMinutes,
+            recordingsRoot: srsRuntime.recordingsRoot,
+            liveRecordingsDir: srsRuntime.liveRecordingsDir,
+            finalRecordingsDir: srsRuntime.finalRecordingsDir,
+            publicRecordingsBaseUrl: srsRuntime.publicRecordingsBaseUrl,
+          },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Unable to save settings")
+      const s = data.settings
+      setSrsRuntime((prev) => ({
+        ...prev,
+        hookSecret: s?.hookSecret || prev.hookSecret,
+        workerSecret: s?.workerSecret || prev.workerSecret,
+      }))
+      setConnectionStatus("connected")
+      toast({ title: "Settings saved", description: "Streaming server configuration has been updated" })
+    } catch (error) {
+      setConnectionStatus("disconnected")
+      toast({ title: "Save failed", description: (error as Error).message, variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const addProfile = () => {
@@ -688,7 +802,10 @@ export default function StreamingSettingsPage() {
                   <Input
                     id="rec-path"
                     value={recording.storagePath}
-                    onChange={(e) => setRecording({ ...recording, storagePath: e.target.value })}
+                    onChange={(e) => {
+                      setRecording({ ...recording, storagePath: e.target.value })
+                      setSrsRuntime({ ...srsRuntime, recordingsRoot: e.target.value })
+                    }}
                     className="bg-secondary border-0"
                   />
                 </div>
@@ -703,6 +820,95 @@ export default function StreamingSettingsPage() {
                   />
                 </div>
               </div>
+              {activeBackend === "srs" && (
+                <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground">SRS DVR Merge Worker</h4>
+                    <p className="text-xs text-muted-foreground">
+                      These paths are local to the SRS server. Nginx should expose the final directory at the public recordings URL.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="live-recordings-dir">Live FLV Directory</Label>
+                      <Input
+                        id="live-recordings-dir"
+                        value={srsRuntime.liveRecordingsDir}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, liveRecordingsDir: e.target.value })}
+                        className="bg-secondary border-0 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="final-recordings-dir">Final MP4 Directory</Label>
+                      <Input
+                        id="final-recordings-dir"
+                        value={srsRuntime.finalRecordingsDir}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, finalRecordingsDir: e.target.value })}
+                        className="bg-secondary border-0 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="public-recordings-url">Public Recordings URL</Label>
+                      <Input
+                        id="public-recordings-url"
+                        value={srsRuntime.publicRecordingsBaseUrl}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, publicRecordingsBaseUrl: e.target.value })}
+                        className="bg-secondary border-0 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="merge-inactivity">Merge After Inactivity (seconds)</Label>
+                      <Input
+                        id="merge-inactivity"
+                        type="number"
+                        value={srsRuntime.mergeInactivitySeconds}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, mergeInactivitySeconds: parseInt(e.target.value) || 600 })}
+                        className="bg-secondary border-0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="resume-window">Reconnect Resume Window (seconds)</Label>
+                      <Input
+                        id="resume-window"
+                        type="number"
+                        value={srsRuntime.sessionResumeSeconds}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, sessionResumeSeconds: parseInt(e.target.value) || 300 })}
+                        className="bg-secondary border-0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="credit-block">Minutes Per RTMP Credit</Label>
+                      <Input
+                        id="credit-block"
+                        type="number"
+                        value={srsRuntime.creditBlockMinutes}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, creditBlockMinutes: parseInt(e.target.value) || 360 })}
+                        className="bg-secondary border-0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hook-secret">SRS Hook Secret</Label>
+                      <Input
+                        id="hook-secret"
+                        type="password"
+                        value={srsRuntime.hookSecret}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, hookSecret: e.target.value })}
+                        className="bg-secondary border-0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="worker-secret">Worker Secret</Label>
+                      <Input
+                        id="worker-secret"
+                        type="password"
+                        value={srsRuntime.workerSecret}
+                        onChange={(e) => setSrsRuntime({ ...srsRuntime, workerSecret: e.target.value })}
+                        className="bg-secondary border-0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div>

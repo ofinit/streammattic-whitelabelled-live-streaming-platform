@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getStreamStatus, getMockStreamStats, getServerHealth } from "@/lib/nimble-service"
+import { getDb } from "@/lib/db"
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +17,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "eventId is required" }, { status: 400 })
     }
 
-    const applicationName = `event-${eventId}`
+    let applicationName = `event-${eventId}`
+    try {
+      const sql = getDb()
+      const rows = await sql`SELECT slug, stream_type FROM events WHERE id::text = ${eventId} OR slug = ${eventId} LIMIT 1`
+      const event = rows[0] as Record<string, unknown> | undefined
+      if (event?.stream_type === "rtmp" && typeof event.slug === "string" && event.slug.trim()) {
+        applicationName = event.slug.trim()
+      }
+    } catch {
+      // Fall back to legacy event-{id} lookup when DB is unavailable.
+    }
 
     // Try live Nimble API first
     const liveStats = await getStreamStatus(applicationName)

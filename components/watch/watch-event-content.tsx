@@ -43,6 +43,7 @@ import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-wa
 import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
 import { WeddingPapercutWatchView } from "./wedding-papercut-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
+import { StreamPlayer } from "@/components/stream/stream-player"
 import { cn } from "@/lib/utils"
 import {
   cardTitleFontSizeStyle,
@@ -1294,7 +1295,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const streamType = String(event.streamType)
   const showRecording = evRawTop.showRecording === true
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
+  const finalRecordingUrl = evRawTop.finalRecordingUrl as string | undefined
+  const rtmpHlsUrl = (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
   const hasReplay =
+    (event.streamType === "rtmp" && !!finalRecordingUrl) ||
     (showRecording && (
       (event.streamType === "youtube_api" && replayBroadcastId) ||
       (streamType === "youtube" && event.youtubeUrl)
@@ -1304,7 +1308,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
-    if (event.streamType === "youtube_api" && replayBroadcastId) {
+    if (event.streamType === "rtmp" && finalRecordingUrl) {
+      replaySrc = finalRecordingUrl
+    } else if (event.streamType === "youtube_api" && replayBroadcastId) {
       replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { controls: 1, start: 0 })
     } else if ((streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
       replaySrc = buildYouTubeEmbedUrl(event.youtubeUrl as string, { controls: 1, start: 0 })
@@ -1481,12 +1487,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               renderMockPlayerContent()
             ) : isEnded && hasReplay && replaySrc ? (
               <div className="group relative h-full w-full">
-                <iframe
-                  className="h-full w-full"
-                  src={replaySrc}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {event.streamType === "rtmp" ? (
+                  <video className="h-full w-full bg-black object-contain" src={replaySrc} controls playsInline preload="metadata" />
+                ) : (
+                  <iframe
+                    className="h-full w-full"
+                    src={replaySrc}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
               </div>
             ) : isEnded ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">
@@ -1523,6 +1533,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               </div>
             ) : event.streamType === "youtube_api" ? (
               renderMockPlayerContent()
+            ) : event.streamType === "rtmp" && rtmpHlsUrl ? (
+              <div className="h-full w-full [&>div]:h-full [&>div]:rounded-none">
+                <StreamPlayer
+                  hlsUrl={rtmpHlsUrl}
+                  isLive={event.status === "live"}
+                  eventTitle={event.title}
+                  streamType="rtmp"
+                />
+              </div>
             ) : (event.streamType === "third_party" || event.streamType === "rtmp") && evRawTop.embedCode ? (
               <div
                 className="h-full w-full [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"

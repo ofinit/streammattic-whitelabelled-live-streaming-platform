@@ -3074,7 +3074,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {formData.streamType && (
+              {formData.streamType && (formData.streamType !== "rtmp" || isEditing) && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                   <div className="space-y-2">
                     <Label htmlFor="fms-url">FMS URL (RTMP Server)</Label>

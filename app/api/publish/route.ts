@@ -1,26 +1,27 @@
-import { findValidRtmpToken } from "@/lib/rtmp-auth"
+import { handleSrsPublish, type SrsHookPayload } from "@/lib/rtmp-sessions"
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const body = (await req.json()) as SrsHookPayload
 
-    const stream = body.stream
-    const param = body.param || ""
+    const stream = typeof body.stream === "string" ? body.stream : String(body.stream || "")
+    const param = typeof body.param === "string" ? body.param : ""
 
-    const token = new URLSearchParams(param).get("token")
+    const token = new URLSearchParams(param).get("token")?.trim()
 
-    console.log({ stream, token })
+    console.log("SRS Publish:", { stream, token })
 
     if (!token) {
       return Response.json({ code: 403 })
     }
 
-    const isValid = await findValidRtmpToken({
-      streamId: stream,
-      token,
-    })
+    const result = await handleSrsPublish(body)
+    if (!result.ok) {
+      console.log("SRS Publish rejected:", { stream, reason: result.reason })
+      return Response.json({ code: 403 })
+    }
 
-    return Response.json({ code: isValid ? 0 : 403 })
+    return Response.json({ code: 0 })
   } catch (err) {
     console.error("ERROR:", err)
     return Response.json({ code: 500 })

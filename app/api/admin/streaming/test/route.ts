@@ -12,9 +12,13 @@ export async function GET() {
 
     const data = await res.json();
 
+    if (data.code !== 0) {
+      throw new Error("SRS returned error");
+    }
+
     return Response.json({
       success: true,
-      url,
+      message: "SRS connected successfully",
       data,
     });
   } catch (error: any) {

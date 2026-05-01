@@ -1,26 +1,28 @@
-import { NextResponse } from "next/server"
-import { handleSrsPublish, type SrsHookPayload } from "@/lib/rtmp-sessions"
-import { getSrsSettings } from "@/lib/srs-settings"
+export async function POST(req: Request) {
+  try {
+    const body = await req.json()
 
-async function isAuthorized(request: Request): Promise<boolean> {
-  const settings = await getSrsSettings()
-  if (!settings.hookSecret) return true
-  const url = new URL(request.url)
-  const provided =
-    url.searchParams.get("secret") ||
-    request.headers.get("x-srs-hook-secret") ||
-    request.headers.get("x-hook-secret")
-  return provided === settings.hookSecret
-}
+    const stream = body.stream
+    const param = body.param || ""
 
-export async function POST(request: Request) {
-  if (!(await isAuthorized(request))) {
-    return NextResponse.json({ code: 403, error: "Forbidden" }, { status: 403 })
+    const token = new URLSearchParams(param).get("token")
+
+    if (!stream || !token) {
+      return new Response("missing_stream_or_token", { status: 400 })
+    }
+
+    // TODO: validate token from DB
+    // Example:
+    // const valid = await checkToken(stream, token);
+
+    const valid = true
+
+    if (!valid) {
+      return new Response("invalid_or_expired_token", { status: 403 })
+    }
+
+    return new Response("0")
+  } catch (e) {
+    return new Response("error", { status: 500 })
   }
-  const payload = (await request.json().catch(() => ({}))) as SrsHookPayload
-  const result = await handleSrsPublish(payload)
-  if (result.ok) {
-    return NextResponse.json({ code: 0, ok: true, reason: result.reason }, { status: 200 })
-  }
-  return NextResponse.json({ code: result.status || 403, ok: false, reason: result.reason }, { status: result.status })
 }

@@ -8,14 +8,18 @@ import { StatsCard } from "@/components/dashboard/stats-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Radio, Eye, Users, Activity, Settings, Loader2 } from "lucide-react"
-import { getActiveBackendType, BACKEND_INFO } from "@/lib/streaming"
+import { Radio, Eye, Users, Activity, Settings } from "lucide-react"
+import { BACKEND_INFO, type StreamingBackendType } from "@/lib/streaming/types"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function AdminStreamingPage() {
   const router = useRouter()
-  const backendType = getActiveBackendType()
+  const { data: backendData } = useSWR("/api/streaming/backend-info", fetcher, {
+    refreshInterval: 15000,
+    revalidateOnFocus: false,
+  })
+  const backendType = (backendData?.type as StreamingBackendType | undefined) ?? "srs"
   const backendInfo = BACKEND_INFO[backendType]
   
   const { data: eventsData, isLoading: isLoadingEvents } = useSWR("/api/events?status=live", fetcher, {

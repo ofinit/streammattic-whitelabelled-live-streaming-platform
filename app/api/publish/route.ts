@@ -1,25 +1,29 @@
-export const dynamic = "force-dynamic";
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const stream = body.stream;
+    const stream = body.stream; // "mefo"
     const param = body.param || "";
 
-    const token = new URLSearchParams(param).get("token");
+    // extract token
+    const token = param.replace("?token=", "");
 
     console.log("Incoming publish:", { stream, token });
 
+    // 🔐 YOUR VALIDATION LOGIC
     if (!stream || !token) {
-      return new Response("missing_stream_or_token", { status: 400 });
+      return Response.json({ code: 403, message: "Missing stream or token" });
     }
 
-    // 🚀 TEMP: allow everything for now
-    return new Response("0");
+    // Example validation (replace with DB check)
+    if (stream === "mefo" && token === "gDtEvZbDgph2zzqwz8WhkRyERsGrNx42B6-beacnNq4") {
+      return Response.json({ code: 0 });
+    }
 
-  } catch (e) {
-    console.error(e);
-    return new Response("error", { status: 500 });
+    return Response.json({ code: 403, message: "Invalid token" });
+
+  } catch (err) {
+    console.error(err);
+    return Response.json({ code: 500 });
   }
 }

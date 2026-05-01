@@ -23,6 +23,7 @@ import type {
   StreamPublishAuth,
   TranscodingProfile,
 } from "@/lib/types"
+import { buildSrsApiUrl } from "@/lib/srs-api-url"
 import type { StreamingProvider, CreateStreamOptions } from "./types"
 
 function generateKey(prefix = "sk"): string {
@@ -73,7 +74,7 @@ export class SrsProvider implements StreamingProvider {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" }
       if (config.apiKey) headers["Authorization"] = `Bearer ${config.apiKey}`
-      const res = await fetch(`${config.apiUrl}${endpoint}`, { ...options, headers: { ...headers, ...((options.headers as Record<string, string>) || {}) } })
+      const res = await fetch(buildSrsApiUrl(config.apiUrl, endpoint), { ...options, headers: { ...headers, ...((options.headers as Record<string, string>) || {}) } })
       if (!res.ok) return { data: null, error: `SRS API ${res.status}: ${await res.text()}` }
       const data = (await res.json()) as T
       return { data, error: null }

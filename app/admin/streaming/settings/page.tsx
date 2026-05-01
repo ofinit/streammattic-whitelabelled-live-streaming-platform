@@ -162,7 +162,7 @@ export default function StreamingSettingsPage() {
       apiUrl,
       apiKey: serverConfig.apiKey,
       rtmpPort: serverConfig.rtmpPort,
-      httpPort: serverConfig.httpPort || backendInfo.defaultPorts.api,
+      httpPort: serverConfig.httpPort,
       rtmpBaseUrl: serverConfig.rtmpBaseUrl,
       playbackBaseUrl: serverConfig.playbackBaseUrl,
       hookSecret: srsRuntime.hookSecret,

@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto"
 import { getDb } from "@/lib/db"
 import { decrypt, encrypt } from "@/lib/encryption"
+import { buildSrsApiUrl } from "@/lib/srs-api-url"
 import type { StreamingBackendType } from "@/lib/streaming/types"
 
 export const SRS_SETTINGS_KEY = "srs_streaming_settings"
@@ -201,7 +202,7 @@ export async function testSrsConnection(settings?: SrsSettings): Promise<{
   try {
     const headers: Record<string, string> = { Accept: "application/json" }
     if (resolvedSettings.apiKey) headers.Authorization = `Bearer ${resolvedSettings.apiKey}`
-    const res = await fetch(`${resolvedSettings.apiUrl.replace(/\/$/, "")}/api/v1/summaries`, {
+    const res = await fetch(buildSrsApiUrl(resolvedSettings.apiUrl, "/api/v1/summaries"), {
       headers,
       cache: "no-store",
     })

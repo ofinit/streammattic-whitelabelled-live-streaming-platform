@@ -1,23 +1,30 @@
-import { jsonOk, withRole } from "@/lib/api-helpers"
-import { getSrsApiBaseUrl } from "@/lib/srs-api-url"
-
-async function testSrsApi() {
-  const url = `${getSrsApiBaseUrl()}/summaries`
-  console.log("SRS API URL:", url)
+export async function GET() {
+  const url = "http://127.0.0.1:1985/api/v1/summaries";
 
   try {
-    const res = await fetch(url, { method: "GET", cache: "no-store" })
+    console.log("Calling SRS:", url);
+
+    const res = await fetch(url);
+
     if (!res.ok) {
-      throw new Error(`SRS API failed: ${res.status}`)
+      throw new Error(`SRS API failed: ${res.status}`);
     }
-    const data = await res.json()
-    return jsonOk({ ok: true, success: true, url, data, message: `SRS API is reachable at ${url}` })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    return jsonOk({ ok: false, success: false, url, error: message, message }, 500)
+
+    const data = await res.json();
+
+    return Response.json({
+      success: true,
+      url,
+      data,
+    });
+  } catch (error: any) {
+    return Response.json(
+      {
+        success: false,
+        url,
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
-
-export const GET = withRole(["admin"], async () => testSrsApi())
-
-export const POST = withRole(["admin"], async () => testSrsApi())

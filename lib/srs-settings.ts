@@ -16,7 +16,7 @@ export type SrsSettings = {
   apiUrl: string
   apiKey: string
   rtmpPort: number
-  httpPort: number | ""
+  httpPort?: string
   rtmpBaseUrl: string
   playbackBaseUrl: string
   hookSecret: string
@@ -78,11 +78,11 @@ function numberOr(value: unknown, fallback: number, min = 0): number {
   return Number.isFinite(n) && n >= min ? Math.floor(n) : fallback
 }
 
-function portOr(value: unknown, fallback: number | ""): number | "" {
+function portOr(value: unknown, fallback: string | undefined): string | undefined {
   if (value === "") return ""
   if (value === undefined || value === null) return fallback
-  const n = typeof value === "number" ? value : Number(value)
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback
+  const n = Number(value)
+  return Number.isFinite(n) && n >= 1 ? String(Math.floor(n)) : fallback
 }
 
 function decryptSecret(value: unknown): string {
@@ -204,8 +204,6 @@ export async function testSrsConnection(settings?: SrsSettings): Promise<{
   ok: boolean
   status?: number
   url?: string
-  usedFallback?: boolean
-  fallbackAddress?: string
   message: string
 }> {
   const resolvedSettings = settings ?? await getSrsSettings()
@@ -214,8 +212,6 @@ export async function testSrsConnection(settings?: SrsSettings): Promise<{
     ok: result.ok,
     status: result.status,
     url: result.url,
-    usedFallback: result.usedFallback,
-    fallbackAddress: result.fallbackAddress,
     message: result.message,
   }
 }

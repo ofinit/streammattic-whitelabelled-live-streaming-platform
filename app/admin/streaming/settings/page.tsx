@@ -32,7 +32,7 @@ type ServerConfig = {
   name: string
   host: string
   rtmpPort: number
-  httpPort: number | ""
+  httpPort: string
   apiKey: string
   rtmpBaseUrl: string
   playbackBaseUrl: string
@@ -50,14 +50,14 @@ function apiUrlFromConfig(config: ServerConfig, backend: StreamingBackendType) {
 
 function configFromSavedSettings(s: Record<string, any>): ServerConfig {
   let host = s.host || "rtmplive.in"
-  let httpPort: number | "" = s.httpPort === "" ? "" : s.httpPort || 1985
+  let httpPort = s.httpPort === "" ? "" : String(s.httpPort || "")
 
   if (typeof s.apiUrl === "string" && /^https?:\/\//i.test(s.apiUrl)) {
     try {
       const url = new URL(s.apiUrl)
       host = url.hostname
       if (url.port) {
-        httpPort = Number(url.port)
+        httpPort = url.port
       } else if (url.protocol === "https:" && url.pathname.replace(/\/+$/, "") === "/api") {
         httpPort = ""
       }
@@ -77,6 +77,14 @@ function configFromSavedSettings(s: Record<string, any>): ServerConfig {
   }
 }
 
+function serverConfigFromBackendDefaults(backend: StreamingBackendType): ServerConfig {
+  const defaults = BACKEND_INFO[backend].defaultConfig
+  return {
+    ...defaults,
+    httpPort: String(defaults.httpPort || ""),
+  }
+}
+
 export default function StreamingSettingsPage() {
   const router = useRouter()
 
@@ -85,13 +93,12 @@ export default function StreamingSettingsPage() {
   const backendInfo: StreamingBackendInfo = BACKEND_INFO[activeBackend]
 
   // Server connection - defaults from active backend
-  const [serverConfig, setServerConfig] = useState<ServerConfig>(() => ({ ...backendInfo.defaultConfig }))
+  const [serverConfig, setServerConfig] = useState<ServerConfig>(() => serverConfigFromBackendDefaults(activeBackend))
 
   // Reset server config when backend changes
   const handleBackendChange = (key: StreamingBackendType) => {
     setActiveBackend(key)
-    const newInfo = BACKEND_INFO[key]
-    setServerConfig({ ...newInfo.defaultConfig })
+    setServerConfig(serverConfigFromBackendDefaults(key))
   }
 
   // Helper: check if feature is unsupported by current backend
@@ -461,7 +468,7 @@ export default function StreamingSettingsPage() {
                 value={serverConfig.httpPort}
                 onChange={(e) => setServerConfig({
                   ...serverConfig,
-                  httpPort: e.target.value.trim() === "" ? "" : parseInt(e.target.value, 10) || backendInfo.defaultPorts.api,
+                  httpPort: e.target.value.trim(),
                 })}
                 className="bg-secondary border-0"
                 placeholder={activeBackend === "srs" ? "Leave empty for https://host/api" : String(backendInfo.defaultPorts.api)}

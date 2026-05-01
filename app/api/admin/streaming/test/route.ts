@@ -1,38 +1,23 @@
 import { jsonOk, withRole } from "@/lib/api-helpers"
-import { fetchSrsApiJson } from "@/lib/srs-api-url"
-import { getSrsSettings } from "@/lib/srs-settings"
-import type { SrsSettings } from "@/lib/srs-settings"
+import { getSrsApiBaseUrl } from "@/lib/srs-api-url"
 
-type SrsTestSettings = Partial<Omit<SrsSettings, "httpPort">> & {
-  apiHost?: string
-  httpApiPort?: number | string | ""
-  httpPort?: number | string | ""
+async function testSrsApi() {
+  const url = `${getSrsApiBaseUrl()}/summaries`
+  console.log("SRS API URL:", url)
+
+  try {
+    const res = await fetch(url, { method: "GET", cache: "no-store" })
+    if (!res.ok) {
+      throw new Error(`SRS API failed: ${res.status}`)
+    }
+    const data = await res.json()
+    return jsonOk({ ok: true, success: true, url, data, message: `SRS API is reachable at ${url}` })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return jsonOk({ ok: false, success: false, url, error: message, message }, 500)
+  }
 }
 
-export const POST = withRole(["admin"], async (_user, request) => {
-  const settings = await getSrsSettings()
-  const body = await request.json().catch(() => ({}))
-  const input = body?.settings && typeof body.settings === "object" ? body.settings as SrsTestSettings : {}
-  const apiKey = typeof input.apiKey === "string" && !input.apiKey.startsWith("•") ? input.apiKey : settings.apiKey
-  const connection = {
-    ...settings,
-    ...input,
-    host: input.apiHost || input.host || settings.host,
-    httpPort: input.httpApiPort ?? input.httpPort ?? settings.httpPort,
-    apiKey,
-  }
+export const GET = withRole(["admin"], async () => testSrsApi())
 
-  const result = await fetchSrsApiJson(connection, "/api/v1/summaries")
-  console.log("Testing SRS URL:", result.url, result.usedFallback ? `(DNS fallback ${result.fallbackAddress})` : "")
-
-  return jsonOk({
-    ok: result.ok,
-    success: result.ok,
-    status: result.status,
-    url: result.url,
-    usedFallback: result.usedFallback,
-    fallbackAddress: result.fallbackAddress,
-    data: result.data,
-    message: result.message,
-  }, result.ok ? 200 : 503)
-})
+export const POST = withRole(["admin"], async () => testSrsApi())

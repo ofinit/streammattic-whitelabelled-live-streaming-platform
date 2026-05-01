@@ -47,7 +47,7 @@ export interface StreamingBackendInfo {
     name: string
     host: string
     rtmpPort: number
-    httpPort: number | ""
+    httpPort: number | string
     apiKey: string
     rtmpBaseUrl: string
     playbackBaseUrl: string

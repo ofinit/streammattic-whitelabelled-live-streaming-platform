@@ -7,7 +7,6 @@
  * SRS API docs: https://ossrs.io/lts/en-us/docs/v5/doc/http-api
  *
  * Environment Variables:
- *   SRS_API_URL       - Base URL for the SRS HTTP API (default: http://localhost:1985)
  *   SRS_API_KEY       - Optional API key (SRS does not require auth by default)
  *   SRS_RTMP_URL      - RTMP ingest base URL (default: rtmp://localhost/live)
  *   SRS_PLAYBACK_URL  - HLS playback base URL (default: http://localhost:8080)
@@ -23,7 +22,7 @@ import type {
   StreamPublishAuth,
   TranscodingProfile,
 } from "@/lib/types"
-import { fetchSrsApiJson } from "@/lib/srs-api-url"
+import { fetchSrsApiJson, getSrsApiBaseUrl } from "@/lib/srs-api-url"
 import type { StreamingProvider, CreateStreamOptions } from "./types"
 
 function generateKey(prefix = "sk"): string {
@@ -62,7 +61,7 @@ export class SrsProvider implements StreamingProvider {
 
   getConfig() {
     return {
-      apiUrl: process.env.SRS_API_URL || "http://localhost:1985",
+      apiUrl: getSrsApiBaseUrl(),
       apiKey: process.env.SRS_API_KEY || "",
       rtmpUrl: process.env.SRS_RTMP_URL || "rtmp://localhost/live",
       playbackUrl: process.env.SRS_PLAYBACK_URL || "http://localhost:8080",
@@ -73,7 +72,7 @@ export class SrsProvider implements StreamingProvider {
     const config = this.getConfig()
     try {
       const headers = { "Content-Type": "application/json", ...((options.headers as Record<string, string>) || {}) }
-      const result = await fetchSrsApiJson<T>({ apiUrl: config.apiUrl, apiKey: config.apiKey }, endpoint, {
+      const result = await fetchSrsApiJson<T>({ apiKey: config.apiKey }, endpoint, {
         ...options,
         headers,
       })

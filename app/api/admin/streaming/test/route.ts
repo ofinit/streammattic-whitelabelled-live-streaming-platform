@@ -29,6 +29,18 @@ function buildSrsApiBaseUrl(settings: SrsTestSettings, fallback: SrsSettings): s
   return `https://${cleanHost(host)}/api`
 }
 
+function formatFetchError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+  const cause = error.cause
+  if (cause && typeof cause === "object") {
+    const details = cause as Record<string, unknown>
+    const parts = [details.code, details.errno, details.syscall, details.hostname]
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+    if (parts.length > 0) return `${error.message} (${parts.join(", ")})`
+  }
+  return error.message
+}
+
 export const POST = withRole(["admin"], async (_user, request) => {
   const settings = await getSrsSettings()
   const body = await request.json().catch(() => ({}))
@@ -51,6 +63,6 @@ export const POST = withRole(["admin"], async (_user, request) => {
   } catch (error) {
     const baseUrl = buildSrsApiBaseUrl(input, settings)
     const testUrl = buildSrsApiUrl(baseUrl, "/api/v1/summaries")
-    return jsonOk({ ok: false, url: testUrl, message: `${(error as Error).message} while fetching ${testUrl}` }, 503)
+    return jsonOk({ ok: false, url: testUrl, message: `${formatFetchError(error)} while fetching ${testUrl}` }, 503)
   }
 })

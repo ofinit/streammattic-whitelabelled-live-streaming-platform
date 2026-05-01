@@ -248,11 +248,12 @@ export default function StreamingSettingsPage() {
         body: JSON.stringify({ settings: buildSettingsPayload() }),
       })
       const data = await res.json().catch(() => ({}))
-      setConnectionStatus(res.ok && data.ok ? "connected" : "disconnected")
+      const isConnected = Boolean(data.success)
+      setConnectionStatus(isConnected ? "connected" : "disconnected")
       toast({
-        title: res.ok && data.ok ? "Connection successful" : "Connection failed",
+        title: isConnected ? "Connection successful" : "Connection failed",
         description: data.message || backendInfo.helpTexts.testConnection,
-        variant: res.ok && data.ok ? "default" : "destructive",
+        variant: isConnected ? "default" : "destructive",
       })
     } finally {
       setIsTesting(false)

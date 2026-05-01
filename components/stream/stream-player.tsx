@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import Hls from "hls.js"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Volume2, VolumeX, Maximize, Minimize, RefreshCw } from "lucide-react"
+import { Volume2, VolumeX, Maximize, Minimize, Play, RefreshCw } from "lucide-react"
 
 interface StreamPlayerProps {
   hlsUrl: string | null
@@ -18,9 +19,28 @@ interface StreamPlayerProps {
 export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle, streamType }: StreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
+  const [playbackBlocked, setPlaybackBlocked] = useState(false)
+  const [reloadNonce, setReloadNonce] = useState(0)
+
+  const playVideo = useCallback(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    video
+      .play()
+      .then(() => {
+        setPlaybackBlocked(false)
+        setPlayerError(null)
+      })
+      .catch((error) => {
+        console.warn("HLS playback blocked", { error, hlsUrl })
+        setPlaybackBlocked(true)
+      })
+  }, [hlsUrl])
 
   useEffect(() => {
     if (streamType !== "rtmp" && streamType !== "hls") return
@@ -28,48 +48,69 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
 
     const video = videoRef.current
     video.muted = isMuted
+    setPlayerError(null)
+    setPlaybackBlocked(false)
+    hlsRef.current?.destroy()
+    hlsRef.current = null
 
     // Native HLS support (Safari)
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsUrl
-      video.play().catch(() => setPlayerError("Playback blocked - click to play"))
-      return
+      video.load()
+      playVideo()
+      return () => {
+        video.removeAttribute("src")
+        video.load()
+      }
     }
 
-    // Dynamic import of hls.js for other browsers
-    import("hls.js")
-      .then(({ default: Hls }) => {
-        if (Hls.isSupported()) {
-          const hls = new Hls({
-            enableWorker: true,
-            lowLatencyMode: true,
-            liveSyncDurationCount: 3,
-          })
-          hls.loadSource(hlsUrl)
-          hls.attachMedia(video)
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(() => setPlayerError("Playback blocked - click to play"))
-          })
-          hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.fatal) {
-              setPlayerError("Stream connection lost. Retrying...")
-              setTimeout(() => {
-                hls.destroy()
-                hls.loadSource(hlsUrl)
-                hls.attachMedia(video)
-              }, 3000)
-            }
-          })
-          return () => hls.destroy()
-        } else {
-          setPlayerError("HLS playback not supported in this browser")
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        liveSyncDurationCount: 3,
+      })
+      hlsRef.current = hls
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        hls.loadSource(hlsUrl)
+      })
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        playVideo()
+      })
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.warn("HLS error", {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+          hlsUrl,
+        })
+
+        if (!data.fatal) return
+
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          setPlayerError("Stream network error. Retrying...")
+          hls.startLoad()
+          return
         }
+
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          setPlayerError("Stream media error. Recovering...")
+          hls.recoverMediaError()
+          return
+        }
+
+        setPlayerError("Stream connection lost.")
       })
-      .catch(() => {
-        // hls.js not installed, show fallback
-        setPlayerError("Video player library not available. Install hls.js for HLS playback.")
-      })
-  }, [hlsUrl, streamType, isMuted])
+
+      return () => {
+        hls.destroy()
+        hlsRef.current = null
+      }
+    }
+
+    setPlayerError("HLS playback not supported in this browser")
+  }, [hlsUrl, streamType, isMuted, playVideo, reloadNonce])
 
   const toggleMute = () => {
     setIsMuted(!isMuted)
@@ -159,11 +200,20 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
             size="sm"
             onClick={() => {
               setPlayerError(null)
-              videoRef.current?.play()
+              setPlaybackBlocked(false)
+              setReloadNonce((value) => value + 1)
             }}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
+          </Button>
+        </div>
+      ) : playbackBlocked && isLive ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
+          <p className="text-sm">Click to play live stream</p>
+          <Button variant="outline" size="sm" onClick={playVideo}>
+            <Play className="h-4 w-4 mr-2" />
+            Play
           </Button>
         </div>
       ) : !isLive ? (

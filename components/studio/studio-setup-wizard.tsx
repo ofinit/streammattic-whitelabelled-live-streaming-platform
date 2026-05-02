@@ -202,14 +202,12 @@ export function StudioSetupWizard({
   })
 
   const progress = ((currentStep + 1) / SETUP_STEPS.length) * 100
+  const layoutWidthClass = mode === "modal" ? "max-w-6xl" : "max-w-4xl"
 
   const stepValidationError = (() => {
     switch (currentStep) {
       case 0:
-        return validateCompanyStep({
-          ...companyData,
-          customDomain: domainData.customDomain,
-        })
+        return validateCompanyStep(companyData)
       case 1:
         return validateBrandingStep(brandingData)
       case 2:
@@ -489,6 +487,10 @@ export function StudioSetupWizard({
     }
   }
 
+  const handleStudioUpgradeGatewayChange = useCallback((g: "wallet" | "razorpay" | "instamojo") => {
+    setPaymentData((p) => (p.studioUpgradePayMethod === g ? p : { ...p, studioUpgradePayMethod: g }))
+  }, [])
+
   const canProceed = () => {
     if (stepValidationError) return false
     switch (currentStep) {
@@ -499,7 +501,6 @@ export function StudioSetupWizard({
             email: companyData.email,
             phoneDialCode: companyData.phoneDialCode,
             phoneLocal: companyData.phoneLocal,
-            customDomain: domainData.customDomain,
           }) === null
         )
       case 1:
@@ -522,7 +523,7 @@ export function StudioSetupWizard({
     <div className={mode === "modal" ? "min-h-0 bg-background" : "min-h-screen bg-background"}>
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 py-6">
+        <div className={`${layoutWidthClass} mx-auto px-6 py-6`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Setup Your Platform</h1>
@@ -599,7 +600,7 @@ export function StudioSetupWizard({
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className={`${layoutWidthClass} mx-auto px-6 py-8`}>
         {/* Step 1: Company Profile */}
         {currentStep === 0 && (
           <Card>
@@ -1109,9 +1110,7 @@ export function StudioSetupWizard({
                   pricePaisa={studioSubscription.pricePaisa}
                   walletBalancePaise={walletBalancePaise}
                   selectedGateway={paymentData.studioUpgradePayMethod || "wallet"}
-                  onSelectedGatewayChange={(g) =>
-                    setPaymentData((p) => ({ ...p, studioUpgradePayMethod: g }))
-                  }
+                  onSelectedGatewayChange={handleStudioUpgradeGatewayChange}
                   showActions
                   onPaidSuccess={() => {
                     window.location.assign("/studio/setup?upgraded=1")

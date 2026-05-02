@@ -600,7 +600,7 @@ export function Sidebar() {
           }}
         >
           <DialogContent
-            className="top-4 max-h-[min(calc(100dvh-2rem),900px)] w-[calc(100vw-2rem)] max-w-4xl translate-y-0 gap-0 overflow-y-auto overscroll-contain p-0 sm:top-[50%] sm:max-h-[min(90dvh,900px)] sm:translate-y-[-50%]"
+            className="top-4 max-h-[min(calc(100dvh-2rem),960px)] w-[calc(100vw-2rem)] max-w-6xl translate-y-0 gap-0 overflow-y-auto overscroll-contain p-0 sm:top-[50%] sm:max-h-[min(92dvh,960px)] sm:max-w-6xl sm:translate-y-[-50%] xl:max-w-7xl"
             showCloseButton
           >
             <DialogTitle className="sr-only">Studio setup wizard</DialogTitle>

@@ -65,8 +65,8 @@ export async function GET(
                FROM event_dates ed
                WHERE ed.event_id = e.id
              ) AS event_dates,
-             sr.public_url AS final_recording_url,
-             sr.output_path AS final_recording_path
+             COALESCE(NULLIF(sr.public_url, ''), NULLIF(ss.final_recording_url, '')) AS final_recording_url,
+             COALESCE(NULLIF(sr.output_path, ''), NULLIF(ss.final_recording_path, '')) AS final_recording_path
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
       LEFT JOIN studio_branding sb ON sb.user_id = u.id
@@ -77,6 +77,16 @@ export async function GET(
         ORDER BY merged_at DESC
         LIMIT 1
       ) sr ON true
+      LEFT JOIN LATERAL (
+        SELECT final_recording_url, final_recording_path
+        FROM stream_sessions
+        WHERE event_id = e.id
+          AND merged = true
+          AND final_recording_url IS NOT NULL
+          AND final_recording_url <> ''
+        ORDER BY COALESCE(merged_at, ended_at, updated_at, created_at) DESC
+        LIMIT 1
+      ) ss ON true
       WHERE e.id::text = $1 OR e.slug = $1`,
       [eventId],
     )
@@ -103,7 +113,7 @@ export async function GET(
         }
       }
     } catch (e) {
-      console.warn(`[api/watch/[eventId]] YouTube broadcast lookup failed:`, e.message)
+      console.warn(`[api/watch/[eventId]] YouTube broadcast lookup failed:`, e instanceof Error ? e.message : e)
     }
 
     const eventRow = toCamel(eventData) as Record<string, any>
@@ -154,6 +164,7 @@ export async function GET(
     } catch (fallbackErr) {
        console.error(`[api/watch/[eventId]] Fallback also failed:`, fallbackErr)
     }
-    return NextResponse.json({ error: "Internal server error", message: err.message }, { status: 500 })
+    const message = err instanceof Error ? err.message : "Unknown error"
+    return NextResponse.json({ error: "Internal server error", message }, { status: 500 })
   }
 }

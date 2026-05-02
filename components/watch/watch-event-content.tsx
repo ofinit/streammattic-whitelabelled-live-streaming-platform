@@ -1297,6 +1297,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
   const finalRecordingUrl = evRawTop.finalRecordingUrl as string | undefined
   const rtmpHlsUrl = (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
+  const isRtmpRecordingProcessing = event.streamType === "rtmp" && isEnded && showRecording && !finalRecordingUrl
   const hasReplay =
     (event.streamType === "rtmp" && !!finalRecordingUrl) ||
     (showRecording && (
@@ -1497,6 +1498,23 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     allowFullScreen
                   />
                 )}
+              </div>
+            ) : isRtmpRecordingProcessing ? (
+              <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">
+                {playerImageUrl ? (
+                  <img src={playerImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+                ) : null}
+                <div className="relative flex max-w-md flex-col items-center gap-3">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                    <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-white">Recording is being processed</p>
+                    <p className="text-xs text-white/60">
+                      The RTMP DVR will appear here automatically after the merge worker publishes the final MP4.
+                    </p>
+                  </div>
+                </div>
               </div>
             ) : isEnded ? (
               <div className="flex flex-col items-center justify-center gap-4 text-center px-8 absolute inset-0 bg-black">

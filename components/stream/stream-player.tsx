@@ -97,8 +97,14 @@ export function StreamPlayer({
 
         if (!data.fatal) return
 
+        const details = String(data.details || "")
+        if (details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR || details === Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT) {
+          setPlayerError("HLS manifest is not available from the streaming server yet.")
+          return
+        }
+
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          setPlayerError("Stream network error. Retrying...")
+          setPlayerError("HLS network error from the streaming server. Retrying...")
           hls.startLoad()
           return
         }

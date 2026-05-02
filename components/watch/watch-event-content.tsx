@@ -77,6 +77,30 @@ const YOUTUBE_EMBED_DEFAULT_PARAMS = {
   playsinline: "1",
 } as const
 
+type RtmpReplaySource =
+  | { status: "idle" | "checking" | "processing" }
+  | { status: "hls" | "mp4"; url: string }
+
+async function mediaUrlExists(url: string, signal?: AbortSignal): Promise<boolean> {
+  if (!url) return false
+  try {
+    const res = await fetch(url, { method: "HEAD", cache: "no-store", signal })
+    if (res.ok) return true
+    if (res.status === 405) {
+      const fallback = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Range: "bytes=0-0" },
+        signal,
+      })
+      return fallback.ok
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 function extractYouTubeVideoId(input: string): string | null {
   const raw = input.trim()
   if (!raw) return null
@@ -543,6 +567,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [quality, setQuality] = useState("Auto")
+  const [rtmpReplaySource, setRtmpReplaySource] = useState<RtmpReplaySource>({ status: "idle" })
   const videoContainerRef = useRef<HTMLDivElement>(null)
 
   // Inline crew PIN (template_bottom mode)
@@ -717,6 +742,52 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       window.removeEventListener("focus", onVisibleOrFocus)
     }
   }, [fetchWatchEvent, fetchViewerCount, applyPolledEvent])
+
+  useEffect(() => {
+    const raw = event as unknown as Record<string, unknown> | null
+    const status = String(event?.status || "")
+    const isRtmpEnded =
+      event?.streamType === "rtmp" && (status === "ended" || status === "completed")
+
+    if (!raw || !isRtmpEnded) {
+      setRtmpReplaySource({ status: "idle" })
+      return
+    }
+
+    const streamKey = typeof raw.streamKey === "string" ? raw.streamKey : ""
+    const slug = typeof raw.slug === "string" ? raw.slug : eventId
+    const stream = (streamKey.split("?")[0] || slug).trim()
+    if (!stream) {
+      setRtmpReplaySource({ status: "processing" })
+      return
+    }
+
+    const hlsUrl = `https://rtmplive.in/live/${stream}.m3u8`
+    const fallbackMp4Url = `/recordings/${stream}.mp4`
+    const finalRecordingUrl = typeof raw.finalRecordingUrl === "string" ? raw.finalRecordingUrl.trim() : ""
+    const mp4Urls = Array.from(new Set([finalRecordingUrl, fallbackMp4Url].filter(Boolean)))
+    const controller = new AbortController()
+
+    setRtmpReplaySource({ status: "checking" })
+
+    void (async () => {
+      if (await mediaUrlExists(hlsUrl, controller.signal)) {
+        setRtmpReplaySource({ status: "hls", url: hlsUrl })
+        return
+      }
+
+      for (const mp4Url of mp4Urls) {
+        if (await mediaUrlExists(mp4Url, controller.signal)) {
+          setRtmpReplaySource({ status: "mp4", url: mp4Url })
+          return
+        }
+      }
+
+      setRtmpReplaySource({ status: "processing" })
+    })()
+
+    return () => controller.abort()
+  }, [event, eventId])
 
   const handlePasswordSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -1296,10 +1367,22 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const showRecording = evRawTop.showRecording === true
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
   const finalRecordingUrl = evRawTop.finalRecordingUrl as string | undefined
-  const rtmpHlsUrl = (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
-  const isRtmpRecordingProcessing = event.streamType === "rtmp" && isEnded && showRecording && !finalRecordingUrl
+  const rtmpStreamKey = typeof evRawTop.streamKey === "string" ? evRawTop.streamKey : ""
+  const rtmpStream = (rtmpStreamKey.split("?")[0] || (evRawTop.slug as string | undefined) || eventId).trim()
+  const rtmpHlsUrl = rtmpStream ? `https://rtmplive.in/live/${rtmpStream}.m3u8` : (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
+  const rtmpReplayHlsUrl = rtmpReplaySource.status === "hls" ? rtmpReplaySource.url : null
+  const rtmpReplayMp4Url =
+    rtmpReplaySource.status === "mp4"
+      ? rtmpReplaySource.url
+      : finalRecordingUrl
+  const isRtmpRecordingProcessing =
+    event.streamType === "rtmp" &&
+    isEnded &&
+    showRecording &&
+    !rtmpReplayHlsUrl &&
+    !rtmpReplayMp4Url
   const hasReplay =
-    (event.streamType === "rtmp" && !!finalRecordingUrl) ||
+    (event.streamType === "rtmp" && (!!rtmpReplayHlsUrl || !!rtmpReplayMp4Url)) ||
     (showRecording && (
       (event.streamType === "youtube_api" && replayBroadcastId) ||
       (streamType === "youtube" && event.youtubeUrl)
@@ -1309,8 +1392,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   let replaySrc: string | null = null
   if (isEnded && hasReplay) {
-    if (event.streamType === "rtmp" && finalRecordingUrl) {
-      replaySrc = finalRecordingUrl
+    if (event.streamType === "rtmp" && rtmpReplayMp4Url) {
+      replaySrc = rtmpReplayMp4Url
     } else if (event.streamType === "youtube_api" && replayBroadcastId) {
       replaySrc = buildYouTubeEmbedUrl(replayBroadcastId, { controls: 1, start: 0 })
     } else if ((streamType === "youtube" || event.streamType === "youtube_embed") && event.youtubeUrl) {
@@ -1486,6 +1569,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           <div className="absolute inset-0 flex items-center justify-center">
             {isOnBreak ? (
               renderMockPlayerContent()
+            ) : isEnded && event.streamType === "rtmp" && rtmpReplayHlsUrl ? (
+              <div className="h-full w-full [&>div]:h-full [&>div]:rounded-none">
+                <StreamPlayer
+                  hlsUrl={rtmpReplayHlsUrl}
+                  isLive={false}
+                  isPlayable
+                  eventTitle={event.title}
+                  streamType="rtmp"
+                />
+              </div>
             ) : isEnded && hasReplay && replaySrc ? (
               <div className="group relative h-full w-full">
                 {event.streamType === "rtmp" ? (
@@ -1509,9 +1602,11 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                     <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-white">Recording is being processed</p>
+                    <p className="text-sm font-medium text-white">
+                      {rtmpReplaySource.status === "checking" ? "Checking recording..." : "Recording is being processed"}
+                    </p>
                     <p className="text-xs text-white/60">
-                      The RTMP DVR will appear here automatically after the merge worker publishes the final MP4.
+                      The player will use instant HLS replay first, then the RTMP DVR MP4 when it is ready.
                     </p>
                   </div>
                 </div>
@@ -1556,6 +1651,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <StreamPlayer
                   hlsUrl={rtmpHlsUrl}
                   isLive={event.status === "live"}
+                  isPlayable={event.status === "live"}
                   eventTitle={event.title}
                   streamType="rtmp"
                 />

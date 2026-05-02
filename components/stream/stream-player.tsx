@@ -12,11 +12,20 @@ interface StreamPlayerProps {
   youtubeUrl?: string | null
   embedUrl?: string | null
   isLive: boolean
+  isPlayable?: boolean
   eventTitle: string
   streamType: "rtmp" | "hls" | "youtube" | "embedded" | "youtube_api" | "youtube_embed" | "third_party"
 }
 
-export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle, streamType }: StreamPlayerProps) {
+export function StreamPlayer({
+  hlsUrl,
+  youtubeUrl,
+  embedUrl,
+  isLive,
+  isPlayable = isLive,
+  eventTitle,
+  streamType,
+}: StreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -208,15 +217,15 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
             Retry
           </Button>
         </div>
-      ) : playbackBlocked && isLive ? (
+      ) : playbackBlocked && isPlayable ? (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
-          <p className="text-sm">Click to play live stream</p>
+          <p className="text-sm">Click to play {isLive ? "live stream" : "recording"}</p>
           <Button variant="outline" size="sm" onClick={playVideo}>
             <Play className="h-4 w-4 mr-2" />
             Play
           </Button>
         </div>
-      ) : !isLive ? (
+      ) : !isPlayable ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
             <Volume2 className="h-6 w-6" />
@@ -231,15 +240,17 @@ export function StreamPlayer({ hlsUrl, youtubeUrl, embedUrl, isLive, eventTitle,
         autoPlay
         playsInline
         muted={isMuted}
-        style={{ display: isLive && !playerError ? "block" : "none" }}
+        style={{ display: isPlayable && !playerError ? "block" : "none" }}
       />
 
       {/* Controls overlay */}
-      {isLive && !playerError && (
+      {isPlayable && !playerError && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge className="border border-zinc-500/50 bg-zinc-600 text-white font-semibold shadow-none">LIVE</Badge>
+              <Badge className="border border-zinc-500/50 bg-zinc-600 text-white font-semibold shadow-none">
+                {isLive ? "LIVE" : "Replay"}
+              </Badge>
               <span className="text-white text-sm">{eventTitle}</span>
             </div>
             <div className="flex items-center gap-2">

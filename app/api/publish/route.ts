@@ -2,15 +2,14 @@ export async function POST(req: Request) {
   const body = await req.json()
 
   const stream = body.stream
-  const paramStr = body.param || ""
+  const raw = body.param || ""
+  const clean = raw.startsWith("?") ? raw.slice(1) : raw
 
-  // robust token extraction
-  const tokenMatch = paramStr.match(/token=([^&]+)/)
-  const token = tokenMatch ? tokenMatch[1] : null
+  const token = new URLSearchParams(clean).get("token")
 
   console.log("STREAM:", stream)
   console.log("TOKEN:", token)
-  console.log("PARAM:", paramStr)
+  console.log("PARAM:", raw)
 
   if (!token) {
     return Response.json({ code: 403 })

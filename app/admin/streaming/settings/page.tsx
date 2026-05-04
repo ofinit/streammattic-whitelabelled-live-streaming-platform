@@ -44,6 +44,11 @@ type FiveCentsCdnConfig = {
   protocols: string
   dvrEnabled: boolean
   dvrRetentionDays: number
+  criticalBackupEnabled: boolean
+  criticalBackupName: string
+  criticalBackupZone: string
+  wasabiBucket: string
+  wasabiEndpoint: string
 }
 
 function apiUrlFromConfig(config: ServerConfig, backend: StreamingBackendType) {
@@ -177,6 +182,11 @@ export default function StreamingSettingsPage() {
     protocols: "RTMP,HLS",
     dvrEnabled: true,
     dvrRetentionDays: 14,
+    criticalBackupEnabled: true,
+    criticalBackupName: "Wasabi Object Storage",
+    criticalBackupZone: "",
+    wasabiBucket: "",
+    wasabiEndpoint: "",
   })
 
   const [isTesting, setIsTesting] = useState(false)
@@ -215,6 +225,12 @@ export default function StreamingSettingsPage() {
         .filter(Boolean),
       fiveCentsCdnDvrEnabled: fiveCentsCdn.dvrEnabled,
       fiveCentsCdnDvrRetentionDays: fiveCentsCdn.dvrRetentionDays,
+      fiveCentsCdnCriticalBackupEnabled: fiveCentsCdn.criticalBackupEnabled,
+      fiveCentsCdnCriticalBackupProvider: "wasabi",
+      fiveCentsCdnCriticalBackupName: fiveCentsCdn.criticalBackupName,
+      fiveCentsCdnCriticalBackupZone: fiveCentsCdn.criticalBackupZone,
+      fiveCentsCdnWasabiBucket: fiveCentsCdn.wasabiBucket,
+      fiveCentsCdnWasabiEndpoint: fiveCentsCdn.wasabiEndpoint,
     }
   }
 
@@ -262,6 +278,11 @@ export default function StreamingSettingsPage() {
           protocols: Array.isArray(s.fiveCentsCdnProtocols) ? s.fiveCentsCdnProtocols.join(",") : "RTMP,HLS",
           dvrEnabled: s.fiveCentsCdnDvrEnabled !== false,
           dvrRetentionDays: Number(s.fiveCentsCdnDvrRetentionDays || 14),
+          criticalBackupEnabled: s.fiveCentsCdnCriticalBackupEnabled !== false,
+          criticalBackupName: s.fiveCentsCdnCriticalBackupName || "Wasabi Object Storage",
+          criticalBackupZone: s.fiveCentsCdnCriticalBackupZone || "",
+          wasabiBucket: s.fiveCentsCdnWasabiBucket || "",
+          wasabiEndpoint: s.fiveCentsCdnWasabiEndpoint || "",
         })
       } catch (error) {
         setConnectionStatus("disconnected")
@@ -591,6 +612,81 @@ export default function StreamingSettingsPage() {
                   checked={fiveCentsCdn.dvrEnabled}
                   onCheckedChange={(v) => setFiveCentsCdn({ ...fiveCentsCdn, dvrEnabled: v })}
                 />
+              </div>
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground">Wasabi Critical Backup</h4>
+                    <p className="text-xs text-muted-foreground">
+                      5CentsCDN copies DVR files to Wasabi from its Critical Backup service. Configure the Wasabi access key,
+                      secret, S3 provider, endpoint, canned ACL, and zones in the 5CentsCDN control panel.
+                    </p>
+                    <a
+                      href="https://www.5centscdn.net/help/how-to-add-wasabi-as-critical-storage-backup-provider/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-xs text-primary hover:underline"
+                    >
+                      5CentsCDN Wasabi setup guide
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="fivecents-critical-backup" className="text-xs text-muted-foreground">
+                      Track Wasabi backup
+                    </Label>
+                    <Switch
+                      id="fivecents-critical-backup"
+                      checked={fiveCentsCdn.criticalBackupEnabled}
+                      onCheckedChange={(v) => setFiveCentsCdn({ ...fiveCentsCdn, criticalBackupEnabled: v })}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="fivecents-backup-name">5CentsCDN Backup Name</Label>
+                    <Input
+                      id="fivecents-backup-name"
+                      value={fiveCentsCdn.criticalBackupName}
+                      onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, criticalBackupName: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="Wasabi Object Storage"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fivecents-backup-zone">5CentsCDN Backup Zone</Label>
+                    <Input
+                      id="fivecents-backup-zone"
+                      value={fiveCentsCdn.criticalBackupZone}
+                      onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, criticalBackupZone: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="Zone configured under Critical Backup"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fivecents-wasabi-bucket">Wasabi Bucket / Prefix</Label>
+                    <Input
+                      id="fivecents-wasabi-bucket"
+                      value={fiveCentsCdn.wasabiBucket}
+                      onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, wasabiBucket: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="streamlivee-recordings"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fivecents-wasabi-endpoint">Wasabi S3 Endpoint</Label>
+                    <Input
+                      id="fivecents-wasabi-endpoint"
+                      value={fiveCentsCdn.wasabiEndpoint}
+                      onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, wasabiEndpoint: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="https://s3.ap-southeast-1.wasabisys.com"
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Do not enter Wasabi access keys here. Store those only in 5CentsCDN Critical Backup; StreamLivee keeps
+                  these non-secret values so event metadata and audits show where DVR files are expected to be backed up.
+                </p>
               </div>
             </div>
           )}

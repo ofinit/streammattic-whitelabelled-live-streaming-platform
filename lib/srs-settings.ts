@@ -34,6 +34,12 @@ export type SrsSettings = {
   fiveCentsCdnProtocols: string[]
   fiveCentsCdnDvrEnabled: boolean
   fiveCentsCdnDvrRetentionDays: number
+  fiveCentsCdnCriticalBackupEnabled: boolean
+  fiveCentsCdnCriticalBackupProvider: "wasabi"
+  fiveCentsCdnCriticalBackupName: string
+  fiveCentsCdnCriticalBackupZone: string
+  fiveCentsCdnWasabiBucket: string
+  fiveCentsCdnWasabiEndpoint: string
 }
 
 export type StreamingSettings = SrsSettings
@@ -79,6 +85,12 @@ export const DEFAULT_SRS_SETTINGS: SrsSettings = {
   fiveCentsCdnProtocols: ["RTMP", "HLS"],
   fiveCentsCdnDvrEnabled: true,
   fiveCentsCdnDvrRetentionDays: 14,
+  fiveCentsCdnCriticalBackupEnabled: true,
+  fiveCentsCdnCriticalBackupProvider: "wasabi",
+  fiveCentsCdnCriticalBackupName: "Wasabi Object Storage",
+  fiveCentsCdnCriticalBackupZone: "",
+  fiveCentsCdnWasabiBucket: "",
+  fiveCentsCdnWasabiEndpoint: "",
 }
 
 function stringOr(value: unknown, fallback: string): string {
@@ -117,6 +129,10 @@ function stringArrayOr(value: unknown, fallback: string[]): string[] {
   return items.length > 0 ? items : fallback
 }
 
+function criticalBackupProviderOr(value: unknown, fallback: "wasabi"): "wasabi" {
+  return value === "wasabi" ? "wasabi" : fallback
+}
+
 function normalizeStored(raw: unknown): SrsSettings {
   const data = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Partial<StoredSrsSettings>) : {}
   const defaults = DEFAULT_SRS_SETTINGS
@@ -153,6 +169,27 @@ function normalizeStored(raw: unknown): SrsSettings {
       defaults.fiveCentsCdnDvrRetentionDays,
       1,
     ),
+    fiveCentsCdnCriticalBackupEnabled:
+      typeof data.fiveCentsCdnCriticalBackupEnabled === "boolean"
+        ? data.fiveCentsCdnCriticalBackupEnabled
+        : defaults.fiveCentsCdnCriticalBackupEnabled,
+    fiveCentsCdnCriticalBackupProvider: criticalBackupProviderOr(
+      data.fiveCentsCdnCriticalBackupProvider,
+      defaults.fiveCentsCdnCriticalBackupProvider,
+    ),
+    fiveCentsCdnCriticalBackupName: stringOr(
+      data.fiveCentsCdnCriticalBackupName,
+      defaults.fiveCentsCdnCriticalBackupName,
+    ),
+    fiveCentsCdnCriticalBackupZone: stringOr(
+      data.fiveCentsCdnCriticalBackupZone,
+      defaults.fiveCentsCdnCriticalBackupZone,
+    ),
+    fiveCentsCdnWasabiBucket: stringOr(data.fiveCentsCdnWasabiBucket, defaults.fiveCentsCdnWasabiBucket),
+    fiveCentsCdnWasabiEndpoint: stringOr(
+      data.fiveCentsCdnWasabiEndpoint,
+      defaults.fiveCentsCdnWasabiEndpoint,
+    ).replace(/\/$/, ""),
   }
 }
 
@@ -245,6 +282,27 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
       current.fiveCentsCdnDvrRetentionDays,
       1,
     ),
+    fiveCentsCdnCriticalBackupEnabled:
+      typeof input.fiveCentsCdnCriticalBackupEnabled === "boolean"
+        ? input.fiveCentsCdnCriticalBackupEnabled
+        : current.fiveCentsCdnCriticalBackupEnabled,
+    fiveCentsCdnCriticalBackupProvider: criticalBackupProviderOr(
+      input.fiveCentsCdnCriticalBackupProvider,
+      current.fiveCentsCdnCriticalBackupProvider,
+    ),
+    fiveCentsCdnCriticalBackupName: stringOr(
+      input.fiveCentsCdnCriticalBackupName,
+      current.fiveCentsCdnCriticalBackupName,
+    ),
+    fiveCentsCdnCriticalBackupZone: stringOr(
+      input.fiveCentsCdnCriticalBackupZone,
+      current.fiveCentsCdnCriticalBackupZone,
+    ),
+    fiveCentsCdnWasabiBucket: stringOr(input.fiveCentsCdnWasabiBucket, current.fiveCentsCdnWasabiBucket),
+    fiveCentsCdnWasabiEndpoint: stringOr(
+      input.fiveCentsCdnWasabiEndpoint,
+      current.fiveCentsCdnWasabiEndpoint,
+    ).replace(/\/$/, ""),
   }
   const finalSettings = withGeneratedSecrets(merged)
   const sql = getDb()

@@ -21,6 +21,15 @@ export type FiveCentsCdnProvisioningMetadata = {
   protocols: string[]
   dvrEnabled: boolean
   dvrRetentionDays: number
+  recordingStorage: {
+    managedBy: "5centscdn-critical-backup"
+    provider: "wasabi"
+    enabled: boolean
+    name: string
+    zone: string
+    bucket: string
+    endpoint: string
+  }
 }
 
 type FiveCentsCdnRequestOptions = {
@@ -172,6 +181,15 @@ export function buildFiveCentsCdnProvisioningMetadata(
     protocols: [...settings.fiveCentsCdnProtocols],
     dvrEnabled: settings.fiveCentsCdnDvrEnabled,
     dvrRetentionDays: settings.fiveCentsCdnDvrRetentionDays,
+    recordingStorage: {
+      managedBy: "5centscdn-critical-backup",
+      provider: settings.fiveCentsCdnCriticalBackupProvider,
+      enabled: settings.fiveCentsCdnCriticalBackupEnabled,
+      name: settings.fiveCentsCdnCriticalBackupName,
+      zone: settings.fiveCentsCdnCriticalBackupZone,
+      bucket: settings.fiveCentsCdnWasabiBucket,
+      endpoint: settings.fiveCentsCdnWasabiEndpoint,
+    },
   }
 }
 
@@ -194,6 +212,7 @@ export function getFiveCentsCdnProvisioningMetadata(payload: unknown): FiveCents
   const protocols = Array.isArray(provisioning.protocols)
     ? provisioning.protocols.map((item) => String(item).trim()).filter(Boolean)
     : []
+  const recordingStorage = getRecord(provisioning.recordingStorage)
   const serverId = Number(provisioning.serverId)
   const dvrRetentionDays = Number(provisioning.dvrRetentionDays)
 
@@ -207,6 +226,15 @@ export function getFiveCentsCdnProvisioningMetadata(payload: unknown): FiveCents
     protocols,
     dvrEnabled: provisioning.dvrEnabled === true,
     dvrRetentionDays: Number.isFinite(dvrRetentionDays) ? dvrRetentionDays : 1,
+    recordingStorage: {
+      managedBy: "5centscdn-critical-backup",
+      provider: "wasabi",
+      enabled: recordingStorage?.enabled === true,
+      name: getString(recordingStorage?.name),
+      zone: getString(recordingStorage?.zone),
+      bucket: getString(recordingStorage?.bucket),
+      endpoint: getString(recordingStorage?.endpoint),
+    },
   }
 }
 
@@ -224,7 +252,8 @@ export function isFiveCentsCdnProvisioningCurrent(
     provisioning.codec === expected.codec &&
     JSON.stringify(provisioning.protocols) === JSON.stringify(expected.protocols) &&
     provisioning.dvrEnabled === expected.dvrEnabled &&
-    provisioning.dvrRetentionDays === expected.dvrRetentionDays
+    provisioning.dvrRetentionDays === expected.dvrRetentionDays &&
+    JSON.stringify(provisioning.recordingStorage) === JSON.stringify(expected.recordingStorage)
   )
 }
 

@@ -4,6 +4,7 @@ import crypto from "crypto"
 import { getDb } from "@/lib/db"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
+import { deleteFiveCentsCdnStreamForEvent } from "@/lib/server/fivecentscdn-stream-cleanup"
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 
@@ -31,12 +32,13 @@ export async function runEventCleanupTask() {
 
   let deletedCount = 0
   try {
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
     // 1. Find expired events
     const expiredEvents = await sql`
       SELECT e.id, e.title, e.user_id as "userId", e.studio_id as "studioId", u.email as "ownerEmail",
              e.hero_image_url as "heroImageUrl", e.header_image_url as "headerImageUrl", e.player_image_url as "playerImageUrl",
              e.photo_gallery_urls as "photoGalleryUrls", e.photographer_logo_url as "photographerLogoUrl",
-             e.thumbnail
+             e.thumbnail, e.rtmp_provider as "rtmpProvider"
       FROM events e
       LEFT JOIN users u ON e.user_id = u.id
       WHERE e.validity_expires_at < NOW()
@@ -82,12 +84,18 @@ export async function runEventCleanupTask() {
         }
       }
 
-      await enqueueSrsRecordingDeletion(sql, {
-        eventId: event.id as string,
-        reason: "expired",
-      }).catch((err) => {
-        console.error(`[Cleanup Service] Failed to queue SRS DVR deletion for event ${event.id}:`, err)
-      })
+      if (event.rtmpProvider === "fivecentscdn") {
+        await deleteFiveCentsCdnStreamForEvent(sql, event.id as string).catch((err) => {
+          console.error(`[Cleanup Service] Failed to delete 5CentsCDN stream for event ${event.id}:`, err)
+        })
+      } else {
+        await enqueueSrsRecordingDeletion(sql, {
+          eventId: event.id as string,
+          reason: "expired",
+        }).catch((err) => {
+          console.error(`[Cleanup Service] Failed to queue SRS DVR deletion for event ${event.id}:`, err)
+        })
+      }
 
       // 4. Break optional FK links (orders/refund_requests do not use ON DELETE CASCADE)
       await sql`UPDATE orders SET event_id = NULL WHERE event_id = ${event.id as string}`

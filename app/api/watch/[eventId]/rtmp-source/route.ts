@@ -34,11 +34,14 @@ export async function GET(
   }
 
   const sql = getDb()
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
   const rows = await sql(
     `SELECT e.id,
             e.slug,
             e.stream_type,
             e.stream_key,
+            e.hls_url,
+            e.rtmp_provider,
             e.status,
             COALESCE(NULLIF(sr.public_url, ''), NULLIF(ss.final_recording_url, '')) AS final_recording_url
      FROM events e
@@ -72,7 +75,8 @@ export async function GET(
   const streamKey = typeof event.stream_key === "string" ? event.stream_key : ""
   const slug = typeof event.slug === "string" ? event.slug : eventId
   const stream = (streamKey.split("?")[0] || slug).trim()
-  const hlsUrl = `https://rtmplive.in/live/${stream}.m3u8`
+  const storedHlsUrl = typeof event.hls_url === "string" ? event.hls_url.trim() : ""
+  const hlsUrl = storedHlsUrl || `https://rtmplive.in/live/${stream}.m3u8`
   const fallbackMp4Url = `/recordings/${stream}.mp4`
   const fallbackMp4ProbeUrl = new URL(fallbackMp4Url, request.url).toString()
   const finalRecordingUrl =

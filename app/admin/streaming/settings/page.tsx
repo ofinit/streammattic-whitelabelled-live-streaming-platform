@@ -38,12 +38,21 @@ type ServerConfig = {
   playbackBaseUrl: string
 }
 
+type FiveCentsCdnConfig = {
+  serverId: number
+  codec: string
+  protocols: string
+  dvrEnabled: boolean
+  dvrRetentionDays: number
+}
+
 function apiUrlFromConfig(config: ServerConfig, backend: StreamingBackendType) {
   const host = config.host.trim().replace(/\/$/, "")
   if (!host) return ""
   if (/^https?:\/\//i.test(host)) return host
 
   const port = config.httpPort
+  if (backend === "fivecentscdn") return `https://${host.replace(/^\/+/, "")}`
   if (backend === "srs" && port === "") return `https://${host}/api`
   return `http://${host}:${port || BACKEND_INFO[backend].defaultPorts.api}`
 }
@@ -52,7 +61,12 @@ function configFromSavedSettings(s: Record<string, any>): ServerConfig {
   let host = s.host || "rtmplive.in"
   let httpPort = s.httpPort === "" ? "" : String(s.httpPort || "")
 
-  if (typeof s.apiUrl === "string" && /^https?:\/\//i.test(s.apiUrl)) {
+  if (s.backendType === "fivecentscdn") {
+    host = s.apiUrl || s.host || "https://api.5centscdn.com/v2"
+    httpPort = ""
+  }
+
+  if (s.backendType !== "fivecentscdn" && typeof s.apiUrl === "string" && /^https?:\/\//i.test(s.apiUrl)) {
     try {
       const url = new URL(s.apiUrl)
       host = url.hostname
@@ -157,6 +171,13 @@ export default function StreamingSettingsPage() {
     hookSecret: "",
     workerSecret: "",
   })
+  const [fiveCentsCdn, setFiveCentsCdn] = useState<FiveCentsCdnConfig>({
+    serverId: 212,
+    codec: "h264",
+    protocols: "RTMP,HLS",
+    dvrEnabled: true,
+    dvrRetentionDays: 14,
+  })
 
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -167,7 +188,7 @@ export default function StreamingSettingsPage() {
 
     return {
       backendType: activeBackend,
-      enabled: activeBackend === "srs",
+      enabled: true,
       serverName: serverConfig.name,
       host: serverConfig.host,
       apiUrl,
@@ -186,6 +207,14 @@ export default function StreamingSettingsPage() {
       liveRecordingsDir: srsRuntime.liveRecordingsDir,
       finalRecordingsDir: srsRuntime.finalRecordingsDir,
       publicRecordingsBaseUrl: srsRuntime.publicRecordingsBaseUrl,
+      fiveCentsCdnServerId: fiveCentsCdn.serverId,
+      fiveCentsCdnCodec: fiveCentsCdn.codec,
+      fiveCentsCdnProtocols: fiveCentsCdn.protocols
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      fiveCentsCdnDvrEnabled: fiveCentsCdn.dvrEnabled,
+      fiveCentsCdnDvrRetentionDays: fiveCentsCdn.dvrRetentionDays,
     }
   }
 
@@ -226,6 +255,13 @@ export default function StreamingSettingsPage() {
           creditBlockMinutes: s.creditBlockMinutes || 360,
           hookSecret: s.hookSecret || "",
           workerSecret: s.workerSecret || "",
+        })
+        setFiveCentsCdn({
+          serverId: Number(s.fiveCentsCdnServerId || 212),
+          codec: s.fiveCentsCdnCodec || "h264",
+          protocols: Array.isArray(s.fiveCentsCdnProtocols) ? s.fiveCentsCdnProtocols.join(",") : "RTMP,HLS",
+          dvrEnabled: s.fiveCentsCdnDvrEnabled !== false,
+          dvrRetentionDays: Number(s.fiveCentsCdnDvrRetentionDays || 14),
         })
       } catch (error) {
         setConnectionStatus("disconnected")
@@ -379,7 +415,7 @@ export default function StreamingSettingsPage() {
                           : "bg-yellow-500/10 text-yellow-500 border-yellow-500/30 text-xs"
                       }
                     >
-                      {info.isFree ? "Free" : "$50/mo"}
+                      {info.isFree ? "Free" : info.type === "fivecentscdn" ? "CDN" : "$50/mo"}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{info.description}</p>
@@ -495,6 +531,69 @@ export default function StreamingSettingsPage() {
               </Button>
             </div>
           </div>
+
+          {activeBackend === "fivecentscdn" && (
+            <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-foreground">5CentsCDN Stream Defaults</h4>
+                <p className="text-xs text-muted-foreground">
+                  These values are used when creating each RTMP push stream through the 5CentsCDN API.
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fivecents-server">Server ID</Label>
+                  <Input
+                    id="fivecents-server"
+                    type="number"
+                    value={fiveCentsCdn.serverId}
+                    onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, serverId: parseInt(e.target.value) || 212 })}
+                    className="bg-secondary border-0"
+                  />
+                  <p className="text-[11px] text-muted-foreground">Examples: India 212, Europe 2, Singapore 20.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fivecents-codec">Codec</Label>
+                  <Input
+                    id="fivecents-codec"
+                    value={fiveCentsCdn.codec}
+                    onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, codec: e.target.value })}
+                    className="bg-secondary border-0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fivecents-protocols">Protocols</Label>
+                  <Input
+                    id="fivecents-protocols"
+                    value={fiveCentsCdn.protocols}
+                    onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, protocols: e.target.value })}
+                    className="bg-secondary border-0"
+                    placeholder="RTMP,HLS"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fivecents-retention">DVR Retention Days</Label>
+                  <Input
+                    id="fivecents-retention"
+                    type="number"
+                    value={fiveCentsCdn.dvrRetentionDays}
+                    onChange={(e) => setFiveCentsCdn({ ...fiveCentsCdn, dvrRetentionDays: parseInt(e.target.value) || 14 })}
+                    className="bg-secondary border-0"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-md bg-secondary/40 p-3">
+                <div>
+                  <Label>Enable 5CentsCDN DVR</Label>
+                  <p className="text-xs text-muted-foreground">Call the stream record endpoint after each push stream is created.</p>
+                </div>
+                <Switch
+                  checked={fiveCentsCdn.dvrEnabled}
+                  onCheckedChange={(v) => setFiveCentsCdn({ ...fiveCentsCdn, dvrEnabled: v })}
+                />
+              </div>
+            </div>
+          )}
 
           <Separator />
 

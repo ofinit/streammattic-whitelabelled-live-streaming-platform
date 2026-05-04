@@ -1,27 +1,24 @@
+import { listFiveCentsCdnPushServers } from "@/lib/streaming/fivecentscdn-service";
+import { getStreamingSettings, testSrsConnection } from "@/lib/srs-settings";
+
 export async function GET() {
-  const url = "http://127.0.0.1:1985/api/v1/summaries";
-
   try {
-    const res = await fetch(url);
-
-    const data = await res.json();
-
-    // ✅ Correct SRS validation
-    if (data.code !== 0) {
+    const settings = await getStreamingSettings();
+    if (settings.backendType === "fivecentscdn") {
+      const data = await listFiveCentsCdnPushServers(settings);
       return Response.json({
-        success: false,
-        message: "SRS returned error",
+        success: true,
+        message: "5CentsCDN API is reachable and responding",
         data,
       });
     }
 
-    // ✅ IMPORTANT: success = true
+    const result = await testSrsConnection(settings);
     return Response.json({
-      success: true,
-      message: "SRS server is reachable and responding",
-      data,
+      success: result.ok,
+      message: result.message,
+      data: { status: result.status, url: result.url },
     });
-
   } catch (error: any) {
     return Response.json(
       {
@@ -31,4 +28,30 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const settings = body?.settings ?? body;
+
+  if (settings?.backendType === "fivecentscdn") {
+    try {
+      const data = await listFiveCentsCdnPushServers(settings);
+      return Response.json({
+        success: true,
+        message: "5CentsCDN API is reachable and responding",
+        data,
+      });
+    } catch (error: any) {
+      return Response.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: 500 },
+      );
+    }
+  }
+
+  return GET();
 }

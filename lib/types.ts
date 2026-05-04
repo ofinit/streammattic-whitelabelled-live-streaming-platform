@@ -248,6 +248,7 @@ export interface LiveEvent {
   streamType: StreamType
   streamKey?: string
   rtmpUrl?: string
+  rtmpProvider?: StreamingBackendType
   hlsUrl?: string
   youtubeUrl?: string
   youtubeChannelName?: string
@@ -914,7 +915,7 @@ export interface StreamHealthIssue {
   message: string
 }
 
-export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx"
+export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx" | "fivecentscdn"
 
 export interface NimbleServerConfig {
   id: string

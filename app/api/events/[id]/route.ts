@@ -2,6 +2,7 @@ import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withAuth } from "@/lib/api-helpers"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
+import { deleteFiveCentsCdnStreamForEvent } from "@/lib/server/fivecentscdn-stream-cleanup"
 
 export const GET = withAuth(async (user, request) => {
   const url = new URL(request.url)
@@ -54,6 +55,8 @@ export const DELETE = withAuth(async (user, request) => {
   const url = new URL(request.url)
   const id = url.pathname.split("/").pop()!
   const sql = getDb()
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT`.catch(() => {})
 
   const existing = await sql`
     SELECT e.*, u.email AS owner_email
@@ -67,9 +70,15 @@ export const DELETE = withAuth(async (user, request) => {
     return jsonError("Forbidden", 403)
   }
 
-  await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
-    console.error("[events DELETE] Failed to queue SRS DVR deletion:", err)
-  })
+  if (row.rtmp_provider === "fivecentscdn") {
+    await deleteFiveCentsCdnStreamForEvent(sql, id).catch((err) => {
+      console.error("[events DELETE] Failed to delete 5CentsCDN stream:", err)
+    })
+  } else {
+    await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
+      console.error("[events DELETE] Failed to queue SRS DVR deletion:", err)
+    })
+  }
   await sql`DELETE FROM events WHERE id = ${id}`
   await insertDeletedEventLog(sql, {
     eventId: id,

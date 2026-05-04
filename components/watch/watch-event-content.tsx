@@ -1371,7 +1371,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const replayBroadcastId = evRawTop.youtubeBroadcastId as string | undefined
   const rtmpStreamKey = typeof evRawTop.streamKey === "string" ? evRawTop.streamKey : ""
   const rtmpStream = (rtmpStreamKey.split("?")[0] || (evRawTop.slug as string | undefined) || eventId).trim()
-  const rtmpHlsUrl = rtmpStream ? `https://rtmplive.in/live/${rtmpStream}.m3u8` : (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
+  const storedRtmpHlsUrl = (event.hlsUrl as string | undefined) || (evRawTop.hlsUrl as string | undefined)
+  const rtmpHlsUrl = storedRtmpHlsUrl || (rtmpStream ? `https://rtmplive.in/live/${rtmpStream}.m3u8` : "")
   const rtmpPlaybackHlsUrl = rtmpPlaybackSource.status === "hls" ? rtmpPlaybackSource.url : null
   const rtmpPlaybackMp4Url =
     rtmpPlaybackSource.status === "mp4"

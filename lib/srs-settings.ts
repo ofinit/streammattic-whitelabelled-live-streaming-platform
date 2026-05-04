@@ -29,7 +29,14 @@ export type SrsSettings = {
   liveRecordingsDir: string
   finalRecordingsDir: string
   publicRecordingsBaseUrl: string
+  fiveCentsCdnServerId: number
+  fiveCentsCdnCodec: string
+  fiveCentsCdnProtocols: string[]
+  fiveCentsCdnDvrEnabled: boolean
+  fiveCentsCdnDvrRetentionDays: number
 }
+
+export type StreamingSettings = SrsSettings
 
 export type PublicSrsSettings = Omit<SrsSettings, "apiKey" | "hookSecret" | "workerSecret"> & {
   hasApiKey: boolean
@@ -67,6 +74,11 @@ export const DEFAULT_SRS_SETTINGS: SrsSettings = {
   liveRecordingsDir: "/root/recordings/recordings/live",
   finalRecordingsDir: "/root/recordings/final",
   publicRecordingsBaseUrl: "https://rtmplive.in/recordings",
+  fiveCentsCdnServerId: 212,
+  fiveCentsCdnCodec: "h264",
+  fiveCentsCdnProtocols: ["RTMP", "HLS"],
+  fiveCentsCdnDvrEnabled: true,
+  fiveCentsCdnDvrRetentionDays: 14,
 }
 
 function stringOr(value: unknown, fallback: string): string {
@@ -89,11 +101,27 @@ function decryptSecret(value: unknown): string {
   return typeof value === "string" && value ? decrypt(value) || "" : ""
 }
 
+function backendTypeOr(value: unknown, fallback: StreamingBackendType): StreamingBackendType {
+  return value === "nimble" ||
+    value === "srs" ||
+    value === "nginx_rtmp" ||
+    value === "mediamtx" ||
+    value === "fivecentscdn"
+    ? value
+    : fallback
+}
+
+function stringArrayOr(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return fallback
+  const items = value.map((item) => String(item).trim()).filter(Boolean)
+  return items.length > 0 ? items : fallback
+}
+
 function normalizeStored(raw: unknown): SrsSettings {
   const data = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Partial<StoredSrsSettings>) : {}
   const defaults = DEFAULT_SRS_SETTINGS
   return {
-    backendType: data.backendType === "srs" ? "srs" : defaults.backendType,
+    backendType: backendTypeOr(data.backendType, defaults.backendType),
     enabled: typeof data.enabled === "boolean" ? data.enabled : defaults.enabled,
     serverName: stringOr(data.serverName, defaults.serverName),
     host: stringOr(data.host, defaults.host),
@@ -113,6 +141,18 @@ function normalizeStored(raw: unknown): SrsSettings {
     liveRecordingsDir: stringOr(data.liveRecordingsDir, defaults.liveRecordingsDir).replace(/\/$/, ""),
     finalRecordingsDir: stringOr(data.finalRecordingsDir, defaults.finalRecordingsDir).replace(/\/$/, ""),
     publicRecordingsBaseUrl: stringOr(data.publicRecordingsBaseUrl, defaults.publicRecordingsBaseUrl).replace(/\/$/, ""),
+    fiveCentsCdnServerId: numberOr(data.fiveCentsCdnServerId, defaults.fiveCentsCdnServerId, 1),
+    fiveCentsCdnCodec: stringOr(data.fiveCentsCdnCodec, defaults.fiveCentsCdnCodec),
+    fiveCentsCdnProtocols: stringArrayOr(data.fiveCentsCdnProtocols, defaults.fiveCentsCdnProtocols),
+    fiveCentsCdnDvrEnabled:
+      typeof data.fiveCentsCdnDvrEnabled === "boolean"
+        ? data.fiveCentsCdnDvrEnabled
+        : defaults.fiveCentsCdnDvrEnabled,
+    fiveCentsCdnDvrRetentionDays: numberOr(
+      data.fiveCentsCdnDvrRetentionDays,
+      defaults.fiveCentsCdnDvrRetentionDays,
+      1,
+    ),
   }
 }
 
@@ -140,6 +180,10 @@ export async function getSrsSettings(): Promise<SrsSettings> {
   return withGeneratedSecrets(normalizeStored(rows[0]?.value))
 }
 
+export async function getStreamingSettings(): Promise<StreamingSettings> {
+  return getSrsSettings()
+}
+
 export function toPublicSrsSettings(settings: SrsSettings): PublicSrsSettings {
   return {
     ...settings,
@@ -160,7 +204,7 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
   const current = await getSrsSettings()
   const merged: SrsSettings = {
     ...current,
-    backendType: "srs",
+    backendType: backendTypeOr(input.backendType, current.backendType),
     enabled: typeof input.enabled === "boolean" ? input.enabled : current.enabled,
     serverName: stringOr(input.serverName, current.serverName),
     host: stringOr(input.host, current.host),
@@ -189,6 +233,18 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
     liveRecordingsDir: stringOr(input.liveRecordingsDir, current.liveRecordingsDir).replace(/\/$/, ""),
     finalRecordingsDir: stringOr(input.finalRecordingsDir, current.finalRecordingsDir).replace(/\/$/, ""),
     publicRecordingsBaseUrl: stringOr(input.publicRecordingsBaseUrl, current.publicRecordingsBaseUrl).replace(/\/$/, ""),
+    fiveCentsCdnServerId: numberOr(input.fiveCentsCdnServerId, current.fiveCentsCdnServerId, 1),
+    fiveCentsCdnCodec: stringOr(input.fiveCentsCdnCodec, current.fiveCentsCdnCodec),
+    fiveCentsCdnProtocols: stringArrayOr(input.fiveCentsCdnProtocols, current.fiveCentsCdnProtocols),
+    fiveCentsCdnDvrEnabled:
+      typeof input.fiveCentsCdnDvrEnabled === "boolean"
+        ? input.fiveCentsCdnDvrEnabled
+        : current.fiveCentsCdnDvrEnabled,
+    fiveCentsCdnDvrRetentionDays: numberOr(
+      input.fiveCentsCdnDvrRetentionDays,
+      current.fiveCentsCdnDvrRetentionDays,
+      1,
+    ),
   }
   const finalSettings = withGeneratedSecrets(merged)
   const sql = getDb()

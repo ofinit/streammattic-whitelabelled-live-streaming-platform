@@ -1,23 +1,55 @@
 import { NextResponse } from "next/server"
 import { getActiveProvider } from "@/lib/streaming"
-import { getSrsSettings, testSrsConnection } from "@/lib/srs-settings"
+import { getStreamingSettings, testSrsConnection } from "@/lib/srs-settings"
+import { listFiveCentsCdnPushServers } from "@/lib/streaming/fivecentscdn-service"
 
 export async function GET() {
   try {
-    const srsSettings = await getSrsSettings().catch(() => null)
-    if (srsSettings?.enabled) {
-      const health = await testSrsConnection(srsSettings)
+    const streamingSettings = await getStreamingSettings().catch(() => null)
+    if (streamingSettings?.enabled) {
+      if (streamingSettings.backendType === "fivecentscdn") {
+        const data = await listFiveCentsCdnPushServers(streamingSettings)
+        return NextResponse.json({
+          healthy: true,
+          backendName: "5CentsCDN",
+          backendType: "fivecentscdn",
+          stats: {
+            id: "server-fivecentscdn",
+            name: streamingSettings.serverName,
+            host: streamingSettings.apiUrl,
+            rtmpPort: streamingSettings.rtmpPort,
+            httpPort: 443,
+            apiPort: 443,
+            isActive: true,
+            isPrimary: true,
+            maxStreams: 1000,
+            currentStreams: 0,
+            uptime: 0,
+            activeStreams: 0,
+            totalClients: 0,
+            bandwidthIn: 0,
+            bandwidthOut: 0,
+            cpuUsage: 0,
+            memoryUsage: 0,
+            diskUsage: 0,
+            region: "5CentsCDN",
+          },
+          message: "5CentsCDN API is reachable and responding",
+          data,
+        })
+      }
+      const health = await testSrsConnection(streamingSettings)
       return NextResponse.json({
         healthy: health.ok,
         backendName: "SRS (Simple Realtime Server)",
         backendType: "srs",
         stats: {
           id: "server-srs",
-          name: srsSettings.serverName,
-          host: srsSettings.apiUrl,
-          rtmpPort: srsSettings.rtmpPort,
-          httpPort: srsSettings.httpPort,
-          apiPort: srsSettings.httpPort,
+          name: streamingSettings.serverName,
+          host: streamingSettings.apiUrl,
+          rtmpPort: streamingSettings.rtmpPort,
+          httpPort: streamingSettings.httpPort,
+          apiPort: streamingSettings.httpPort,
           isActive: health.ok,
           isPrimary: true,
           maxStreams: 1000,
@@ -30,7 +62,7 @@ export async function GET() {
           cpuUsage: 0,
           memoryUsage: 0,
           diskUsage: 0,
-          region: srsSettings.host,
+          region: streamingSettings.host,
         },
         message: health.message,
       })

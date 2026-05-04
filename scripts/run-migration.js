@@ -95,6 +95,10 @@ const statements = [
   `CREATE INDEX idx_packages_type ON packages(type)`,
   // Draft events (no stream selected): add enum value (idempotent on PG 10+)
   `ALTER TYPE stream_type_key ADD VALUE IF NOT EXISTS 'pending'`,
+  // RTMP provider metadata for managed providers such as 5CentsCDN.
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs', ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT, ADD COLUMN IF NOT EXISTS rtmp_provider_payload JSONB DEFAULT '{}'::jsonb`,
+  `CREATE INDEX IF NOT EXISTS idx_events_rtmp_provider ON events(rtmp_provider)`,
+  `CREATE INDEX IF NOT EXISTS idx_events_rtmp_provider_stream_id ON events(rtmp_provider_stream_id)`,
   // Admin forgot-password (PostgreSQL only; no Redis)
   `CREATE TABLE IF NOT EXISTS admin_password_reset_tokens (token TEXT PRIMARY KEY, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
   `CREATE INDEX IF NOT EXISTS idx_admin_pwd_reset_user ON admin_password_reset_tokens(user_id)`,

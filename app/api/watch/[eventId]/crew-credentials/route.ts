@@ -18,7 +18,7 @@ export async function POST(
 
     const sql = getDb()
     const rows = await sql`
-      SELECT e.id, e.user_id, e.slug, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key
+      SELECT e.id, e.user_id, e.slug, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key, e.rtmp_provider
       FROM events e
       WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
     `
@@ -53,7 +53,7 @@ export async function POST(
       }
     }
 
-    if (streamType === "rtmp") {
+    if (streamType === "rtmp" && row.rtmp_provider !== "fivecentscdn") {
       const currentKey = streamKey || ""
       const canonicalStreamId = buildRtmpStreamId((row.slug as string | null) || (row.id as string))
       const streamId = currentKey.split("?")[0] || canonicalStreamId

@@ -9,6 +9,7 @@
  *   - "srs"        - SRS Simple Realtime Server (free, open-source)
  *   - "nginx_rtmp" - Nginx-RTMP module (free, open-source)
  *   - "mediamtx"   - MediaMTX (free, open-source)
+ *   - "fivecentscdn" - 5CentsCDN managed RTMP/CDN provider
  *
  * Default: "nimble" (for backward compatibility)
  */
@@ -18,6 +19,7 @@ import { NimbleProvider } from "./nimble-provider"
 import { SrsProvider } from "./srs-provider"
 import { NginxRtmpProvider } from "./nginx-rtmp-provider"
 import { MediaMtxProvider } from "./mediamtx-provider"
+import { FiveCentsCdnProvider } from "./fivecentscdn-provider"
 
 // Singleton instances (created once, reused across requests)
 const providers: Partial<Record<StreamingBackendType, StreamingProvider>> = {}
@@ -27,7 +29,7 @@ const providers: Partial<Record<StreamingBackendType, StreamingProvider>> = {}
  */
 export function getActiveBackendType(): StreamingBackendType {
   const env = (process.env.STREAMING_BACKEND || "nimble").toLowerCase()
-  const valid: StreamingBackendType[] = ["nimble", "srs", "nginx_rtmp", "mediamtx"]
+  const valid: StreamingBackendType[] = ["nimble", "srs", "nginx_rtmp", "mediamtx", "fivecentscdn"]
   return valid.includes(env as StreamingBackendType) ? (env as StreamingBackendType) : "nimble"
 }
 
@@ -47,6 +49,9 @@ export function getProvider(backend?: StreamingBackendType): StreamingProvider {
         break
       case "mediamtx":
         providers[type] = new MediaMtxProvider()
+        break
+      case "fivecentscdn":
+        providers[type] = new FiveCentsCdnProvider()
         break
       case "nimble":
       default:

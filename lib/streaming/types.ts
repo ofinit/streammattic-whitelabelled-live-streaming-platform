@@ -21,7 +21,7 @@ export type StreamStats = NimbleStreamStats
 export type Recording = NimbleRecording
 export type ServerConfig = NimbleServerConfig
 
-export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx"
+export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx" | "fivecentscdn"
 
 export interface StreamingBackendInfo {
   type: StreamingBackendType
@@ -264,6 +264,70 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       testConnection: "SRS server is reachable and responding",
     },
     unsupportedFeatures: ["geoRestriction"],
+  },
+  fivecentscdn: {
+    type: "fivecentscdn",
+    name: "5CentsCDN",
+    description: "Managed CDN live streaming provider with RTMP ingest, HLS playback, DVR, analytics, and global delivery.",
+    isFree: false,
+    cost: "Uses your 5CentsCDN account",
+    website: "https://developer.5centscdn.net/livestreams.html",
+    features: [
+      "RTMP ingest",
+      "HLS and DASH playback",
+      "Managed DVR recording",
+      "Global CDN delivery",
+      "RTMP authentication",
+      "Secure token playback",
+      "Live stream analytics",
+    ],
+    defaultPorts: { rtmp: 1935, http: 443, api: 443 },
+    envVars: {
+      apiUrl: "FIVECENTSCDN_API_URL",
+      apiKey: "FIVECENTSCDN_API_KEY",
+      rtmpUrl: "FIVECENTSCDN_RTMP_URL",
+      playbackUrl: "FIVECENTSCDN_PLAYBACK_URL",
+    },
+    defaultConfig: {
+      name: "5CentsCDN Platform Account",
+      host: "https://api.5centscdn.com/v2",
+      rtmpPort: 1935,
+      httpPort: "",
+      apiKey: "",
+      rtmpBaseUrl: "rtmp://rtmp.5centscdn.com:1935",
+      playbackBaseUrl: "",
+    },
+    helpTexts: {
+      apiHost: "The 5CentsCDN API base URL. Use https://api.5centscdn.com/v2 unless 5CentsCDN provides a different endpoint.",
+      apiHostLink: "https://developer.5centscdn.net/introduction.html",
+      apiHostLinkLabel: "API Introduction",
+      rtmpPort: "5CentsCDN RTMP ingest usually uses port 1935. Keep this unchanged unless your account documentation says otherwise.",
+      httpPort: "5CentsCDN API is HTTPS-based. Leave this empty when using https://api.5centscdn.com/v2.",
+      apiKey: "Your platform 5CentsCDN API key. Requests are authenticated with the X-API-KEY header.",
+      apiKeyLink: "https://developer.5centscdn.net/introduction.html",
+      apiKeyLinkLabel: "Authentication Docs",
+      rtmpUrl: "Fallback RTMP ingest host. Event creation will prefer the RTMP URL returned by the 5CentsCDN stream API.",
+      rtmpUrlLink: "https://developer.5centscdn.net/livestreams.html",
+      rtmpUrlLinkLabel: "Livestream API",
+      playbackUrl: "Fallback HLS playback base. Event creation will prefer the HLS URL returned by the 5CentsCDN stream API.",
+      playbackUrlLink: "https://developer.5centscdn.net/livestreams.html",
+      playbackUrlLinkLabel: "Livestream API",
+      hlsSegment: "Managed by 5CentsCDN for CDN-delivered HLS playback.",
+      transcoding: "5CentsCDN can attach stream profiles and filters through their livestream and transcoding APIs. Configure profile IDs only after creating them in 5CentsCDN.",
+      transcodingLink: "https://developer.5centscdn.net/videoEncoding.html",
+      transcodingLinkLabel: "Transcoding API",
+      streamAuth: "5CentsCDN supports RTMP authentication via the stream RTMPAuth endpoint.",
+      tokenAuth: "5CentsCDN supports secure token settings for playback URLs.",
+      tokenAuthLink: "https://developer.5centscdn.net/livestreams.html",
+      tokenAuthLinkLabel: "Secure Token API",
+      tokenSecret: "Secure token settings are managed by 5CentsCDN. Use a strong key if you enable playback token enforcement.",
+      ipWhitelist: "5CentsCDN supports IP access controls on streams.",
+      geoRestriction: "5CentsCDN supports stream geo-block settings.",
+      geoRestrictionLink: "https://developer.5centscdn.net/livestreams.html",
+      geoRestrictionLinkLabel: "Geo Block API",
+      storagePath: "Recordings are managed by 5CentsCDN DVR/record settings, not local server disk paths.",
+      testConnection: "5CentsCDN API is reachable and your API key can list push servers",
+    },
   },
   nginx_rtmp: {
     type: "nginx_rtmp",

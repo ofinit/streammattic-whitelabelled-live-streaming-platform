@@ -598,7 +598,10 @@ export function EventFormDialog({
   )
   const streamTypePricing = creditPricingJson?.streamTypePricing
   const simulcastPricingFromApi = creditPricingJson?.simulcastPricing
-  const { data: streamingBackendJson } = useSWR<{ settings?: { rtmpBaseUrl?: string; playbackBaseUrl?: string } }>(
+  const { data: streamingBackendJson } = useSWR<{
+    type?: string
+    settings?: { rtmpBaseUrl?: string; playbackBaseUrl?: string }
+  }>(
     open ? "/api/streaming/backend-info" : null,
     (url: string) => fetch(url).then((r) => r.json()),
   )
@@ -1246,7 +1249,7 @@ export function EventFormDialog({
           title: event.title,
           subtitle: event.subtitle || "",
           description: event.description || "",
-          streamType: (event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) as StreamType,
+          streamType: (event.streamType === "pending" ? "" : event.streamType) as StreamType,
           youtubeUrl: event.youtubeUrl || "",
           embedCode: event.embedCode || "",
           scheduledAt: event.scheduledAt ? utcIsoToDatetimeLocal(String(event.scheduledAt), eventTimezone) : "",
@@ -1376,7 +1379,7 @@ export function EventFormDialog({
       }
 
       const hydratedStreamTypeForRef = event
-        ? String((event.streamType === "rtmp" || event.streamType === "pending" ? "" : event.streamType) ?? "")
+        ? String((event.streamType === "pending" ? "" : event.streamType) ?? "")
         : String((initialStreamType ?? "") ?? "")
       prevValidityStreamGroupRef.current = streamValidityGroup(hydratedStreamTypeForRef)
   }, [open, event, showCredentialsScreen, initialStreamType, initialTab])
@@ -1676,16 +1679,28 @@ export function EventFormDialog({
   const rtmpBaseUrl = streamingBackendJson?.settings?.rtmpBaseUrl || "rtmp://rtmplive.in/live"
   const playbackBaseUrl = streamingBackendJson?.settings?.playbackBaseUrl || "https://rtmplive.in/live"
   const rtmpStreamId = slug.trim().toLowerCase()
+  const eventRtmpProvider = (event as any)?.rtmpProvider || (event as any)?.rtmp_provider
+  const isFiveCentsCdnRtmp =
+    formData.streamType === "rtmp" &&
+    (eventRtmpProvider === "fivecentscdn" || (!isEditing && streamingBackendJson?.type === "fivecentscdn"))
   const autoRtmpStreamKey =
-    formData.streamType === "rtmp"
+    isFiveCentsCdnRtmp
+      ? formData.streamKey
+      : formData.streamType === "rtmp"
       ? formData.streamKey && formData.streamKey.startsWith(`${rtmpStreamId}?token=`)
         ? formData.streamKey
         : rtmpStreamId
       : formData.streamKey
-  const autoRtmpPlaybackUrl = rtmpStreamId ? `${playbackBaseUrl.replace(/\/$/, "")}/${rtmpStreamId}.m3u8` : ""
+  const autoRtmpPlaybackUrl =
+    isFiveCentsCdnRtmp
+      ? String((event as any)?.hlsUrl || (event as any)?.hls_url || "")
+      : rtmpStreamId
+        ? `${playbackBaseUrl.replace(/\/$/, "")}/${rtmpStreamId}.m3u8`
+        : ""
 
   useEffect(() => {
     if (!open || formData.streamType !== "rtmp") return
+    if (isFiveCentsCdnRtmp) return
     setFormData((prev) => {
       const nextStreamKey =
         prev.streamKey && prev.streamKey.startsWith(`${rtmpStreamId}?token=`)
@@ -1694,7 +1709,7 @@ export function EventFormDialog({
       if (prev.rtmpUrl === rtmpBaseUrl && prev.streamKey === nextStreamKey) return prev
       return { ...prev, rtmpUrl: rtmpBaseUrl, streamKey: nextStreamKey }
     })
-  }, [open, formData.streamType, rtmpBaseUrl, rtmpStreamId])
+  }, [open, formData.streamType, isFiveCentsCdnRtmp, rtmpBaseUrl, rtmpStreamId])
 
   // Credit check effect: fires when additionalDates or primary date changes
   useEffect(() => {
@@ -3088,7 +3103,7 @@ export function EventFormDialog({
                     />
                     {formData.streamType === "rtmp" && (
                       <p className="text-[11px] text-muted-foreground">
-                        Auto-filled from SRS settings. Use this as the OBS Server / FMS URL.
+                        Auto-filled from the selected RTMP provider. Use this as the OBS Server / FMS URL.
                       </p>
                     )}
                   </div>
@@ -3116,7 +3131,9 @@ export function EventFormDialog({
                     </div>
                     {formData.streamType === "rtmp" && (
                       <p className="text-[11px] text-muted-foreground">
-                        The Event URL slug is the SRS stream key. After save, a secure token is appended for crew/OBS access.
+                        {isFiveCentsCdnRtmp
+                          ? "This stream key was returned by 5CentsCDN when the event stream was created."
+                          : "The Event URL slug is the SRS stream key. After save, a secure token is appended for crew/OBS access."}
                       </p>
                     )}
                   </div>
@@ -3142,7 +3159,7 @@ export function EventFormDialog({
                         </Button>
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Template watch pages use this player URL automatically while live. Final DVR MP4 playback is used after the merge worker completes.
+                        Template watch pages use this player URL automatically while live. SRS events fall back to final DVR MP4 playback after the merge worker completes.
                       </p>
                     </div>
                   )}

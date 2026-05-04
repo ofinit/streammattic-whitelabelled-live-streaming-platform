@@ -32,7 +32,19 @@ import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion
 import { insertFunnelEvent, visitorKeyForUser } from "@/lib/analytics-funnel"
 import { templateIdFromTemplateDataRecord } from "@/lib/watch-template-data"
 import { buildRtmpStreamId, createRtmpTokenForStream, ensureRtmpTokenForStream } from "@/lib/rtmp-auth"
-import { getSrsSettings } from "@/lib/srs-settings"
+import { getStreamingSettings } from "@/lib/srs-settings"
+import {
+  buildFiveCentsCdnProviderPayload,
+  buildFiveCentsCdnProvisioningMetadata,
+  buildFiveCentsCdnStreamName,
+  createFiveCentsCdnPushStream,
+  getFiveCentsCdnProvisioningMetadata,
+  isFiveCentsCdnProvisioningCurrent,
+} from "@/lib/streaming/fivecentscdn-service"
+import {
+  deleteFiveCentsCdnStreamById,
+  deleteFiveCentsCdnStreamForEvent,
+} from "@/lib/server/fivecentscdn-stream-cleanup"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -256,11 +268,30 @@ export async function POST(req: NextRequest) {
       typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim() ? bodyRtmpUrl.trim() : null
     const providedStreamKey =
       typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null
-    const srsSettings = insertStreamType === "rtmp" ? await getSrsSettings() : null
-    const streamKey = isPendingCreate || insertStreamType === "rtmp" ? null : (providedStreamKey || generateStreamKey())
+    const streamingSettings = insertStreamType === "rtmp" ? await getStreamingSettings() : null
+    const rtmpProvider = insertStreamType === "rtmp" ? streamingSettings?.backendType || "srs" : null
+    let fiveCentsCdnStream:
+      | Awaited<ReturnType<typeof createFiveCentsCdnPushStream>>
+      | null = null
+    if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && streamingSettings) {
+      fiveCentsCdnStream = await createFiveCentsCdnPushStream({
+        settings: streamingSettings,
+        streamName: buildFiveCentsCdnStreamName(finalSlug),
+      })
+    }
+    const streamKey =
+      insertStreamType === "rtmp"
+        ? fiveCentsCdnStream?.streamKey ?? null
+        : isPendingCreate
+          ? null
+          : providedStreamKey || generateStreamKey()
     const rtmpUrl =
       insertStreamType === "rtmp"
-        ? srsSettings?.rtmpBaseUrl || providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://rtmplive.in/live"
+        ? fiveCentsCdnStream?.rtmpUrl ||
+          streamingSettings?.rtmpBaseUrl ||
+          providedRtmpUrl ||
+          process.env.RTMP_SERVER_URL ||
+          "rtmp://rtmplive.in/live"
         : providedRtmpUrl || process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
 
     // Merge templateId into template_data for storage (app uses string ids like "tpl-wedding")
@@ -316,6 +347,9 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_payload JSONB DEFAULT '{}'::jsonb`.catch(() => {})
 
     const capPost = normalizeBodyBoolean(captureVisitorData)
     const captureVisitorDataValue = capPost === undefined ? true : capPost
@@ -330,7 +364,8 @@ export async function POST(req: NextRequest) {
         is_password_protected, event_password, allow_chat, allow_reactions, capture_visitor_data,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
         validity_expires_at, hero_image_url, header_image_url, player_image_url, photo_gallery_urls,
-        photographer_logo_url, og_share_image_url, photographer_contact, crew_pin_hash, use_custom_domain
+        photographer_logo_url, og_share_image_url, photographer_contact, crew_pin_hash, use_custom_domain,
+        rtmp_provider, rtmp_provider_stream_id, rtmp_provider_payload
       ) VALUES (
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
         ${insertStreamType}, ${streamKey},
@@ -348,7 +383,14 @@ export async function POST(req: NextRequest) {
         ${validityExpiresAtValue},
         ${heroImageUrl || null}, ${headerImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
         ${photographerLogoUrl || null}, ${ogShareImageUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
-        ${user.role === 'studio'}
+        ${user.role === 'studio'},
+        ${rtmpProvider ?? "srs"},
+        ${fiveCentsCdnStream?.providerStreamId ?? null},
+        ${JSON.stringify(
+          fiveCentsCdnStream && streamingSettings
+            ? buildFiveCentsCdnProviderPayload(fiveCentsCdnStream, streamingSettings)
+            : {},
+        )}::jsonb
       )
       RETURNING *
     `
@@ -356,7 +398,11 @@ export async function POST(req: NextRequest) {
     let event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
 
-    if (insertStreamType === "rtmp") {
+    if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
+      await sql`UPDATE events SET hls_url = ${fiveCentsCdnStream.hlsUrl || null} WHERE id = ${eventId}`
+      const refreshed = await sql`SELECT * FROM events WHERE id = ${eventId}`
+      event = (refreshed[0] || event) as Record<string, unknown>
+    } else if (insertStreamType === "rtmp") {
       const token = await createRtmpTokenForStream({
         sql,
         userId: targetUserId,
@@ -364,7 +410,7 @@ export async function POST(req: NextRequest) {
         streamId: buildRtmpStreamId(finalSlug),
         updateCredentialTarget: true,
       })
-      const hlsUrl = `${srsSettings?.playbackBaseUrl || "https://rtmplive.in/live"}/${token.streamId}.m3u8`
+      const hlsUrl = `${streamingSettings?.playbackBaseUrl || "https://rtmplive.in/live"}/${token.streamId}.m3u8`
       await sql`UPDATE events SET hls_url = ${hlsUrl} WHERE id = ${eventId}`
       const refreshed = await sql`SELECT * FROM events WHERE id = ${eventId}`
       event = (refreshed[0] || event) as Record<string, unknown>
@@ -400,7 +446,13 @@ export async function POST(req: NextRequest) {
         VALUES (${eventId}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
         RETURNING id
       `
-      if (insertStreamType === "rtmp") {
+      if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
+        await sql`
+          UPDATE event_dates
+          SET rtmp_url = ${fiveCentsCdnStream.rtmpUrl}, stream_key = ${fiveCentsCdnStream.streamKey}
+          WHERE id = ${insertedDate[0].id as string}
+        `
+      } else if (insertStreamType === "rtmp") {
         const token = await createRtmpTokenForStream({
           sql,
           userId: targetUserId,
@@ -451,6 +503,9 @@ export async function PUT(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS description TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_payload JSONB DEFAULT '{}'::jsonb`.catch(() => {})
     const existing = await sql`SELECT * FROM events WHERE id = ${id}`
     if (existing.length === 0) return NextResponse.json({ error: "Event not found" }, { status: 404 })
     
@@ -760,14 +815,62 @@ export async function PUT(req: NextRequest) {
         ? ((prev.stream_key as string | null) ?? null)
         : (typeof bodyStreamKey === "string" && bodyStreamKey.trim() ? bodyStreamKey.trim() : null)
     const finalDbStreamType = streamTypeForUpdate ?? ((existingRow.stream_type as string | null) || null)
+    const previousRtmpProvider = (existingRow.rtmp_provider as string | null) || "srs"
+    let nextRtmpProvider = previousRtmpProvider
+    let nextRtmpProviderStreamId = (existingRow.rtmp_provider_stream_id as string | null) || null
+    let nextRtmpProviderPayload = existingRow.rtmp_provider_payload ?? {}
+    let obsoleteFiveCentsCdnStreamId = ""
+    let fiveCentsCdnStream:
+      | Awaited<ReturnType<typeof createFiveCentsCdnPushStream>>
+      | null = null
     if (finalDbStreamType === "rtmp") {
-      const srsSettings = await getSrsSettings()
-      finalRtmpUrl = srsSettings.rtmpBaseUrl
+      const streamingSettings = await getStreamingSettings()
+      nextRtmpProvider = streamingSettings.backendType === "fivecentscdn" ? "fivecentscdn" : "srs"
       const nextSlugForStream = finalSlug || (existingRow.slug as string | null) || String(id)
-      finalStreamKey = buildRtmpStreamId(nextSlugForStream)
-      if (streamTypeForUpdate === "rtmp" && bodyStreamKey === undefined) {
+      if (nextRtmpProvider === "fivecentscdn") {
+        const previousProvisioning = getFiveCentsCdnProvisioningMetadata(nextRtmpProviderPayload)
+        const existingSlug = (existingRow.slug as string | null) || null
+        const slugChanged = finalSlug !== null && finalSlug !== existingSlug
+        const nextStreamName =
+          previousRtmpProvider === "fivecentscdn" && previousProvisioning?.streamName && !slugChanged
+            ? previousProvisioning.streamName
+            : buildFiveCentsCdnStreamName(nextSlugForStream)
+        const expectedProvisioning = buildFiveCentsCdnProvisioningMetadata(streamingSettings, nextStreamName)
+        const shouldProvisionFiveCentsCdnStream =
+          previousRtmpProvider !== "fivecentscdn" ||
+          !nextRtmpProviderStreamId ||
+          slugChanged ||
+          (previousProvisioning !== null &&
+            !isFiveCentsCdnProvisioningCurrent(nextRtmpProviderPayload, expectedProvisioning))
+
+        if (shouldProvisionFiveCentsCdnStream) {
+          obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""
+          fiveCentsCdnStream = await createFiveCentsCdnPushStream({
+            settings: streamingSettings,
+            streamName: nextStreamName,
+          })
+          nextRtmpProviderStreamId = fiveCentsCdnStream.providerStreamId
+          nextRtmpProviderPayload = buildFiveCentsCdnProviderPayload(fiveCentsCdnStream, streamingSettings)
+          finalRtmpUrl = fiveCentsCdnStream.rtmpUrl
+          finalStreamKey = fiveCentsCdnStream.streamKey
+        } else if (previousProvisioning === null && nextRtmpProviderStreamId) {
+          nextRtmpProviderPayload = {
+            response: nextRtmpProviderPayload,
+            provisioning: expectedProvisioning,
+          }
+        }
+      } else {
+        obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""
+        nextRtmpProviderStreamId = null
+        nextRtmpProviderPayload = {}
+        finalRtmpUrl = streamingSettings.rtmpBaseUrl
         finalStreamKey = buildRtmpStreamId(nextSlugForStream)
       }
+    } else {
+      obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""
+      nextRtmpProvider = "srs"
+      nextRtmpProviderStreamId = null
+      nextRtmpProviderPayload = {}
     }
 
     const nextSimulcastPersisted =
@@ -823,13 +926,26 @@ export async function PUT(req: NextRequest) {
         photographer_contact = ${finalPhotographerContact}::jsonb,
         crew_pin_hash = ${finalCrewPinHash},
         is_suspended = ${nextSuspended},
+        rtmp_provider = ${finalDbStreamType === "rtmp" ? nextRtmpProvider : "srs"},
+        rtmp_provider_stream_id = ${finalDbStreamType === "rtmp" ? nextRtmpProviderStreamId : null},
+        rtmp_provider_payload = ${JSON.stringify(finalDbStreamType === "rtmp" ? nextRtmpProviderPayload : {})}::jsonb,
         updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `
 
     let updatedEvent = rows[0] as Record<string, unknown>
-    if (finalDbStreamType === "rtmp") {
+    if (finalDbStreamType === "rtmp" && nextRtmpProvider === "fivecentscdn") {
+      if (fiveCentsCdnStream) {
+        await sql`
+          UPDATE events
+          SET hls_url = ${fiveCentsCdnStream.hlsUrl || null}
+          WHERE id = ${id}
+        `
+        const refreshed = await sql`SELECT * FROM events WHERE id = ${id}`
+        updatedEvent = (refreshed[0] || updatedEvent) as Record<string, unknown>
+      }
+    } else if (finalDbStreamType === "rtmp") {
       const currentSlug = (updatedEvent.slug as string | null) || String(id)
       const token = await ensureRtmpTokenForStream({
         sql,
@@ -839,14 +955,20 @@ export async function PUT(req: NextRequest) {
         currentStreamKey: updatedEvent.stream_key as string | null,
         updateCredentialTarget: true,
       })
-      const srsSettings = await getSrsSettings()
+      const streamingSettings = await getStreamingSettings()
       await sql`
         UPDATE events
-        SET hls_url = ${`${srsSettings.playbackBaseUrl}/${token.streamId}.m3u8`}
+        SET hls_url = ${`${streamingSettings.playbackBaseUrl}/${token.streamId}.m3u8`}
         WHERE id = ${id}
       `
       const refreshed = await sql`SELECT * FROM events WHERE id = ${id}`
       updatedEvent = (refreshed[0] || updatedEvent) as Record<string, unknown>
+    }
+
+    if (obsoleteFiveCentsCdnStreamId) {
+      await deleteFiveCentsCdnStreamById(obsoleteFiveCentsCdnStreamId).catch((err) => {
+        console.error("[studio/events PUT] Failed to delete previous 5CentsCDN stream:", err)
+      })
     }
 
     // Sync additional dates if provided
@@ -855,9 +977,12 @@ export async function PUT(req: NextRequest) {
       const existing = await sql`SELECT stream_type FROM events WHERE id = ${id}`
       const evStreamType =
         ((existing[0] as Record<string, unknown>)?.stream_type as string) || resolvedStreamType || PENDING_STREAM_DB
+      const evRtmpProvider = (updatedEvent.rtmp_provider as string | null) || "srs"
       const rtmpUrl =
-        evStreamType === "rtmp"
-          ? (await getSrsSettings()).rtmpBaseUrl
+        evStreamType === "rtmp" && evRtmpProvider === "fivecentscdn"
+          ? ((updatedEvent.rtmp_url as string | null) ?? null)
+        : evStreamType === "rtmp"
+          ? (await getStreamingSettings()).rtmpBaseUrl
           : process.env.RTMP_SERVER_URL || "rtmp://stream.streamlivee.com/live"
       const needsOwnKey = ["rtmp", "youtube_api"].includes(evStreamType)
       for (let i = 0; i < additionalDates.length; i++) {
@@ -870,7 +995,13 @@ export async function PUT(req: NextRequest) {
           VALUES (${id}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
           RETURNING id
         `
-        if (evStreamType === "rtmp") {
+        if (evStreamType === "rtmp" && evRtmpProvider === "fivecentscdn") {
+          await sql`
+            UPDATE event_dates
+            SET rtmp_url = ${updatedEvent.rtmp_url as string | null}, stream_key = ${updatedEvent.stream_key as string | null}
+            WHERE id = ${insertedDate[0].id as string}
+          `
+        } else if (evStreamType === "rtmp") {
           await createRtmpTokenForStream({
             sql,
             userId: targetUserId,
@@ -910,6 +1041,8 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "Event id is required" }, { status: 400 })
 
     const sql = getDb()
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT`.catch(() => {})
     const existing = await sql`
       SELECT e.*, u.email AS owner_email
       FROM events e
@@ -937,9 +1070,15 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
-      console.error("[studio/events DELETE] Failed to queue SRS DVR deletion:", err)
-    })
+    if (row.rtmp_provider === "fivecentscdn") {
+      await deleteFiveCentsCdnStreamForEvent(sql, id).catch((err) => {
+        console.error("[studio/events DELETE] Failed to delete 5CentsCDN stream:", err)
+      })
+    } else {
+      await enqueueSrsRecordingDeletion(sql, { eventId: id, reason: "manual_delete" }).catch((err) => {
+        console.error("[studio/events DELETE] Failed to queue SRS DVR deletion:", err)
+      })
+    }
     await sql`DELETE FROM events WHERE id = ${id}`
     await insertDeletedEventLog(sql, {
       eventId: id,

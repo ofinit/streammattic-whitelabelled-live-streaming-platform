@@ -24,9 +24,9 @@ import {
   Save,
   RefreshCw,
 } from "lucide-react"
-import type { TranscodingProfile, StreamingBackendType } from "@/lib/types"
-import { BACKEND_INFO } from "@/lib/streaming"
-import type { StreamingBackendInfo } from "@/lib/streaming"
+import type { TranscodingProfile } from "@/lib/types"
+import { BACKEND_INFO } from "@/lib/streaming/types"
+import type { StreamingBackendInfo, StreamingBackendType } from "@/lib/streaming/types"
 
 type ServerConfig = {
   name: string

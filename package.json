@@ -10,6 +10,8 @@
     "db:migrate": "node --env-file=.env.local scripts/run-migration.js",
     "db:migrate:production": "node --env-file=.env.production scripts/run-migration.js",
     "db:migrate:env": "node scripts/run-migration.js",
+    "db:resequence-invoices": "node --env-file=.env.local scripts/resequence-invoice-numbers.js",
+    "db:resequence-invoices:production": "node --env-file=.env.production scripts/resequence-invoice-numbers.js",
     "db:backup": "node --env-file=.env.local scripts/backup-db.js",
     "db:backup:api": "node --env-file=.env.local scripts/backup-db.js --api",
     "db:restore": "node --env-file=.env.local scripts/restore-local.js",

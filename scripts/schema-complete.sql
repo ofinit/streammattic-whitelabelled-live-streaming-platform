@@ -802,6 +802,15 @@ CREATE INDEX IF NOT EXISTS idx_invoices_issuer_id    ON invoices(issuer_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_recipient_id ON invoices(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status       ON invoices(status);
 
+-- Financial-year invoice sequence counter. Numbers reset each Indian FY (Apr-Mar).
+CREATE TABLE IF NOT EXISTS invoice_sequences (
+  financial_year TEXT PRIMARY KEY,
+  next_number BIGINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (next_number > 0)
+);
+
 -- =============================================================
 -- TABLE: youtube_channels
 -- =============================================================

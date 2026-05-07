@@ -467,6 +467,14 @@ CREATE TABLE invoices (
 CREATE INDEX idx_invoices_issuer ON invoices(issuer_id);
 CREATE INDEX idx_invoices_recipient ON invoices(recipient_id);
 
+CREATE TABLE invoice_sequences (
+  financial_year TEXT PRIMARY KEY,
+  next_number BIGINT NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (next_number > 0)
+);
+
 -- ============================================================
 -- YOUTUBE CHANNELS
 -- ============================================================

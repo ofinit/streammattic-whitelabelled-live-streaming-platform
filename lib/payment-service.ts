@@ -1,6 +1,7 @@
 import { getDb } from "./db"
 import { emitCreditPurchasedFunnel } from "@/lib/analytics-funnel"
 import { splitGST } from "@/lib/gst-service"
+import { getNextInvoiceNumber } from "@/lib/invoice-numbering"
 import { getPlatformGSTSettings } from "@/lib/platform-gst"
 import { applyStudioUpgradeOrRenewal } from "@/lib/studio-subscription"
 
@@ -337,10 +338,6 @@ function parseWalletOrderMetadata(raw: unknown): WalletOrderMetadata {
   }
 }
 
-function invoiceNumberFromOrderId(orderId: string): string {
-  return `INV-${orderId.replace(/-/g, "").slice(0, 20).toUpperCase()}`
-}
-
 export async function processSuccessfulPayment(params: {
   orderId: string
   userId: string
@@ -446,7 +443,7 @@ export async function processSuccessfulPayment(params: {
       const issuerAddr = [platform.businessAddress, platform.city, platform.state, platform.pincode]
         .filter(Boolean)
         .join(", ")
-      const invNum = invoiceNumberFromOrderId(params.orderId)
+      const invNum = await getNextInvoiceNumber(sql)
       const bill = await getRecipientBillingForInvoice(sql, params.userId)
 
       const invRows = await sql`
@@ -525,7 +522,7 @@ export async function processSuccessfulPayment(params: {
       const issuerAddr = [platform.businessAddress, platform.city, platform.state, platform.pincode]
         .filter(Boolean)
         .join(", ")
-      const invNum = invoiceNumberFromOrderId(params.orderId)
+      const invNum = await getNextInvoiceNumber(sql)
       const bill = await getRecipientBillingForInvoice(sql, params.userId)
 
       const invRows = await sql`

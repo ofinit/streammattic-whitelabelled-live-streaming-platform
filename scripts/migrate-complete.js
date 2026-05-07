@@ -737,6 +737,15 @@ async function step9_gst_invoices(c) {
   await tryExec(c, "IDX invoices issuer_id", `CREATE INDEX IF NOT EXISTS idx_invoices_issuer_id ON invoices(issuer_id)`);
   await tryExec(c, "IDX invoices recipient_id", `CREATE INDEX IF NOT EXISTS idx_invoices_recipient_id ON invoices(recipient_id)`);
   await tryExec(c, "IDX invoices status", `CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)`);
+  await tryExec(c, "TABLE invoice_sequences", `
+    CREATE TABLE IF NOT EXISTS invoice_sequences (
+      financial_year TEXT PRIMARY KEY,
+      next_number BIGINT NOT NULL DEFAULT 1,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (next_number > 0)
+    )
+  `);
 }
 
 async function step10_youtube_templates(c) {

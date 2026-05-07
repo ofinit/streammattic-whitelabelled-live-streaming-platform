@@ -31,13 +31,9 @@ export function calculatePriceBreakdown(desiredAmount: number, gstConfig: GSTCon
   }
 }
 
-// Generate invoice number
+// Invoice numbers must come from the database-backed FY sequence.
 export function generateInvoiceNumber(): string {
-  const year = new Date().getFullYear()
-  const random = Math.floor(Math.random() * 100000)
-    .toString()
-    .padStart(5, "0")
-  return `INV-${year}-${random}`
+  throw new Error("Use getNextInvoiceNumber(sql) to allocate sequential GST invoice numbers")
 }
 
 // Split GST into CGST and SGST for intrastate (or IGST for interstate)
@@ -74,11 +70,12 @@ export function createInvoice(params: {
   gstPercentage: number
   paymentId?: string
   paymentMethod?: string
+  invoiceNumber?: string
 }): Partial<Invoice> {
   const { cgstAmount, sgstAmount, igstAmount } = splitGST(params.gstAmount, false)
 
   return {
-    invoiceNumber: generateInvoiceNumber(),
+    invoiceNumber: params.invoiceNumber ?? generateInvoiceNumber(),
     invoiceType: params.issuerGstConfig.gstEnabled ? "gst_invoice" : "regular_invoice",
     issuerId: params.issuerId,
     issuerType: params.issuerType as any,

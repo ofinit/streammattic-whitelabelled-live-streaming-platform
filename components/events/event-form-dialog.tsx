@@ -3579,13 +3579,12 @@ export function EventFormDialog({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="event-marquee-above-video">Marquee message (above video)</Label>
-                    <Textarea
+                    <Input
                       id="event-marquee-above-video"
                       value={photographerContact.marqueeAbovePlayer || ""}
                       onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeAbovePlayer: e.target.value }))}
                       placeholder="Optional — scrolls above the video player on the watch page."
-                      rows={2}
-                      className="min-h-[4.5rem] w-full resize-y"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3625,13 +3624,12 @@ export function EventFormDialog({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="event-marquee-below-video">Marquee message (below video)</Label>
-                    <Textarea
+                    <Input
                       id="event-marquee-below-video"
                       value={photographerContact.marqueeBelowPlayer || ""}
                       onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeBelowPlayer: e.target.value }))}
                       placeholder="Optional — scrolls below the video player and live viewer count on the watch page."
-                      rows={2}
-                      className="min-h-[4.5rem] w-full resize-y"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3723,14 +3721,13 @@ export function EventFormDialog({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="event-marquee-message">Marquee message (photo gallery)</Label>
-                    <Textarea
+                    <Label htmlFor="event-marquee-message">Marquee message below photo gallery</Label>
+                    <Input
                       id="event-marquee-message"
                       value={photographerContact.marqueeMessage || ""}
                       onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeMessage: e.target.value }))}
                       placeholder="Optional — scrolls below the photo gallery on the watch page."
-                      rows={2}
-                      className="min-h-[4.5rem] w-full resize-y"
+                      className="w-full"
                     />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">

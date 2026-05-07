@@ -250,7 +250,15 @@ function parsePhotoGalleryUrls(raw: unknown): string[] {
   return []
 }
 
-type PhotographerContact = { name?: string; phone?: string; email?: string; website?: string; marqueeMessage?: string }
+type PhotographerContact = {
+  name?: string
+  phone?: string
+  email?: string
+  website?: string
+  marqueeMessage?: string
+  marqueeAbovePlayer?: string
+  marqueeBelowPlayer?: string
+}
 
 /** Load boolean event flags from camel or snake API keys; treat explicit false as off. */
 function coerceEventBooleanFlag(camel: unknown, snake: unknown, whenMissing: boolean): boolean {
@@ -3489,58 +3497,20 @@ export function EventFormDialog({
               <Card className="border-muted">
                 <CardContent className="pt-4 space-y-4">
                   <h4 className="text-sm font-medium">Event media & info</h4>
-                  <div className="space-y-2">
-                    <Label>Header image</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Full width above the template header on the watch page — optional.
-                    </p>
-                    {headerImageUrl ? (
-                      <div className="relative h-24 w-full max-w-md rounded border overflow-hidden">
-                        <img src={headerImageUrl} alt="Header" className="w-full h-full object-cover" />
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeaderImageUrl("")}>
-                          <X className="h-3 w-3" />
-                        </Button>
-                        <AiImagePickerDialog nestedInDialog
-                          dialogTitle="Header image"
-                          uploadSubdir="event-header"
-                          walletUserId={creditsUserId}
-                          onImageUrl={(url) => setHeaderImageUrl(url)}
-                        >
-                          <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
-                            Change
-                          </Button>
-                        </AiImagePickerDialog>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <AiImagePickerDialog nestedInDialog
-                          dialogTitle="Header image"
-                          uploadSubdir="event-header"
-                          walletUserId={creditsUserId}
-                          onImageUrl={(url) => setHeaderImageUrl(url)}
-                        >
-                          <Button type="button" variant="outline" size="sm" className="gap-2">
-                            <ImageIcon className="h-4 w-4" />
-                            Add image
-                          </Button>
-                        </AiImagePickerDialog>
-                      </div>
-                    )}
-                  </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Player image</Label>
-                      {playerImageUrl ? (
-                        <div className="relative w-32 h-24 rounded border overflow-hidden">
-                          <img src={playerImageUrl} alt="Player" className="w-full h-full object-cover" />
-                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setPlayerImageUrl("")}>
+                    <div className="space-y-2 min-w-0">
+                      <Label>Header image</Label>
+                      {headerImageUrl ? (
+                        <div className="relative h-24 w-full rounded border overflow-hidden">
+                          <img src={headerImageUrl} alt="Header" className="w-full h-full object-cover" />
+                          <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeaderImageUrl("")}>
                             <X className="h-3 w-3" />
                           </Button>
                           <AiImagePickerDialog nestedInDialog
-                            dialogTitle="Player image"
-                            uploadSubdir="event-player"
+                            dialogTitle="Header image"
+                            uploadSubdir="event-header"
                             walletUserId={creditsUserId}
-                            onImageUrl={(url) => setPlayerImageUrl(url)}
+                            onImageUrl={(url) => setHeaderImageUrl(url)}
                           >
                             <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
                               Change
@@ -3550,10 +3520,10 @@ export function EventFormDialog({
                       ) : (
                         <div className="flex flex-wrap items-center gap-2">
                           <AiImagePickerDialog nestedInDialog
-                            dialogTitle="Player image"
-                            uploadSubdir="event-player"
+                            dialogTitle="Header image"
+                            uploadSubdir="event-header"
                             walletUserId={creditsUserId}
-                            onImageUrl={(url) => setPlayerImageUrl(url)}
+                            onImageUrl={(url) => setHeaderImageUrl(url)}
                           >
                             <Button type="button" variant="outline" size="sm" className="gap-2">
                               <ImageIcon className="h-4 w-4" />
@@ -3563,7 +3533,7 @@ export function EventFormDialog({
                         </div>
                       )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <Label>Hero image</Label>
                       {heroUsesCircularCrop ? (
                         <p className="text-xs text-muted-foreground">
@@ -3572,7 +3542,7 @@ export function EventFormDialog({
                         </p>
                       ) : null}
                       {heroImageUrl ? (
-                        <div className="relative w-32 h-24 rounded border overflow-hidden">
+                        <div className="relative h-24 w-full rounded border overflow-hidden">
                           <img src={heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
                           <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setHeroImageUrl("")}>
                             <X className="h-3 w-3" />
@@ -3606,6 +3576,63 @@ export function EventFormDialog({
                         </div>
                       )}
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-marquee-above-video">Marquee message (above video)</Label>
+                    <Textarea
+                      id="event-marquee-above-video"
+                      value={photographerContact.marqueeAbovePlayer || ""}
+                      onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeAbovePlayer: e.target.value }))}
+                      placeholder="Optional — scrolls above the video player on the watch page."
+                      rows={2}
+                      className="min-h-[4.5rem] w-full resize-y"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Player image</Label>
+                    {playerImageUrl ? (
+                      <div className="relative w-32 h-24 rounded border overflow-hidden">
+                        <img src={playerImageUrl} alt="Player" className="w-full h-full object-cover" />
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => setPlayerImageUrl("")}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                        <AiImagePickerDialog nestedInDialog
+                          dialogTitle="Player image"
+                          uploadSubdir="event-player"
+                          walletUserId={creditsUserId}
+                          onImageUrl={(url) => setPlayerImageUrl(url)}
+                        >
+                          <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                            Change
+                          </Button>
+                        </AiImagePickerDialog>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AiImagePickerDialog nestedInDialog
+                          dialogTitle="Player image"
+                          uploadSubdir="event-player"
+                          walletUserId={creditsUserId}
+                          onImageUrl={(url) => setPlayerImageUrl(url)}
+                        >
+                          <Button type="button" variant="outline" size="sm" className="gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Add image
+                          </Button>
+                        </AiImagePickerDialog>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-marquee-below-video">Marquee message (below video)</Label>
+                    <Textarea
+                      id="event-marquee-below-video"
+                      value={photographerContact.marqueeBelowPlayer || ""}
+                      onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeBelowPlayer: e.target.value }))}
+                      placeholder="Optional — scrolls below the video player and live viewer count on the watch page."
+                      rows={2}
+                      className="min-h-[4.5rem] w-full resize-y"
+                    />
                   </div>
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -3696,12 +3723,12 @@ export function EventFormDialog({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="event-marquee-message">Marquee message</Label>
+                    <Label htmlFor="event-marquee-message">Marquee message (photo gallery)</Label>
                     <Textarea
                       id="event-marquee-message"
                       value={photographerContact.marqueeMessage || ""}
                       onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeMessage: e.target.value }))}
-                      placeholder="Optional — scrolls below the photo gallery on the live/watch page."
+                      placeholder="Optional — scrolls below the photo gallery on the watch page."
                       rows={2}
                       className="min-h-[4.5rem] w-full resize-y"
                     />

@@ -289,6 +289,10 @@ export interface LiveEvent {
     website?: string
     /** Shown as a scrolling banner below the photo gallery on watch pages */
     marqueeMessage?: string
+    /** Scrolling banner above the video player */
+    marqueeAbovePlayer?: string
+    /** Scrolling banner below the video player (after live viewer count) */
+    marqueeBelowPlayer?: string
   }
   crewPinHash?: string
   hasCrewPin?: boolean

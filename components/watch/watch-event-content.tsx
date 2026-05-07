@@ -43,7 +43,7 @@ import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-wa
 import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
 import { WeddingPapercutWatchView } from "./wedding-papercut-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
-import { WatchPhotographerMarquee } from "./watch-photographer-marquee"
+import { WatchPhotographerMarquee, type WatchPhotographerMarqueeTheme } from "./watch-photographer-marquee"
 import { StreamPlayer } from "@/components/stream/stream-player"
 import { cn } from "@/lib/utils"
 import {
@@ -1427,9 +1427,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       email?: string
       website?: string
       marqueeMessage?: string
+      marqueeAbovePlayer?: string
+      marqueeBelowPlayer?: string
     } | undefined) || {}
   const photographerMarqueeMessage =
     typeof photographerContact.marqueeMessage === "string" ? photographerContact.marqueeMessage.trim() : ""
+  const photographerMarqueeAbovePlayer =
+    typeof photographerContact.marqueeAbovePlayer === "string" ? photographerContact.marqueeAbovePlayer.trim() : ""
+  const photographerMarqueeBelowPlayer =
+    typeof photographerContact.marqueeBelowPlayer === "string" ? photographerContact.marqueeBelowPlayer.trim() : ""
   const photographerWebsiteRaw =
     typeof photographerContact.website === "string" ? photographerContact.website.trim() : ""
   const photographerWebsitePublicUrl =
@@ -1579,8 +1585,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     </div>
   )
 
+  const streamMarqueeTheme = streamChrome as WatchPhotographerMarqueeTheme
+
   const renderStreamPlayer = (shellClassName: string) => (
-    <div>
+    <div className="w-full">
+      {photographerMarqueeAbovePlayer ? (
+        <WatchPhotographerMarquee
+          message={photographerMarqueeAbovePlayer}
+          theme={streamMarqueeTheme}
+          className="mb-3 w-full"
+        />
+      ) : null}
       <div ref={videoContainerRef} className={shellClassName}>
           <div className="absolute inset-0 flex items-center justify-center">
             {isOnBreak ? (
@@ -1823,6 +1838,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           )}
       </div>
       {renderViewerCountBelowPlayer()}
+      {photographerMarqueeBelowPlayer ? (
+        <WatchPhotographerMarquee
+          message={photographerMarqueeBelowPlayer}
+          theme={streamMarqueeTheme}
+          className="mt-3 w-full"
+        />
+      ) : null}
     </div>
   )
 

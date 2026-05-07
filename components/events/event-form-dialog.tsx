@@ -250,7 +250,7 @@ function parsePhotoGalleryUrls(raw: unknown): string[] {
   return []
 }
 
-type PhotographerContact = { name?: string; phone?: string; email?: string; website?: string }
+type PhotographerContact = { name?: string; phone?: string; email?: string; website?: string; marqueeMessage?: string }
 
 /** Load boolean event flags from camel or snake API keys; treat explicit false as off. */
 function coerceEventBooleanFlag(camel: unknown, snake: unknown, whenMissing: boolean): boolean {
@@ -921,7 +921,7 @@ export function EventFormDialog({
   const [photoGalleryUrls, setPhotoGalleryUrls] = useState<string[]>([])
   const [photographerLogoUrl, setPhotographerLogoUrl] = useState("")
   const [ogShareImageUrl, setOgShareImageUrl] = useState("")
-  const [photographerContact, setPhotographerContact] = useState<{ name?: string; phone?: string; email?: string; website?: string }>({})
+  const [photographerContact, setPhotographerContact] = useState<PhotographerContact>({})
   const [validityExtSettings, setValidityExtSettings] = useState<ParsedValidityExtensions>(() =>
     parseValidityExtensionsSetting(null),
   )
@@ -3694,6 +3694,17 @@ export function EventFormDialog({
                         </div>
                       )}
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-marquee-message">Marquee message</Label>
+                    <Textarea
+                      id="event-marquee-message"
+                      value={photographerContact.marqueeMessage || ""}
+                      onChange={(e) => setPhotographerContact((p) => ({ ...p, marqueeMessage: e.target.value }))}
+                      placeholder="Optional — scrolls below the photo gallery on the live/watch page."
+                      rows={2}
+                      className="min-h-[4.5rem] w-full resize-y"
+                    />
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">

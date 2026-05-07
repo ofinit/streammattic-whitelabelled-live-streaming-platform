@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { EventGlobalHeaderImage } from "./event-global-header-image"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { WatchPhotographerMarquee } from "./watch-photographer-marquee"
 
 export type MemorialWatchViewProps = {
   event: LiveEvent
@@ -37,6 +38,8 @@ export type MemorialWatchViewProps = {
   detailsPanel: ReactNode
   streamShellClassName: string
   photoGalleryUrls: string[]
+  /** Optional scrolling banner directly under the memorial photo gallery */
+  galleryMarqueeMessage?: string
   titleHeroRem: number
   googleTitleFont: string | null
   titleFontColor: string | null
@@ -90,6 +93,7 @@ export function MemorialServiceWatchView({
   detailsPanel,
   streamShellClassName,
   photoGalleryUrls,
+  galleryMarqueeMessage,
   titleHeroRem,
   googleTitleFont,
   titleFontColor,
@@ -370,6 +374,11 @@ export function MemorialServiceWatchView({
               <p className="mt-2 font-memorial-serif text-[#7f8c8d]">Cherished moments and memories</p>
             </header>
             <MemorialPhotoGallery urls={photoGalleryUrls} />
+            {galleryMarqueeMessage?.trim() ? (
+              <div className="mx-auto mt-8 max-w-4xl px-2">
+                <WatchPhotographerMarquee message={galleryMarqueeMessage.trim()} theme="memorial" />
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

@@ -287,6 +287,8 @@ export interface LiveEvent {
     phone?: string
     email?: string
     website?: string
+    /** Shown as a scrolling banner below the photo gallery on watch pages */
+    marqueeMessage?: string
   }
   crewPinHash?: string
   hasCrewPin?: boolean

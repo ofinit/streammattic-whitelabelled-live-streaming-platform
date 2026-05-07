@@ -45,6 +45,7 @@ export interface CalendarEvent {
     phone?: string
     email?: string
     website?: string
+    marqueeMessage?: string
   }
   hasCrewPin?: boolean
 }

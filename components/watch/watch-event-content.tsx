@@ -43,6 +43,7 @@ import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-wa
 import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
 import { WeddingPapercutWatchView } from "./wedding-papercut-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
+import { WatchPhotographerMarquee } from "./watch-photographer-marquee"
 import { StreamPlayer } from "@/components/stream/stream-player"
 import { cn } from "@/lib/utils"
 import {
@@ -1419,7 +1420,16 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const playerImageUrl = evRawTop.playerImageUrl as string | undefined
   const photoGalleryUrls = (evRawTop.photoGalleryUrls as string[] | undefined) || []
   const photographerLogoUrl = evRawTop.photographerLogoUrl as string | undefined
-  const photographerContact = (evRawTop.photographerContact as { name?: string; phone?: string; email?: string; website?: string } | undefined) || {}
+  const photographerContact =
+    (evRawTop.photographerContact as {
+      name?: string
+      phone?: string
+      email?: string
+      website?: string
+      marqueeMessage?: string
+    } | undefined) || {}
+  const photographerMarqueeMessage =
+    typeof photographerContact.marqueeMessage === "string" ? photographerContact.marqueeMessage.trim() : ""
   const photographerWebsiteRaw =
     typeof photographerContact.website === "string" ? photographerContact.website.trim() : ""
   const photographerWebsitePublicUrl =
@@ -2349,6 +2359,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         <div className={`mt-6 border-t pt-4 ${galleryBorder}`}>
           <h3 className="mb-3 text-sm font-semibold text-foreground">Photo gallery</h3>
           <WatchPhotoGallery urls={photoGalleryUrls} theme={detailsTheme} />
+          {photographerMarqueeMessage ? (
+            <WatchPhotographerMarquee message={photographerMarqueeMessage} theme={detailsTheme} className="mt-4" />
+          ) : null}
         </div>
       )}
 
@@ -2767,6 +2780,13 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 </div>
                 <div className="content-margin-top">
                   <WatchPhotoGallery urls={photoGalleryUrls} theme="theHeart" />
+                  {photographerMarqueeMessage ? (
+                    <WatchPhotographerMarquee
+                      message={photographerMarqueeMessage}
+                      theme="theHeart"
+                      className="mt-6 md:mt-8"
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -2892,6 +2912,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <h2>Photo Gallery</h2>
               </div>
               <WatchPhotoGallery urls={photoGalleryUrls} theme="wedding" />
+              {photographerMarqueeMessage ? (
+                <WatchPhotographerMarquee message={photographerMarqueeMessage} theme="wedding" className="mt-6" />
+              ) : null}
             </div>
           ) : null
         }
@@ -2980,6 +3003,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                 <div className="after" />
               </div>
               <WatchPhotoGallery urls={photoGalleryUrls} theme="wedding" />
+              {photographerMarqueeMessage ? (
+                <WatchPhotographerMarquee message={photographerMarqueeMessage} theme="wedding" className="mt-6" />
+              ) : null}
             </div>
           ) : null
         }
@@ -5266,6 +5292,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         }
         streamShellClassName={MEMORIAL_STREAM_SHELL}
         photoGalleryUrls={photoGalleryUrls}
+        galleryMarqueeMessage={photographerMarqueeMessage}
         titleHeroRem={titleHeroRem}
         googleTitleFont={googleTitleFont}
         titleFontColor={titleFontColor}

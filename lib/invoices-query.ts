@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db"
+import { resequenceLegacyInvoiceNumbersIfNeeded } from "@/lib/invoice-numbering"
 
 type Sql = ReturnType<typeof getDb>
 
@@ -11,6 +12,7 @@ export async function queryInvoicesInRange(
   const { recipientId } = options
   const fromIso = from.toISOString()
   const toIso = to.toISOString()
+  await resequenceLegacyInvoiceNumbersIfNeeded(sql)
 
   if (recipientId) {
     return sql(

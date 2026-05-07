@@ -1,4 +1,4 @@
-import { getDb } from "./db"
+import { getDb, withTransaction } from "./db"
 
 type Sql = ReturnType<typeof getDb>
 
@@ -65,4 +65,117 @@ export async function getNextInvoiceNumber(sql: Sql, invoiceDate = new Date()): 
   }
 
   return formatInvoiceNumber(financialYear, sequenceNumber)
+}
+
+export async function resequenceLegacyInvoiceNumbersIfNeeded(sql: Sql): Promise<void> {
+  await ensureInvoiceSequenceTable(sql)
+
+  const legacyRows = await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM invoices
+      WHERE invoice_number !~ '^INV-[0-9]{4}-[0-9]{2}-[0-9]{5}$'
+      LIMIT 1
+    ) AS has_legacy
+  `
+  if (legacyRows[0]?.has_legacy !== true) return
+
+  await withTransaction(async (client) => {
+    const lock = await client.query("SELECT pg_try_advisory_xact_lock($1) AS locked", [59427011])
+    if (lock.rows[0]?.locked !== true) return
+
+    const legacyCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM invoices
+        WHERE invoice_number !~ '^INV-[0-9]{4}-[0-9]{2}-[0-9]{5}$'
+        LIMIT 1
+      ) AS has_legacy
+    `)
+    if (legacyCheck.rows[0]?.has_legacy !== true) return
+
+    await client.query(`
+      UPDATE invoices
+      SET invoice_number = '__resequence__' || id::text
+    `)
+
+    await client.query(`
+      WITH dated AS (
+        SELECT
+          id,
+          invoice_date,
+          CASE
+            WHEN EXTRACT(MONTH FROM invoice_date AT TIME ZONE 'Asia/Kolkata') >= 4
+              THEN EXTRACT(YEAR FROM invoice_date AT TIME ZONE 'Asia/Kolkata')::int
+            ELSE EXTRACT(YEAR FROM invoice_date AT TIME ZONE 'Asia/Kolkata')::int - 1
+          END AS fy_start
+        FROM invoices
+      ),
+      numbered AS (
+        SELECT
+          id,
+          fy_start::text || '-' || lpad(((fy_start + 1) % 100)::text, 2, '0') AS financial_year,
+          row_number() OVER (
+            PARTITION BY fy_start
+            ORDER BY invoice_date ASC, id ASC
+          ) AS sequence_number
+        FROM dated
+      )
+      UPDATE invoices i
+      SET
+        invoice_number = 'INV-' || n.financial_year || '-' || lpad(n.sequence_number::text, 5, '0'),
+        updated_at = NOW()
+      FROM numbered n
+      WHERE i.id = n.id
+    `)
+
+    await client.query(`
+      WITH dated AS (
+        SELECT
+          id,
+          invoice_date,
+          CASE
+            WHEN EXTRACT(MONTH FROM invoice_date AT TIME ZONE 'Asia/Kolkata') >= 4
+              THEN EXTRACT(YEAR FROM invoice_date AT TIME ZONE 'Asia/Kolkata')::int
+            ELSE EXTRACT(YEAR FROM invoice_date AT TIME ZONE 'Asia/Kolkata')::int - 1
+          END AS fy_start
+        FROM invoices
+      ),
+      numbered AS (
+        SELECT
+          fy_start::text || '-' || lpad(((fy_start + 1) % 100)::text, 2, '0') AS financial_year,
+          row_number() OVER (
+            PARTITION BY fy_start
+            ORDER BY invoice_date ASC, id ASC
+          ) AS sequence_number
+        FROM dated
+      ),
+      maxes AS (
+        SELECT financial_year, MAX(sequence_number) + 1 AS next_number
+        FROM numbered
+        GROUP BY financial_year
+      )
+      INSERT INTO invoice_sequences (financial_year, next_number)
+      SELECT financial_year, next_number
+      FROM maxes
+      ON CONFLICT (financial_year)
+      DO UPDATE SET next_number = EXCLUDED.next_number, updated_at = NOW()
+    `)
+
+    await client.query(`
+      UPDATE wallet_transactions wt
+      SET invoice_number = i.invoice_number
+      FROM invoices i
+      LEFT JOIN payments p ON p.id = i.payment_id
+      WHERE (
+        i.transaction_id = wt.id
+        OR (
+          p.order_id IS NOT NULL
+          AND wt.reference_type = 'order'
+          AND wt.reference_id = p.order_id::text
+        )
+      )
+      AND wt.invoice_number IS DISTINCT FROM i.invoice_number
+    `)
+  })
 }

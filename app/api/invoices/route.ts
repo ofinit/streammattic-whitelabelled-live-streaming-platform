@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db"
 import { jsonError, jsonOk, withAuth } from "@/lib/api-helpers"
+import { resequenceLegacyInvoiceNumbersIfNeeded } from "@/lib/invoice-numbering"
 import { parseInclusiveDateRange } from "@/lib/invoices-date-range"
 
 function parseDateRange(searchParams: URLSearchParams): { from: Date; to: Date } | null {
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
 
     const recipientIdParam = url.searchParams.get("recipientId")?.trim() || null
     const sql = getDb()
+    await resequenceLegacyInvoiceNumbersIfNeeded(sql)
     const { from, to } = range
 
     let rows: Record<string, unknown>[]

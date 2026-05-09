@@ -2201,6 +2201,18 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const weddingHeroDescription = typeof event.description === "string" ? event.description.trim() : ""
   const coupleParts = coupleHero.includes(" & ") ? coupleHero.split(" & ").map((s) => s.trim()) : null
   const renderDetailsPanel = (detailsTheme: WatchChromeTheme) => {
+    /** Template body already includes the gallery carousel (+ marquee); omit from the bottom panel */
+    const photoGalleryRenderedInTemplate =
+      watchSkin === "weddingTheHeart" ||
+      watchSkin === "weddingRoyalCircle" ||
+      watchSkin === "weddingPapercut" ||
+      watchSkin === "memorialService"
+    /** Logo / credit block already shown in the watch template above the footer */
+    const photographerCreditRenderedInTemplate =
+      watchSkin === "weddingTheHeart" ||
+      watchSkin === "weddingRoyalCircle" ||
+      watchSkin === "weddingPapercut"
+
     const hideGenericHeader =
       detailsTheme === "wedding" ||
       detailsTheme === "theHeart" ||
@@ -2377,7 +2389,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         </div>
       </div>
 
-      {photoGalleryUrls.length > 0 && watchSkin !== "weddingTheHeart" && (
+      {photoGalleryUrls.length > 0 && !photoGalleryRenderedInTemplate && (
         <div className={`mt-6 border-t pt-4 ${galleryBorder}`}>
           <h3 className="mb-3 text-sm font-semibold text-foreground">Photo gallery</h3>
           <WatchPhotoGallery urls={photoGalleryUrls} theme={detailsTheme} />
@@ -2387,7 +2399,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         </div>
       )}
 
-      {(photographerLogoUrl ||
+      {!photographerCreditRenderedInTemplate &&
+        (photographerLogoUrl ||
         photographerContact.name ||
         photographerContact.phone ||
         photographerContact.email ||

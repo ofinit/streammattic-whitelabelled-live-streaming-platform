@@ -263,6 +263,9 @@ export interface LiveEvent {
   currentViewers: number
   totalViews: number
   isPasswordProtected: boolean
+  /** Plaintext gate password from `event_password` (camelCase in API responses) */
+  eventPassword?: string
+  /** Legacy / alternate key for the same value */
   password?: string
   /** When true (default), watch page collects name/email/phone before stream. */
   captureVisitorData?: boolean

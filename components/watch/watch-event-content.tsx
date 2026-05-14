@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Radio,
   Eye,
+  EyeOff,
   Users,
   MessageCircle,
   Send,
@@ -544,6 +545,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(true)
   const [isPasswordProtected, setIsPasswordProtected] = useState(false)
   const [password, setPassword] = useState("")
+  const [showPrivateGatePassword, setShowPrivateGatePassword] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [visitorGateComplete, setVisitorGateComplete] = useState(false)
   /** Set when visitor name is known (full-page gate, prior session, or chat inline form). */
@@ -795,7 +797,18 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const handlePasswordSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if ((event as unknown as Record<string, unknown>)?.password === password) {
+    const ev = event as unknown as Record<string, unknown>
+    const storedRaw =
+      typeof ev.eventPassword === "string"
+        ? ev.eventPassword
+        : typeof ev.password === "string"
+          ? ev.password
+          : typeof ev.event_password === "string"
+            ? (ev.event_password as string)
+            : ""
+    const stored = storedRaw.trim()
+    const entered = password.trim()
+    if (stored !== "" && entered === stored) {
       setIsAuthenticated(true)
       setPasswordError("")
     } else {
@@ -1189,13 +1202,26 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           <CardContent>
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Input
-                  type="password"
-                  placeholder="Enter event password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-secondary border-0"
-                />
+                <div className="relative">
+                  <Input
+                    type={showPrivateGatePassword ? "text" : "password"}
+                    placeholder="Enter event password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-secondary border-0 pr-10"
+                    autoComplete="off"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPrivateGatePassword((v) => !v)}
+                    aria-label={showPrivateGatePassword ? "Hide password" : "Show password"}
+                  >
+                    {showPrivateGatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
                 {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
               </div>
               <Button type="submit" className="w-full">

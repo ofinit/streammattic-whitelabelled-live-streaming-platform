@@ -565,6 +565,7 @@ export function EventFormDialog({
   } | null>(null)
   const [copied, setCopied] = useState<"rtmp" | "key" | "playback" | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
+  const [showEventPassword, setShowEventPassword] = useState(false)
 
   // YouTube broadcast credentials (real FMS/stream key from youtube_broadcasts when editing)
   const [youtubeBroadcastCredentials, setYoutubeBroadcastCredentials] = useState<{
@@ -698,6 +699,7 @@ export function EventFormDialog({
     slug?: string
     scheduledAt?: string
     embedCode?: string
+    password?: string
   }>({})
 
   // Multi-date state
@@ -1234,6 +1236,7 @@ export function EventFormDialog({
       dialogOpenActiveRef.current = false
       prevShowCredentialsScreenRef.current = false
       prevValidityStreamGroupRef.current = null
+      setShowEventPassword(false)
       return
     }
     const justOpenedDialog = !dialogOpenActiveRef.current
@@ -1262,7 +1265,10 @@ export function EventFormDialog({
           embedCode: event.embedCode || "",
           scheduledAt: event.scheduledAt ? utcIsoToDatetimeLocal(String(event.scheduledAt), eventTimezone) : "",
           isPasswordProtected: event.isPasswordProtected,
-          password: event.password || "",
+          password:
+            (typeof ev.eventPassword === "string" && ev.eventPassword) ||
+            (typeof ev.password === "string" && ev.password) ||
+            "",
           captureVisitorData: coerceEventBooleanFlag(
             (event as unknown as Record<string, unknown>).captureVisitorData,
             (event as unknown as Record<string, unknown>).capture_visitor_data,
@@ -1846,7 +1852,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string; password?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1867,12 +1873,27 @@ export function EventFormDialog({
     ) {
       errors.embedCode = THIRD_PARTY_YOUTUBE_IFRAME_ERROR
     }
+    const evExisting = event as Record<string, unknown> | undefined
+    const hasExistingEventPassword =
+      !!isEditing &&
+      !!String(
+        (typeof evExisting?.eventPassword === "string" && evExisting.eventPassword) ||
+          (typeof evExisting?.password === "string" && evExisting.password) ||
+          "",
+      ).trim()
+    if (formData.isPasswordProtected && !formData.password.trim()) {
+      if (!hasExistingEventPassword) {
+        errors.password = "Enter a password for private events"
+      }
+    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       if (errors.title || errors.slug || errors.scheduledAt) {
         setActiveTab("details")
       } else if (errors.embedCode) {
         setActiveTab("stream")
+      } else if (errors.password) {
+        setActiveTab("settings")
       } else {
         setActiveTab("details")
       }
@@ -1913,7 +1934,7 @@ export function EventFormDialog({
           : undefined,
       embedCode: isThirdPartyEmbedFormType(formData.streamType) ? formData.embedCode : undefined,
       isPasswordProtected: formData.isPasswordProtected,
-      password: formData.isPasswordProtected ? formData.password : undefined,
+      password: formData.isPasswordProtected ? formData.password.trim() || undefined : undefined,
       captureVisitorData: formData.captureVisitorData,
       allowChat: formData.allowChat,
       allowReactions: formData.allowReactions,
@@ -3832,13 +3853,36 @@ export function EventFormDialog({
                 {formData.isPasswordProtected && (
                   <div className="space-y-2 pl-8">
                     <Label htmlFor="password">Event Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter password"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showEventPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => {
+                          setFormData({ ...formData, password: e.target.value })
+                          if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }))
+                        }}
+                        placeholder="Enter password"
+                        className={fieldErrors.password ? "border-destructive bg-destructive/5 pr-10" : "pr-10"}
+                        autoComplete="new-password"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowEventPassword((v) => !v)}
+                        aria-label={showEventPassword ? "Hide password" : "Show password"}
+                      >
+                        {showEventPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    {fieldErrors.password ? (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {fieldErrors.password}
+                      </p>
+                    ) : null}
                   </div>
                 )}
 

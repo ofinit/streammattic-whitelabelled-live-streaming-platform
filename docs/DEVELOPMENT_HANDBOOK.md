@@ -95,6 +95,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/database/export/route.ts` | `/api/admin/database/export` |
 | `app/api/admin/database/import/route.ts` | `/api/admin/database/import` |
 | `app/api/admin/email-templates/route.ts` | `/api/admin/email-templates` |
+| `app/api/admin/engagement/reports/route.ts` | `/api/admin/engagement/reports` |
 | `app/api/admin/event-visitors/route.ts` | `/api/admin/event-visitors` |
 | `app/api/admin/events/route.ts` | `/api/admin/events` |
 | `app/api/admin/gst/route.ts` | `/api/admin/gst` |

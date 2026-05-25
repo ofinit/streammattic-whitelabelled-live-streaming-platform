@@ -35,6 +35,7 @@ import {
   ClipboardList,
   Database,
   Images,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -73,6 +74,7 @@ const adminNav: NavItem[] = [
   { title: "GST invoices", href: "/admin/invoices", icon: Receipt },
   { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { title: "Engagement", href: "/admin/engagement", icon: MessageSquare },
   { title: "Visitor leads", href: "/admin/visitor-registrations", icon: ClipboardList },
   { title: "Payment Gateways", href: "/admin/payments", icon: CreditCard },
   { title: "Email Templates", href: "/admin/settings/email-templates", icon: Mail },

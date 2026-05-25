@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { getPlatformSetting, getStudioBranding } from "@/lib/db-queries"
 import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import type { StudioBranding } from "@/lib/types"
+import type { AdminEngagementCampaignType } from "@/lib/admin-user-engagement"
 
 function hasPlatformEmailProvider(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim() || process.env.SMTP_HOST?.trim())
@@ -13,6 +14,15 @@ export const EMAIL_SEND_FAILED_MESSAGE =
   "Could not send email. For Resend: set RESEND_API_KEY and RESEND_FROM with a verified domain. For SMTP: set SMTP_HOST, port, and credentials. Check server logs for [Resend] or [SMTP]."
 
 const DEFAULT_MAIL_FROM = `"StreamLivee" <noreply@streamlivee.com>`
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
 
 /**
  * Cleans `RESEND_FROM` / `SMTP_FROM` when env UIs add extra quotes or backslash-escaped quotes,
@@ -347,6 +357,70 @@ export async function sendPhotoGalleryPaymentFailedEmail(params: {
       </p>
     </div>`
   return sendEmail(toEmail, subject, html, `${subject} ${renewUrl}`)
+}
+
+export async function sendInactiveUserEngagementEmail(params: {
+  toEmail: string
+  name: string
+  role: string
+  campaignType: AdminEngagementCampaignType
+  appUrl: string
+  note?: string
+}) {
+  const brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
+  const safeName = escapeHtml(params.name || "there")
+  const dashboardUrl = `${params.appUrl.replace(/\/$/, "")}/${params.role === "studio" ? "studio" : "streamer"}`
+  const supportLine = params.note?.trim()
+    ? `<p style="font-size: 16px; color: #333; line-height: 1.5;">${escapeHtml(params.note.trim())}</p>`
+    : ""
+
+  const campaignCopy: Record<AdminEngagementCampaignType, { subject: string; headline: string; body: string; cta: string }> = {
+    onboarding_help: {
+      subject: `Need help creating your first event on ${brandName}?`,
+      headline: "Let us help you launch your first stream",
+      body: "Your account is ready. You can create a private or public event, choose a template, and share the watch link with guests in a few minutes.",
+      cta: "Create your first event",
+    },
+    setup_help: {
+      subject: `We can set up your next event on ${brandName}`,
+      headline: "Stuck after setup? We can help",
+      body: "If event setup, YouTube, RTMP, templates, or passwords slowed you down, reply to this email and we can help prepare the next event for you.",
+      cta: "Open your dashboard",
+    },
+    winback: {
+      subject: `Ready for your next live event?`,
+      headline: "Bring your next event online",
+      body: "You have already used the platform before. We can help you reuse the same workflow, collect visitor leads, and share a polished branded watch page.",
+      cta: "Plan the next event",
+    },
+    renewal_offer: {
+      subject: `Action needed to continue using ${brandName}`,
+      headline: "Keep your streaming account ready",
+      body: "Your account may need wallet balance, credits, or renewal attention before the next event. Open your dashboard to check the next step.",
+      cta: "Review account",
+    },
+    feature_awareness: {
+      subject: `New ways to get more from ${brandName}`,
+      headline: "Try more features for your next event",
+      body: "Use branded templates, private event passwords, visitor leads, recordings, custom domains, YouTube automation, and the client photo gallery to make every event easier to run.",
+      cta: "Explore features",
+    },
+  }
+  const copy = campaignCopy[params.campaignType]
+  const subject = copy.subject
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p style="font-size: 16px; color: #333;">Hi ${safeName},</p>
+      <h2 style="font-size: 22px; color: #111; margin: 0 0 12px;">${copy.headline}</h2>
+      <p style="font-size: 16px; color: #333; line-height: 1.5;">${copy.body}</p>
+      ${supportLine}
+      <p style="margin: 24px 0;">
+        <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 20px; background: #059669; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">${copy.cta}</a>
+      </p>
+      <p style="font-size: 13px; color: #666;">Need help? Reply to this email and our team can guide you.</p>
+    </div>`
+  const text = `Hi ${safeName}, ${copy.headline}. ${copy.body} ${dashboardUrl}`
+  return sendEmail(params.toEmail, subject, html, text)
 }
 
 /**

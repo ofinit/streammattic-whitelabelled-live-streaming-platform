@@ -4,6 +4,37 @@ export type UserRole = "admin" | "studio" | "streamer"
 // User Status
 export type UserStatus = "active" | "inactive" | "suspended"
 
+export type AdminEngagementSegment =
+  | "new_never_activated"
+  | "tried_once_stopped"
+  | "value_user_at_risk"
+  | "payment_blocked"
+  | "feature_unaware"
+  | "active"
+
+export type AdminEngagementCampaignType =
+  | "onboarding_help"
+  | "setup_help"
+  | "winback"
+  | "renewal_offer"
+  | "feature_awareness"
+
+export interface AdminEngagementSummary {
+  segment: AdminEngagementSegment
+  segmentLabel: string
+  segmentReason: string
+  priority: "low" | "medium" | "high"
+  totalEvents: number
+  completedEvents: number
+  lastEventAt: string | null
+  lastLiveAt: string | null
+  totalCreditsRemaining: number
+  lastContactedAt: string | null
+  lastCampaignType: AdminEngagementCampaignType | null
+  followUpAt: string | null
+  note: string | null
+}
+
 // Order Status
 export type OrderStatus = "pending" | "completed" | "failed" | "cancelled" | "refunded"
 
@@ -53,6 +84,9 @@ export type LandingTheme =
   createdAt: Date
   updatedAt: Date
   mockDataCleared?: boolean
+  lastLogin?: Date | string
+  joinedAt?: Date | string
+  engagement?: AdminEngagementSummary
   }
 
 // Studio extends User with branding
@@ -717,6 +751,11 @@ export type EmailTemplateType =
   | "order_rejected"
   | "low_balance"
   | "event_expiring"
+  | "inactive_onboarding"
+  | "inactive_setup_help"
+  | "inactive_winback"
+  | "inactive_renewal_offer"
+  | "inactive_feature_awareness"
 
 // Email Template
 export interface EmailTemplate {

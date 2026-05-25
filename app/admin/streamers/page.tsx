@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/dashboard/data-table"
@@ -10,6 +10,7 @@ import { StatusChangeDialog } from "@/components/dashboard/status-change-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -22,8 +23,14 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
-import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images, Building2, KeyRound } from "lucide-react"
+import { Search, Plus, MoreHorizontal, LogIn, Edit, Ban, UserCheck, IndianRupee, Youtube, Wallet, Images, Building2, KeyRound, Mail } from "lucide-react"
 import type { Streamer, StreamTypePricing } from "@/lib/types"
+import {
+  AdminEngagementDialog,
+  EngagementBulkBar,
+  EngagementSummary,
+  type AdminEngagementUser,
+} from "@/components/admin/user-engagement-actions"
 import { FullscreenCustomPricingDialog } from "@/components/admin/fullscreen-custom-pricing-dialog"
 import { StreamerYouTubeOverrideDialog } from "@/components/admin/streamer-youtube-override-dialog"
 import { AdjustWalletDialog } from "@/components/wallet/adjust-wallet-dialog"
@@ -66,24 +73,39 @@ export default function AdminStreamersPage() {
 
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
+  const [engagementFilter, setEngagementFilter] = useState<string>("all")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [engagementTargets, setEngagementTargets] = useState<AdminEngagementUser[]>([])
 
-  useEffect(() => {
+  const refreshStreamers = useCallback(() =>
     fetch("/api/admin/users?role=streamer", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.users) setStreamers(data.users)
       })
       .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false)), [])
+
+  useEffect(() => {
+    refreshStreamers()
+  }, [refreshStreamers])
 
   // Filter streamers
   const filteredStreamers = streamers.filter((streamer) => {
     const matchesSearch =
       streamer.name.toLowerCase().includes(search.toLowerCase()) || streamer.email.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || streamer.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchesEngagement =
+      engagementFilter === "all" || streamer.engagement?.segment === engagementFilter
+    return matchesSearch && matchesStatus && matchesEngagement
   })
+
+  const selectedUsers = filteredStreamers.filter((streamer) => selectedIds.includes(streamer.id))
+  const allVisibleSelected = filteredStreamers.length > 0 && filteredStreamers.every((s) => selectedIds.includes(s.id))
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
 
   const handleCreate = async (data: {
     email: string
@@ -251,6 +273,18 @@ export default function AdminStreamersPage() {
 
   const columns = [
     {
+      key: "select",
+      header: "",
+      render: (item: any) => (
+        <Checkbox
+          checked={selectedIds.includes(item.id)}
+          onCheckedChange={() => toggleSelected(item.id)}
+          aria-label={`Select ${item.name}`}
+        />
+      ),
+      className: "w-10",
+    },
+    {
       key: "name",
       header: "Streamer",
       render: (item: any) => (
@@ -269,6 +303,11 @@ export default function AdminStreamersPage() {
       key: "status",
       header: "Status",
       render: (item: any) => <StatusBadge status={item.status} />,
+    },
+    {
+      key: "engagement",
+      header: "Engagement",
+      render: (item: any) => <EngagementSummary engagement={item.engagement} />,
     },
     {
       key: "walletBalance",
@@ -306,6 +345,10 @@ export default function AdminStreamersPage() {
             <DropdownMenuItem onClick={() => { setResetPwTarget(item); setResetPwValue("") }}>
               <KeyRound className="mr-2 h-4 w-4" />
               Reset Password
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEngagementTargets([item])}>
+              <Mail className="mr-2 h-4 w-4" />
+              Send / log engagement
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAddFundsStreamer(item)}>
               <Wallet className="mr-2 h-4 w-4" />
@@ -386,6 +429,27 @@ export default function AdminStreamersPage() {
                   <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+                <SelectTrigger className="w-[210px] bg-secondary border-0">
+                  <SelectValue placeholder="Engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Engagement</SelectItem>
+                  <SelectItem value="new_never_activated">New, not activated</SelectItem>
+                  <SelectItem value="tried_once_stopped">Tried once, stopped</SelectItem>
+                  <SelectItem value="value_user_at_risk">Value user at risk</SelectItem>
+                  <SelectItem value="payment_blocked">Payment blocked</SelectItem>
+                  <SelectItem value="feature_unaware">Feature unaware</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedIds(allVisibleSelected ? [] : filteredStreamers.map((s) => s.id))}
+              >
+                {allVisibleSelected ? "Clear visible" : "Select visible"}
+              </Button>
               <Button onClick={() => setIsCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Streamer
@@ -393,6 +457,12 @@ export default function AdminStreamersPage() {
             </div>
           </CardContent>
         </Card>
+
+        <EngagementBulkBar
+          selectedCount={selectedUsers.length}
+          onClear={() => setSelectedIds([])}
+          onSend={() => setEngagementTargets(selectedUsers)}
+        />
 
         {/* Users Table */}
         <Card className="border-border bg-card">
@@ -468,6 +538,16 @@ export default function AdminStreamersPage() {
         open={!!youtubeOverrideStreamer}
         onOpenChange={(open) => !open && setYoutubeOverrideStreamer(null)}
         streamer={youtubeOverrideStreamer}
+      />
+
+      <AdminEngagementDialog
+        open={engagementTargets.length > 0}
+        onOpenChange={(open) => !open && setEngagementTargets([])}
+        users={engagementTargets}
+        onComplete={() => {
+          setSelectedIds([])
+          refreshStreamers()
+        }}
       />
 
       {addFundsStreamer && (

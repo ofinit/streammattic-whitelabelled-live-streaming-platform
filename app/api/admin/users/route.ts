@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { requireRole, createUser } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
+import { classifyAdminUserEngagement } from "@/lib/admin-user-engagement"
+import { ensureAdminUserEngagementSchema } from "@/lib/admin-user-engagement-schema"
 
 /** Emails are unique for all users; lists filter by role — explain where the account appears. */
 async function messageForDuplicateEmail(emailFromBody: string | undefined): Promise<string> {
@@ -32,23 +34,90 @@ export async function GET(req: Request) {
     
     // Use u.* so optional columns (e.g. custom_pricing, studio_subscription_expires_at) missing on older DBs do not break the query.
     const sql = getDb()
+    await ensureAdminUserEngagementSchema()
     const rows =
       role === "all"
         ? await sql(`
           SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
-                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
+                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled,
+                 COALESCE(w.balance, 0) AS wallet_balance,
+                 COALESCE(uc.rtmp, 0) AS credits_rtmp,
+                 COALESCE(uc.youtube_api, 0) AS credits_youtube_api,
+                 COALESCE(uc.youtube_embed, 0) AS credits_youtube_embed,
+                 COALESCE(uc.third_party, 0) AS credits_third_party,
+                 COALESCE(es.total_events, 0) AS engagement_total_events,
+                 COALESCE(es.completed_events, 0) AS engagement_completed_events,
+                 es.last_event_at AS engagement_last_event_at,
+                 es.last_live_at AS engagement_last_live_at,
+                 eng.last_contacted_at AS engagement_last_contacted_at,
+                 eng.last_campaign_type AS engagement_last_campaign_type,
+                 eng.follow_up_at AS engagement_follow_up_at,
+                 eng.note AS engagement_note
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
           LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id
+          LEFT JOIN wallets w ON u.id = w.user_id
+          LEFT JOIN user_credits uc ON u.id = uc.user_id
+          LEFT JOIN LATERAL (
+            SELECT
+              COUNT(*)::int AS total_events,
+              COUNT(*) FILTER (WHERE e.status::text IN ('live', 'completed', 'ended'))::int AS completed_events,
+              MAX(e.created_at) AS last_event_at,
+              MAX(COALESCE(e.started_at, e.created_at)) FILTER (WHERE e.status::text IN ('live', 'completed', 'ended')) AS last_live_at
+            FROM events e
+            WHERE e.user_id = u.id
+          ) es ON true
+          LEFT JOIN LATERAL (
+            SELECT
+              MAX(l.created_at) AS last_contacted_at,
+              (ARRAY_AGG(l.campaign_type ORDER BY l.created_at DESC))[1] AS last_campaign_type,
+              (ARRAY_AGG(l.follow_up_at ORDER BY l.created_at DESC))[1] AS follow_up_at,
+              (ARRAY_AGG(l.note ORDER BY l.created_at DESC))[1] AS note
+            FROM admin_user_engagement_logs l
+            WHERE l.user_id = u.id
+          ) eng ON true
           ORDER BY u.created_at DESC
         `)
         : await sql(
             `
           SELECT u.*, sb.platform_name AS branding_platform_name, sb.primary_color AS branding_primary_color,
-                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled
+                 COALESCE(uae.photo_gallery_enabled, false) AS photo_gallery_enabled,
+                 COALESCE(w.balance, 0) AS wallet_balance,
+                 COALESCE(uc.rtmp, 0) AS credits_rtmp,
+                 COALESCE(uc.youtube_api, 0) AS credits_youtube_api,
+                 COALESCE(uc.youtube_embed, 0) AS credits_youtube_embed,
+                 COALESCE(uc.third_party, 0) AS credits_third_party,
+                 COALESCE(es.total_events, 0) AS engagement_total_events,
+                 COALESCE(es.completed_events, 0) AS engagement_completed_events,
+                 es.last_event_at AS engagement_last_event_at,
+                 es.last_live_at AS engagement_last_live_at,
+                 eng.last_contacted_at AS engagement_last_contacted_at,
+                 eng.last_campaign_type AS engagement_last_campaign_type,
+                 eng.follow_up_at AS engagement_follow_up_at,
+                 eng.note AS engagement_note
           FROM users u
           LEFT JOIN studio_branding sb ON u.id = sb.user_id
           LEFT JOIN user_addon_entitlements uae ON u.id = uae.user_id
+          LEFT JOIN wallets w ON u.id = w.user_id
+          LEFT JOIN user_credits uc ON u.id = uc.user_id
+          LEFT JOIN LATERAL (
+            SELECT
+              COUNT(*)::int AS total_events,
+              COUNT(*) FILTER (WHERE e.status::text IN ('live', 'completed', 'ended'))::int AS completed_events,
+              MAX(e.created_at) AS last_event_at,
+              MAX(COALESCE(e.started_at, e.created_at)) FILTER (WHERE e.status::text IN ('live', 'completed', 'ended')) AS last_live_at
+            FROM events e
+            WHERE e.user_id = u.id
+          ) es ON true
+          LEFT JOIN LATERAL (
+            SELECT
+              MAX(l.created_at) AS last_contacted_at,
+              (ARRAY_AGG(l.campaign_type ORDER BY l.created_at DESC))[1] AS last_campaign_type,
+              (ARRAY_AGG(l.follow_up_at ORDER BY l.created_at DESC))[1] AS follow_up_at,
+              (ARRAY_AGG(l.note ORDER BY l.created_at DESC))[1] AS note
+            FROM admin_user_engagement_logs l
+            WHERE l.user_id = u.id
+          ) eng ON true
           WHERE u.role = $1
           ORDER BY u.created_at DESC
         `,
@@ -59,6 +128,30 @@ export async function GET(req: Request) {
     const users = rows.map((r) => {
       const row = r as Record<string, unknown>
       const roleVal = String(row.role ?? "")
+      const credits = {
+        rtmp: Number(row.credits_rtmp ?? 0),
+        youtube_api: Number(row.credits_youtube_api ?? 0),
+        youtube_embed: Number(row.credits_youtube_embed ?? 0),
+        third_party: Number(row.credits_third_party ?? 0),
+      }
+      const walletBalance = Number(row.wallet_balance ?? 0) || 0
+      const engagement = classifyAdminUserEngagement({
+        role: roleVal,
+        createdAt: row.created_at as string | Date | null,
+        lastLoginAt: row.last_login_at as string | Date | null,
+        totalEvents: Number(row.engagement_total_events ?? 0),
+        completedEvents: Number(row.engagement_completed_events ?? 0),
+        lastEventAt: row.engagement_last_event_at as string | Date | null,
+        lastLiveAt: row.engagement_last_live_at as string | Date | null,
+        walletBalance,
+        totalCreditsRemaining: Object.values(credits).reduce((sum, v) => sum + v, 0),
+        studioSubscriptionExpiresAt: row.studio_subscription_expires_at as string | Date | null,
+        photoGalleryEnabled: row.photo_gallery_enabled === true,
+        lastContactedAt: row.engagement_last_contacted_at as string | Date | null,
+        lastCampaignType: row.engagement_last_campaign_type as string | null,
+        followUpAt: row.engagement_follow_up_at as string | Date | null,
+        note: row.engagement_note as string | null,
+      })
       return {
         id: row.id,
         name: row.name,
@@ -72,9 +165,12 @@ export async function GET(req: Request) {
         joinedAt: row.created_at,
         createdAt: row.created_at,
         isVerified: row.email_verified,
-        totalEvents: 0,
+        totalEvents: engagement.totalEvents,
         totalRevenue: 0,
-        walletBalance: 0,
+        walletBalance,
+        credits,
+        eventsUsed: engagement.completedEvents,
+        engagement,
         customPricing: row.custom_pricing ?? null,
         studioSubscriptionExpiresAt: row.studio_subscription_expires_at
           ? new Date(String(row.studio_subscription_expires_at)).toISOString()
@@ -87,13 +183,6 @@ export async function GET(req: Request) {
         photoGalleryEnabled: row.photo_gallery_enabled === true,
       }
     })
-
-    // Provide some basic stats counting to meet UI needs
-    // In production, you would run a JOIN against wallets and events
-    for (const u of users) {
-      const balanceQuery = await sql`SELECT balance FROM wallets WHERE user_id=${u.id}`
-      if (balanceQuery.length > 0) u.walletBalance = Number((balanceQuery[0] as Record<string, unknown>).balance) || 0
-    }
 
     return NextResponse.json({ success: true, users })
   } catch (error: any) {
@@ -133,7 +222,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, user })
     }
 
-    const { companyName, email, password, phone, platformName, primaryColor, secondaryColor } = body
+    const companyName = typeof body.companyName === "string" ? body.companyName.trim() : ""
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : ""
+    const password = typeof body.password === "string" ? body.password : ""
+    const phone = typeof body.phone === "string" ? body.phone.trim() : undefined
+    const platformName = typeof body.platformName === "string" ? body.platformName.trim() : ""
+    const primaryColor = typeof body.primaryColor === "string" ? body.primaryColor : "#10b981"
+    const secondaryColor = typeof body.secondaryColor === "string" ? body.secondaryColor : "#059669"
 
     if (!companyName || !email || !password || !platformName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -143,7 +238,7 @@ export async function POST(req: Request) {
     
     // 1. Create the user (this also creates wallet & credits)
     const user: any = await createUser({
-      email: typeof email === "string" ? email.trim().toLowerCase() : email,
+      email,
       password,
       name: companyName,
       phone,

@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Header } from "@/components/dashboard/header"
 import { DataTable } from "@/components/dashboard/data-table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { StudioFormDialog, type StudioFormData } from "@/components/studio/studio-form-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -18,8 +19,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 
-import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee, Images, KeyRound } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Eye, Edit, Ban, UserCheck, Wallet, Users, Globe, Youtube, IndianRupee, Images, KeyRound, Mail } from "lucide-react"
 import type { Studio } from "@/lib/types"
+import {
+  AdminEngagementDialog,
+  EngagementBulkBar,
+  EngagementSummary,
+  type AdminEngagementUser,
+} from "@/components/admin/user-engagement-actions"
 import { Badge } from "@/components/ui/badge"
 import { StudioDomainDialog } from "@/components/admin/studio-domain-dialog"
 import { StudioYouTubeDialog } from "@/components/admin/studio-youtube-dialog"
@@ -52,16 +59,22 @@ export default function AdminStudiosPage() {
 
   const [studios, setStudios] = useState<Studio[]>([])
   const [loading, setLoading] = useState(true)
+  const [engagementFilter, setEngagementFilter] = useState<string>("all")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [engagementTargets, setEngagementTargets] = useState<AdminEngagementUser[]>([])
 
-  useEffect(() => {
+  const refreshStudios = useCallback(() =>
     fetch("/api/admin/users?role=studio", { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.users) setStudios(data.users)
       })
       .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false)), [])
+
+  useEffect(() => {
+    refreshStudios()
+  }, [refreshStudios])
 
   const togglePhotoGallery = async (studio: Studio) => {
     const next = !studio.photoGalleryEnabled
@@ -92,8 +105,16 @@ export default function AdminStudiosPage() {
       studio.name.toLowerCase().includes(search.toLowerCase()) ||
       studio.email.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || studio.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchesEngagement = engagementFilter === "all" || studio.engagement?.segment === engagementFilter
+    return matchesSearch && matchesStatus && matchesEngagement
   })
+
+  const selectedUsers = filteredStudios.filter((studio) => selectedIds.includes(studio.id))
+  const allVisibleSelected = filteredStudios.length > 0 && filteredStudios.every((s) => selectedIds.includes(s.id))
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
 
   const handleCreate = async (data: StudioFormData) => {
     try {
@@ -201,6 +222,18 @@ export default function AdminStudiosPage() {
 
   const columns = [
     {
+      key: "select",
+      header: "",
+      render: (item: Studio) => (
+        <Checkbox
+          checked={selectedIds.includes(item.id)}
+          onCheckedChange={() => toggleSelected(item.id)}
+          aria-label={`Select ${item.name}`}
+        />
+      ),
+      className: "w-10",
+    },
+    {
       key: "name",
       header: "Studio",
       render: (item: Studio) => (
@@ -227,6 +260,11 @@ export default function AdminStudiosPage() {
       key: "status",
       header: "Status",
       render: (item: Studio) => <StatusBadge status={item.status} />,
+    },
+    {
+      key: "engagement",
+      header: "Engagement",
+      render: (item: Studio) => <EngagementSummary engagement={item.engagement} />,
     },
     {
       key: "studioSubscriptionExpiresAt",
@@ -271,6 +309,10 @@ export default function AdminStudiosPage() {
             <DropdownMenuItem onClick={() => { setResetPwTarget(item); setResetPwValue("") }}>
               <KeyRound className="mr-2 h-4 w-4" />
               Reset Password
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEngagementTargets([item])}>
+              <Mail className="mr-2 h-4 w-4" />
+              Send / log engagement
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAddFundsStudio(item)}>
               <Wallet className="mr-2 h-4 w-4" />
@@ -348,6 +390,27 @@ export default function AdminStudiosPage() {
                   <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={engagementFilter} onValueChange={setEngagementFilter}>
+                <SelectTrigger className="w-[210px] bg-secondary border-0">
+                  <SelectValue placeholder="Engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Engagement</SelectItem>
+                  <SelectItem value="new_never_activated">New, not activated</SelectItem>
+                  <SelectItem value="tried_once_stopped">Tried once, stopped</SelectItem>
+                  <SelectItem value="value_user_at_risk">Value user at risk</SelectItem>
+                  <SelectItem value="payment_blocked">Payment blocked</SelectItem>
+                  <SelectItem value="feature_unaware">Feature unaware</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedIds(allVisibleSelected ? [] : filteredStudios.map((s) => s.id))}
+              >
+                {allVisibleSelected ? "Clear visible" : "Select visible"}
+              </Button>
               <Button onClick={() => setIsCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Studio
@@ -355,6 +418,12 @@ export default function AdminStudiosPage() {
             </div>
           </CardContent>
         </Card>
+
+        <EngagementBulkBar
+          selectedCount={selectedUsers.length}
+          onClear={() => setSelectedIds([])}
+          onSend={() => setEngagementTargets(selectedUsers)}
+        />
 
         {/* Studios Table */}
         <Card className="border-border bg-card">
@@ -394,6 +463,16 @@ export default function AdminStudiosPage() {
           studio={youtubeStudio}
         />
       )}
+
+      <AdminEngagementDialog
+        open={engagementTargets.length > 0}
+        onOpenChange={(open) => !open && setEngagementTargets([])}
+        users={engagementTargets}
+        onComplete={() => {
+          setSelectedIds([])
+          refreshStudios()
+        }}
+      />
 
       {pricingStudio && (
         <FullscreenCustomPricingDialog

@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Search, Filter, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react"
 
-import { formatPaisa as formatCurrency } from "@/lib/utils"
+import { formatDate, formatPaisa as formatCurrency } from "@/lib/utils"
 import type { RefundRequest } from "@/lib/types"
 
 export default function AdminRefundsPage() {
@@ -217,7 +217,7 @@ export default function AdminRefundsPage() {
                           {getStatusBadge(refund.status)}
                         </div>
                         <CardDescription>
-                          Requested by {refund.requestedByName} on {new Date(refund.requestedAt).toLocaleDateString()}
+                          Requested by {refund.requestedByName} on {formatDate(refund.requestedAt)}
                         </CardDescription>
                       </div>
                       <div className="text-right">

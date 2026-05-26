@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar, Clock, AlertTriangle, Check } from "lucide-react"
 import { formatCurrency } from "@/lib/cascade-wallet-service"
+import { formatDate } from "@/lib/utils"
 
 interface ValidityExtensionDialogProps {
   open: boolean
@@ -77,7 +78,7 @@ export function ValidityExtensionDialog({
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span>Current Expiry</span>
             </div>
-            <span className="font-medium">{currentExpiry.toLocaleDateString()}</span>
+            <span className="font-medium">{formatDate(currentExpiry)}</span>
           </div>
 
           {/* Extension Options */}
@@ -105,7 +106,7 @@ export function ValidityExtensionDialog({
                 <Check className="h-4 w-4 text-primary" />
                 <span>New Expiry</span>
               </div>
-              <span className="font-medium text-primary">{newExpiry.toLocaleDateString()}</span>
+              <span className="font-medium text-primary">{formatDate(newExpiry)}</span>
             </div>
           )}
 

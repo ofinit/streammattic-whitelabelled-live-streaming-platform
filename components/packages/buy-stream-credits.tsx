@@ -39,7 +39,7 @@ import { parseAiImagePricing, type AiImagePricingConfig } from "@/lib/ai-image-g
 import { parsePhotoGalleryAddon, type PhotoGalleryAddonSettings } from "@/lib/photo-gallery-addon"
 import type { FaceRecognitionPricingPayload } from "@/lib/rekognition-reference-pricing"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, formatDateTime } from "@/lib/utils"
 
 const streamTypeInfo = [
   { key: "rtmp" as StreamTypeKey, label: "RTMP Server", description: "Use OBS or Wirecast to stream", icon: Video },
@@ -657,7 +657,7 @@ export function BuyStreamCreditsPage({ variant }: { variant: Variant }) {
                     <p className="text-xs text-muted-foreground">
                       Current period ends:{" "}
                       <span className="font-mono text-foreground">
-                        {new Date(photoGalleryExpiresAt).toLocaleString()}
+                        {formatDateTime(photoGalleryExpiresAt)}
                       </span>
                     </p>
                   ) : null}

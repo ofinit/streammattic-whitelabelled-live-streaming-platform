@@ -19,6 +19,7 @@ import {
 import { streamingService, type StreamRecording } from "@/lib/streaming-service"
 import { Video, Download, Play, Trash2, MoreVertical, HardDrive, Clock, RefreshCw, Circle } from "lucide-react"
 import { toast } from "sonner"
+import { formatDate } from "@/lib/utils"
 
 interface RecordingsManagerProps {
   eventId: string
@@ -142,7 +143,7 @@ export function RecordingsManager({
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{streamingService.formatBytes(recording.size)}</span>
                           <span>{streamingService.formatDuration(recording.duration)}</span>
-                          <span>{recording.createdAt.toLocaleDateString()}</span>
+                          <span>{formatDate(recording.createdAt)}</span>
                         </div>
                       </div>
                     </div>

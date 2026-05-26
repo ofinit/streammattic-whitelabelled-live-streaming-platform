@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDateTime } from "@/lib/utils"
 
 async function fetcher(url: string) {
   const res = await fetch(url, { credentials: "include" })
@@ -97,7 +98,7 @@ export default function ClientGalleryAnalyticsPage() {
                     <TableCell className="text-right tabular-nums">{a.assetCount ?? 0}</TableCell>
                     <TableCell className="text-right tabular-nums">{a.guestViewCount ?? 0}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {a.lastGuestViewAt ? new Date(a.lastGuestViewAt).toLocaleString() : "—"}
+                      {a.lastGuestViewAt ? formatDateTime(a.lastGuestViewAt) : "—"}
                     </TableCell>
                     <TableCell>
                       <Link

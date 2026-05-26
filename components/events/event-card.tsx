@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import type { LiveEvent } from "@/lib/types"
 import { getEventPhotographerName } from "@/lib/event-photographer"
-import { format } from "date-fns"
+import { formatDateTime } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
 interface EventCardProps {
@@ -167,7 +167,7 @@ export function EventCard({ event, onEdit, onDelete, onStart, onStop }: EventCar
         {event.scheduledAt && (
           <p className="text-xs text-muted-foreground mb-3">
             {event.status === "scheduled" ? "Scheduled for " : ""}
-            {format(new Date(event.scheduledAt), "MMM d, yyyy 'at' h:mm a")}
+            {formatDateTime(event.scheduledAt)}
           </p>
         )}
 

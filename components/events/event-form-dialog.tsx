@@ -89,6 +89,7 @@ import {
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
 } from "@/lib/third-party-embed-validation"
 import { datetimeLocalToUtcIso, utcIsoToDatetimeLocal } from "@/lib/datetime-local-timezone"
+import { formatDateTime } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
 
@@ -2945,7 +2946,7 @@ export function EventFormDialog({
                     </div>
                     {extra.scheduledAt && (
                       <p className="text-[11px] text-muted-foreground">
-                        {new Date(extra.scheduledAt).toLocaleString("en-IN", { timeZone: extra.timezone ?? timezone, dateStyle: "medium", timeStyle: "short" })}
+                        {formatDateTime(extra.scheduledAt)}
                         {" "}({(extra.timezone ?? timezone).split("/").pop()?.replace("_", " ")})
                         {extra.scheduledAt.slice(0, 10) === (formData.scheduledAt ? formData.scheduledAt.slice(0, 10) : "") && (
                           <span className="ml-2 text-muted-foreground/60">· same day as primary — no extra credit</span>

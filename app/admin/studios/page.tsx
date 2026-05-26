@@ -42,6 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { formatDate } from "@/lib/utils"
 
 export default function AdminStudiosPage() {
   const { impersonate } = useAuth()
@@ -275,7 +276,7 @@ export default function AdminStudiosPage() {
         const d = new Date(raw)
         return (
           <span className="text-sm tabular-nums text-foreground" title={d.toISOString()}>
-            {d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+            {formatDate(raw)}
           </span>
         )
       },

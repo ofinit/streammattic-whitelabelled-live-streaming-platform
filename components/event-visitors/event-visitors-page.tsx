@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table"
 import { ArrowLeft, Download, Loader2, Search } from "lucide-react"
 import { useSearchParams } from "next/navigation"
+import { formatDateTimeIst } from "@/lib/format-datetime-ist"
 
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r) => {
   if (!r.ok) throw new Error("Failed to load")
@@ -58,7 +59,7 @@ function formatRowTimeIst(r: AdminRow): string {
   const raw = r.createdAt ?? r.created_at
   if (!raw) return "—"
   const d = new Date(String(raw))
-  return Number.isNaN(d.getTime()) ? String(raw) : d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+  return Number.isNaN(d.getTime()) ? String(raw) : formatDateTimeIst(d)
 }
 
 function truncate(s: string, n: number): string {

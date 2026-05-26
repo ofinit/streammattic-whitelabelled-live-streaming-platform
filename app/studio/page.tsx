@@ -22,6 +22,7 @@ import {
   calendarDaysUntilSubscriptionEnd,
   shouldShowStudioRenewalDashboardAlert,
 } from "@/lib/studio-subscription-shared"
+import { formatDate, formatDateTime } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -107,7 +108,7 @@ export default function StudioDashboard() {
       header: "Scheduled",
       render: (item: Record<string, unknown>) => (
         <span className="text-muted-foreground">
-          {item.scheduledAt ? new Date(item.scheduledAt as string).toLocaleDateString() : "-"}
+          {item.scheduledAt ? formatDate(item.scheduledAt as string) : "-"}
         </span>
       ),
     },
@@ -136,7 +137,7 @@ export default function StudioDashboard() {
       header: "Date",
       render: (item: Record<string, unknown>) => (
         <span className="text-muted-foreground">
-          {item.createdAt ? new Date(item.createdAt as string).toLocaleString() : "-"}
+          {item.createdAt ? formatDateTime(item.createdAt as string) : "-"}
         </span>
       ),
     },

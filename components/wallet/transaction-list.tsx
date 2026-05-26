@@ -2,9 +2,8 @@
 
 import type React from "react"
 
-import { format } from "date-fns"
 import type { WalletTransaction } from "@/lib/types"
-import { cn } from "@/lib/utils"
+import { cn, formatDateTime } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Wallet, CreditCard, Wand2, Globe, Server } from "lucide-react"
 import { formatWalletTransactionCategory } from "@/lib/wallet-category-labels"
@@ -82,7 +81,7 @@ export function TransactionList({ transactions, showUser = false }: TransactionL
                   {badgeLabel}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {format(new Date(txn.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                  {formatDateTime(txn.createdAt)}
                 </span>
               </div>
             </div>

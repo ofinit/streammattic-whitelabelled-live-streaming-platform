@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Radio, Eye, Calendar, Search, Lock, Play, Loader2 } from "lucide-react"
+import { formatDateTime } from "@/lib/utils"
 
 export default function PublicEventsPage() {
   const [events, setEvents] = useState<any[]>([])
@@ -137,14 +138,7 @@ export default function PublicEventsPage() {
                       <p className="text-xs text-muted-foreground mb-2">by {event.userName}</p>
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span>
-                          {new Date(event.scheduledAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <span>{formatDateTime(event.scheduledAt)}</span>
                       </div>
                     </CardContent>
                   </Card>

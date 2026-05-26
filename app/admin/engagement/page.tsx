@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatDateTime } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -49,19 +50,6 @@ type EngagementLogRow = {
   name: string
   email: string
   role: "studio" | "streamer"
-}
-
-function formatDateTime(value?: string | null): string {
-  if (!value) return "—"
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return "—"
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
 }
 
 function humanize(value: string): string {

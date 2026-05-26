@@ -20,6 +20,7 @@ import {
   getVerificationTxtHostDisplay,
 } from "@/lib/platform-dns"
 import { CloudflareSetupDialog } from "@/components/studio/cloudflare-setup-dialog"
+import { formatDate } from "@/lib/utils"
 
 interface StudioDomainDialogProps {
   open: boolean
@@ -195,7 +196,7 @@ export function StudioDomainDialog({ open, onOpenChange, studio }: StudioDomainD
                 <div>
                   <p className="text-sm font-medium text-foreground">{domainRecord.domain}</p>
                   <p className="text-xs text-muted-foreground">
-                    Added {new Date(domainRecord.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    Added {formatDate(domainRecord.createdAt)}
                   </p>
                 </div>
               </div>

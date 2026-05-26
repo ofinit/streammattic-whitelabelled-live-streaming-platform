@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, AlertTriangle, Info } from "lucide-react"
 import { formatCurrency } from "@/lib/cascade-wallet-service"
+import { formatDate } from "@/lib/utils"
 
 interface DateChangeDialogProps {
   open: boolean
@@ -99,7 +100,7 @@ export function DateChangeDialog({
               <span>Current Date</span>
             </div>
             <div className="text-right">
-              <span className="font-medium">{currentDate.toLocaleDateString()}</span>
+              <span className="font-medium">{formatDate(currentDate)}</span>
               <span className="text-muted-foreground ml-2">
                 {currentDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>

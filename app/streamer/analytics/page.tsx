@@ -6,6 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Radio, Clock, Eye, Wallet, Calendar } from "lucide-react"
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDate } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -145,7 +146,7 @@ export default function StreamerAnalyticsPage() {
                     <div>
                       <p className="font-semibold">{event.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} • {event.streamType}
+                        {formatDate(event.date)} • {event.streamType}
                       </p>
                     </div>
                   </div>

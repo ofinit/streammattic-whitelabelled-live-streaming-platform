@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, CheckCircle, Clock, XCircle } from "lucide-react"
 import type { Payment } from "@/lib/types"
-import { format } from "date-fns"
+import { formatDateTime } from "@/lib/utils"
 
 interface PaymentHistoryProps {
   payments: Payment[]
@@ -70,7 +70,7 @@ export function PaymentHistory({ payments }: PaymentHistoryProps) {
                     <p className="font-medium">{payment.orderNumber}</p>
                     <p className="text-sm text-muted-foreground">
                       {getGatewayName(payment.gateway)} -{" "}
-                      {format(new Date(payment.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                      {formatDateTime(payment.createdAt)}
                     </p>
                   </div>
                 </div>

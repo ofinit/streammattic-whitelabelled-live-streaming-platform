@@ -20,23 +20,29 @@ export function formatPaisa(paise: number, currency = "INR"): string {
   return formatCurrency(paise / 100, currency)
 }
 
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
+export function formatDate(date: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions): string {
+  if (!date) return "—"
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return "—"
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
     ...options,
-  }).format(new Date(date))
+  }).format(d)
 }
 
-export function formatDateTime(date: string | Date): string {
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "—"
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return "—"
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(date))
+  }).format(d)
 }
 
 export function formatRelativeTime(date: string | Date): string {
@@ -69,19 +75,20 @@ export function formatEventScheduledDisplay(
   const tz = tzRaw && tzRaw !== "UTC" ? tzRaw : undefined
 
   if (short) {
-    return new Intl.DateTimeFormat("en-IN", {
-      month: "short",
-      day: "numeric",
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       ...(tz ? { timeZone: tz } : {}),
     }).format(d)
   }
 
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
-    month: "short",
-    day: "numeric",
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",

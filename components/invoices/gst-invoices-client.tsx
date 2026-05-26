@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, Download, FileArchive } from "lucide-react"
+import { formatDate } from "@/lib/utils"
 
 type InvoiceRow = {
   id: string
@@ -278,7 +279,7 @@ export function GstInvoicesClient({
                       ) : null}
                       <TableCell className="font-mono text-xs">{r.invoiceNumber}</TableCell>
                       <TableCell className="text-sm">
-                        {r.invoiceDate ? format(new Date(r.invoiceDate), "MMM d, yyyy") : "—"}
+                        {formatDate(r.invoiceDate)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{fmtMoney(r.baseAmountPaise)}</TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">

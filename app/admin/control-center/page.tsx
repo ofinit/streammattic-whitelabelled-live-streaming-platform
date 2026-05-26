@@ -58,7 +58,7 @@ import { useAuth } from "@/lib/auth-context"
 import { EventFormDialog } from "@/components/events/event-form-dialog"
 import type { LiveEvent, StreamType } from "@/lib/types"
 import { getEventPhotographerName } from "@/lib/event-photographer"
-import { formatEventScheduledDisplay } from "@/lib/utils"
+import { formatDate, formatDateTime, formatEventScheduledDisplay } from "@/lib/utils"
 import { toast } from "sonner"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -617,7 +617,7 @@ export default function AdminEventsPage() {
                             return (
                                 <span className="flex items-center gap-1 text-orange-500/80">
                                     <ShieldCheck className="h-2.5 w-2.5" />
-                                    {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                    {formatDate((event as any).validityExpiresAt)}
                                     <span>({daysRemaining > 0 ? `-${daysRemaining}` : daysRemaining})</span>
                                 </span>
                             );
@@ -711,11 +711,11 @@ export default function AdminEventsPage() {
            return (
              <span
                className="flex items-center gap-1 text-orange-500/80 shrink-0"
-               title={`Validity expires on: ${new Date((event as any).validityExpiresAt).toLocaleString()}`}
+               title={`Validity expires on: ${formatDateTime((event as any).validityExpiresAt)}`}
              >
                <ShieldCheck className="h-3 w-3" />
                <span>
-                 Exp: {new Date((event as any).validityExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                 Exp: {formatDate((event as any).validityExpiresAt)}
                  <span className="ml-1">({daysRemaining > 0 ? `-${daysRemaining}` : daysRemaining})</span>
                </span>
              </span>

@@ -18,7 +18,7 @@ import { BillingGstSection } from "@/components/settings/billing-gst-section"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { PHONE_DIAL_OPTIONS, flagEmojiFromIso, normalizeSignupPhoneStorage, parseStoredPhone } from "@/lib/phone-country-codes"
-import { cn } from "@/lib/utils"
+import { cn, formatDateTime } from "@/lib/utils"
 import { StudioUpgradePaymentPanel } from "@/components/streamer/studio-upgrade-payment-panel"
 import { parseStudioAnnualSubscription } from "@/lib/studio-subscription-public"
 import { calendarDaysUntilSubscriptionEnd, isStudioSubscriptionPastDue } from "@/lib/studio-subscription-shared"
@@ -175,10 +175,7 @@ export default function StudioSettingsPage() {
                 <p className="text-sm text-foreground">
                   <span className="text-muted-foreground">Current period ends: </span>
                   <strong className="tabular-nums">
-                    {new Date(subExpiresIso).toLocaleString(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatDateTime(subExpiresIso)}
                   </strong>
                   {daysLeft !== null && (
                     <span className="text-muted-foreground">

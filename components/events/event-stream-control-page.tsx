@@ -42,6 +42,7 @@ import { EmbedInfoPanel } from "@/components/stream/embed-info-panel"
 import { ViewerChart } from "@/components/stream/viewer-chart"
 import { useStreamMonitor } from "@/hooks/use-stream-monitor"
 import type { NimbleStream, LiveEvent } from "@/lib/types"
+import { formatDateTime } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 
 export type EventStreamControlPageProps = {
@@ -610,7 +611,7 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Scheduled</span>
                     <span className="font-medium">
-                      {new Date(event.scheduledAt).toLocaleString()}
+                      {formatDateTime(event.scheduledAt)}
                     </span>
                   </div>
                 )}

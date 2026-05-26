@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import type { PublicAlbumPayload } from "@/lib/client-gallery-album-service"
 import { DEFAULT_GALLERY_TEMPLATE_ID } from "@/lib/client-gallery-templates"
 import { GalleryLightbox } from "./gallery-lightbox"
@@ -17,9 +17,9 @@ function formatRange(startsAt: string | null, endsAt: string | null): string | n
   const a = startsAt ? new Date(startsAt) : null
   const b = endsAt ? new Date(endsAt) : null
   if (a && !Number.isNaN(a.getTime()) && b && !Number.isNaN(b.getTime())) {
-    return `${a.toLocaleDateString(undefined, { dateStyle: "medium" })} – ${b.toLocaleDateString(undefined, { dateStyle: "medium" })}`
+    return `${formatDate(a)} – ${formatDate(b)}`
   }
-  if (a && !Number.isNaN(a.getTime())) return a.toLocaleDateString(undefined, { dateStyle: "medium" })
+  if (a && !Number.isNaN(a.getTime())) return formatDate(a)
   return null
 }
 

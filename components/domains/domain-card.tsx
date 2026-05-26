@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Globe, CheckCircle, Clock, AlertCircle, Trash, Star, RefreshCw, Copy, Cloud, Loader2 } from "lucide-react"
 import type { Domain } from "@/lib/types"
-import { format } from "date-fns"
+import { formatDate } from "@/lib/utils"
 import { useState } from "react"
 
 interface DomainCardProps {
@@ -116,7 +116,7 @@ export function DomainCard({ domain, onVerify, onSetPrimary, onRemove, showInstr
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">Added {format(new Date(domain.createdAt), "MMM d, yyyy")}</p>
+              <p className="text-xs text-muted-foreground">Added {formatDate(domain.createdAt)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

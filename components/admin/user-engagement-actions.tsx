@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDate } from "@/lib/utils"
 
 export type AdminEngagementUser = {
   id: string
@@ -59,9 +60,9 @@ export function EngagementSegmentBadge({ engagement }: { engagement?: AdminEngag
 export function EngagementSummary({ engagement }: { engagement?: AdminEngagementSummary }) {
   if (!engagement) return <span className="text-xs text-muted-foreground">No engagement data</span>
   const lastContact = engagement.lastContactedAt
-    ? new Date(engagement.lastContactedAt).toLocaleDateString()
+    ? formatDate(engagement.lastContactedAt)
     : "Not contacted"
-  const followUp = engagement.followUpAt ? `Follow up ${new Date(engagement.followUpAt).toLocaleDateString()}` : null
+  const followUp = engagement.followUpAt ? `Follow up ${formatDate(engagement.followUpAt)}` : null
   return (
     <div className="space-y-1">
       <EngagementSegmentBadge engagement={engagement} />

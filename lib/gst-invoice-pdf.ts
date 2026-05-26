@@ -99,7 +99,7 @@ export async function buildWalletRechargeGstInvoicePdf(params: {
   drawRect(page, ML, y - metaBoxH, CONTENT_W, metaBoxH, undefined, LIGHT)
 
   const dateStr = params.issuedAt.toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
+    day: "2-digit", month: "2-digit", year: "numeric",
   })
   text(page, "Invoice No:", ML + 10, y - 16, 9, font, MID)
   text(page, params.invoiceNumber, ML + 10, y - 29, 10, fontBold, DARK)

@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { PlusCircle, Wallet, TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react"
-import { formatCurrency, formatPaisa } from "@/lib/utils"
+import { formatCurrency, formatDateTime, formatPaisa } from "@/lib/utils"
 import type { WalletAdjustment, User } from "@/lib/types"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -209,7 +209,7 @@ export default function AdminWalletAdjustmentsPage() {
                         <p className="text-sm">{adjustment.reason}</p>
                         {adjustment.notes && <p className="text-xs text-muted-foreground italic">{adjustment.notes}</p>}
                         <p className="text-xs text-muted-foreground">
-                          {new Date(adjustment.createdAt).toLocaleString()} by {adjustment.initiatorName || "Admin"}
+                          {formatDateTime(adjustment.createdAt)} by {adjustment.initiatorName || "Admin"}
                         </p>
                       </div>
                     </div>

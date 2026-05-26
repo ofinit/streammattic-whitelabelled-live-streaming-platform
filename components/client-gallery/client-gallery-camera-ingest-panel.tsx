@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { formatDate, formatDateTime } from "@/lib/utils"
 
 type GatewayConfig = {
   host: string
@@ -375,8 +376,8 @@ export function ClientGalleryCameraIngestPanel({
                     <p className="break-all text-xs text-muted-foreground">Prefix: {credential.uploadPrefix}</p>
                     <p className="text-xs text-muted-foreground">
                       Imported: {credential.importedAssetCount} photos
-                      {credential.lastUploadAt ? ` • Last upload: ${new Date(credential.lastUploadAt).toLocaleString()}` : ""}
-                      {credential.expiresAt ? ` • Expires: ${new Date(credential.expiresAt).toLocaleDateString()}` : ""}
+                      {credential.lastUploadAt ? ` • Last upload: ${formatDateTime(credential.lastUploadAt)}` : ""}
+                      {credential.expiresAt ? ` • Expires: ${formatDate(credential.expiresAt)}` : ""}
                     </p>
                   </div>
 

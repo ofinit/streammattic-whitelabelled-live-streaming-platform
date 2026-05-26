@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { formatDate } from "@/lib/utils"
 
 function formatDatetimeLocalValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -320,7 +321,7 @@ export default function AdminStreamersPage() {
       key: "createdAt",
       header: "Created",
       render: (item: any) => (
-        <span className="text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</span>
+        <span className="text-muted-foreground">{formatDate(item.createdAt)}</span>
       ),
     },
     {

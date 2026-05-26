@@ -3,6 +3,7 @@ import { getPlatformSetting } from "@/lib/db-queries"
 import { invalidateCache } from "@/lib/redis"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 import { coerceYoutubeConfigEnabledFlag, coerceYoutubeConfigOverride } from "@/lib/youtube-dashboard-settings"
+import { PLATFORM_SMTP_SETTING_KEY, toPlatformSmtpPublicConfig } from "@/lib/platform-smtp"
 
 export const dynamic = "force-dynamic"
 
@@ -47,6 +48,9 @@ export const GET = withAuth(async (user, request) => {
   rows = rows.map((row) => {
     if (row.key === "youtube_config_enabled") {
       return { ...row, value: coerceYoutubeConfigEnabledFlag(row.value) }
+    }
+    if (row.key === PLATFORM_SMTP_SETTING_KEY) {
+      return { ...row, value: toPlatformSmtpPublicConfig(row.value) }
     }
     return row
   })

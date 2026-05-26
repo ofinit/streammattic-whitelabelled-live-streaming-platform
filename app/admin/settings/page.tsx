@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
-import { Loader2, User, Lock, Bell, Shield, Globe, ImageIcon } from "lucide-react"
+import { Eye, EyeOff, Loader2, Mail, User, Lock, Bell, Shield, Globe, ImageIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import {
   getPlatformARecordDisplay,
@@ -61,6 +61,23 @@ export default function AdminSettingsPage() {
 
   const [platformBrandingSaving, setPlatformBrandingSaving] = useState(false)
   const [platformBrandingMessage, setPlatformBrandingMessage] = useState<"ok" | "err" | null>(null)
+  const [smtpSettings, setSmtpSettings] = useState({
+    enabled: false,
+    host: "",
+    port: 587,
+    user: "",
+    password: "",
+    fromEmail: "",
+    fromName: "",
+    secure: false,
+    requireTls: true,
+    hasPassword: false,
+    clearPassword: false,
+  })
+  const [smtpLoading, setSmtpLoading] = useState(false)
+  const [smtpSaving, setSmtpSaving] = useState(false)
+  const [smtpMessage, setSmtpMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false)
 
   const parseSettingsValue = useCallback((raw: unknown): string => {
     if (raw == null) return ""
@@ -99,6 +116,39 @@ export default function AdminSettingsPage() {
       cancelled = true
     }
   }, [user?.role, isLoading, parseSettingsValue])
+
+  useEffect(() => {
+    if (user?.role !== "admin" || isLoading) return
+    let cancelled = false
+    setSmtpLoading(true)
+    void fetch("/api/admin/settings/smtp", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { smtp?: Partial<typeof smtpSettings> } | null) => {
+        if (cancelled || !data?.smtp) return
+        const smtp = data.smtp
+        setSmtpSettings((prev) => ({
+          ...prev,
+          enabled: smtp.enabled === true,
+          host: typeof smtp.host === "string" ? smtp.host : "",
+          port: Number(smtp.port || 587),
+          user: typeof smtp.user === "string" ? smtp.user : "",
+          password: "",
+          fromEmail: typeof smtp.fromEmail === "string" ? smtp.fromEmail : "",
+          fromName: typeof smtp.fromName === "string" ? smtp.fromName : "",
+          secure: smtp.secure === true,
+          requireTls: smtp.requireTls !== false,
+          hasPassword: smtp.hasPassword === true,
+          clearPassword: false,
+        }))
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSmtpLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.role, isLoading])
 
   const handlePlatformBrandingSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -179,6 +229,50 @@ export default function AdminSettingsPage() {
       setTimeout(() => setDomainSaved(false), 3000)
     } catch {
       // Error
+    }
+  }
+
+  const handleSmtpSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSmtpMessage(null)
+    setSmtpSaving(true)
+    try {
+      const res = await fetch("/api/admin/settings/smtp", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(smtpSettings),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        smtp?: Partial<typeof smtpSettings>
+      }
+      if (!res.ok) throw new Error(data.error || "Failed to save SMTP settings")
+      if (data.smtp) {
+        setSmtpSettings((prev) => ({
+          ...prev,
+          enabled: data.smtp?.enabled === true,
+          host: typeof data.smtp?.host === "string" ? data.smtp.host : prev.host,
+          port: Number(data.smtp?.port || prev.port || 587),
+          user: typeof data.smtp?.user === "string" ? data.smtp.user : prev.user,
+          password: "",
+          fromEmail: typeof data.smtp?.fromEmail === "string" ? data.smtp.fromEmail : prev.fromEmail,
+          fromName: typeof data.smtp?.fromName === "string" ? data.smtp.fromName : prev.fromName,
+          secure: data.smtp?.secure === true,
+          requireTls: data.smtp?.requireTls !== false,
+          hasPassword: data.smtp?.hasPassword === true,
+          clearPassword: false,
+        }))
+      }
+      setSmtpMessage({ type: "success", text: "Platform SMTP settings saved." })
+    } catch (error) {
+      setSmtpMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to save SMTP settings",
+      })
+    } finally {
+      setSmtpSaving(false)
+      setTimeout(() => setSmtpMessage(null), 5000)
     }
   }
 
@@ -513,6 +607,181 @@ export default function AdminSettingsPage() {
                 </Button>
               </form>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Platform SMTP — full width */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Platform SMTP</CardTitle>
+                <CardDescription>
+                  Configure the default mail server for platform emails. Studio custom SMTP still overrides this per studio.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSmtpSave} className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 p-4">
+                <div>
+                  <p className="font-medium text-foreground">Enable platform SMTP</p>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, platform emails use this SMTP config before falling back to environment email settings.
+                  </p>
+                </div>
+                <Switch
+                  checked={smtpSettings.enabled}
+                  onCheckedChange={(checked) => setSmtpSettings({ ...smtpSettings, enabled: checked })}
+                  disabled={smtpLoading}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpHost">SMTP Host</Label>
+                  <Input
+                    id="platformSmtpHost"
+                    value={smtpSettings.host}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, host: e.target.value })}
+                    placeholder="smtp.example.com"
+                    className="bg-secondary border-0"
+                    disabled={smtpLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpPort">SMTP Port</Label>
+                  <Input
+                    id="platformSmtpPort"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    value={smtpSettings.port || ""}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, port: Number(e.target.value) || 587 })}
+                    placeholder="587"
+                    className="bg-secondary border-0"
+                    disabled={smtpLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpUser">SMTP User</Label>
+                  <Input
+                    id="platformSmtpUser"
+                    value={smtpSettings.user}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, user: e.target.value })}
+                    placeholder="user@example.com"
+                    className="bg-secondary border-0"
+                    disabled={smtpLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpPassword">
+                    SMTP Password {smtpSettings.hasPassword && !smtpSettings.clearPassword ? "(saved)" : ""}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="platformSmtpPassword"
+                      type={showSmtpPassword ? "text" : "password"}
+                      value={smtpSettings.password}
+                      onChange={(e) =>
+                        setSmtpSettings({ ...smtpSettings, password: e.target.value, clearPassword: false })
+                      }
+                      placeholder={smtpSettings.hasPassword ? "Leave blank to keep existing password" : "SMTP password"}
+                      className="bg-secondary border-0 pr-10"
+                      disabled={smtpLoading}
+                      autoComplete="new-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowSmtpPassword((v) => !v)}
+                      aria-label={showSmtpPassword ? "Hide SMTP password" : "Show SMTP password"}
+                    >
+                      {showSmtpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {smtpSettings.hasPassword ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 text-xs text-destructive"
+                      onClick={() => setSmtpSettings({ ...smtpSettings, password: "", clearPassword: true, hasPassword: false })}
+                    >
+                      Clear saved SMTP password
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpFromEmail">From Email</Label>
+                  <Input
+                    id="platformSmtpFromEmail"
+                    type="email"
+                    value={smtpSettings.fromEmail}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, fromEmail: e.target.value })}
+                    placeholder="noreply@yourdomain.com"
+                    className="bg-secondary border-0"
+                    disabled={smtpLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="platformSmtpFromName">From Name</Label>
+                  <Input
+                    id="platformSmtpFromName"
+                    value={smtpSettings.fromName}
+                    onChange={(e) => setSmtpSettings({ ...smtpSettings, fromName: e.target.value })}
+                    placeholder={platformName || "StreamLivee"}
+                    className="bg-secondary border-0"
+                    disabled={smtpLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Use SSL / implicit TLS</p>
+                    <p className="text-xs text-muted-foreground">Usually enabled for port 465.</p>
+                  </div>
+                  <Switch
+                    checked={smtpSettings.secure}
+                    onCheckedChange={(checked) => setSmtpSettings({ ...smtpSettings, secure: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Require STARTTLS</p>
+                    <p className="text-xs text-muted-foreground">Usually enabled for port 587.</p>
+                  </div>
+                  <Switch
+                    checked={smtpSettings.requireTls}
+                    onCheckedChange={(checked) => setSmtpSettings({ ...smtpSettings, requireTls: checked })}
+                  />
+                </div>
+              </div>
+
+              {smtpMessage ? (
+                <p className={`text-sm ${smtpMessage.type === "success" ? "text-emerald-500" : "text-destructive"}`}>
+                  {smtpMessage.text}
+                </p>
+              ) : null}
+
+              <Button type="submit" disabled={smtpSaving || smtpLoading}>
+                {(smtpSaving || smtpLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save SMTP Settings
+              </Button>
+            </form>
           </CardContent>
         </Card>
 

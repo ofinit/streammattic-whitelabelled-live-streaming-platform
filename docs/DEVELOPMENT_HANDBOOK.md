@@ -110,6 +110,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/admin/refunds/[id]/route.ts` | `/api/admin/refunds/[id]` |
 | `app/api/admin/refunds/route.ts` | `/api/admin/refunds` |
 | `app/api/admin/run-migration/route.ts` | `/api/admin/run-migration` |
+| `app/api/admin/settings/smtp/route.ts` | `/api/admin/settings/smtp` |
 | `app/api/admin/streaming/settings/route.ts` | `/api/admin/streaming/settings` |
 | `app/api/admin/streaming/test/route.ts` | `/api/admin/streaming/test` |
 | `app/api/admin/system-logs/route.ts` | `/api/admin/system-logs` |

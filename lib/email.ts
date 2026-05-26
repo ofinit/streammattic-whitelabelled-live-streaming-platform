@@ -4,6 +4,7 @@ import { getPlatformSetting, getStudioBranding } from "@/lib/db-queries"
 import { resolvePlatformDisplayName } from "@/lib/platform-display-name"
 import type { StudioBranding } from "@/lib/types"
 import type { AdminEngagementCampaignType } from "@/lib/admin-user-engagement"
+import { PLATFORM_SMTP_SETTING_KEY, toPlatformSmtpRuntimeConfig } from "@/lib/platform-smtp"
 
 function hasPlatformEmailProvider(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim() || process.env.SMTP_HOST?.trim())
@@ -11,7 +12,7 @@ function hasPlatformEmailProvider(): boolean {
 
 /** Shown when `sendEmail` returns false (Resend or SMTP failure). No secrets. */
 export const EMAIL_SEND_FAILED_MESSAGE =
-  "Could not send email. For Resend: set RESEND_API_KEY and RESEND_FROM with a verified domain. For SMTP: set SMTP_HOST, port, and credentials. Check server logs for [Resend] or [SMTP]."
+  "Could not send email. Configure Admin settings SMTP, or set RESEND_API_KEY/RESEND_FROM or SMTP_HOST/SMTP credentials. Check server logs for [Resend] or [SMTP]."
 
 const DEFAULT_MAIL_FROM = `"StreamLivee" <noreply@streamlivee.com>`
 
@@ -82,8 +83,8 @@ function createDefaultSmtpTransport(): nodemailer.Transporter {
 export const mailer = createDefaultSmtpTransport()
 
 /**
- * Sends a generic email: Resend (HTTPS) when `RESEND_API_KEY` is set for platform mail,
- * else Nodemailer SMTP. Studio custom SMTP always uses Nodemailer.
+ * Sends a generic email. Studio custom SMTP wins first, then admin-configured
+ * platform SMTP, then env Resend/SMTP fallback.
  */
 export async function sendEmail(to: string, subject: string, html: string, text?: string, studioId?: string) {
   let finalMailer = mailer
@@ -93,6 +94,7 @@ export async function sendEmail(to: string, subject: string, html: string, text?
       DEFAULT_MAIL_FROM,
   )
   let brandName = resolvePlatformDisplayName(await getPlatformSetting("platform_name"))
+  const platformSmtp = toPlatformSmtpRuntimeConfig(await getPlatformSetting(PLATFORM_SMTP_SETTING_KEY))
 
   // Check if studio has custom SMTP
   if (studioId) {
@@ -123,6 +125,30 @@ export async function sendEmail(to: string, subject: string, html: string, text?
           : `"${brandName}" <${branding.smtpUser}>`,
       )
     }
+  }
+
+  if (finalMailer === mailer && platformSmtp) {
+    console.log(`[SMTP] Using platform SMTP from admin settings: ${platformSmtp.host}`)
+    finalMailer = nodemailer.createTransport({
+      host: platformSmtp.host,
+      port: platformSmtp.port,
+      secure: platformSmtp.secure,
+      auth: {
+        user: platformSmtp.user,
+        pass: platformSmtp.password,
+      },
+      connectionTimeout: 20000,
+      socketTimeout: 45000,
+      requireTLS: !platformSmtp.secure && platformSmtp.requireTls,
+      tls: { minVersion: "TLSv1.2" as const },
+    })
+    from = normalizeFromAddress(
+      platformSmtp.fromEmail
+        ? platformSmtp.fromName
+          ? `"${platformSmtp.fromName}" <${platformSmtp.fromEmail}>`
+          : platformSmtp.fromEmail
+        : `"${brandName}" <${platformSmtp.user}>`,
+    )
   }
 
   from = normalizeFromAddress(from)

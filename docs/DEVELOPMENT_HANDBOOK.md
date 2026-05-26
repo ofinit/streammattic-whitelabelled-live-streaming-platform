@@ -162,6 +162,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/credits/pricing/route.ts` | `/api/credits/pricing` |
 | `app/api/credits/purchase/route.ts` | `/api/credits/purchase` |
 | `app/api/credits/route.ts` | `/api/credits` |
+| `app/api/cron/inactive-user-engagement/route.ts` | `/api/cron/inactive-user-engagement` |
 | `app/api/cron/photo-gallery-renewal-reminders/route.ts` | `/api/cron/photo-gallery-renewal-reminders` |
 | `app/api/cron/photo-gallery-subscription/route.ts` | `/api/cron/photo-gallery-subscription` |
 | `app/api/cron/rtmp-usage/route.ts` | `/api/cron/rtmp-usage` |

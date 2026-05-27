@@ -87,13 +87,7 @@ export async function GET(req: Request) {
       `,
       sql`
         SELECT
-          u.id,
-          u.name,
-          u.email,
-          u.role::text AS role,
-          u.created_at,
-          u.last_login_at,
-          u.studio_subscription_expires_at,
+          u.*,
           COALESCE(w.balance, 0) AS wallet_balance,
           COALESCE(uc.rtmp, 0) AS credits_rtmp,
           COALESCE(uc.youtube_api, 0) AS credits_youtube_api,

@@ -11,8 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+async function fetcher(url: string) {
+  const res = await fetch(url)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(typeof data?.error === "string" ? data.error : `Failed to load report (${res.status})`)
+  }
+  return data
+}
 
 type EngagementReport = {
   days: number
@@ -152,7 +160,7 @@ function EngagementLogTable({ rows, emptyLabel, showFollowUp }: { rows: Engageme
 
 export default function AdminEngagementPage() {
   const [days, setDays] = useState("30")
-  const { data, isLoading, mutate } = useSWR<{ success: boolean } & EngagementReport>(
+  const { data, error, isLoading, mutate } = useSWR<{ success: boolean } & EngagementReport>(
     `/api/admin/engagement/reports?days=${days}`,
     fetcher,
   )
@@ -215,6 +223,18 @@ export default function AdminEngagementPage() {
           </Button>
         </div>
       </div>
+
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Could not load engagement report</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : "The reports API returned an error."} Check Coolify logs for{" "}
+            <code className="text-xs">[admin/engagement/reports]</code> (often a missing DB column or table). Outreach
+            counts stay at zero until actions are logged in{" "}
+            <code className="text-xs">admin_user_engagement_logs</code>.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard

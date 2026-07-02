@@ -3,6 +3,7 @@ import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent, resolveStudioUserIdForEventOwner } from "@/lib/favicon-resolve"
 import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
 import { getPlatformSetting } from "@/lib/db-queries"
+import { hashCrewPin } from "@/lib/crew-pin"
 
 /** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
 const WATCH_EVENT_ID_SKIP = new Set(
@@ -21,7 +22,6 @@ export async function GET(
   if (eventId === "debug-event-special") {
     try {
       const sql = getDb()
-      const { hashCrewPin } = require("@/lib/crew-pin")
       const pinHash = hashCrewPin("1234")
       await sql`
         UPDATE events 

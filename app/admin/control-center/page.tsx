@@ -660,17 +660,15 @@ export default function AdminEventsPage() {
           >
             {getEventPublicUrl(event)}
           </a>
-          {(event as any).hasCrewPin && (
-            <a
-              href={`${getEventPublicUrl(event)}/crew`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-primary/60 hover:text-primary hover:underline truncate font-mono"
-              title={`${getEventPublicUrl(event)}/crew`}
-            >
-              {getEventPublicUrl(event)}/crew
-            </a>
-          )}
+          <a
+            href={`${getEventPublicUrl(event)}/crew`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-primary/60 hover:text-primary hover:underline truncate font-mono"
+            title={`${getEventPublicUrl(event)}/crew`}
+          >
+            {getEventPublicUrl(event)}/crew
+          </a>
           <a
             href={`${getEventPublicUrl(event)}/analytics`}
             target="_blank"

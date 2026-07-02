@@ -222,17 +222,15 @@ export function EventDetailSheet({
                     <BarChart3 className="h-4 w-4 text-primary" />
                     <span className="truncate">Analytics</span>
                   </a>
-                  {event.hasCrewPin ? (
-                    <a
-                      href={`${publicUrl}/crew`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-lg border border-border bg-muted/10 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30"
-                    >
-                      <LinkIcon className="h-4 w-4 text-primary" />
-                      <span className="truncate">Crew link</span>
-                    </a>
-                  ) : null}
+                  <a
+                    href={`${publicUrl}/crew`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg border border-border bg-muted/10 px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/30"
+                  >
+                    <LinkIcon className="h-4 w-4 text-primary" />
+                    <span className="truncate">Crew link</span>
+                  </a>
                 </div>
               </section>
 

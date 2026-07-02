@@ -24,9 +24,10 @@ export async function POST(req: Request) {
 
     // Process safely inside a transaction hook
     // Neon Serverless package doesn't have a formal BEGIN/COMMIT, we use the connection
-    const targetWalletQuery = await sql`SELECT id, balance FROM wallets WHERE user_id = ${userId}`
+    let targetWalletQuery = await sql`SELECT id, balance FROM wallets WHERE user_id = ${userId}`
     if (targetWalletQuery.length === 0) {
-      return NextResponse.json({ error: "Target user wallet not found" }, { status: 404 })
+      await sql`INSERT INTO wallets (user_id, balance, currency) VALUES (${userId}, 0, 'INR')`
+      targetWalletQuery = await sql`SELECT id, balance FROM wallets WHERE user_id = ${userId}`
     }
 
     const wallet = targetWalletQuery[0]

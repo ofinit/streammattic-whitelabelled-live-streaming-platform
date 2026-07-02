@@ -12,11 +12,14 @@ export const POST = withRole(["admin"], async (adminUser, request) => {
   const sql = getDb()
 
   // Get wallet
-  const wallets = await sql`SELECT * FROM wallets WHERE user_id = ${userId}`
-  if (wallets.length === 0) return jsonError("Wallet not found", 404)
+  let wallets = await sql`SELECT * FROM wallets WHERE user_id = ${userId}`
+  if (wallets.length === 0) {
+    await sql`INSERT INTO wallets (user_id, balance, currency) VALUES (${userId}, 0, 'INR')`
+    wallets = await sql`SELECT * FROM wallets WHERE user_id = ${userId}`
+  }
 
   const wallet = wallets[0] as Record<string, unknown>
-  const currentBalance = wallet.balance as number
+  const currentBalance = Number(wallet.balance)
   const amountInPaise = Math.round(amount * 100) // Convert to paise
 
   const newBalance = type === "credit"

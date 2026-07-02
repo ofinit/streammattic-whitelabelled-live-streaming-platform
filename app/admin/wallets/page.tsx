@@ -78,7 +78,7 @@ export default function AdminWalletsPage() {
         body: JSON.stringify({
           userId: selectedUser.id,
           type: "credit",
-          amount: amount * 100,
+          amount: amount / 100,
           category: "top_up",
           reason: "Manual Admin Recharge",
         }),
@@ -96,7 +96,7 @@ export default function AdminWalletsPage() {
         body: JSON.stringify({
           userId: selectedUser.id,
           type,
-          amount: amount * 100,
+          amount: amount / 100,
           category: "adjustment",
           reason,
         }),

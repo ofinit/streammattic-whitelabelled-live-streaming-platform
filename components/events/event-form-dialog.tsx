@@ -1887,11 +1887,14 @@ export function EventFormDialog({
         errors.password = "Enter a password for private events"
       }
     }
+    if (isCrewPinEnabled && !crewPin.trim() && !(event as any)?.hasCrewPin) {
+      errors.crewPin = "Enter a crew PIN"
+    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       if (errors.title || errors.slug || errors.scheduledAt) {
         setActiveTab("details")
-      } else if (errors.embedCode) {
+      } else if (errors.embedCode || errors.crewPin) {
         setActiveTab("stream")
       } else if (errors.password) {
         setActiveTab("settings")
@@ -1971,7 +1974,7 @@ export function EventFormDialog({
                   return Number.isFinite(n) && n > 0 ? n : undefined
                 })()
               : undefined,
-      crewPin: crewPin.trim() || undefined,
+      crewPin: isCrewPinEnabled ? (crewPin.trim() || undefined) : null,
       useCustomDomain: formData.useCustomDomain,
     }
 
@@ -3225,6 +3228,9 @@ export function EventFormDialog({
                       <p className="text-[11px] text-muted-foreground">
                         RTMP URL and stream key are only visible after entering this PIN on the crew page.
                       </p>
+                      {fieldErrors.crewPin && (
+                        <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.crewPin}</p>
+                      )}
                     </div>
                   )}
                 </div>

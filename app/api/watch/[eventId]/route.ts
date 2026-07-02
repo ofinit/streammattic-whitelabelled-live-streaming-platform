@@ -3,7 +3,6 @@ import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent, resolveStudioUserIdForEventOwner } from "@/lib/favicon-resolve"
 import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
 import { getPlatformSetting } from "@/lib/db-queries"
-import { hashCrewPin } from "@/lib/crew-pin"
 
 /** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
 const WATCH_EVENT_ID_SKIP = new Set(
@@ -19,25 +18,6 @@ export async function GET(
   const { eventId: rawEventId } = await params
   if (!rawEventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 })
   const eventId = rawEventId.toLowerCase()
-  if (eventId === "debug-event-special") {
-    try {
-      const sql = getDb()
-      const pinHash = hashCrewPin("1234")
-      await sql`
-        UPDATE events 
-        SET crew_pin_hash = ${pinHash}
-        WHERE slug = 'alekhya-weds-srikanth-rao'
-      `
-      const rows = await sql`
-        SELECT id, title, slug, crew_pin_hash, user_id, studio_id 
-        FROM events 
-        WHERE slug = 'alekhya-weds-srikanth-rao'
-      `
-      return NextResponse.json({ success: true, rows })
-    } catch (err: any) {
-      return NextResponse.json({ success: false, error: err.message })
-    }
-  }
   if (WATCH_EVENT_ID_SKIP.has(eventId) || eventId.includes("..")) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }

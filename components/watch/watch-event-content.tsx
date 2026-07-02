@@ -2474,7 +2474,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       )}
 
       {/* Inline crew PIN — only shown when owner set display mode to template_bottom */}
-      {(evRawTop.crewPinDisplayMode === "template_bottom") && !!(evRawTop as any).crewPinHash && (
+      {(evRawTop.crewPinDisplayMode === "template_bottom") && (
         <div className={`mt-6 border-t pt-4 ${galleryBorder}`}>
           <div className="flex items-center gap-2 mb-3">
             <Lock className="h-4 w-4 text-muted-foreground" />

@@ -21,6 +21,7 @@ const PUBLIC_PATHS = [
   "/api/auth/register",
   "/api/auth/logout",
   "/payment/callback",
+  "/api/debug-event",
 ]
 
 const ROLE_PREFIXES: Record<string, string[]> = {

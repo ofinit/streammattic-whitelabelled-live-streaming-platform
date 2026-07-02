@@ -241,11 +241,16 @@ function SiteHeader({ branding }: { branding: Branding }) {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
-        <Link href="/" className="flex min-w-0 max-w-[min(100%,14rem)] items-center gap-3 z-10">
+        <Link href="/" className="flex min-w-0 max-w-[min(100%,20rem)] items-center gap-2.5 z-10">
           <StudioBrandLogo
             branding={branding}
             imgClassName="h-8 sm:h-10 w-auto max-w-full object-contain object-left"
           />
+          {(branding.companyLogo || branding.companyLogoDark) && (
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-white truncate [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]">
+              {branding.brandName}
+            </span>
+          )}
         </Link>
 
         {/* Desktop Nav */}
@@ -1478,13 +1483,18 @@ function SiteFooter({ branding }: { branding: Branding }) {
         <div className="grid gap-8 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="mb-4 sm:mb-6">
+            <div className="mb-4 sm:mb-6 flex items-center gap-2.5">
               <StudioBrandLogo
                 branding={branding}
                 imgClassName="h-8 sm:h-10 w-auto max-w-[min(100%,240px)] object-contain object-left"
                 textClassName="inline-block"
                 loading="lazy"
               />
+              {(branding.companyLogo || branding.companyLogoDark) && (
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-white truncate [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]">
+                  {branding.brandName}
+                </span>
+              )}
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-400 mb-4 sm:mb-6">
               {branding.metaDescription || STUDIO_LANDING_DEFAULT_META_DESCRIPTION}

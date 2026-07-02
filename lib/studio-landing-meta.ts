@@ -12,7 +12,8 @@ export function resolveStudioLandingPageMeta(
   branding: Branding,
   fallbackSiteName: string,
 ): { title: string; description: string } {
-  const title = (branding.metaTitle?.trim() || branding.brandName?.trim() || fallbackSiteName).trim()
+  const brand = (branding.brandName?.trim() || fallbackSiteName).trim()
+  const title = (branding.metaTitle?.trim() || `${brand} | Professional Live Streaming & Photography`).trim()
   const description = (branding.metaDescription?.trim() || STUDIO_LANDING_DEFAULT_META_DESCRIPTION).trim()
   return { title, description }
 }

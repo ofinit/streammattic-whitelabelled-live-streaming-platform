@@ -22,11 +22,7 @@ export async function GET(
 ) {
   try {
     const user = await getCurrentUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    const role = user.role as string
-    if (!["streamer", "studio", "admin"].includes(role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    const role = user?.role as string | undefined
 
     const { id: rawIdParam } = await params
     if (!rawIdParam?.trim()) {
@@ -97,8 +93,9 @@ export async function GET(
     }
 
     if (
+      user &&
       !userCanViewEventVisitors(
-        { id: user.id as string, role },
+        { id: user.id as string, role: role! },
         { userId: event.userId, studioId: event.studioId ?? null },
       )
     ) {

@@ -60,6 +60,10 @@ function isPublicEventSlugPath(pathname: string): boolean {
   if (crew) {
     return !RESERVED_ROOT_SEGMENT.has(crew[1]!.toLowerCase())
   }
+  const analytics = pathname.match(/^\/([^/]+)\/analytics\/?$/)
+  if (analytics) {
+    return !RESERVED_ROOT_SEGMENT.has(analytics[1]!.toLowerCase())
+  }
   const one = pathname.match(/^\/([^/]+)\/?$/)
   if (!one) return false
   return !RESERVED_ROOT_SEGMENT.has(one[1]!.toLowerCase())
@@ -82,6 +86,7 @@ export function middleware(request: NextRequest) {
   if (
     PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/")) ||
     isPublicEventSlugPath(pathname) ||
+    pathname.match(/^\/api\/events\/[^/]+\/analytics\/?$/) ||
     pathname.startsWith("/api/favicon/") ||
     /** Liveness for Coolify/Docker — must bypass auth (no session cookie on probes) */
     pathname.startsWith("/api/health") ||

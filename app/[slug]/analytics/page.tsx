@@ -94,13 +94,10 @@ function PctBar({ pct }: { pct: number }) {
 
 export default function EventAnalyticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const { user, isLoading: authLoading } = useAuth()
   const [days, setDays] = useState<7 | 30 | 90>(30)
   const [copied, setCopied] = useState(false)
 
-  const apiUrl = user
-    ? `/api/events/${encodeURIComponent(slug)}/analytics?days=${days}`
-    : null
+  const apiUrl = `/api/events/${encodeURIComponent(slug)}/analytics?days=${days}`
 
   const { data, error, isLoading } = useSWR(apiUrl, fetcher)
 
@@ -120,33 +117,6 @@ export default function EventAnalyticsPage({ params }: { params: Promise<{ slug:
     setCopied(true)
     toast.success("Analytics link copied")
     window.setTimeout(() => setCopied(false), 2000)
-  }
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6">
-        <p className="text-muted-foreground">Sign in to view event analytics.</p>
-        <Button asChild>
-          <Link href={`/login?redirect=/${encodeURIComponent(slug)}/analytics`}>Sign in</Link>
-        </Button>
-      </div>
-    )
-  }
-
-  if (!["streamer", "studio", "admin"].includes(user.role)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <p className="text-destructive">You do not have access to this page.</p>
-      </div>
-    )
   }
 
   const cmp = data?.comparison

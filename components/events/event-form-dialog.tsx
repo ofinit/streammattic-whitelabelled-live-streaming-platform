@@ -701,6 +701,7 @@ export function EventFormDialog({
     scheduledAt?: string
     embedCode?: string
     password?: string
+    crewPin?: string
   }>({})
 
   // Multi-date state

@@ -1551,10 +1551,15 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const renderViewerCountBelowPlayer = () =>
     isEnded || isOnBreak ? null : (
-      <div className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+      <a
+        href={`/${encodeURIComponent(eventId)}/analytics`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+      >
         <Users className="h-4 w-4" />
         <span>{viewerCount.toLocaleString()} watching live</span>
-      </div>
+      </a>
     )
 
   const renderMockPlayerContent = () => (

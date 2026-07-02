@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb, toCamel } from "@/lib/db"
-import { resolveFaviconForWatchEvent } from "@/lib/favicon-resolve"
+import { resolveFaviconForWatchEvent, resolveStudioUserIdForEventOwner } from "@/lib/favicon-resolve"
 import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
 import { getPlatformSetting } from "@/lib/db-queries"
 
@@ -124,9 +124,10 @@ export async function GET(
 
     const ownerId = eventRow.userId
     console.log(`[api/watch/[eventId]] Resolving favicon for owner: ${ownerId}`)
+    const settingsOwnerId = ownerId ? (await resolveStudioUserIdForEventOwner(ownerId)) || ownerId : null
     const [faviconHref, crewPinDisplayRaw] = await Promise.all([
       resolveFaviconForWatchEvent(ownerId || null),
-      ownerId ? getPlatformSetting(`crew_pin_display:${ownerId}`) : Promise.resolve(null),
+      settingsOwnerId ? getPlatformSetting(`crew_pin_display:${settingsOwnerId}`) : Promise.resolve(null),
     ])
     const crewPinDisplayMode =
       crewPinDisplayRaw === "template_bottom" ? "template_bottom" : "crew_page"

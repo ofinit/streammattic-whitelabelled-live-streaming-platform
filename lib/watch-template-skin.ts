@@ -13,6 +13,7 @@ export type WatchPageSkin =
   | "weddingTheHeart"
   | "weddingRoyalCircle"
   | "weddingPapercut"
+  | "weddingOrnateFloral"
   | "christianWeddingRose"
   | "muslimWeddingNikah"
   | "birthdayParty"
@@ -33,6 +34,8 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   "tpl-wedding-royal-circle": "weddingRoyalCircle",
   /** Wedding Template 06 — Revolution Slider papercut / Merienda animation */
   "tpl-wedding-papercut": "weddingPapercut",
+  /** Wedding Ornate Floral — custom peach/pink traditional style */
+  "tpl-wedding-ornate-floral": "weddingOrnateFloral",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
   "tpl-birthday-party": "birthdayParty",

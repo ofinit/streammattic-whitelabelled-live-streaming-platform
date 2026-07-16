@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>Srinivas weds Swathi</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="http://nvlivestreaming.com/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="http://nvlivestreaming.com/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="http://nvlivestreaming.com/favicon/favicon-16x16.png">
+    
+    <!-- Fluidplayer -->
+    <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <style>
+        :root {
+            --ornate-gold: #d4af37;
+            --ornate-pink: #ffe5ec;
+            --ornate-pink-light: #fff0f3;
+            --ornate-rose: #c84c61;
+            --ornate-rose-dark: #3f2028;
+            --ornate-cream: #fffaf0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(212, 175, 55, 0.08), transparent 32rem),
+                radial-gradient(circle at 85% 85%, rgba(200, 76, 97, 0.08), transparent 32rem),
+                radial-gradient(circle at 50% 50%, rgba(255, 240, 243, 0.8), rgba(255, 229, 236, 0.5)),
+                var(--ornate-cream);
+            color: var(--ornate-rose-dark);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Floating WhatsApp Button */
+        .float {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #25d366;
+            color: #fff;
+            border-radius: 50px;
+            text-align: center;
+            box-shadow: 2px 2px 3px #999;
+            z-index: 1000;
+        }
+        .my-float {
+            margin-top: 16px;
+            font-size: 28px;
+        }
+
+        /* Ornate Corners */
+        .ornate-corner {
+            position: absolute;
+            width: min(25vw, 150px);
+            height: min(25vw, 150px);
+            color: var(--ornate-gold);
+            pointer-events: none;
+            opacity: 0.85;
+            z-index: 10;
+        }
+        .ornate-corner-tl { top: 0; left: 0; }
+        .ornate-corner-tr { top: 0; right: 0; transform: scaleX(-1); }
+        .ornate-corner-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+        .ornate-corner-br { bottom: 0; right: 0; transform: scale(-1); }
+
+        /* Hero */
+        .ornate-hero {
+            position: relative;
+            min-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5rem 1.5rem;
+            text-align: center;
+        }
+
+        .ornate-couple-circle-wrapper {
+            position: relative;
+            margin-bottom: 2.5rem;
+        }
+
+        .ornate-gold-ring {
+            position: absolute;
+            inset: -8px;
+            border: 2px solid var(--ornate-gold);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .ornate-gold-ring-outer {
+            position: absolute;
+            inset: -15px;
+            border: 1px dashed rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: slow-spin 45s linear infinite;
+        }
+
+        @keyframes slow-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .ornate-couple-circle {
+            position: relative;
+            width: min(65vw, 270px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 6px solid #fff;
+            box-shadow: 0 15px 35px rgba(63, 32, 40, 0.16);
+            overflow: hidden;
+            z-index: 2;
+        }
+        .ornate-couple-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ornate-wreath {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(78vw, 320px);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Typography */
+        .ornate-kicker {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            color: var(--ornate-rose);
+            margin: 0;
+        }
+
+        .ornate-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.2rem, 7vw, 4.4rem);
+            font-weight: 700;
+            color: var(--ornate-rose-dark);
+            line-height: 1.15;
+            margin: 0.5rem 0 1rem 0;
+        }
+
+        .ornate-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 280px;
+            margin: 1.5rem auto;
+        }
+        .ornate-divider-line {
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--ornate-gold) 50%, transparent);
+            flex: 1;
+        }
+        .ornate-divider-emblem {
+            color: var(--ornate-gold);
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .ornate-date-box {
+            border-top: 1.5px solid var(--ornate-gold);
+            border-bottom: 1.5px solid var(--ornate-gold);
+            padding: 0.65rem 2.5rem;
+            display: inline-block;
+            font-weight: 600;
+            font-size: clamp(0.95rem, 2.5vw, 1.35rem);
+            letter-spacing: 0.15em;
+            color: var(--ornate-rose-dark);
+            text-transform: uppercase;
+            margin: 0.5rem auto;
+        }
+
+        /* Countdown */
+        .ornate-countdown-container {
+            margin-top: 2rem;
+        }
+        .ornate-countdown-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            color: var(--ornate-gold);
+            margin-bottom: 0.75rem;
+        }
+        .ornate-countdown-timer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.85rem;
+        }
+        .ornate-countdown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .ornate-countdown-num {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 700;
+            color: var(--ornate-rose-dark);
+        }
+        .ornate-countdown-sep {
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 300;
+            color: var(--ornate-gold);
+            margin-top: -0.35rem;
+        }
+        .ornate-countdown-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ornate-rose-dark);
+            opacity: 0.55;
+        }
+
+        .btn-holder {
+            margin-top: 2.5rem;
+        }
+        .ornate-btn {
+            background: linear-gradient(135deg, var(--ornate-rose), #b1374b);
+            color: #fff !important;
+            border-radius: 9999px;
+            padding: 1rem 3rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            box-shadow: 0 10px 25px rgba(200, 76, 97, 0.25);
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-decoration: none !important;
+            border: none;
+        }
+        .ornate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(200, 76, 97, 0.35);
+        }
+
+        /* Marquee Ticker */
+        .ornate-marquee {
+            overflow: hidden;
+            border-top: 1px solid rgba(212, 175, 55, 0.35);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(255, 255, 255, 0.55);
+            white-space: nowrap;
+            width: 100%;
+        }
+        .ornate-marquee p {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        /* Sections */
+        .section-padding {
+            padding: 5rem 0;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        .section-title h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--ornate-rose-dark);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .video-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1.5px solid rgba(212, 175, 55, 0.35);
+            border-radius: 1.5rem;
+            background: rgba(255, 255, 255, 0.75);
+            box-shadow: 0 15px 40px rgba(63, 32, 40, 0.08);
+            padding: 15px;
+        }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .video-wrapper video, .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .teaser-frame {
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1.5px solid rgba(212, 175, 55, 0.35);
+            box-shadow: 0 15px 40px rgba(63, 32, 40, 0.08);
+        }
+
+        /* Photo Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .gallery-item {
+            border-radius: 1.25rem;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            box-shadow: 0 10px 25px rgba(63, 32, 40, 0.06);
+            aspect-ratio: 4/3;
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 6rem 0;
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+            background: rgba(255, 255, 255, 0.4);
+        }
+        footer h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            color: var(--ornate-rose);
+            margin: 0 0 0.5rem 0;
+        }
+        footer p {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--ornate-rose-dark);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+    
+    <!-- Corners -->
+    <div class="ornate-corner ornate-corner-tl">
+        <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M0,0 L0,90 C8,85 16,72 16,62 C16,52 24,52 32,42 C40,32 48,24 56,16 C64,16 76,8 80,0 L0,0 Z" fill="currentColor" fill-opacity="0.08" />
+            <path d="M0,0 C16,16 32,24 48,24 C56,24 64,16 80,0" />
+            <path d="M0,0 C16,32 24,48 24,64 C24,72 16,80 0,80" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="24" cy="24" r="2" fill="currentColor" />
+            <circle cx="36" cy="36" r="2.5" fill="currentColor" />
+            <path d="M0,40 C16,36 28,24 40,0" />
+            <path d="M0,60 C20,56 40,36 60,0" />
+            <path d="M20,4 C22,8 26,6 28,4 C26,2 22,0 20,4 Z" fill="currentColor" />
+            <path d="M4,20 C8,22 6,26 4,28 C2,26 0,22 4,20 Z" fill="currentColor" />
+        </svg>
+    </div>
+    <div class="ornate-corner ornate-corner-tr">
+        <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M0,0 L0,90 C8,85 16,72 16,62 C16,52 24,52 32,42 C40,32 48,24 56,16 C64,16 76,8 80,0 L0,0 Z" fill="currentColor" fill-opacity="0.08" />
+            <path d="M0,0 C16,16 32,24 48,24 C56,24 64,16 80,0" />
+            <path d="M0,0 C16,32 24,48 24,64 C24,72 16,80 0,80" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="24" cy="24" r="2" fill="currentColor" />
+            <circle cx="36" cy="36" r="2.5" fill="currentColor" />
+            <path d="M0,40 C16,36 28,24 40,0" />
+            <path d="M0,60 C20,56 40,36 60,0" />
+            <path d="M20,4 C22,8 26,6 28,4 C26,2 22,0 20,4 Z" fill="currentColor" />
+            <path d="M4,20 C8,22 6,26 4,28 C2,26 0,22 4,20 Z" fill="currentColor" />
+        </svg>
+    </div>
+    <div class="ornate-corner ornate-corner-bl">
+        <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M0,0 L0,90 C8,85 16,72 16,62 C16,52 24,52 32,42 C40,32 48,24 56,16 C64,16 76,8 80,0 L0,0 Z" fill="currentColor" fill-opacity="0.08" />
+            <path d="M0,0 C16,16 32,24 48,24 C56,24 64,16 80,0" />
+            <path d="M0,0 C16,32 24,48 24,64 C24,72 16,80 0,80" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="24" cy="24" r="2" fill="currentColor" />
+            <circle cx="36" cy="36" r="2.5" fill="currentColor" />
+            <path d="M0,40 C16,36 28,24 40,0" />
+            <path d="M0,60 C20,56 40,36 60,0" />
+            <path d="M20,4 C22,8 26,6 28,4 C26,2 22,0 20,4 Z" fill="currentColor" />
+            <path d="M4,20 C8,22 6,26 4,28 C2,26 0,22 4,20 Z" fill="currentColor" />
+        </svg>
+    </div>
+    <div class="ornate-corner ornate-corner-br">
+        <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M0,0 L0,90 C8,85 16,72 16,62 C16,52 24,52 32,42 C40,32 48,24 56,16 C64,16 76,8 80,0 L0,0 Z" fill="currentColor" fill-opacity="0.08" />
+            <path d="M0,0 C16,16 32,24 48,24 C56,24 64,16 80,0" />
+            <path d="M0,0 C16,32 24,48 24,64 C24,72 16,80 0,80" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="24" cy="24" r="2" fill="currentColor" />
+            <circle cx="36" cy="36" r="2.5" fill="currentColor" />
+            <path d="M0,40 C16,36 28,24 40,0" />
+            <path d="M0,60 C20,56 40,36 60,0" />
+            <path d="M20,4 C22,8 26,6 28,4 C26,2 22,0 20,4 Z" fill="currentColor" />
+            <path d="M4,20 C8,22 6,26 4,28 C2,26 0,22 4,20 Z" fill="currentColor" />
+        </svg>
+    </div>
+
+    <!-- WhatsApp float button -->
+    <a href="https://api.whatsapp.com/send?phone=00919727171113&text=Hello%21%20I%20am%20watching%20live%20Srinivas%20weds%20Swathi.%20I%20need%20some%20information." class="float" target="_blank">
+        <i class="fa fa-whatsapp my-float"></i>
+    </a>
+
+    <!-- Hero Section -->
+    <section class="ornate-hero">
+        <div class="ornate-couple-circle-wrapper">
+            <div class="ornate-gold-ring-outer"></div>
+            <div class="ornate-gold-ring"></div>
+            <div class="ornate-couple-circle">
+                <!-- Fallback beautiful traditional couple portrait -->
+                <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" alt="Srinivas & Swathi">
+            </div>
+            <div class="ornate-wreath">
+                <svg viewBox="0 0 300 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60,55 C70,40 90,40 95,50 C90,60 70,60 60,55 Z" fill="#d4af37" fill-opacity="0.6" />
+                    <path d="M240,55 C230,40 210,40 205,50 C210,60 230,60 240,55 Z" fill="#d4af37" fill-opacity="0.6" />
+                    
+                    <circle cx="105" cy="52" r="14" fill="#f8bbd0" />
+                    <circle cx="105" cy="52" r="10" fill="#f48fb1" />
+                    <circle cx="105" cy="52" r="6" fill="#ad1457" />
+                    <circle cx="80" cy="58" r="10" fill="#d4af37" />
+                    <circle cx="80" cy="58" r="6" fill="#b8860b" />
+                    
+                    <circle cx="195" cy="52" r="14" fill="#f8bbd0" />
+                    <circle cx="195" cy="52" r="10" fill="#f48fb1" />
+                    <circle cx="195" cy="52" r="6" fill="#ad1457" />
+                    <circle cx="220" cy="58" r="10" fill="#d4af37" />
+                    <circle cx="220" cy="58" r="6" fill="#b8860b" />
+                    
+                    <circle cx="150" cy="46" r="20" fill="#f8bbd0" />
+                    <circle cx="150" cy="46" r="16" fill="#e91e63" />
+                    <circle cx="150" cy="46" r="11" fill="#c2185b" />
+                    <circle cx="150" cy="46" r="6" fill="#880e4f" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="container text-center" style="position: relative; z-index: 10;">
+            <p class="ornate-kicker">The Wedding of</p>
+            <h1 class="ornate-title">Srinivas <br> & <br> Swathi</h1>
+
+            <div class="ornate-divider">
+                <span class="ornate-divider-line"></span>
+                <span class="ornate-divider-emblem">❦</span>
+                <span class="ornate-divider-line"></span>
+            </div>
+
+            <div class="ornate-date-box">
+                MAY 25, 2025
+            </div>
+
+            <div class="ornate-countdown-container">
+                <p class="ornate-countdown-title">COUNTDOWN</p>
+                <div class="ornate-countdown-timer">
+                    <div class="ornate-countdown-item">
+                        <span class="ornate-countdown-num" id="days">00</span>
+                        <span class="ornate-countdown-label">Days</span>
+                    </div>
+                    <span class="ornate-countdown-sep">:</span>
+                    <div class="ornate-countdown-item">
+                        <span class="ornate-countdown-num" id="hours">00</span>
+                        <span class="ornate-countdown-label">Hours</span>
+                    </div>
+                    <span class="ornate-countdown-sep">:</span>
+                    <div class="ornate-countdown-item">
+                        <span class="ornate-countdown-num" id="minutes">00</span>
+                        <span class="ornate-countdown-label">Mins</span>
+                    </div>
+                    <span class="ornate-countdown-sep">:</span>
+                    <div class="ornate-countdown-item">
+                        <span class="ornate-countdown-num" id="seconds">00</span>
+                        <span class="ornate-countdown-label">Secs</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-holder">
+                <a href="#live-stream" class="ornate-btn">Watch Live</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Marquee Banner -->
+    <div class="ornate-marquee">
+        <marquee behavior="scroll" direction="left">
+            <p>Thank you for joining our virtual celebration · Live ceremony starts soon · Send your wishes to the couple ·</p>
+        </marquee>
+    </div>
+
+    <!-- Live Stream Section -->
+    <section class="section-padding" id="live-stream">
+        <div class="container">
+            <div class="section-title">
+                <h2>Watch Live Stream</h2>
+                <p>We solicit your gracious virtual presence with family & friends on this auspicious occasion.</p>
+            </div>
+
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <video id="hls-video" controls>
+                        <source src="stream_hls.m3u8" type="application/x-mpegURL" />
+                    </video>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Teaser Section -->
+    <section class="section-padding" style="background-color: rgba(255, 240, 243, 0.4);">
+        <div class="container">
+            <div class="section-title">
+                <h2>Watch Teaser</h2>
+                <p>A quick sneak peek of our beautiful moments</p>
+            </div>
+
+            <div class="teaser-frame">
+                <div class="video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/RJZbC9iLAqk?rel=0" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Photo Gallery -->
+    <section class="section-padding">
+        <div class="container">
+            <div class="section-title">
+                <h2>Photo Gallery</h2>
+                <p>Moments leading to our special day</p>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=80" alt="Gallery 1">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80" alt="Gallery 2">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1507504038482-7621c51b30df?auto=format&fit=crop&w=600&q=80" alt="Gallery 3">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <h2>Thank You</h2>
+        <p>Srinivas & Swathi Wedding Template 07</p>
+    </footer>
+
+    <!-- Script for Fluid Player & Countdown -->
+    <script>
+        // Initialize Fluid Player
+        fluidPlayer('hls-video', {
+            layoutControls: {
+                fillToContainer: true,
+                autoPlay: false,
+                doubleclickFullscreen: true
+            }
+        });
+
+        // Simple mock countdown: Target May 25, 2027
+        const targetDate = new Date("May 25, 2027 00:00:00").getTime();
+
+        const updateCountdown = () => {
+            const now = new Date().getTime();
+            const difference = targetDate - now;
+
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+            document.getElementById("days").innerText = String(days).padStart(2, "0");
+            document.getElementById("hours").innerText = String(hours).padStart(2, "0");
+            document.getElementById("minutes").innerText = String(minutes).padStart(2, "0");
+            document.getElementById("seconds").innerText = String(seconds).padStart(2, "0");
+        };
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+</html>

@@ -43,6 +43,7 @@ import { CorporateTechForwardWatchView } from "./corporate-tech-forward-watch-vi
 import { WeddingTraditionalHinduWatchView } from "./wedding-traditional-hindu-watch-view"
 import { WeddingRoyalCircleWatchView } from "./wedding-royal-circle-watch-view"
 import { WeddingPapercutWatchView } from "./wedding-papercut-watch-view"
+import { WeddingOrnateFloralWatchView } from "./wedding-ornate-floral-watch-view"
 import { MemorialServiceWatchView, formatMemorialDate } from "./memorial-service-watch-view"
 import { WatchPhotographerMarquee, type WatchPhotographerMarqueeTheme } from "./watch-photographer-marquee"
 import { StreamPlayer } from "@/components/stream/stream-player"
@@ -2985,6 +2986,97 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : null
         }
         photographerCredit={royalPhotographerCredit}
+      />
+    )
+  }
+
+  if (watchSkin === "weddingOrnateFloral") {
+    const ornateTeaserRaw =
+      typeof weddingFields.teaserYoutubeUrl === "string" ? weddingFields.teaserYoutubeUrl.trim() : ""
+    const ornateTeaserEmbed = ornateTeaserRaw ? youtubeUrlToEmbed(ornateTeaserRaw) : null
+    const ornateInvitationLine =
+      typeof weddingFields.invitationLine === "string" && weddingFields.invitationLine.trim()
+        ? weddingFields.invitationLine.trim()
+        : weddingHeroDescription ||
+          "We solicit your gracious virtual presence with family and friends on this auspicious occasion."
+    const ornateEventDates = eventDates.map((d) => ({
+      id: d.id,
+      label: d.label,
+      formatted: formatExtraDate(d),
+    }))
+    const ornatePhotographerCredit =
+      photographerLogoUrl ||
+      photographerContact.name ||
+      photographerContact.phone ||
+      photographerContact.email ||
+      photographerWebsitePublicUrl ? (
+        <div className="mx-auto max-w-3xl">
+          {photographerLogoUrl ? (
+            <img src={photographerLogoUrl} alt="" className="mx-auto mb-4 h-16 w-auto object-contain" />
+          ) : null}
+          {photographerContact.name ? (
+            <p className="text-lg font-semibold text-[#c84c61]">Photography by {photographerContact.name}</p>
+          ) : (
+            <p className="text-lg font-semibold text-[#c84c61]">Photography</p>
+          )}
+          <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-[#3f2028]/75">
+            {photographerContact.phone ? (
+              <a href={`tel:${photographerContact.phone}`} className="hover:underline">
+                {photographerContact.phone}
+              </a>
+            ) : null}
+            {photographerContact.email ? (
+              <a href={`mailto:${photographerContact.email}`} className="hover:underline">
+                {photographerContact.email}
+              </a>
+            ) : null}
+            {photographerWebsitePublicUrl ? (
+              <a
+                href={photographerWebsitePublicUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-full truncate hover:underline"
+              >
+                {photographerWebsitePublicUrl}
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null
+
+    return (
+      <WeddingOrnateFloralWatchView
+        globalHeaderImage={globalHeaderImage}
+        heroImageUrl={heroBackdropUrl}
+        coupleHero={coupleHero}
+        coupleParts={coupleParts}
+        eventSubtitle={eventSubtitle}
+        eventDescription={weddingHeroDescription}
+        primaryDateFormatted={primaryDateFormatted}
+        eventDates={ornateEventDates}
+        showCountdown={event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled}
+        countdown={countdown}
+        streamPlayer={renderStreamPlayer(WEDDING_STREAM_SHELL)}
+        liveChat={renderLiveChatBody()}
+        detailsPanel={renderDetailsPanel("wedding")}
+        allowChat={allowChat}
+        showChat={showChat}
+        invitationLine={ornateInvitationLine}
+        teaserEmbed={ornateTeaserEmbed}
+        gallerySection={
+          photoGalleryUrls.length > 0 ? (
+            <div className="ornate-container">
+              <div className="ornate-section-heading">
+                <h2>Photo Gallery</h2>
+              </div>
+              <WatchPhotoGallery urls={photoGalleryUrls} theme="wedding" />
+              {photographerMarqueeMessage ? (
+                <WatchPhotographerMarquee message={photographerMarqueeMessage} theme="wedding" className="mt-6" />
+              ) : null}
+            </div>
+          ) : null
+        }
+        photographerCredit={ornatePhotographerCredit}
       />
     )
   }

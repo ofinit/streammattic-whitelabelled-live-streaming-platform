@@ -141,8 +141,6 @@ export const TEMPLATE_BANNER_ACCENT_BORDER: Record<string, string> = {
   "tpl-wedding-royal-circle": "border-l-4 border-l-[#d9a441]",
   "tpl-wedding-papercut": "border-l-4 border-l-[#fd1c56]",
   "tpl-wedding-ornate-floral": "border-l-4 border-l-[#d4af37]",
-  "tpl-wedding-south-indian-arch": "border-l-4 border-l-[#d4af37]",
-  "tpl-wedding-maroon-heritage": "border-l-4 border-l-[#800020]",
   "tpl-corporate": "border-l-4 border-l-blue-400",
   "tpl-corporate-tech-forward": "border-l-4 border-l-cyan-400",
   "tpl-concert": "border-l-4 border-l-violet-400",
@@ -238,8 +236,6 @@ export function extractTemplateBannerContent(
     templateId === "tpl-wedding-royal-circle" ||
     templateId === "tpl-wedding-papercut" ||
     templateId === "tpl-wedding-ornate-floral" ||
-    templateId === "tpl-wedding-south-indian-arch" ||
-    templateId === "tpl-wedding-maroon-heritage" ||
     templateId === "tpl-christian-wedding-rose" ||
     templateId === "tpl-muslim-wedding-nikah"
   ) {

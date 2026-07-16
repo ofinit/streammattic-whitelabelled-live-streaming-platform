@@ -23,8 +23,6 @@ export function getTemplateDefaultTitleRem(templateId: string): number {
     case "tpl-wedding-royal-circle":
     case "tpl-wedding-papercut":
     case "tpl-wedding-ornate-floral":
-    case "tpl-wedding-south-indian-arch":
-    case "tpl-wedding-maroon-heritage":
     case "tpl-wedding-coastal":
     case "tpl-wedding-celestial":
     case "tpl-wedding-traditional-hindu":
@@ -174,9 +172,7 @@ export function titleFallbackFontClass(templateId: string, hasGoogleFont: boolea
     templateId === "tpl-wedding-the-heart" ||
     templateId === "tpl-wedding-royal-circle" ||
     templateId === "tpl-wedding-papercut" ||
-    templateId === "tpl-wedding-ornate-floral" ||
-    templateId === "tpl-wedding-south-indian-arch" ||
-    templateId === "tpl-wedding-maroon-heritage"
+    templateId === "tpl-wedding-ornate-floral"
   )
     return "font-serif"
   if (templateId === "tpl-wedding-midnight") return "font-midnight-display"

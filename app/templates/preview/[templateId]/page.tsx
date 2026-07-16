@@ -19,6 +19,8 @@ import { WeddingTheHeartTemplate } from "@/components/templates/wedding-the-hear
 import { WeddingRoyalCircleTemplate } from "@/components/templates/wedding-royal-circle-template"
 import { WeddingPapercutTemplate } from "@/components/templates/wedding-papercut-template"
 import { WeddingOrnateFloralTemplate } from "@/components/templates/wedding-ornate-floral-template"
+import { WeddingSouthIndianArchTemplate } from "@/components/templates/wedding-south-indian-arch-template"
+import { WeddingMaroonHeritageTemplate } from "@/components/templates/wedding-maroon-heritage-template"
 import { CorporateTemplate } from "@/components/templates/corporate-template"
 import { CorporateTechForwardTemplate } from "@/components/templates/corporate-tech-forward-template"
 import { ConcertTemplate } from "@/components/templates/concert-template"
@@ -116,6 +118,14 @@ const templateContent: Record<
     description: "We solicit your gracious virtual presence with family and friends on this auspicious occasion.",
   },
   "tpl-wedding-ornate-floral": {
+    title: "Srinivas & Swathi",
+    description: "We solicit your gracious virtual presence with family and friends on this auspicious occasion.",
+  },
+  "tpl-wedding-south-indian-arch": {
+    title: "Alekhya & Srikanth Rao",
+    description: "We solicit your gracious virtual presence with family and friends on this auspicious occasion.",
+  },
+  "tpl-wedding-maroon-heritage": {
     title: "Srinivas & Swathi",
     description: "We solicit your gracious virtual presence with family and friends on this auspicious occasion.",
   },
@@ -327,6 +337,10 @@ export default function TemplatePreviewPage(props: { params: Promise<{ templateI
       return <WeddingPapercutTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-wedding-ornate-floral":
       return <WeddingOrnateFloralTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-south-indian-arch":
+      return <WeddingSouthIndianArchTemplate eventTitle={content.title} eventDescription={content.description} />
+    case "tpl-wedding-maroon-heritage":
+      return <WeddingMaroonHeritageTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate-tech-forward":
       return <CorporateTechForwardTemplate eventTitle={content.title} eventDescription={content.description} />
     case "tpl-corporate":

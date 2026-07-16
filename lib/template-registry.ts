@@ -91,6 +91,22 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     sortOrder: 2.5907,
   },
   {
+    id: "tpl-wedding-south-indian-arch",
+    name: "Traditional South Indian Arch",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-south-indian-arch"] ?? "",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.5908,
+  },
+  {
+    id: "tpl-wedding-maroon-heritage",
+    name: "Maroon Heritage Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-maroon-heritage"] ?? "",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.5909,
+  },
+  {
     id: "tpl-corporate-tech-forward",
     name: "Tech Forward Summit",
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",

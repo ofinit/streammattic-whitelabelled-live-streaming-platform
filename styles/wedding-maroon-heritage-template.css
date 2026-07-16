@@ -1,0 +1,623 @@
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&display=swap");
+
+.wedding-maroon-heritage-skin {
+  --heritage-maroon: #800020;
+  --heritage-maroon-dark: #4a0012;
+  --heritage-maroon-light: #9c1c38;
+  --heritage-gold: #d4af37;
+  --heritage-gold-light: #f3e5ab;
+  --heritage-cream: #faf7f0;
+  --heritage-card-bg: #ffffff;
+  --heritage-text: #2b2b2b;
+  --heritage-text-light: #666666;
+  
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: var(--heritage-cream);
+  color: var(--heritage-text);
+  font-family: "Montserrat", system-ui, sans-serif;
+  position: relative;
+}
+
+.wedding-maroon-heritage-skin .heritage-container {
+  width: min(1200px, calc(100% - 2.5rem));
+  margin-inline: auto;
+}
+
+/* Animations */
+@keyframes heritage-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heritage-swing-lamp {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes heritage-glow {
+  0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px var(--heritage-gold)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 8px var(--heritage-gold)); }
+}
+
+/* Navbar */
+.wedding-maroon-heritage-skin .heritage-nav {
+  background-color: var(--heritage-maroon);
+  color: #fff;
+  border-bottom: 2px solid var(--heritage-gold);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.wedding-maroon-heritage-skin .heritage-nav-logo {
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  color: var(--heritage-gold);
+  font-weight: 700;
+}
+
+.wedding-maroon-heritage-skin .heritage-nav-menu {
+  display: none;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .wedding-maroon-heritage-skin .heritage-nav-menu {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.wedding-maroon-heritage-skin .heritage-nav-link {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s;
+}
+
+.wedding-maroon-heritage-skin .heritage-nav-link:hover,
+.wedding-maroon-heritage-skin .heritage-nav-link-active {
+  color: var(--heritage-gold);
+}
+
+/* Hanging Lamps */
+.wedding-maroon-heritage-skin .heritage-hanging-lamps {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 250px;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.wedding-maroon-heritage-skin .heritage-lamp-left {
+  position: absolute;
+  top: 0;
+  left: clamp(20px, 8vw, 120px);
+  width: 32px;
+  animation: heritage-swing-lamp 5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.wedding-maroon-heritage-skin .heritage-lamp-right {
+  position: absolute;
+  top: 0;
+  right: clamp(20px, 8vw, 120px);
+  width: 32px;
+  animation: heritage-swing-lamp 5s ease-in-out infinite;
+  animation-delay: -2.5s;
+  transform-origin: top center;
+}
+
+.wedding-maroon-heritage-skin .heritage-lamp-glow {
+  animation: heritage-glow 3s infinite alternate;
+}
+
+/* Top Arch Details */
+.wedding-maroon-heritage-skin .heritage-top-arch {
+  width: 100%;
+  height: 80px;
+  background-image: radial-gradient(ellipse at center, rgba(128, 0, 32, 0.05), transparent 70%);
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.4);
+  margin-bottom: 2rem;
+}
+
+/* Hero Split layout */
+.wedding-maroon-heritage-skin .heritage-hero-split {
+  display: grid;
+  grid-template-cols: 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  padding: 1rem 0 4rem;
+}
+
+@media (min-width: 1024px) {
+  .wedding-maroon-heritage-skin .heritage-hero-split {
+    grid-template-columns: 1.1fr 1fr;
+    gap: 4rem;
+  }
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-photo-card {
+  position: relative;
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  animation: heritage-fade-in-up 0.8s ease-out;
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-photo-ring {
+  position: absolute;
+  inset: 0.5rem;
+  border: 1.5px solid var(--heritage-gold);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-photo-wrapper {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid var(--heritage-maroon);
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-photo-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-info-card {
+  background-color: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 12px 35px rgba(128, 0, 32, 0.05);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  position: relative;
+  animation: heritage-fade-in-up 0.9s ease-out;
+}
+
+.wedding-maroon-heritage-skin .heritage-hero-info-card::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(212, 175, 55, 0.5);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.wedding-maroon-heritage-skin .heritage-ganesha {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 0.75rem;
+  color: var(--heritage-gold);
+}
+
+.wedding-maroon-heritage-skin .heritage-shloka {
+  font-family: "Playfair Display", serif;
+  font-size: 0.75rem;
+  color: var(--heritage-maroon-light);
+  letter-spacing: 0.15em;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.wedding-maroon-heritage-skin .heritage-names {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2rem, 5.5vw, 3.2rem);
+  font-weight: 700;
+  color: var(--heritage-maroon);
+  line-height: 1.25;
+  margin-bottom: 1.5rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-names-telugu {
+  display: block;
+  font-size: clamp(1.4rem, 4.5vw, 2.2rem);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.wedding-maroon-heritage-skin .heritage-names-weds {
+  font-family: "Great Vibes", cursive;
+  font-size: 1.8rem;
+  color: var(--heritage-gold);
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.wedding-maroon-heritage-skin .heritage-save-date-badge {
+  display: inline-block;
+  background: var(--heritage-maroon);
+  color: #fff;
+  border: 1px solid var(--heritage-gold);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.4rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-event-date {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+  font-weight: 700;
+  color: var(--heritage-maroon-dark);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Big Day Countdown Card */
+.wedding-maroon-heritage-skin .heritage-countdown-card {
+  margin-top: 2rem;
+  background-color: var(--heritage-maroon);
+  color: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--heritage-gold);
+  padding: 1.25rem 1rem;
+  box-shadow: 0 8px 20px rgba(128, 0, 32, 0.15);
+  position: relative;
+  z-index: 10;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--heritage-gold-light);
+  margin-bottom: 0.75rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-num {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-sep {
+  color: var(--heritage-gold);
+  font-weight: 300;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-btn {
+  background-color: transparent;
+  color: var(--heritage-gold-light);
+  border: 1px solid var(--heritage-gold);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.wedding-maroon-heritage-skin .heritage-countdown-btn:hover {
+  background-color: var(--heritage-gold);
+  color: var(--heritage-maroon-dark);
+}
+
+/* Sections */
+.wedding-maroon-heritage-skin .heritage-section {
+  padding: 4.5rem 0;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.wedding-maroon-heritage-skin .heritage-section-heading {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-section-heading h2 {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: var(--heritage-maroon);
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.75rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-section-heading h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--heritage-gold) 50%, transparent);
+}
+
+.wedding-maroon-heritage-skin .heritage-section-heading p {
+  font-size: 0.85rem;
+  color: var(--heritage-text-light);
+  margin-top: 0.75rem;
+  max-width: 540px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+/* Dual Column Video Grid */
+.wedding-maroon-heritage-skin .heritage-video-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .wedding-maroon-heritage-skin .heritage-video-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.wedding-maroon-heritage-skin .heritage-video-card {
+  background-color: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.wedding-maroon-heritage-skin .heritage-video-title {
+  font-family: "Playfair Display", serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--heritage-maroon-dark);
+  text-align: center;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wedding-maroon-heritage-skin .heritage-video-frame {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  background-color: #12070a;
+}
+
+.wedding-maroon-heritage-skin .heritage-video-btn {
+  background-color: var(--heritage-maroon);
+  color: #fff;
+  border: 1px solid var(--heritage-gold);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.65rem 1.5rem;
+  margin-top: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  width: 100%;
+  display: block;
+}
+
+.wedding-maroon-heritage-skin .heritage-video-btn:hover {
+  background-color: var(--heritage-maroon-dark);
+  box-shadow: 0 4px 10px rgba(128, 0, 32, 0.25);
+}
+
+/* Chat container card panel */
+.wedding-maroon-heritage-skin .heritage-chat-panel {
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Details Panel Grid cards */
+.wedding-maroon-heritage-skin .heritage-details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .wedding-maroon-heritage-skin .heritage-details-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.wedding-maroon-heritage-skin .heritage-detail-card {
+  background-color: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s;
+}
+
+.wedding-maroon-heritage-skin .heritage-detail-card:hover {
+  transform: translateY(-4px);
+}
+
+.wedding-maroon-heritage-skin .heritage-detail-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--heritage-maroon);
+  color: var(--heritage-gold);
+  border: 1.5px solid var(--heritage-gold);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 6px 15px rgba(128, 0, 32, 0.15);
+}
+
+.wedding-maroon-heritage-skin .heritage-detail-label {
+  font-family: "Playfair Display", serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--heritage-maroon-dark);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+.wedding-maroon-heritage-skin .heritage-detail-val {
+  font-size: 0.825rem;
+  color: var(--heritage-text-light);
+  line-height: 1.6;
+}
+
+/* Photo Gallery items */
+.wedding-maroon-heritage-skin .heritage-gallery-wrap {
+  border-radius: 16px;
+  padding: 2rem 1rem;
+  border: 1px dashed rgba(212, 175, 55, 0.35);
+  background: #ffffff;
+}
+
+/* Bottom banner invite */
+.wedding-maroon-heritage-skin .heritage-invite-banner {
+  background-color: var(--heritage-maroon);
+  color: #fff;
+  border-top: 2px solid var(--heritage-gold);
+  border-bottom: 2px solid var(--heritage-gold);
+  text-align: center;
+  padding: 1.25rem 1rem;
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  letter-spacing: 0.05em;
+}
+
+/* Footer Section */
+.wedding-maroon-heritage-skin .heritage-footer {
+  text-align: center;
+  padding: 4rem 1.5rem 7rem;
+  background-color: var(--heritage-maroon-dark);
+  color: #fff;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.wedding-maroon-heritage-skin .heritage-footer h2 {
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  color: var(--heritage-gold);
+  margin-bottom: 0.5rem;
+}
+
+.wedding-maroon-heritage-skin .heritage-footer p {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Bottom Tab Navigation for Mobile */
+.wedding-maroon-heritage-skin .heritage-mobile-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border-top: 1.5px solid rgba(212, 175, 55, 0.35);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 1010;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 768px) {
+  .wedding-maroon-heritage-skin .heritage-mobile-tabs {
+    display: none;
+  }
+}
+
+.wedding-maroon-heritage-skin .heritage-tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: none;
+  border: none;
+  color: var(--heritage-text-light);
+  cursor: pointer;
+  transition: color 0.2s;
+  flex: 1;
+}
+
+.wedding-maroon-heritage-skin .heritage-tab-item:hover,
+.wedding-maroon-heritage-skin .heritage-tab-item-active {
+  color: var(--heritage-maroon);
+}
+
+.wedding-maroon-heritage-skin .heritage-tab-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.wedding-maroon-heritage-skin .heritage-tab-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+}

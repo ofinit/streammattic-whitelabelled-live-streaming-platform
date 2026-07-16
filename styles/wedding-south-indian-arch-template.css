@@ -1,32 +1,32 @@
-@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&family=Cinzel+Decorative:wght@700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&display=swap");
 
 .wedding-south-indian-arch-skin {
   --arch-gold: #d4af37;
   --arch-gold-light: #f5da81;
   --arch-gold-dark: #b8860b;
-  --arch-crimson: #5c0309;
-  --arch-crimson-dark: #2e0004;
-  --arch-crimson-light: #7a0912;
-  --arch-cream: #fffaf0;
+  --arch-maroon: #5c1d24;
+  --arch-maroon-dark: #3b0e13;
+  --arch-beige: #f5ebe0;
   --arch-sandalwood: #faf2e4;
-  --arch-green: #1b4d22;
-  --arch-leaf-green: #347a3b;
+  --arch-cream: #fdfaf6;
+  --arch-cream-dark: #f3eae1;
+  --arch-pink: #f8bbd0;
+  --arch-pink-dark: #ff809b;
   
   min-height: 100vh;
   overflow-x: hidden;
-  /* Glowing center radial gradient representing a temple mandap's warm focus */
+  /* Light-sandstone radial warm glow background */
   background:
-    radial-gradient(circle at 50% 35%, rgba(212, 175, 55, 0.2), transparent 45rem),
-    radial-gradient(circle at 10% 10%, rgba(212, 175, 55, 0.15), transparent 30rem),
-    radial-gradient(circle at 90% 90%, rgba(212, 175, 55, 0.15), transparent 30rem),
-    linear-gradient(to bottom, var(--arch-crimson-dark), var(--arch-crimson), var(--arch-crimson-dark));
-  color: var(--arch-cream);
+    radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.08), transparent 40rem),
+    radial-gradient(circle at 10% 10%, rgba(245, 235, 224, 0.4), transparent 30rem),
+    linear-gradient(to bottom, var(--arch-cream), var(--arch-cream-dark), var(--arch-cream));
+  color: var(--arch-maroon-dark);
   font-family: "Montserrat", system-ui, sans-serif;
   position: relative;
 }
 
 .wedding-south-indian-arch-skin .arch-container {
-  width: min(1200px, calc(100% - 3.5rem));
+  width: min(1200px, calc(100% - 2.5rem));
   margin-inline: auto;
 }
 
@@ -39,7 +39,7 @@
 @keyframes arch-fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -48,115 +48,107 @@
 }
 
 @keyframes arch-sway-lotus {
-  0%, 100% { transform: rotate(-4deg) translateY(0); }
-  50% { transform: rotate(4deg) translateY(-5px); }
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50% { transform: rotate(2deg) translateY(-4px); }
 }
 
-@keyframes arch-flicker-flame {
-  0%, 100% {
-    transform: scale(1) rotate(-1deg);
-    opacity: 0.95;
-    filter: drop-shadow(0 0 4px #ff9900) drop-shadow(0 0 8px #ff5500);
-  }
-  50% {
-    transform: scale(1.1) rotate(1deg);
-    opacity: 1;
-    filter: drop-shadow(0 0 6px #ffcc00) drop-shadow(0 0 12px #ff9900);
-  }
+@keyframes arch-float-leaves {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.02); }
 }
 
-@keyframes arch-swing-garland {
-  0%, 100% { transform: rotate(-1deg); }
-  50% { transform: rotate(1deg); }
+/* Temple Pillars Background Frame */
+.wedding-south-indian-arch-skin .arch-pillars-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
-@keyframes arch-leaf-sway {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(1.5deg) scaleX(1.02); }
-}
-
-/* Traditional Kanchipuram Gold Zari Saree Borders */
-.wedding-south-indian-arch-skin .arch-zari-border-left,
-.wedding-south-indian-arch-skin .arch-zari-border-right {
+.wedding-south-indian-arch-skin .arch-stone-pillar-left,
+.wedding-south-indian-arch-skin .arch-stone-pillar-right {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 24px;
-  background-color: var(--arch-gold);
-  background-image: 
-    repeating-linear-gradient(45deg, transparent, transparent 10px, var(--arch-gold-dark) 10px, var(--arch-gold-dark) 20px),
-    linear-gradient(to bottom, var(--arch-gold), var(--arch-gold-light), var(--arch-gold));
-  border-left: 2px solid var(--arch-gold-dark);
-  border-right: 2px solid var(--arch-gold-dark);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-  opacity: 0.9;
+  width: clamp(60px, 12vw, 150px);
+  background: 
+    linear-gradient(90deg, rgba(0,0,0,0.03), transparent 20%, rgba(0,0,0,0.05)),
+    repeating-linear-gradient(to bottom, transparent, transparent 40px, rgba(184, 134, 11, 0.05) 40px, rgba(184, 134, 11, 0.05) 42px),
+    var(--arch-beige);
+  border-left: 2px solid rgba(184, 134, 11, 0.15);
+  border-right: 2px solid rgba(184, 134, 11, 0.15);
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
-.wedding-south-indian-arch-skin .arch-zari-border-left {
-  left: 0;
+.wedding-south-indian-arch-skin .arch-stone-pillar-left {
+  left: 20px;
 }
 
-.wedding-south-indian-arch-skin .arch-zari-border-right {
-  right: 0;
+.wedding-south-indian-arch-skin .arch-stone-pillar-right {
+  right: 20px;
 }
 
-@media (max-width: 640px) {
-  .wedding-south-indian-arch-skin .arch-zari-border-left,
-  .wedding-south-indian-arch-skin .arch-zari-border-right {
-    width: 12px;
+@media (max-width: 768px) {
+  .wedding-south-indian-arch-skin .arch-stone-pillar-left,
+  .wedding-south-indian-arch-skin .arch-stone-pillar-right {
+    display: none;
   }
 }
 
-/* Mandap Hanging Garlands (Marigold & Mango Leaves) */
-.wedding-south-indian-arch-skin .arch-ceiling-garlands {
+/* Top Stone Arch carved details */
+.wedding-south-indian-arch-skin .arch-stone-top {
   position: absolute;
   top: 0;
-  left: 24px;
-  right: 24px;
-  height: 90px;
-  pointer-events: none;
-  z-index: 8;
-  display: flex;
-  justify-content: space-around;
-  overflow: hidden;
-  opacity: 0.95;
-  animation: arch-swing-garland 6s ease-in-out infinite alternate;
-}
-
-/* Auspicious Banana Trees on Both Sides */
-.wedding-south-indian-arch-skin .arch-banana-tree-left,
-.wedding-south-indian-arch-skin .arch-banana-tree-right {
-  position: absolute;
-  bottom: 0;
-  width: clamp(120px, 15vw, 240px);
-  height: 70%;
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0.85;
+  left: 20px;
+  right: 20px;
+  height: clamp(80px, 10vw, 140px);
+  background: 
+    linear-gradient(to bottom, var(--arch-beige), var(--arch-cream-dark)),
+    repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(184, 134, 11, 0.04) 30px, rgba(184, 134, 11, 0.04) 31px);
+  border-bottom: 3px double rgba(184, 134, 11, 0.25);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+  z-index: 2;
   display: none;
 }
 
 @media (min-width: 1024px) {
-  .wedding-south-indian-arch-skin .arch-banana-tree-left,
-  .wedding-south-indian-arch-skin .arch-banana-tree-right {
+  .wedding-south-indian-arch-skin .arch-stone-top {
     display: block;
-    animation: arch-leaf-sway 8s ease-in-out infinite alternate;
   }
 }
 
-.wedding-south-indian-arch-skin .arch-banana-tree-left {
-  left: 40px;
-  transform-origin: bottom left;
+/* Crawling Gold Vines on the pillars */
+.wedding-south-indian-arch-skin .arch-gold-vines-left,
+.wedding-south-indian-arch-skin .arch-gold-vines-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  pointer-events: none;
+  z-index: 3;
+  color: var(--arch-gold);
+  opacity: 0.85;
+  display: none;
 }
 
-.wedding-south-indian-arch-skin .arch-banana-tree-right {
-  right: 40px;
+@media (min-width: 768px) {
+  .wedding-south-indian-arch-skin .arch-gold-vines-left,
+  .wedding-south-indian-arch-skin .arch-gold-vines-right {
+    display: block;
+    animation: arch-float-leaves 6s ease-in-out infinite alternate;
+  }
+}
+
+.wedding-south-indian-arch-skin .arch-gold-vines-left {
+  left: clamp(80px, 14vw, 170px);
+}
+
+.wedding-south-indian-arch-skin .arch-gold-vines-right {
+  right: clamp(80px, 14vw, 170px);
   transform: scaleX(-1);
-  transform-origin: bottom right;
 }
 
-/* Monogram */
+/* Monogram circular leaf wreath */
 .wedding-south-indian-arch-skin .arch-monogram {
   display: flex;
   justify-content: center;
@@ -164,113 +156,49 @@
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   animation: arch-fade-in-up 0.8s ease-out;
+  position: relative;
+  z-index: 5;
 }
 
 .wedding-south-indian-arch-skin .arch-monogram-circle {
-  width: 90px;
-  height: 90px;
-  border: 2px solid var(--arch-gold);
+  width: 72px;
+  height: 72px;
+  border: 1.5px solid var(--arch-gold);
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
-  background: rgba(46, 0, 4, 0.8);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  background: var(--arch-cream);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .wedding-south-indian-arch-skin .arch-monogram-circle::after {
   content: '';
   position: absolute;
-  inset: -6px;
-  border: 1px dashed var(--arch-gold-light);
+  inset: -4px;
+  border: 0.5px dashed var(--arch-gold);
   border-radius: 50%;
 }
 
-.wedding-south-indian-arch-skin .arch-monogram-ganesha {
-  color: var(--arch-gold);
-  width: 48px;
-  height: 48px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-/* Mandap Pillars & Temple Gate Container */
-.wedding-south-indian-arch-skin .arch-mandap-gate {
-  position: relative;
-  background-color: var(--arch-sandalwood);
-  color: var(--arch-crimson-dark);
-  border: 3px solid var(--arch-gold);
-  border-radius: 12px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-  max-width: 580px;
-  width: 100%;
-  margin: 1.5rem auto 3rem;
-  padding: 2.5rem 1.5rem;
-  position: relative;
-  z-index: 5;
-  animation: arch-fade-in-up 0.9s ease-out;
-}
-
-.wedding-south-indian-arch-skin .arch-mandap-gate::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 1.5px dashed var(--arch-gold-dark);
-  border-radius: 8px;
-  pointer-events: none;
-}
-
-/* Kuthu Vilakku (Traditional Brass Lamps) on both sides of the Mandap Gate */
-.wedding-south-indian-arch-skin .arch-kuthuvilakku-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  position: absolute;
-  bottom: 0;
-  left: -90px;
-  right: -90px;
-  height: 280px;
-  pointer-events: none;
-  z-index: 6;
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .wedding-south-indian-arch-skin .arch-kuthuvilakku-container {
-    display: flex;
-  }
-}
-
-.wedding-south-indian-arch-skin .arch-lamp-pillar {
-  width: 70px;
-  height: 250px;
-  position: relative;
-}
-
-.wedding-south-indian-arch-skin .arch-lamp-flame {
-  position: absolute;
-  top: -8px;
-  left: calc(50% - 7px);
-  width: 14px;
-  height: 22px;
-  background: radial-gradient(circle at bottom, #ffffff 20%, #ffcc00 50%, #ff6600 80%);
-  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
-  animation: arch-flicker-flame 1.5s ease-in-out infinite;
-  transform-origin: bottom center;
-}
-
-/* Hero Content details */
-.wedding-south-indian-arch-skin .arch-shloka {
+.wedding-south-indian-arch-skin .arch-monogram-text {
   font-family: "Playfair Display", serif;
-  font-size: 0.8rem;
-  font-style: italic;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--arch-gold-dark);
-  letter-spacing: 0.12em;
-  margin-bottom: 1rem;
+  color: var(--arch-maroon);
+  line-height: 1;
 }
 
+.wedding-south-indian-arch-skin .arch-monogram-amp {
+  font-family: "Great Vibes", cursive;
+  font-size: 1.15rem;
+  color: var(--arch-gold-dark);
+  line-height: 0.8;
+  margin-top: -1px;
+}
+
+/* Hero Content Area */
 .wedding-south-indian-arch-skin .arch-hero {
   position: relative;
   min-height: 100vh;
@@ -278,120 +206,136 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 4rem 1.5rem;
+  padding: 4rem 1.5rem 6rem;
   text-align: center;
   z-index: 3;
 }
 
-.wedding-south-indian-arch-skin .arch-couple-circle-wrapper {
-  position: relative;
-  margin-bottom: 2rem;
-  display: inline-block;
-}
-
-.wedding-south-indian-arch-skin .arch-couple-circle {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  border: 4px solid var(--arch-gold);
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  margin: 0 auto;
-}
-
-.wedding-south-indian-arch-skin .arch-couple-circle img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Typography elements */
-.wedding-south-indian-arch-skin .arch-kicker {
+/* Headings & Text items matching Image 1 layout */
+.wedding-south-indian-arch-skin .arch-welcome-kicker {
   font-family: "Great Vibes", cursive;
-  font-size: clamp(2rem, 5vw, 3rem);
-  color: var(--arch-crimson);
-  margin-bottom: 0.15rem;
-  line-height: 1;
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  color: var(--arch-maroon);
+  line-height: 1.1;
+  margin-bottom: 0.25rem;
+  animation: arch-fade-in-up 0.8s ease-out 0.1s both;
 }
 
-.wedding-south-indian-arch-skin .arch-title {
-  font-family: "Cinzel Decorative", serif;
-  font-size: clamp(1.8rem, 5vw, 2.8rem);
-  font-weight: 700;
-  color: var(--arch-crimson-dark);
-  line-height: 1.2;
-  margin: 0.75rem 0;
-  letter-spacing: 0.05em;
-  text-shadow: 1px 1px 0px rgba(212,175,55,0.4);
-}
-
-.wedding-south-indian-arch-skin .arch-names-weds {
-  font-family: "Great Vibes", cursive;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  color: var(--arch-gold-dark);
-  display: block;
-  margin: 0.15rem 0;
-  text-shadow: none;
-}
-
-.wedding-south-indian-arch-skin .arch-badge-party {
-  display: inline-block;
-  background: var(--arch-crimson);
-  color: var(--arch-cream);
+.wedding-south-indian-arch-skin .arch-to-sans {
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  padding: 0.4rem 1.5rem;
-  border-radius: 20px;
-  border: 1px solid var(--arch-gold);
-  box-shadow: 0 4px 10px rgba(92, 3, 9, 0.3);
+  letter-spacing: 0.25em;
+  color: var(--arch-gold-dark);
   text-transform: uppercase;
-  margin: 0.75rem auto 1rem;
+  margin: 0.25rem 0;
+  animation: arch-fade-in-up 0.8s ease-out 0.2s both;
 }
 
-.wedding-south-indian-arch-skin .arch-divider {
+.wedding-south-indian-arch-skin .arch-family-name {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.8rem, 5.5vw, 3.2rem);
+  font-weight: 700;
+  color: var(--arch-maroon);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  animation: arch-fade-in-up 0.8s ease-out 0.3s both;
+}
+
+/* Maroon Badge "MARRIAGE PARTY" */
+.wedding-south-indian-arch-skin .arch-marriage-party-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--arch-maroon);
+  color: #fff;
+  font-size: clamp(0.7rem, 2vw, 0.85rem);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.5rem 2rem;
+  border-radius: 4px;
+  border: 1px solid var(--arch-gold);
+  box-shadow: 0 4px 10px rgba(92, 29, 36, 0.2);
+  margin: 0.5rem auto 1.25rem;
+  animation: arch-fade-in-up 0.8s ease-out 0.35s both;
+}
+
+.wedding-south-indian-arch-skin .arch-couple-names-wreath {
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(2.4rem, 7vw, 4.4rem);
+  color: var(--arch-maroon);
+  line-height: 1.15;
+  margin: 1rem 0;
+  animation: arch-fade-in-up 0.8s ease-out 0.4s both;
+}
+
+.wedding-south-indian-arch-skin .arch-weds-with-hearts {
+  font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+  color: var(--arch-pink-dark);
+  margin: 0 0.75rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.wedding-south-indian-arch-skin .arch-weds-heart {
+  width: 14px;
+  height: 14px;
+  color: var(--arch-pink-dark);
+  fill: currentColor;
+}
+
+/* Gold divider separator */
+.wedding-south-indian-arch-skin .arch-gold-divider {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   width: 100%;
-  max-width: 260px;
-  margin: 1rem auto;
+  max-width: 280px;
+  margin: 1.25rem auto;
+  animation: arch-fade-in-up 0.8s ease-out 0.45s both;
 }
 
-.wedding-south-indian-arch-skin .arch-divider-line {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--arch-gold-dark) 50%, transparent);
+.wedding-south-indian-arch-skin .arch-gold-divider-line {
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--arch-gold) 50%, transparent);
   flex: 1;
 }
 
-.wedding-south-indian-arch-skin .arch-divider-emblem {
-  color: var(--arch-gold-dark);
-  width: 16px;
-  height: 16px;
+.wedding-south-indian-arch-skin .arch-gold-divider-emblem {
+  color: var(--arch-gold);
+  width: 20px;
+  height: 20px;
 }
 
-/* Date Box */
-.wedding-south-indian-arch-skin .arch-date-box {
-  border-top: 1px solid var(--arch-gold);
-  border-bottom: 1px solid var(--arch-gold);
-  padding: 0.5rem 1.5rem;
+/* Date Details Bar */
+.wedding-south-indian-arch-skin .arch-details-bar {
+  border-top: 1.5px solid var(--arch-gold);
+  border-bottom: 1.5px solid var(--arch-gold);
+  padding: 0.6rem 2.5rem;
   display: inline-block;
   font-weight: 700;
-  font-size: clamp(0.85rem, 2vw, 1.1rem);
-  letter-spacing: 0.15em;
-  color: var(--arch-crimson-dark);
+  font-size: clamp(0.85rem, 2.5vw, 1.15rem);
+  letter-spacing: 0.12em;
+  color: var(--arch-maroon-dark);
   text-transform: uppercase;
   margin: 0.5rem auto;
+  animation: arch-fade-in-up 0.8s ease-out 0.5s both;
 }
 
-/* Countdown container */
-.wedding-south-indian-arch-skin .arch-countdown-container {
-  margin-top: 1.25rem;
+/* Countdown Container */
+.wedding-south-indian-arch-skin .arch-countdown-box {
+  margin-top: 1.5rem;
+  animation: arch-fade-in-up 0.8s ease-out 0.55s both;
 }
 
 .wedding-south-indian-arch-skin .arch-countdown-title {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--arch-gold-dark);
@@ -403,21 +347,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .wedding-south-indian-arch-skin .arch-countdown-num {
   font-family: "Playfair Display", serif;
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
   font-weight: 700;
-  color: var(--arch-crimson);
+  color: var(--arch-maroon);
   line-height: 1;
 }
 
 .wedding-south-indian-arch-skin .arch-countdown-sep {
-  font-size: clamp(1.2rem, 3vw, 1.6rem);
-  color: var(--arch-gold-dark);
-  opacity: 0.75;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  color: var(--arch-gold);
+  opacity: 0.8;
   margin-top: -0.25rem;
 }
 
@@ -433,59 +377,115 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--arch-text-light);
-  opacity: 0.7;
   margin-top: 0.25rem;
 }
 
-/* Button */
-.wedding-south-indian-arch-skin .arch-btn {
-  background: linear-gradient(135deg, var(--arch-gold), var(--arch-gold-dark));
-  color: var(--arch-crimson-dark);
+/* Action button */
+.wedding-south-indian-arch-skin .arch-action-btn {
+  background: linear-gradient(135deg, var(--arch-maroon), var(--arch-maroon-dark));
+  color: #fff;
   border-radius: 4px;
-  border: 1px solid var(--arch-gold-light);
-  padding: 0.85rem 2.2rem;
-  font-size: 0.8rem;
+  border: 1px solid var(--arch-gold);
+  padding: 0.9rem 2.4rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 20px rgba(92, 29, 36, 0.15);
   transition: all 0.3s ease;
   cursor: pointer;
+  margin-top: 1.75rem;
+  display: inline-block;
+  animation: arch-fade-in-up 0.8s ease-out 0.6s both;
 }
 
-.wedding-south-indian-arch-skin .arch-btn:hover {
+.wedding-south-indian-arch-skin .arch-action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
-  background: linear-gradient(135deg, var(--arch-gold-light), var(--arch-gold));
+  box-shadow: 0 12px 25px rgba(92, 29, 36, 0.25);
+  background: linear-gradient(135deg, var(--arch-maroon-dark), var(--arch-maroon));
 }
 
-/* Scroll Arrow */
-.wedding-south-indian-arch-skin .arch-scroll-down {
-  margin-top: 1.5rem;
-  color: var(--arch-gold);
-  animation: arch-bounce 2s infinite;
-  background: none;
-  border: none;
-  cursor: pointer;
+/* Center Couple Portrait Card layout matching reference tree outline */
+.wedding-south-indian-arch-skin .arch-couple-card-frame {
+  margin-top: 2rem;
+  position: relative;
+  background-color: #fff;
+  padding: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  max-width: 320px;
+  width: 100%;
+  animation: arch-fade-in-up 0.8s ease-out 0.65s both;
   z-index: 5;
 }
 
-@keyframes arch-bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-8px); }
-  60% { transform: translateY(-4px); }
+.wedding-south-indian-arch-skin .arch-couple-card-ring {
+  position: absolute;
+  inset: 0.4rem;
+  border: 1.5px solid var(--arch-gold);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
-/* Ticker Marquee */
+.wedding-south-indian-arch-skin .arch-couple-photo-wrapper {
+  aspect-ratio: 0.9;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2.5px solid var(--arch-maroon);
+}
+
+.wedding-south-indian-arch-skin .arch-couple-photo-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Pink Lotuses rising from the bottom edge */
+.wedding-south-indian-arch-skin .arch-lotuses-bottom-frame {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: clamp(80px, 14vw, 150px);
+  pointer-events: none;
+  z-index: 6;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 clamp(20px, 10vw, 120px);
+}
+
+.wedding-south-indian-arch-skin .arch-lotus-flower-bloom {
+  width: clamp(70px, 12vw, 120px);
+  height: auto;
+  color: var(--arch-pink);
+  animation: arch-sway-lotus 5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.wedding-south-indian-arch-skin .arch-lotus-flower-bloom-2 {
+  animation-delay: -1.5s;
+  color: #ff9ebb;
+}
+
+.wedding-south-indian-arch-skin .arch-lotus-flower-bloom-3 {
+  animation-delay: -3s;
+  color: #ffccd5;
+}
+
+/* Ticker Marquee styles */
 .wedding-south-indian-arch-skin .arch-marquee {
   overflow: hidden;
-  border-block: 2px solid var(--arch-gold);
-  background: var(--arch-crimson-dark);
-  color: var(--arch-gold-light);
+  border-block: 1.5px solid var(--arch-gold);
+  background-color: var(--arch-maroon);
+  color: #fff;
   white-space: nowrap;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
   z-index: 10;
   position: relative;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 .wedding-south-indian-arch-skin .arch-marquee-track {
@@ -499,54 +499,51 @@
   text-transform: uppercase;
 }
 
-/* Sections */
+/* Section grids styling */
 .wedding-south-indian-arch-skin .arch-section {
-  padding: clamp(4rem, 8vw, 8rem) 0;
+  padding: clamp(3.5rem, 6vw, 6.5rem) 0;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
   position: relative;
   z-index: 5;
-  border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
 }
 
 .wedding-south-indian-arch-skin .arch-section-heading {
   text-align: center;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .wedding-south-indian-arch-skin .arch-section-heading h2 {
   font-family: "Playfair Display", serif;
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(1.8rem, 4.5vw, 2.8rem);
   font-weight: 700;
-  color: var(--arch-gold);
-  margin-bottom: 0.75rem;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  color: var(--arch-maroon);
 }
 
 .wedding-south-indian-arch-skin .arch-section-heading p {
   font-size: 0.85rem;
-  color: rgba(255, 250, 240, 0.75);
-  max-width: 580px;
+  color: var(--arch-text-light);
+  max-width: 520px;
   margin-inline: auto;
   line-height: 1.6;
+  margin-top: 0.5rem;
 }
 
-/* Ornate Stream Card */
+/* Stream view gold card frame */
 .wedding-south-indian-arch-skin .arch-stream-card {
-  border: 3px solid var(--arch-gold);
+  border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: 12px;
-  background: rgba(46, 0, 4, 0.85);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
   margin-bottom: 3rem;
   overflow: hidden;
   position: relative;
 }
 
-.wedding-south-indian-arch-skin .arch-stream-card::before {
-  content: '';
+.wedding-south-indian-arch-skin .arch-stream-card-ring {
   position: absolute;
-  inset: 6px;
-  border: 1px dashed rgba(212, 175, 55, 0.4);
+  inset: 0.4rem;
+  border: 1px dashed rgba(212, 175, 55, 0.35);
   border-radius: 8px;
   pointer-events: none;
 }
@@ -557,39 +554,27 @@
   width: 100%;
   border-radius: 6px;
   overflow: hidden;
-  border: 1.5px solid var(--arch-gold);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .wedding-south-indian-arch-skin .arch-card-text {
   font-family: "Playfair Display", serif;
-  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  font-size: clamp(1.1rem, 3.5vw, 1.5rem);
   text-align: center;
-  line-height: 1.5;
-  color: var(--arch-gold-light);
-  margin-top: 1.5rem;
+  line-height: 1.45;
+  color: var(--arch-maroon-dark);
+  margin-top: 1.25rem;
   padding: 0 1rem;
 }
 
-/* Live Wishes Chat Panel */
+/* Wishes Chat Panel details */
 .wedding-south-indian-arch-skin .arch-chat-panel {
-  border: 2px solid var(--arch-gold);
+  border: 1px solid rgba(212, 175, 55, 0.35);
   border-radius: 12px;
-  background: rgba(46, 0, 4, 0.85);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-}
-
-.wedding-south-indian-arch-skin .arch-chat-panel * {
-  color: var(--arch-cream) !important;
-}
-
-/* Input boxes in chat skin */
-.wedding-south-indian-arch-skin .arch-chat-panel input,
-.wedding-south-indian-arch-skin .arch-chat-panel textarea {
-  background-color: rgba(92, 3, 9, 0.4) !important;
-  border: 1px solid var(--arch-gold) !important;
 }
 
 /* Teaser frame */
@@ -597,80 +582,43 @@
   aspect-ratio: 16 / 9;
   width: 100%;
   border-radius: 12px;
-  border: 3px solid var(--arch-gold);
+  border: 1px solid rgba(212, 175, 55, 0.25);
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   background-color: #12070a;
+  padding: 0.5rem;
+  background-color: #fff;
+}
+
+.wedding-south-indian-arch-skin .arch-teaser-wrapper {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* Gallery Section */
 .wedding-south-indian-arch-skin .arch-gallery-wrap {
   border-radius: 16px;
-  padding: 2.5rem 1.5rem;
-  border: 2px solid var(--arch-gold);
-  background: rgba(46, 0, 4, 0.8);
-  backdrop-filter: blur(6px);
-  position: relative;
-}
-
-.wedding-south-indian-arch-skin .arch-gallery-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 1px dashed rgba(212,175,55,0.4);
-  border-radius: 12px;
-  pointer-events: none;
-}
-
-/* Floating lotuses in footer */
-.wedding-south-indian-arch-skin .arch-lotuses-footer {
-  position: absolute;
-  bottom: 0;
-  left: 24px;
-  right: 24px;
-  height: 130px;
-  pointer-events: none;
-  z-index: 2;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 2rem;
-  opacity: 0.95;
-}
-
-.wedding-south-indian-arch-skin .arch-lotus-flower {
-  width: clamp(80px, 12vw, 130px);
-  height: auto;
-  color: #ff85a2;
-  animation: arch-sway-lotus 6s ease-in-out infinite;
-  transform-origin: bottom center;
-}
-
-.wedding-south-indian-arch-skin .arch-lotus-flower-2 {
-  animation-delay: -2s;
-  color: #ff9ebb;
-  margin-left: 10%;
-}
-
-.wedding-south-indian-arch-skin .arch-lotus-flower-3 {
-  animation-delay: -4s;
-  color: #ffccd5;
+  padding: 2rem 1.5rem;
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+  background: #ffffff;
 }
 
 /* Footer Section */
 .wedding-south-indian-arch-skin .arch-footer {
   text-align: center;
-  padding: 6rem 1.5rem 3rem;
-  border-top: 2px solid var(--arch-gold);
-  background: var(--arch-crimson-dark);
+  padding: 4rem 1.5rem 4rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.25);
+  background: var(--arch-cream-dark);
   position: relative;
   z-index: 5;
 }
 
 .wedding-south-indian-arch-skin .arch-footer h2 {
   font-family: "Great Vibes", cursive;
-  font-size: clamp(2.5rem, 7vw, 4rem);
-  color: var(--arch-gold);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  color: var(--arch-maroon);
   margin-bottom: 0.5rem;
 }
 
@@ -678,15 +626,15 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.25em;
-  color: var(--arch-gold-light);
+  color: var(--arch-text-light);
   opacity: 0.8;
 }
 
-/* White Traditional Floor Kolam Accents */
-.wedding-south-indian-arch-skin .arch-kolam-bottom {
+/* Traditional floor Kolam */
+.wedding-south-indian-arch-skin .arch-kolam-drawing {
   display: block;
-  width: 160px;
+  width: 120px;
   height: auto;
   margin: 1.5rem auto 0;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(92, 29, 36, 0.2);
 }

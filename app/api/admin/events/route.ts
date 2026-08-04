@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth"
 import { getDb, toCamel } from "@/lib/db"
 import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
+import { syncEliveAllocationsWithEvents } from "@/lib/streaming/elive-service"
 
 export async function GET(req: Request) {
   try {
@@ -12,6 +13,7 @@ export async function GET(req: Request) {
     const status = url.searchParams.get("status") // draft|scheduled|live|completed
     
     const sql = getDb()
+    await syncEliveAllocationsWithEvents(sql).catch(() => {})
     
     const domainSubquery = sql.unsafe(`(
       SELECT domain FROM domains

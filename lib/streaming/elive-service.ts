@@ -163,3 +163,46 @@ export async function fetchEliveCredentials(
     }
   }
 }
+
+/**
+ * Synchronize allocated eLive stream keys from elive_stream_key_allocations to the events table
+ * if the event row still has legacy or fallback values (e.g. event slug).
+ */
+export async function syncEliveAllocationsWithEvents(
+  sqlClient?: ReturnType<typeof getDb>
+): Promise<void> {
+  const db = sqlClient || getDb()
+  try {
+    const allocations = await db`
+      SELECT a.stream_key, a.channel_id, a.assigned_event_id
+      FROM elive_stream_key_allocations a
+      WHERE a.assigned_event_id IS NOT NULL AND a.assigned_event_id != ''
+    `
+    for (const alloc of allocations) {
+      const eventId = alloc.assigned_event_id as string
+      const streamKey = alloc.stream_key as string
+      const channelId = (alloc.channel_id as string) || "6019"
+
+      const existingEvents = await db`
+        SELECT id, stream_key, rtmp_provider FROM events WHERE id = ${eventId}
+      `
+      if (existingEvents.length > 0) {
+        const ev = existingEvents[0]
+        if (ev.stream_key !== streamKey || ev.rtmp_provider !== "elive") {
+          const creds = await fetchEliveCredentials(channelId, streamKey)
+          await db`
+            UPDATE events
+            SET stream_key = ${creds.streamKey},
+                rtmp_url = ${creds.rtmpUrl},
+                hls_url = ${creds.hlsUrl},
+                rtmp_provider = 'elive',
+                updated_at = NOW()
+            WHERE id = ${eventId}
+          `
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[eLive Service] Error syncing eLive key allocations with events table:", err)
+  }
+}

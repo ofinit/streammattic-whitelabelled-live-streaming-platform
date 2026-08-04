@@ -45,7 +45,11 @@ import {
   deleteFiveCentsCdnStreamById,
   deleteFiveCentsCdnStreamForEvent,
 } from "@/lib/server/fivecentscdn-stream-cleanup"
-import { allocateNextEliveStreamKey, fetchEliveCredentials } from "@/lib/streaming/elive-service"
+import {
+  allocateNextEliveStreamKey,
+  fetchEliveCredentials,
+  syncEliveAllocationsWithEvents,
+} from "@/lib/streaming/elive-service"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -131,6 +135,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const sql = getDb()
+    await syncEliveAllocationsWithEvents(sql).catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`.catch(() => {})

@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff,
   Users,
+  BarChart3,
   MessageCircle,
   Send,
   Lock,
@@ -1550,18 +1551,43 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           : "font-coastal-sans text-sm font-medium text-[#0f766e]/90"
         : "text-sm text-white/60"
 
-  const renderViewerCountBelowPlayer = () =>
-    isEnded || isOnBreak ? null : (
-      <a
-        href={`/${encodeURIComponent(eventId)}/analytics`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-      >
-        <Users className="h-4 w-4" />
-        <span>{viewerCount.toLocaleString()} watching live</span>
-      </a>
+  const renderViewerCountBelowPlayer = () => {
+    const slugOrId = (event?.slug as string) || eventId
+    const analyticsHref = `/${encodeURIComponent(slugOrId)}/analytics`
+    const isActuallyLive = event.status === "live"
+    const countText = viewerCount.toLocaleString()
+
+    const statusLabel = isActuallyLive
+      ? `${countText} watching live`
+      : isOnBreak
+        ? `${countText} online (on break)`
+        : isEnded
+          ? `${countText} total views`
+          : `${countText} live visitor${viewerCount !== 1 ? "s" : ""}`
+
+    return (
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href={analyticsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm cursor-pointer"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isActuallyLive ? "bg-red-400" : "bg-emerald-400"} opacity-75`} />
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${isActuallyLive ? "bg-red-500" : "bg-emerald-500"}`} />
+          </span>
+          <Users className="h-3.5 w-3.5" />
+          <span>{statusLabel}</span>
+          <span className="opacity-40">|</span>
+          <span className="flex items-center gap-1 underline underline-offset-2">
+            <BarChart3 className="h-3.5 w-3.5" />
+            View Analytics
+          </span>
+        </a>
+      </div>
     )
+  }
 
   const renderMockPlayerContent = () => (
     <div className="flex flex-col items-center justify-center gap-4 absolute inset-0 px-6 text-center">

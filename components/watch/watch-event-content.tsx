@@ -1640,6 +1640,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   isPlayable
                   eventTitle={event.title}
                   streamType="rtmp"
+                  allowReactions={allowReactions}
+                  onReaction={handleReaction}
                 />
               </div>
             ) : isEnded && hasReplay && replaySrc ? (
@@ -1717,6 +1719,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   isPlayable
                   eventTitle={event.title}
                   streamType="rtmp"
+                  allowReactions={allowReactions}
+                  onReaction={handleReaction}
                 />
               </div>
             ) : isRtmpLiveHlsWaiting ? (
@@ -1769,7 +1773,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             </span>
           ))}
 
-          {!isYouTubePlayer && (
+          {!isYouTubePlayer && !(event.streamType === "rtmp" && rtmpPlaybackHlsUrl) && (
             <div
               className={`absolute bottom-0 left-0 right-0 p-4 ${
               streamChrome === "wedding" || streamChrome === "theHeart"

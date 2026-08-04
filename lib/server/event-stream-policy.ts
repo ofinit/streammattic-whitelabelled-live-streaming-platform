@@ -14,6 +14,8 @@ export function bodyStreamTypeToDb(streamType: unknown): string | null {
   return STREAM_TYPE_MAP[s] ?? s
 }
 
+import { getElivePoolAvailability } from "@/lib/streaming/elive-service"
+
 export async function loadStreamAndSimulcastPricing(sql: Sql): Promise<{
   streamTypePricing: StreamTypePricing
   simulcastPricing: SimulcastPricing
@@ -24,8 +26,20 @@ export async function loadStreamAndSimulcastPricing(sql: Sql): Promise<{
   const streamRaw = streamRows.length > 0 ? (streamRows[0] as Record<string, unknown>).value : null
   const volumeRaw = volumeRows.length > 0 ? (volumeRows[0] as Record<string, unknown>).value : null
   const simulcastRaw = simulcastRows.length > 0 ? (simulcastRows[0] as Record<string, unknown>).value : null
+
+  const streamTypePricing = parseStreamTypePricing(streamRaw, volumeRaw)
+  const elivePool = await getElivePoolAvailability(sql).catch(() => null)
+  if (elivePool?.isElive && elivePool.isExhausted) {
+    if (streamTypePricing.rtmp) {
+      streamTypePricing.rtmp.enabled = false
+      ;(streamTypePricing.rtmp as any).disabledReason = "All eLive stream keys in pool are assigned (0 available)"
+      ;(streamTypePricing.rtmp as any).elivePoolExhausted = true
+      ;(streamTypePricing.rtmp as any).elivePoolAvailableCount = 0
+    }
+  }
+
   return {
-    streamTypePricing: parseStreamTypePricing(streamRaw, volumeRaw),
+    streamTypePricing,
     simulcastPricing: parseSimulcastPricing(simulcastRaw),
   }
 }
@@ -39,8 +53,12 @@ export function assertStreamTypeEnabled(
   const key = dbStreamType as keyof StreamTypePricing
   const cfg = streamTypePricing[key]
   if (!cfg || !cfg.enabled) {
+    const errorMsg =
+      (cfg as any)?.elivePoolExhausted
+        ? "RTMP Server stream type is currently unavailable because all eLive stream keys in the pool are assigned. Please contact administrator to add more keys."
+        : `This stream type is not available (${dbStreamType}). It has been disabled by an administrator.`
     return {
-      error: `This stream type is not available (${dbStreamType}). It has been disabled by an administrator.`,
+      error: errorMsg,
       status: 400,
     }
   }

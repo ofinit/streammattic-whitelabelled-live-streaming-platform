@@ -414,15 +414,24 @@ export default function AdminPricingPage() {
                             <Icon className={`h-5 w-5 ${config.enabled ? "text-primary" : "text-muted-foreground"}`} />
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{label}</span>
                               {recommended && (
                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                                   Recommended
                                 </Badge>
                               )}
+                              {key === "rtmp" && (config as any).elivePoolExhausted && (
+                                <Badge variant="destructive" className="text-[10px] px-2 py-0.5 bg-red-600/90 text-white font-semibold">
+                                  eLive Keys Pool Exhausted (0 Available) — Auto-Disabled
+                                </Badge>
+                              )}
                             </div>
-                            <p className="text-xs text-muted-foreground">{description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(config as any).elivePoolExhausted && key === "rtmp"
+                                ? "Auto-disabled: All predefined eLive stream keys in pool are assigned (0 available)"
+                                : description}
+                            </p>
                           </div>
                           {config.volumeDiscountTiers.length > 0 && !isExpanded && (
                             <Badge variant="secondary" className="ml-2 shrink-0 text-[10px] px-1.5 py-0">
@@ -459,6 +468,7 @@ export default function AdminPricingPage() {
                         >
                           <Switch
                             checked={config.enabled}
+                            disabled={key === "rtmp" && !!(config as any).elivePoolExhausted}
                             onCheckedChange={(checked) => toggleStreamType(key, checked)}
                           />
                         </div>

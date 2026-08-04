@@ -212,3 +212,58 @@ export async function syncEliveAllocationsWithEvents(
     console.error("[eLive Service] Error syncing eLive key allocations with events table:", err)
   }
 }
+
+export interface ElivePoolAvailability {
+  isElive: boolean
+  totalKeys: number
+  assignedCount: number
+  availableCount: number
+  isExhausted: boolean
+}
+
+/**
+ * Checks current eLive stream keys pool availability.
+ * If active backend is eLive and 0 keys are available, returns isExhausted: true.
+ */
+export async function getElivePoolAvailability(
+  sqlClient?: ReturnType<typeof getDb>
+): Promise<ElivePoolAvailability> {
+  const db = sqlClient || getDb()
+  try {
+    const settings = await getStreamingSettings()
+    if (settings.backendType !== "elive") {
+      return { isElive: false, totalKeys: 0, assignedCount: 0, availableCount: 999, isExhausted: false }
+    }
+
+    const poolKeys = (settings.eliveStreamKeys || []).map((k) => String(k).trim()).filter(Boolean)
+    if (poolKeys.length === 0) {
+      return { isElive: true, totalKeys: 0, assignedCount: 0, availableCount: 0, isExhausted: true }
+    }
+
+    const rows = await db`
+      SELECT stream_key
+      FROM events
+      WHERE stream_type = 'rtmp'
+        AND stream_key IS NOT NULL AND stream_key != ''
+        AND status NOT IN ('completed', 'ended', 'cancelled')
+    `
+
+    const assignedKeysSet = new Set(rows.map((r) => String(r.stream_key).trim()))
+    let assignedCount = 0
+    for (const k of poolKeys) {
+      if (assignedKeysSet.has(k)) assignedCount++
+    }
+
+    const availableCount = Math.max(0, poolKeys.length - assignedCount)
+    return {
+      isElive: true,
+      totalKeys: poolKeys.length,
+      assignedCount,
+      availableCount,
+      isExhausted: availableCount === 0,
+    }
+  } catch (err) {
+    console.error("[eLive Service] Error checking pool availability:", err)
+    return { isElive: false, totalKeys: 0, assignedCount: 0, availableCount: 999, isExhausted: false }
+  }
+}

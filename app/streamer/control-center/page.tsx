@@ -54,6 +54,7 @@ import {
   CheckCircle2,
   ClipboardList,
   BarChart3,
+  AlertTriangle,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -756,13 +757,28 @@ export default function StreamerEventsPage() {
           >
             {getEventPublicUrl(event)}/analytics
           </a>
+          {(() => {
+            if (event.status !== "live" && event.status !== "on_break") return null
+            const start = event.startedAt || event.updatedAt || event.createdAt
+            if (!start) return null
+            const elapsedMins = Math.max(0, Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60)))
+            if (elapsedMins < 300) return null
+            return (
+              <div className="mt-1.5 p-2 rounded border border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200 text-[11px] flex items-center gap-1.5 leading-snug">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500 animate-pulse" />
+                <span>
+                  <strong>Live Streaming Policy Warning:</strong> Stream duration has reached 5.0 hours. Live Streaming max limit is 5.5 hours. Please wrap up or start a new event session.
+                </span>
+              </div>
+            )
+          })()}
         </div>
       </div>
 
       <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1" title="Page display viewer count is capped at 100 users. Unlimited viewers can stream simultaneously.">
           <Eye className="h-3 w-3" />
-          {Number(event.currentViewers) || 0}
+          {Math.min(100, Number(event.currentViewers) || 0)}{Number(event.currentViewers) >= 100 ? "+" : ""}
         </span>
         {(event.scheduledAt || event.scheduledStart) && (
           <span

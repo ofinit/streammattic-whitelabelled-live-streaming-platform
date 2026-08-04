@@ -6,7 +6,7 @@ import { syncEliveAllocationsWithEvents } from "@/lib/streaming/elive-service"
 
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin"])
+    await requireRole(["admin", "rtmp_operator"])
     
     // Parse query params (optional)
     const url = new URL(req.url)

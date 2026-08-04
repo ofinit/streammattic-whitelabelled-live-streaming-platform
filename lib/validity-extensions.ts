@@ -31,6 +31,9 @@ export function validityCreditsForStreamAndDuration(
   if (streamType === "youtube_embed" && YOUTUBE_EMBED_ONE_CREDIT_VALIDITY_DAYS.has(d)) {
     return 1
   }
+  if (streamType === "rtmp" && d <= 60) {
+    return 1
+  }
   return validityCreditsForDuration(validityDays, defaultDays)
 }
 

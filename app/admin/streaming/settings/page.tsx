@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
+import { Textarea } from "@/components/ui/textarea"
 import { HelpTip } from "@/components/ui/help-tip"
 import {
   ArrowLeft,
@@ -189,12 +190,24 @@ export default function StreamingSettingsPage() {
     wasabiEndpoint: "",
   })
 
+  const [eliveConfig, setEliveConfig] = useState({
+    channelId: "6019",
+    handlerUrl: "https://eliveevents.com/elive-handler/6019.php",
+    playbackBaseUrl: "https://oqgdr774l4rm-hls-live.5centscdn.com/6019",
+    streamKeysText: "",
+    nextKeyIndex: 0,
+  })
+
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("connected")
 
   const buildSettingsPayload = () => {
     const apiUrl = apiUrlFromConfig(serverConfig, activeBackend)
+    const eliveKeysList = eliveConfig.streamKeysText
+      .split(/[\n,]+/)
+      .map((k) => k.trim())
+      .filter(Boolean)
 
     return {
       backendType: activeBackend,
@@ -231,6 +244,11 @@ export default function StreamingSettingsPage() {
       fiveCentsCdnCriticalBackupZone: fiveCentsCdn.criticalBackupZone,
       fiveCentsCdnWasabiBucket: fiveCentsCdn.wasabiBucket,
       fiveCentsCdnWasabiEndpoint: fiveCentsCdn.wasabiEndpoint,
+      eliveChannelId: eliveConfig.channelId,
+      eliveHandlerUrl: eliveConfig.handlerUrl,
+      elivePlaybackBaseUrl: eliveConfig.playbackBaseUrl,
+      eliveStreamKeys: eliveKeysList,
+      eliveNextKeyIndex: eliveConfig.nextKeyIndex,
     }
   }
 
@@ -283,6 +301,14 @@ export default function StreamingSettingsPage() {
           criticalBackupZone: s.fiveCentsCdnCriticalBackupZone || "",
           wasabiBucket: s.fiveCentsCdnWasabiBucket || "",
           wasabiEndpoint: s.fiveCentsCdnWasabiEndpoint || "",
+        })
+        const loadedKeys = Array.isArray(s.eliveStreamKeys) ? s.eliveStreamKeys : []
+        setEliveConfig({
+          channelId: s.eliveChannelId || "6019",
+          handlerUrl: s.eliveHandlerUrl || "https://eliveevents.com/elive-handler/6019.php",
+          playbackBaseUrl: s.elivePlaybackBaseUrl || "https://oqgdr774l4rm-hls-live.5centscdn.com/6019",
+          streamKeysText: loadedKeys.join("\n"),
+          nextKeyIndex: Number(s.eliveNextKeyIndex || 0),
         })
       } catch (error) {
         setConnectionStatus("disconnected")
@@ -686,6 +712,121 @@ export default function StreamingSettingsPage() {
                 <p className="text-[11px] text-muted-foreground">
                   Do not enter Wasabi access keys here. Store those only in 5CentsCDN Critical Backup; StreamLivee keeps
                   these non-secret values so event metadata and audits show where DVR files are expected to be backed up.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeBackend === "elive" && (
+            <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground">eLive Stream Key Allocation Pool</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Predefined stream keys pool for eLive RTMP events. Keys are allocated sequentially per event creation.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+                    {eliveConfig.streamKeysText.split(/[\n,]+/).map(k => k.trim()).filter(Boolean).length} stream keys in pool
+                  </Badge>
+                  <Badge variant="outline" className="bg-secondary text-muted-foreground text-xs">
+                    Next Key Index: #{eliveConfig.nextKeyIndex}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="elive-channel">Channel / Event ID</Label>
+                  <Input
+                    id="elive-channel"
+                    value={eliveConfig.channelId}
+                    onChange={(e) => setEliveConfig({ ...eliveConfig, channelId: e.target.value })}
+                    className="bg-secondary border-0"
+                    placeholder="6019"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="elive-playback">HLS Playback Base URL</Label>
+                  <Input
+                    id="elive-playback"
+                    value={eliveConfig.playbackBaseUrl}
+                    onChange={(e) => setEliveConfig({ ...eliveConfig, playbackBaseUrl: e.target.value })}
+                    className="bg-secondary border-0"
+                    placeholder="https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Format: https://oqgdr774l4rm-hls-live.5centscdn.com/6019/&#123;streamKey&#125;/playlist_dvr.m3u8
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label htmlFor="elive-keys">Predefined Stream Keys (1 Key Per Line)</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                      onClick={() => {
+                        const currentKeys = eliveConfig.streamKeysText.split(/[\n,]+/).map(k => k.trim()).filter(Boolean)
+                        const newKeys = []
+                        const startNum = currentKeys.length + 1
+                        for (let i = 0; i < 10; i++) {
+                          newKeys.push(`elive_key_${String(startNum + i).padStart(3, "0")}`)
+                        }
+                        const updatedText = [...currentKeys, ...newKeys].join("\n")
+                        setEliveConfig({ ...eliveConfig, streamKeysText: updatedText })
+                        toast({ title: "Stream keys added", description: `Added 10 new stream keys to the pool. Total: ${currentKeys.length + 10}` })
+                      }}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      + Add More (10)
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs border-border"
+                      onClick={() => {
+                        const keys = []
+                        for (let i = 1; i <= 100; i++) {
+                          keys.push(`elive_key_${String(i).padStart(3, "0")}`)
+                        }
+                        setEliveConfig({ ...eliveConfig, streamKeysText: keys.join("\n"), nextKeyIndex: 0 })
+                        toast({ title: "Generated 100 keys", description: "Created 100 predefined stream keys in the pool" })
+                      }}
+                    >
+                      Generate 100 Keys
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                      onClick={() => setEliveConfig({ ...eliveConfig, streamKeysText: "", nextKeyIndex: 0 })}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                <Textarea
+                  id="elive-keys"
+                  rows={8}
+                  value={eliveConfig.streamKeysText}
+                  onChange={(e) => setEliveConfig({ ...eliveConfig, streamKeysText: e.target.value })}
+                  className="bg-secondary border-0 font-mono text-xs"
+                  placeholder={"Paste or enter predefined stream keys here (one key per line, up to 100+ keys)...\nelive_key_001\nelive_key_002\nelive_key_003"}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Stream keys will be assigned to RTMP events in sequential order (1 key per event). When end of list is reached, sequence wraps back to key #0.
                 </p>
               </div>
             </div>

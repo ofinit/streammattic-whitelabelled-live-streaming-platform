@@ -21,7 +21,7 @@ export type StreamStats = NimbleStreamStats
 export type Recording = NimbleRecording
 export type ServerConfig = NimbleServerConfig
 
-export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx" | "fivecentscdn"
+export type StreamingBackendType = "nimble" | "srs" | "nginx_rtmp" | "mediamtx" | "fivecentscdn" | "elive"
 
 export interface StreamingBackendInfo {
   type: StreamingBackendType
@@ -447,5 +447,54 @@ export const BACKEND_INFO: Record<StreamingBackendType, StreamingBackendInfo> = 
       testConnection: "MediaMTX server is reachable and responding",
     },
     unsupportedFeatures: ["geoRestriction"],
+  },
+  elive: {
+    type: "elive",
+    name: "eLive",
+    description: "3rd party live streaming backend with predefined stream key pool and 5CentsCDN HLS delivery.",
+    isFree: false,
+    cost: "3rd Party Service",
+    website: "https://eliveevents.com",
+    features: [
+      "Predefined stream key pool",
+      "Sequential stream key allocation",
+      "5CentsCDN HLS playback",
+      "RTMP push ingest",
+      "Server-side credential fetching",
+      "Obfuscated eLive endpoints",
+    ],
+    defaultPorts: { rtmp: 1935, http: 443, api: 443 },
+    envVars: {
+      apiUrl: "ELIVE_HANDLER_URL",
+      apiKey: "ELIVE_CHANNEL_ID",
+      rtmpUrl: "ELIVE_RTMP_URL",
+      playbackUrl: "ELIVE_PLAYBACK_URL",
+    },
+    defaultConfig: {
+      name: "eLive 3rd Party Server",
+      host: "https://eliveevents.com/elive-handler",
+      rtmpPort: 1935,
+      httpPort: "",
+      apiKey: "6019",
+      rtmpBaseUrl: "",
+      playbackBaseUrl: "https://oqgdr774l4rm-hls-live.5centscdn.com/6019",
+    },
+    helpTexts: {
+      apiHost: "The base URL for eLive handler endpoints. Default: https://eliveevents.com/elive-handler.",
+      rtmpPort: "RTMP ingest port. Default: 1935.",
+      httpPort: "Not required for eLive.",
+      apiKey: "eLive Event / Channel ID (e.g., 6019).",
+      rtmpUrl: "FMS RTMP Ingest Server URL returned dynamically by eLive handler.",
+      playbackUrl: "5CentsCDN HLS Playback URL prefix. Default: https://oqgdr774l4rm-hls-live.5centscdn.com/6019.",
+      hlsSegment: "Managed by 5CentsCDN / eLive delivery.",
+      transcoding: "Transcoding is managed upstream by eLive.",
+      streamAuth: "Stream key authentication managed via pre-allocated stream keys.",
+      tokenAuth: "Playback authentication provided via 5CentsCDN DVR playlist.",
+      tokenSecret: "Not applicable.",
+      ipWhitelist: "Managed upstream.",
+      geoRestriction: "Managed upstream.",
+      storagePath: "Managed upstream.",
+      testConnection: "eLive handler is reachable",
+    },
   },
 }

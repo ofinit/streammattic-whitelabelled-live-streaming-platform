@@ -45,6 +45,7 @@ import {
   deleteFiveCentsCdnStreamById,
   deleteFiveCentsCdnStreamForEvent,
 } from "@/lib/server/fivecentscdn-stream-cleanup"
+import { allocateNextEliveStreamKey, fetchEliveCredentials } from "@/lib/streaming/elive-service"
 
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -273,21 +274,29 @@ export async function POST(req: NextRequest) {
     let fiveCentsCdnStream:
       | Awaited<ReturnType<typeof createFiveCentsCdnPushStream>>
       | null = null
+    let eliveAllocated: Awaited<ReturnType<typeof allocateNextEliveStreamKey>> | null = null
+    let eliveCreds: Awaited<ReturnType<typeof fetchEliveCredentials>> | null = null
+
     if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && streamingSettings) {
       fiveCentsCdnStream = await createFiveCentsCdnPushStream({
         settings: streamingSettings,
         streamName: buildFiveCentsCdnStreamName(finalSlug),
       })
+    } else if (insertStreamType === "rtmp" && rtmpProvider === "elive") {
+      eliveAllocated = await allocateNextEliveStreamKey(sql)
+      eliveCreds = await fetchEliveCredentials(eliveAllocated.channelId, eliveAllocated.streamKey)
     }
+
     const streamKey =
       insertStreamType === "rtmp"
-        ? fiveCentsCdnStream?.streamKey ?? null
+        ? eliveCreds?.streamKey || eliveAllocated?.streamKey || fiveCentsCdnStream?.streamKey || providedStreamKey || null
         : isPendingCreate
           ? null
           : providedStreamKey || generateStreamKey()
     const rtmpUrl =
       insertStreamType === "rtmp"
-        ? fiveCentsCdnStream?.rtmpUrl ||
+        ? eliveCreds?.rtmpUrl ||
+          fiveCentsCdnStream?.rtmpUrl ||
           streamingSettings?.rtmpBaseUrl ||
           providedRtmpUrl ||
           process.env.RTMP_SERVER_URL ||
@@ -398,7 +407,12 @@ export async function POST(req: NextRequest) {
     let event = rows[0] as Record<string, unknown>
     const eventId = event.id as string
 
-    if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
+    if (insertStreamType === "rtmp" && rtmpProvider === "elive" && eliveAllocated) {
+      const eliveHlsUrl = eliveAllocated.hlsUrl || `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${streamKey}/playlist_dvr.m3u8`
+      await sql`UPDATE events SET hls_url = ${eliveHlsUrl} WHERE id = ${eventId}`
+      const refreshed = await sql`SELECT * FROM events WHERE id = ${eventId}`
+      event = (refreshed[0] || event) as Record<string, unknown>
+    } else if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
       await sql`UPDATE events SET hls_url = ${fiveCentsCdnStream.hlsUrl || null} WHERE id = ${eventId}`
       const refreshed = await sql`SELECT * FROM events WHERE id = ${eventId}`
       event = (refreshed[0] || event) as Record<string, unknown>
@@ -446,7 +460,15 @@ export async function POST(req: NextRequest) {
         VALUES (${eventId}, ${d.label || `Day ${i + 2}`}, ${d.scheduledAt}, ${d.timezone || timezone || "UTC"}, ${extraKey}, ${extraRtmp}, ${i + 1})
         RETURNING id
       `
-      if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
+      if (insertStreamType === "rtmp" && rtmpProvider === "elive") {
+        const dateEliveAllocated = await allocateNextEliveStreamKey(sql)
+        const dateEliveCreds = await fetchEliveCredentials(dateEliveAllocated.channelId, dateEliveAllocated.streamKey)
+        await sql`
+          UPDATE event_dates
+          SET rtmp_url = ${dateEliveCreds.rtmpUrl}, stream_key = ${dateEliveCreds.streamKey}
+          WHERE id = ${insertedDate[0].id as string}
+        `
+      } else if (insertStreamType === "rtmp" && rtmpProvider === "fivecentscdn" && fiveCentsCdnStream) {
         await sql`
           UPDATE event_dates
           SET rtmp_url = ${fiveCentsCdnStream.rtmpUrl}, stream_key = ${fiveCentsCdnStream.streamKey}

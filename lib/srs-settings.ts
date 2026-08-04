@@ -40,6 +40,11 @@ export type SrsSettings = {
   fiveCentsCdnCriticalBackupZone: string
   fiveCentsCdnWasabiBucket: string
   fiveCentsCdnWasabiEndpoint: string
+  eliveChannelId: string
+  eliveHandlerUrl: string
+  elivePlaybackBaseUrl: string
+  eliveStreamKeys: string[]
+  eliveNextKeyIndex: number
 }
 
 export type StreamingSettings = SrsSettings
@@ -91,6 +96,11 @@ export const DEFAULT_SRS_SETTINGS: SrsSettings = {
   fiveCentsCdnCriticalBackupZone: "",
   fiveCentsCdnWasabiBucket: "",
   fiveCentsCdnWasabiEndpoint: "",
+  eliveChannelId: "6019",
+  eliveHandlerUrl: "https://eliveevents.com/elive-handler/6019.php",
+  elivePlaybackBaseUrl: "https://oqgdr774l4rm-hls-live.5centscdn.com/6019",
+  eliveStreamKeys: [],
+  eliveNextKeyIndex: 0,
 }
 
 function stringOr(value: unknown, fallback: string): string {
@@ -118,7 +128,8 @@ function backendTypeOr(value: unknown, fallback: StreamingBackendType): Streamin
     value === "srs" ||
     value === "nginx_rtmp" ||
     value === "mediamtx" ||
-    value === "fivecentscdn"
+    value === "fivecentscdn" ||
+    value === "elive"
     ? value
     : fallback
 }
@@ -190,6 +201,11 @@ function normalizeStored(raw: unknown): SrsSettings {
       data.fiveCentsCdnWasabiEndpoint,
       defaults.fiveCentsCdnWasabiEndpoint,
     ).replace(/\/$/, ""),
+    eliveChannelId: stringOr(data.eliveChannelId, defaults.eliveChannelId),
+    eliveHandlerUrl: stringOr(data.eliveHandlerUrl, defaults.eliveHandlerUrl),
+    elivePlaybackBaseUrl: stringOr(data.elivePlaybackBaseUrl, defaults.elivePlaybackBaseUrl).replace(/\/$/, ""),
+    eliveStreamKeys: Array.isArray(data.eliveStreamKeys) ? data.eliveStreamKeys.map(s => String(s).trim()).filter(Boolean) : defaults.eliveStreamKeys,
+    eliveNextKeyIndex: numberOr(data.eliveNextKeyIndex, defaults.eliveNextKeyIndex, 0),
   }
 }
 
@@ -303,6 +319,13 @@ export async function saveSrsSettings(input: Partial<SrsSettings>): Promise<SrsS
       input.fiveCentsCdnWasabiEndpoint,
       current.fiveCentsCdnWasabiEndpoint,
     ).replace(/\/$/, ""),
+    eliveChannelId: stringOr(input.eliveChannelId, current.eliveChannelId),
+    eliveHandlerUrl: stringOr(input.eliveHandlerUrl, current.eliveHandlerUrl),
+    elivePlaybackBaseUrl: stringOr(input.elivePlaybackBaseUrl, current.elivePlaybackBaseUrl).replace(/\/$/, ""),
+    eliveStreamKeys: Array.isArray(input.eliveStreamKeys)
+      ? input.eliveStreamKeys.map(s => String(s).trim()).filter(Boolean)
+      : current.eliveStreamKeys,
+    eliveNextKeyIndex: numberOr(input.eliveNextKeyIndex, current.eliveNextKeyIndex, 0),
   }
   const finalSettings = withGeneratedSecrets(merged)
   const sql = getDb()

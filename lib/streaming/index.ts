@@ -20,6 +20,7 @@ import { SrsProvider } from "./srs-provider"
 import { NginxRtmpProvider } from "./nginx-rtmp-provider"
 import { MediaMtxProvider } from "./mediamtx-provider"
 import { FiveCentsCdnProvider } from "./fivecentscdn-provider"
+import { EliveProvider } from "./elive-provider"
 
 // Singleton instances (created once, reused across requests)
 const providers: Partial<Record<StreamingBackendType, StreamingProvider>> = {}
@@ -29,7 +30,7 @@ const providers: Partial<Record<StreamingBackendType, StreamingProvider>> = {}
  */
 export function getActiveBackendType(): StreamingBackendType {
   const env = (process.env.STREAMING_BACKEND || "nimble").toLowerCase()
-  const valid: StreamingBackendType[] = ["nimble", "srs", "nginx_rtmp", "mediamtx", "fivecentscdn"]
+  const valid: StreamingBackendType[] = ["nimble", "srs", "nginx_rtmp", "mediamtx", "fivecentscdn", "elive"]
   return valid.includes(env as StreamingBackendType) ? (env as StreamingBackendType) : "nimble"
 }
 
@@ -52,6 +53,9 @@ export function getProvider(backend?: StreamingBackendType): StreamingProvider {
         break
       case "fivecentscdn":
         providers[type] = new FiveCentsCdnProvider()
+        break
+      case "elive":
+        providers[type] = new EliveProvider()
         break
       case "nimble":
       default:

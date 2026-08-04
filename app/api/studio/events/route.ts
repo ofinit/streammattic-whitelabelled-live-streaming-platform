@@ -847,8 +847,9 @@ export async function PUT(req: NextRequest) {
       | null = null
     if (finalDbStreamType === "rtmp") {
       const streamingSettings = await getStreamingSettings()
-      nextRtmpProvider = streamingSettings.backendType === "fivecentscdn" ? "fivecentscdn" : "srs"
+      nextRtmpProvider = streamingSettings.backendType || "srs"
       const nextSlugForStream = finalSlug || (existingRow.slug as string | null) || String(id)
+
       if (nextRtmpProvider === "fivecentscdn") {
         const previousProvisioning = getFiveCentsCdnProvisioningMetadata(nextRtmpProviderPayload)
         const existingSlug = (existingRow.slug as string | null) || null
@@ -881,12 +882,33 @@ export async function PUT(req: NextRequest) {
             provisioning: expectedProvisioning,
           }
         }
+      } else if (nextRtmpProvider === "elive") {
+        obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""
+        nextRtmpProviderStreamId = null
+        nextRtmpProviderPayload = {}
+
+        // Keep existing eLive stream key and rtmp URL unless explicit new values passed
+        finalRtmpUrl = (typeof bodyRtmpUrl === "string" && bodyRtmpUrl.trim())
+          ? bodyRtmpUrl.trim()
+          : (existingRow.rtmp_url as string | null) || null
+        finalStreamKey = (typeof bodyStreamKey === "string" && bodyStreamKey.trim())
+          ? bodyStreamKey.trim()
+          : (existingRow.stream_key as string | null) || null
+
+        // If event doesn't have a valid eLive key assigned yet (or had fallback slug), allocate next key now
+        if (!finalStreamKey || finalStreamKey === nextSlugForStream) {
+          const eliveAllocated = await allocateNextEliveStreamKey(sql)
+          const eliveCreds = await fetchEliveCredentials(eliveAllocated.channelId, eliveAllocated.streamKey)
+          finalStreamKey = eliveCreds.streamKey || eliveAllocated.streamKey
+          finalRtmpUrl = eliveCreds.rtmpUrl || finalRtmpUrl
+          await sql`UPDATE events SET hls_url = ${eliveAllocated.hlsUrl} WHERE id = ${id}`
+        }
       } else {
         obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""
         nextRtmpProviderStreamId = null
         nextRtmpProviderPayload = {}
         finalRtmpUrl = streamingSettings.rtmpBaseUrl
-        finalStreamKey = buildRtmpStreamId(nextSlugForStream)
+        finalStreamKey = (typeof bodyStreamKey === "string" && bodyStreamKey.trim()) ? bodyStreamKey.trim() : (existingRow.stream_key as string | null) || buildRtmpStreamId(nextSlugForStream)
       }
     } else {
       obsoleteFiveCentsCdnStreamId = previousRtmpProvider === "fivecentscdn" ? nextRtmpProviderStreamId || "" : ""

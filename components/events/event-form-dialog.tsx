@@ -694,6 +694,15 @@ export function EventFormDialog({
       ? `${crewPageOrigin}/${encodeURIComponent(crewPathSegment)}/crew`
       : ""
 
+  const autoRtmpPlaybackUrl =
+    (event as any)?.hlsUrl ||
+    (event as any)?.hls_url ||
+    (formData.streamKey
+      ? `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${formData.streamKey}/playlist_dvr.m3u8`
+      : slug
+        ? `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${slug}/playlist_dvr.m3u8`
+        : "")
+
   // Field-level errors for mandatory fields
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string

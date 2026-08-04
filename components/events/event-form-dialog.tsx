@@ -3166,42 +3166,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {formData.streamType && formData.streamType !== "rtmp" && (
-                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-                  <div className="space-y-2">
-                    <Label htmlFor="fms-url">FMS URL (RTMP Server)</Label>
-                    <Input
-                      id="fms-url"
-                      value={formData.rtmpUrl || ""}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, rtmpUrl: e.target.value }))}
-                      placeholder="rtmp://your-fms-server/live"
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fms-stream-key">Stream Key</Label>
-                    <div className="relative">
-                      <Input
-                        id="fms-stream-key"
-                        value={formData.streamKey || ""}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, streamKey: e.target.value }))}
-                        type={showStreamKey ? "text" : "password"}
-                        placeholder="Enter stream key"
-                        className="font-mono text-sm pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowStreamKey(!showStreamKey)}
-                      >
-                        {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {formData.streamType === "rtmp" && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">

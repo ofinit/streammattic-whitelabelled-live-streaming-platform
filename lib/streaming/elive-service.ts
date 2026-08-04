@@ -85,13 +85,15 @@ export async function fetchEliveCredentials(
 ): Promise<EliveCredentials> {
   const settings = await getStreamingSettings()
   const cid = channelId || settings.eliveChannelId || "6019"
-  const handlerBase = settings.eliveHandlerUrl
-    ? settings.eliveHandlerUrl.replace(/\.php$/i, "")
-    : `https://eliveevents.com/elive-handler/${cid}`
-
-  const targetUrl = handlerBase.endsWith(".php")
-    ? `${handlerBase}?event=${encodeURIComponent(streamKey)}`
-    : `${handlerBase.replace(/\/$/, "")}/${cid}.php?event=${encodeURIComponent(streamKey)}`
+  
+  let targetUrl = ""
+  if (settings.eliveHandlerUrl && settings.eliveHandlerUrl.trim()) {
+    const raw = settings.eliveHandlerUrl.trim()
+    const sep = raw.includes("?") ? "&" : "?"
+    targetUrl = `${raw}${sep}event=${encodeURIComponent(streamKey)}`
+  } else {
+    targetUrl = `https://eliveevents.com/elive-handler/${cid}.php?event=${encodeURIComponent(streamKey)}`
+  }
 
   const playbackBase = settings.elivePlaybackBaseUrl || "https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
   const defaultHlsUrl = `${playbackBase.replace(/\/$/, "")}/${streamKey}/playlist_dvr.m3u8`
@@ -116,20 +118,29 @@ export async function fetchEliveCredentials(
 
     const text = await res.text()
 
-    // Parse RTMP URL from response body (e.g. rtmp://...)
     let rtmpUrl = ""
     let parsedKey = streamKey
 
-    // Regex match for rtmp://...
-    const rtmpMatch = text.match(/rtmp:\/\/[^\s"'<>]+/i)
-    if (rtmpMatch && rtmpMatch[0]) {
-      rtmpUrl = rtmpMatch[0].trim()
+    // 1. Precise match for input element id="pp" or value starting with rtmp://
+    const ppMatch = text.match(/<input[^>]*id=["']pp["'][^>]*value=["']([^"']+)["']/i) ||
+                    text.match(/<input[^>]*value=["'](rtmp:\/\/[^"']+)["']/i)
+
+    if (ppMatch && ppMatch[1]) {
+      rtmpUrl = ppMatch[1].trim().replace(/&amp;/g, "&")
     }
 
-    // Search for input fields or key labels in HTML if present
-    const keyMatch = text.match(/(?:stream\s*key|key|event)[\s:=]+([a-zA-Z0-9_\-]+)/i)
-    if (keyMatch && keyMatch[1]) {
-      parsedKey = keyMatch[1].trim()
+    // 2. Generic rtmp:// fallback match if input regex didn't catch it
+    if (!rtmpUrl) {
+      const rtmpMatch = text.match(/rtmp:\/\/[^\s"'<>]+/i)
+      if (rtmpMatch && rtmpMatch[0]) {
+        rtmpUrl = rtmpMatch[0].trim().replace(/&amp;/g, "&")
+      }
+    }
+
+    // 3. Match input id="sn" for stream key if present
+    const snMatch = text.match(/<input[^>]*id=["']sn["'][^>]*value=["']([^"']+)["']/i)
+    if (snMatch && snMatch[1]) {
+      parsedKey = snMatch[1].trim()
     }
 
     // Fallback if rtmpUrl wasn't explicitly found in response body text

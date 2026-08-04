@@ -24,6 +24,15 @@ import {
   FlaskConical,
   Save,
   RefreshCw,
+  Search,
+  Copy,
+  Lock,
+  Calendar,
+  User,
+  ExternalLink,
+  Filter,
+  Star,
+  CheckCircle2,
 } from "lucide-react"
 import type { TranscodingProfile } from "@/lib/types"
 import { BACKEND_INFO } from "@/lib/streaming/types"
@@ -198,6 +207,24 @@ export default function StreamingSettingsPage() {
     nextKeyIndex: 0,
   })
 
+  const [eliveUsageMap, setEliveUsageMap] = useState<Record<string, {
+    streamKey: string
+    eventId: string
+    eventTitle: string
+    eventSlug: string
+    eventStatus: string
+    scheduledAt: string | null
+    createdAt: string
+    userId: string
+    userName: string
+    userEmail: string
+    userRole: string
+  }>>({})
+
+  const [eliveActiveTab, setEliveActiveTab] = useState<"audit" | "edit">("audit")
+  const [eliveFilterStatus, setEliveFilterStatus] = useState<"all" | "assigned" | "available">("all")
+  const [eliveSearchTerm, setEliveSearchTerm] = useState("")
+
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("connected")
@@ -310,6 +337,9 @@ export default function StreamingSettingsPage() {
           streamKeysText: loadedKeys.join("\n"),
           nextKeyIndex: Number(s.eliveNextKeyIndex || 0),
         })
+        if (data.eliveUsageMap && typeof data.eliveUsageMap === "object") {
+          setEliveUsageMap(data.eliveUsageMap)
+        }
       } catch (error) {
         setConnectionStatus("disconnected")
         toast({ title: "Unable to load settings", description: (error as Error).message, variant: "destructive" })
@@ -717,120 +747,398 @@ export default function StreamingSettingsPage() {
             </div>
           )}
 
-          {activeBackend === "elive" && (
-            <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-foreground">eLive Stream Key Allocation Pool</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Predefined stream keys pool for eLive RTMP events. Keys are allocated sequentially per event creation.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
-                    {eliveConfig.streamKeysText.split(/[\n,]+/).map(k => k.trim()).filter(Boolean).length} stream keys in pool
-                  </Badge>
-                  <Badge variant="outline" className="bg-secondary text-muted-foreground text-xs">
-                    Next Key Index: #{eliveConfig.nextKeyIndex}
-                  </Badge>
-                </div>
-              </div>
+          {activeBackend === "elive" && (() => {
+            const allPoolKeys = eliveConfig.streamKeysText
+              .split(/[\n,]+/)
+              .map((k) => k.trim())
+              .filter(Boolean)
+            const totalKeysCount = allPoolKeys.length
+            const assignedKeys = allPoolKeys.filter((k) => !!eliveUsageMap[k])
+            const availableCount = Math.max(0, totalKeysCount - assignedKeys.length)
+            const nextKeyIndex = eliveConfig.nextKeyIndex % (totalKeysCount || 1)
+            const nextKeyName = totalKeysCount > 0 ? allPoolKeys[nextKeyIndex] : ""
 
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="elive-channel">Channel / Event ID</Label>
-                  <Input
-                    id="elive-channel"
-                    value={eliveConfig.channelId}
-                    onChange={(e) => setEliveConfig({ ...eliveConfig, channelId: e.target.value })}
-                    className="bg-secondary border-0"
-                    placeholder="6019"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="elive-playback">HLS Playback Base URL</Label>
-                  <Input
-                    id="elive-playback"
-                    value={eliveConfig.playbackBaseUrl}
-                    onChange={(e) => setEliveConfig({ ...eliveConfig, playbackBaseUrl: e.target.value })}
-                    className="bg-secondary border-0"
-                    placeholder="https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Format: https://oqgdr774l4rm-hls-live.5centscdn.com/6019/&#123;streamKey&#125;/playlist_dvr.m3u8
-                  </p>
-                </div>
-              </div>
+            const filteredKeys = allPoolKeys.filter((key, idx) => {
+              const usage = eliveUsageMap[key]
+              const isAssigned = !!usage
+              if (eliveFilterStatus === "assigned" && !isAssigned) return false
+              if (eliveFilterStatus === "available" && isAssigned) return false
 
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Label htmlFor="elive-keys">Predefined Stream Keys (1 Key Per Line)</Label>
+              if (eliveSearchTerm.trim()) {
+                const term = eliveSearchTerm.toLowerCase().trim()
+                const matchKey = key.toLowerCase().includes(term)
+                const matchUser = usage && (usage.userName.toLowerCase().includes(term) || usage.userEmail.toLowerCase().includes(term))
+                const matchEvent = usage && (usage.eventTitle.toLowerCase().includes(term) || usage.eventSlug.toLowerCase().includes(term))
+                return matchKey || matchUser || matchEvent
+              }
+              return true
+            })
+
+            return (
+              <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-5">
+                {/* Header & Badges */}
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-border/50 pb-4">
+                  <div>
+                    <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Server className="h-4 w-4 text-primary" />
+                      eLive Predefined Stream Keys Pool
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Track key allocation, view active users and assigned events, and manage stream keys.
+                    </p>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/10"
-                      onClick={() => {
-                        const currentKeys = eliveConfig.streamKeysText.split(/[\n,]+/).map(k => k.trim()).filter(Boolean)
-                        const newKeys = []
-                        const startNum = currentKeys.length + 1
-                        for (let i = 0; i < 10; i++) {
-                          newKeys.push(`elive_key_${String(startNum + i).padStart(3, "0")}`)
-                        }
-                        const updatedText = [...currentKeys, ...newKeys].join("\n")
-                        setEliveConfig({ ...eliveConfig, streamKeysText: updatedText })
-                        toast({ title: "Stream keys added", description: `Added 10 new stream keys to the pool. Total: ${currentKeys.length + 10}` })
-                      }}
-                    >
-                      <Plus className="mr-1 h-3.5 w-3.5" />
-                      + Add More (10)
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs border-border"
-                      onClick={() => {
-                        const keys = []
-                        for (let i = 1; i <= 100; i++) {
-                          keys.push(`elive_key_${String(i).padStart(3, "0")}`)
-                        }
-                        setEliveConfig({ ...eliveConfig, streamKeysText: keys.join("\n"), nextKeyIndex: 0 })
-                        toast({ title: "Generated 100 keys", description: "Created 100 predefined stream keys in the pool" })
-                      }}
-                    >
-                      Generate 100 Keys
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs text-destructive hover:bg-destructive/10"
-                      onClick={() => setEliveConfig({ ...eliveConfig, streamKeysText: "", nextKeyIndex: 0 })}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Clear
-                    </Button>
+                    <Badge variant="outline" className="bg-secondary text-foreground text-xs py-1 px-2.5">
+                      Pool: {totalKeysCount} Keys
+                    </Badge>
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-xs py-1 px-2.5">
+                      <Lock className="mr-1 h-3 w-3 inline" />
+                      Assigned (Disabled): {assignedKeys.length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 text-xs py-1 px-2.5">
+                      <CheckCircle2 className="mr-1 h-3 w-3 inline" />
+                      Available: {availableCount}
+                    </Badge>
+                    {nextKeyName && (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs py-1 px-2.5">
+                        <Star className="mr-1 h-3 w-3 inline" />
+                        Next: #{nextKeyIndex + 1} ({nextKeyName})
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                <Textarea
-                  id="elive-keys"
-                  rows={8}
-                  value={eliveConfig.streamKeysText}
-                  onChange={(e) => setEliveConfig({ ...eliveConfig, streamKeysText: e.target.value })}
-                  className="bg-secondary border-0 font-mono text-xs"
-                  placeholder={"Paste or enter predefined stream keys here (one key per line, up to 100+ keys)...\nelive_key_001\nelive_key_002\nelive_key_003"}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Stream keys will be assigned to RTMP events in sequential order (1 key per event). When end of list is reached, sequence wraps back to key #0.
-                </p>
+                {/* Main Settings Inputs */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="elive-channel">Channel / Event ID</Label>
+                    <Input
+                      id="elive-channel"
+                      value={eliveConfig.channelId}
+                      onChange={(e) => setEliveConfig({ ...eliveConfig, channelId: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="6019"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="elive-playback">HLS Playback Base URL</Label>
+                    <Input
+                      id="elive-playback"
+                      value={eliveConfig.playbackBaseUrl}
+                      onChange={(e) => setEliveConfig({ ...eliveConfig, playbackBaseUrl: e.target.value })}
+                      className="bg-secondary border-0"
+                      placeholder="https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
+                    />
+                  </div>
+                </div>
+
+                {/* Tabs Switcher */}
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                  <Button
+                    type="button"
+                    variant={eliveActiveTab === "audit" ? "default" : "ghost"}
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => setEliveActiveTab("audit")}
+                  >
+                    Key Audit & Usage ({totalKeysCount})
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={eliveActiveTab === "edit" ? "default" : "ghost"}
+                    size="sm"
+                    className="text-xs h-8"
+                    onClick={() => setEliveActiveTab("edit")}
+                  >
+                    Edit Key Pool / Add More
+                  </Button>
+                </div>
+
+                {/* TAB 1: Key Audit & Usage Table */}
+                {eliveActiveTab === "audit" && (
+                  <div className="space-y-3">
+                    {/* Search & Filter Controls */}
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search key, user name, email, or event title..."
+                          value={eliveSearchTerm}
+                          onChange={(e) => setEliveSearchTerm(e.target.value)}
+                          className="pl-8 h-8 text-xs bg-secondary border-0"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          variant={eliveFilterStatus === "all" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7 px-2.5"
+                          onClick={() => setEliveFilterStatus("all")}
+                        >
+                          All ({allPoolKeys.length})
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={eliveFilterStatus === "assigned" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7 px-2.5 text-amber-500"
+                          onClick={() => setEliveFilterStatus("assigned")}
+                        >
+                          Assigned ({assignedKeys.length})
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={eliveFilterStatus === "available" ? "secondary" : "ghost"}
+                          size="sm"
+                          className="text-xs h-7 px-2.5 text-green-500"
+                          onClick={() => setEliveFilterStatus("available")}
+                        >
+                          Available ({availableCount})
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="rounded-lg border border-border bg-card overflow-hidden">
+                      {filteredKeys.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-muted-foreground">
+                          {allPoolKeys.length === 0
+                            ? "No stream keys in pool yet. Switch to 'Edit Key Pool' tab or click '+ Add More'."
+                            : "No stream keys match your filter criteria."}
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto max-h-[420px]">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-muted/40 text-muted-foreground border-b border-border font-medium sticky top-0 bg-card z-10">
+                              <tr>
+                                <th className="p-2.5 pl-3"># Key</th>
+                                <th className="p-2.5">Status</th>
+                                <th className="p-2.5">Assigned User</th>
+                                <th className="p-2.5">Assigned Event</th>
+                                <th className="p-2.5">Date / Time</th>
+                                <th className="p-2.5 text-right pr-3">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {filteredKeys.map((key) => {
+                                const originalIdx = allPoolKeys.indexOf(key)
+                                const usage = eliveUsageMap[key]
+                                const isAssigned = !!usage
+                                const isNext = originalIdx === nextKeyIndex
+
+                                return (
+                                  <tr
+                                    key={key}
+                                    className={`transition-colors ${
+                                      isAssigned
+                                        ? "bg-amber-500/5 opacity-90"
+                                        : isNext
+                                          ? "bg-primary/5 font-medium"
+                                          : "hover:bg-muted/20"
+                                    }`}
+                                  >
+                                    {/* Stream Key Name & Index */}
+                                    <td className="p-2.5 pl-3 font-mono text-foreground font-semibold">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground text-[10px] w-6">#{originalIdx + 1}</span>
+                                        <span className={isAssigned ? "line-through text-muted-foreground" : "text-foreground"}>
+                                          {key}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* Status Badge */}
+                                    <td className="p-2.5">
+                                      {isAssigned ? (
+                                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[11px]">
+                                          <Lock className="mr-1 h-3 w-3 inline" />
+                                          Assigned (Disabled)
+                                        </Badge>
+                                      ) : isNext ? (
+                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[11px]">
+                                          <Star className="mr-1 h-3 w-3 inline" />
+                                          Next in Sequence
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30 text-[11px]">
+                                          <CheckCircle2 className="mr-1 h-3 w-3 inline" />
+                                          Available
+                                        </Badge>
+                                      )}
+                                    </td>
+
+                                    {/* Assigned User Details */}
+                                    <td className="p-2.5">
+                                      {isAssigned && usage ? (
+                                        <div>
+                                          <div className="font-medium text-foreground flex items-center gap-1">
+                                            <User className="h-3 w-3 text-muted-foreground" />
+                                            {usage.userName}
+                                            <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 capitalize border-border">
+                                              {usage.userRole}
+                                            </Badge>
+                                          </div>
+                                          <div className="text-[11px] text-muted-foreground">{usage.userEmail}</div>
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground text-[11px]">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* Assigned Event Details */}
+                                    <td className="p-2.5">
+                                      {isAssigned && usage ? (
+                                        <div>
+                                          <div className="font-medium text-foreground flex items-center gap-1.5">
+                                            <span>{usage.eventTitle}</span>
+                                            <Badge
+                                              variant="outline"
+                                              className={
+                                                usage.eventStatus === "live"
+                                                  ? "bg-red-500/20 text-red-500 border-red-500/30 text-[9px] px-1 py-0"
+                                                  : usage.eventStatus === "ended"
+                                                    ? "bg-gray-500/20 text-gray-400 border-gray-500/30 text-[9px] px-1 py-0"
+                                                    : "bg-blue-500/20 text-blue-400 border-blue-500/30 text-[9px] px-1 py-0"
+                                              }
+                                            >
+                                              {usage.eventStatus}
+                                            </Badge>
+                                          </div>
+                                          {usage.eventSlug && (
+                                            <a
+                                              href={`/${usage.eventSlug}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-0.5"
+                                            >
+                                              /{usage.eventSlug}
+                                              <ExternalLink className="h-2.5 w-2.5" />
+                                            </a>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground text-[11px]">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* Date & Time */}
+                                    <td className="p-2.5 text-muted-foreground">
+                                      {isAssigned && usage ? (
+                                        <div className="flex items-center gap-1 text-[11px]">
+                                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                                          {new Date(usage.createdAt).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "short",
+                                            year: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
+                                        </div>
+                                      ) : (
+                                        <span className="text-[11px]">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* Copy Key Action */}
+                                    <td className="p-2.5 text-right pr-3">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(key)
+                                          toast({ title: "Copied to clipboard", description: key })
+                                        }}
+                                      >
+                                        <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: Edit & Bulk Key Pool Editor */}
+                {eliveActiveTab === "edit" && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Label htmlFor="elive-keys">Predefined Stream Keys (1 Key Per Line)</Label>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            const currentKeys = eliveConfig.streamKeysText.split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
+                            const newKeys = []
+                            const startNum = currentKeys.length + 1
+                            for (let i = 0; i < 10; i++) {
+                              newKeys.push(`elive_key_${String(startNum + i).padStart(3, "0")}`)
+                            }
+                            const updatedText = [...currentKeys, ...newKeys].join("\n")
+                            setEliveConfig({ ...eliveConfig, streamKeysText: updatedText })
+                            toast({ title: "Stream keys added", description: `Added 10 new stream keys to the pool. Total: ${currentKeys.length + 10}` })
+                          }}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          + Add More (10)
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-border"
+                          onClick={() => {
+                            const keys = []
+                            for (let i = 1; i <= 100; i++) {
+                              keys.push(`elive_key_${String(i).padStart(3, "0")}`)
+                            }
+                            setEliveConfig({ ...eliveConfig, streamKeysText: keys.join("\n"), nextKeyIndex: 0 })
+                            toast({ title: "Generated 100 keys", description: "Created 100 predefined stream keys in the pool" })
+                          }}
+                        >
+                          Generate 100 Keys
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                          onClick={() => setEliveConfig({ ...eliveConfig, streamKeysText: "", nextKeyIndex: 0 })}
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Textarea
+                      id="elive-keys"
+                      rows={9}
+                      value={eliveConfig.streamKeysText}
+                      onChange={(e) => setEliveConfig({ ...eliveConfig, streamKeysText: e.target.value })}
+                      className="bg-secondary border-0 font-mono text-xs"
+                      placeholder={"Paste or enter predefined stream keys here (one key per line, up to 100+ keys)...\nelive_key_001\nelive_key_002\nelive_key_003"}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Stream keys will be assigned to RTMP events in sequential order (1 key per event). Assigned keys are displayed in disabled/in-use state.
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           <Separator />
 

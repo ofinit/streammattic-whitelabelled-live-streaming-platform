@@ -2095,7 +2095,7 @@ export function EventFormDialog({
 
             <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
               <h5 className="font-medium text-sm flex items-center justify-between">
-                <span>Live Streaming Recommended Encoder Settings</span>
+                <span>StreamLivee Recommended Encoder Settings</span>
                 <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
               </h5>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -3114,7 +3114,7 @@ export function EventFormDialog({
                       className="mt-0.5"
                     />
                     <Label htmlFor="private-event-compliance" className="text-xs leading-relaxed cursor-pointer font-normal text-muted-foreground">
-                      I confirm this stream is a <strong className="text-foreground font-semibold">wedding or private social event</strong> per Live Streaming terms of service.
+                      I confirm this stream is a <strong className="text-foreground font-semibold">wedding or private social event</strong> per StreamLivee terms of service.
                     </Label>
                   </div>
                 )}
@@ -3318,7 +3318,7 @@ export function EventFormDialog({
                     {/* Encoder Settings Card */}
                     <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                       <h5 className="font-medium text-sm flex items-center justify-between">
-                        <span>Live Streaming Recommended Encoder Settings</span>
+                        <span>StreamLivee Recommended Encoder Settings</span>
                         <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
                       </h5>
                       <div className="grid grid-cols-2 gap-2 text-xs">

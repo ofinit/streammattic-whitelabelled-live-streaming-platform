@@ -1111,7 +1111,7 @@ export default function AdminEventsPage() {
 
             <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between">
-                <p className="font-medium text-sm">Live Streaming Recommended Encoder Settings</p>
+                <p className="font-medium text-sm">StreamLivee Recommended Encoder Settings</p>
                 <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">

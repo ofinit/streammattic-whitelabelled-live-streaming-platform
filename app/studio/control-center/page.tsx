@@ -789,7 +789,7 @@ export default function StudioEventsPage() {
               <div className="mt-1.5 p-2 rounded border border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200 text-[11px] flex items-center gap-1.5 leading-snug">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500 animate-pulse" />
                 <span>
-                  <strong>Live Streaming Policy Warning:</strong> Stream duration has reached 5.0 hours. Live Streaming max limit is 5.5 hours. Please wrap up or start a new event session.
+                  <strong>StreamLivee Policy Warning:</strong> Stream duration has reached 5.0 hours. StreamLivee max limit is 5.5 hours. Please wrap up or start a new event session.
                 </span>
               </div>
             )
@@ -1251,7 +1251,7 @@ export default function StudioEventsPage() {
 
             <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between">
-                <p className="font-medium text-sm">Live Streaming Recommended Encoder Settings</p>
+                <p className="font-medium text-sm">StreamLivee Recommended Encoder Settings</p>
                 <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">

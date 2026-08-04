@@ -35,14 +35,16 @@ export const GET = withOptionalAuth(async (user, request) => {
   try {
     if (isPublic) {
       // Public sees all live/scheduled events
-      const filter = status ? sql`AND status = ${status}` : sql`AND status IN ('live', 'scheduled')`
+      const filter = status ? sql`AND e.status = ${status}` : sql`AND e.status IN ('live', 'scheduled')`
       rows = await sql`SELECT e.*, u.name as user_name FROM events e JOIN users u ON e.user_id = u.id WHERE 1=1 ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-      const count = await sql`SELECT count(*)::int as total FROM events WHERE 1=1 ${filter}`
+      const countFilter = status ? sql`AND status = ${status}` : sql`AND status IN ('live', 'scheduled')`
+      const count = await sql`SELECT count(*)::int as total FROM events WHERE 1=1 ${countFilter}`
       total = count[0].total as number
     } else if (isAdmin) {
       const filter = status ? sql`WHERE e.status = ${status}` : sql``
       rows = await sql`SELECT e.*, u.name as user_name, u.email as user_email FROM events e JOIN users u ON e.user_id = u.id ${filter} ORDER BY e.created_at DESC LIMIT ${limit} OFFSET ${offset}`
-      const count = await sql`SELECT count(*)::int as total FROM events e ${filter}`
+      const countFilter = status ? sql`WHERE status = ${status}` : sql``
+      const count = await sql`SELECT count(*)::int as total FROM events ${countFilter}`
       total = count[0].total as number
     } else {
       const filter = status ? sql`AND status = ${status}` : sql``

@@ -17,68 +17,62 @@ export interface AllocatedEliveKey {
 }
 
 /**
- * Concurrency-safe atomic allocation of the next eLive stream key in sequence.
- * Uses SQL row-level FOR UPDATE locking on platform_settings to prevent race conditions
- * even when 2 or more users create RTMP events simultaneously.
+ * Concurrency-safe sequential allocation of the next eLive stream key in sequence.
  */
 export async function allocateNextEliveStreamKey(
   sqlClient?: ReturnType<typeof getDb>
 ): Promise<AllocatedEliveKey> {
   const db = sqlClient || getDb()
 
-  // Use a transaction with row lock (FOR UPDATE) to guarantee atomic index increment
-  return await db.begin(async (tx) => {
-    const rows = await tx`
-      SELECT value FROM platform_settings
+  const rows = await db`
+    SELECT value FROM platform_settings
+    WHERE key = ${SRS_SETTINGS_KEY}
+  `
+
+  const rawSettings = (rows[0]?.value as Record<string, unknown>) || {}
+  const channelId = typeof rawSettings.eliveChannelId === "string" && rawSettings.eliveChannelId.trim()
+    ? rawSettings.eliveChannelId.trim()
+    : "6019"
+  const playbackBaseUrl = typeof rawSettings.elivePlaybackBaseUrl === "string" && rawSettings.elivePlaybackBaseUrl.trim()
+    ? rawSettings.elivePlaybackBaseUrl.trim().replace(/\/$/, "")
+    : "https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
+
+  const streamKeys: string[] = Array.isArray(rawSettings.eliveStreamKeys)
+    ? rawSettings.eliveStreamKeys.map((k: unknown) => String(k).trim()).filter(Boolean)
+    : []
+
+  let allocatedKey = ""
+  let keyIndex = 0
+
+  if (streamKeys.length === 0) {
+    // Fallback key if pool is empty
+    allocatedKey = `elive_live_${Date.now()}`
+    keyIndex = 0
+  } else {
+    const currentIndex = Math.max(0, Number(rawSettings.eliveNextKeyIndex) || 0)
+    keyIndex = currentIndex % streamKeys.length
+    allocatedKey = streamKeys[keyIndex]
+
+    const nextIndex = (keyIndex + 1) % streamKeys.length
+    rawSettings.eliveNextKeyIndex = nextIndex
+
+    // Persist updated sequence index
+    await db`
+      UPDATE platform_settings
+      SET value = ${JSON.stringify(rawSettings)}::jsonb, updated_at = NOW()
       WHERE key = ${SRS_SETTINGS_KEY}
-      FOR UPDATE
     `
+  }
 
-    const rawSettings = rows[0]?.value || {}
-    const channelId = typeof rawSettings.eliveChannelId === "string" && rawSettings.eliveChannelId.trim()
-      ? rawSettings.eliveChannelId.trim()
-      : "6019"
-    const playbackBaseUrl = typeof rawSettings.elivePlaybackBaseUrl === "string" && rawSettings.elivePlaybackBaseUrl.trim()
-      ? rawSettings.elivePlaybackBaseUrl.trim().replace(/\/$/, "")
-      : "https://oqgdr774l4rm-hls-live.5centscdn.com/6019"
+  const hlsUrl = `${playbackBaseUrl}/${allocatedKey}/playlist_dvr.m3u8`
 
-    const streamKeys: string[] = Array.isArray(rawSettings.eliveStreamKeys)
-      ? rawSettings.eliveStreamKeys.map((k: unknown) => String(k).trim()).filter(Boolean)
-      : []
-
-    let allocatedKey = ""
-    let keyIndex = 0
-
-    if (streamKeys.length === 0) {
-      // Fallback key if pool is empty
-      allocatedKey = `elive_live_${Date.now()}`
-      keyIndex = 0
-    } else {
-      const currentIndex = Math.max(0, Number(rawSettings.eliveNextKeyIndex) || 0)
-      keyIndex = currentIndex % streamKeys.length
-      allocatedKey = streamKeys[keyIndex]
-
-      const nextIndex = (keyIndex + 1) % streamKeys.length
-      rawSettings.eliveNextKeyIndex = nextIndex
-
-      // Persist updated sequence index atomically
-      await tx`
-        UPDATE platform_settings
-        SET value = ${JSON.stringify(rawSettings)}::jsonb, updated_at = NOW()
-        WHERE key = ${SRS_SETTINGS_KEY}
-      `
-    }
-
-    const hlsUrl = `${playbackBaseUrl}/${allocatedKey}/playlist_dvr.m3u8`
-
-    return {
-      streamKey: allocatedKey,
-      channelId,
-      playbackBaseUrl,
-      hlsUrl,
-      keyIndex,
-    }
-  })
+  return {
+    streamKey: allocatedKey,
+    channelId,
+    playbackBaseUrl,
+    hlsUrl,
+    keyIndex,
+  }
 }
 
 /**

@@ -1109,13 +1109,32 @@ export default function AdminEventsPage() {
               </div>
             </div>
 
-            <div className="space-y-2 p-3 rounded border bg-muted/30">
-              <p className="font-medium text-sm">Quick Setup for OBS Studio</p>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Open OBS Studio → Settings → Stream</li>
-                <li>Set Service to &quot;Custom...&quot;</li>
-                <li>Paste RTMP URL in &quot;Server&quot; field</li>
-                <li>Paste Stream Key in &quot;Stream Key&quot; field</li>
+            <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-sm">Live Streaming Recommended Encoder Settings</p>
+                <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded bg-background/50 border border-border/50">
+                  <span className="text-muted-foreground block text-[10px]">Max Video Bitrate</span>
+                  <span className="font-semibold text-foreground">1,500 Kbps</span>
+                </div>
+                <div className="p-2 rounded bg-background/50 border border-border/50">
+                  <span className="text-muted-foreground block text-[10px]">Audio Bitrate</span>
+                  <span className="font-semibold text-foreground">128 Kbps (AAC)</span>
+                </div>
+                <div className="p-2 rounded bg-background/50 border border-border/50">
+                  <span className="text-muted-foreground block text-[10px]">Resolution</span>
+                  <span className="font-semibold text-foreground">1280 × 720 (720p 30fps)</span>
+                </div>
+                <div className="p-2 rounded bg-background/50 border border-border/50">
+                  <span className="text-muted-foreground block text-[10px]">Keyframe Interval</span>
+                  <span className="font-semibold text-foreground">2.0 Seconds</span>
+                </div>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-1 border-t border-border/40">
+                <li>Open OBS Studio → Settings → Stream (Set Service to Custom, paste Server & Stream Key)</li>
+                <li>In Settings → Output: Set Video Bitrate to <strong>1500 Kbps</strong></li>
                 <li>Click &quot;Apply&quot; and start streaming!</li>
               </ol>
             </div>

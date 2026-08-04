@@ -3123,31 +3123,24 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {formData.streamType && (formData.streamType !== "rtmp" || isEditing) && (
+              {formData.streamType && formData.streamType !== "rtmp" && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                   <div className="space-y-2">
                     <Label htmlFor="fms-url">FMS URL (RTMP Server)</Label>
                     <Input
                       id="fms-url"
                       value={formData.rtmpUrl || ""}
-                      readOnly={formData.streamType === "rtmp"}
                       onChange={(e) => setFormData((prev) => ({ ...prev, rtmpUrl: e.target.value }))}
                       placeholder="rtmp://your-fms-server/live"
                       className="font-mono text-sm"
                     />
-                    {formData.streamType === "rtmp" && (
-                      <p className="text-[11px] text-muted-foreground">
-                        Auto-filled from the selected RTMP provider. Use this as the OBS Server / FMS URL.
-                      </p>
-                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fms-stream-key">Stream Key</Label>
                     <div className="relative">
                       <Input
                         id="fms-stream-key"
-                        value={formData.streamType === "rtmp" ? autoRtmpStreamKey : formData.streamKey || ""}
-                        readOnly={formData.streamType === "rtmp"}
+                        value={formData.streamKey || ""}
                         onChange={(e) => setFormData((prev) => ({ ...prev, streamKey: e.target.value }))}
                         type={showStreamKey ? "text" : "password"}
                         placeholder="Enter stream key"
@@ -3163,40 +3156,37 @@ export function EventFormDialog({
                         {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    {formData.streamType === "rtmp" && (
-                      <p className="text-[11px] text-muted-foreground">
-                        {isFiveCentsCdnRtmp
-                          ? "This stream key was returned by 5CentsCDN when the event stream was created."
-                          : "The Event URL slug is the SRS stream key. After save, a secure token is appended for crew/OBS access."}
-                      </p>
-                    )}
                   </div>
-                  {formData.streamType === "rtmp" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="rtmp-playback-url">Auto DVR / HLS Playback URL</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="rtmp-playback-url"
-                          readOnly
-                          value={autoRtmpPlaybackUrl}
-                          className="font-mono text-sm"
-                          placeholder="Created from the Event URL slug"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          disabled={!autoRtmpPlaybackUrl}
-                          onClick={() => autoRtmpPlaybackUrl && copyToClipboard(autoRtmpPlaybackUrl, "playback")}
-                        >
-                          {copied === "playback" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Template watch pages use this player URL automatically while live. SRS events fall back to final DVR MP4 playback after the merge worker completes.
-                      </p>
+                </div>
+              )}
+
+              {formData.streamType === "rtmp" && (
+                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                  <div className="space-y-2">
+                    <Label htmlFor="rtmp-playback-url">Auto DVR / HLS Playback URL</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="rtmp-playback-url"
+                        readOnly
+                        value={autoRtmpPlaybackUrl}
+                        className="font-mono text-sm"
+                        placeholder="Created from the Event URL slug"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={!autoRtmpPlaybackUrl}
+                        onClick={() => autoRtmpPlaybackUrl && copyToClipboard(autoRtmpPlaybackUrl, "playback")}
+                      >
+                        {copied === "playback" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
                     </div>
-                  )}
+                    <p className="text-[11px] text-muted-foreground">
+                      Template watch pages use this player URL automatically while live. SRS events fall back to final DVR MP4 playback after the merge worker completes.
+                    </p>
+                  </div>
+
                   <div className="flex items-center justify-between pt-2 border-t">
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="h-5 w-5 text-muted-foreground" />

@@ -165,31 +165,37 @@ export async function fetchEliveCredentials(
 }
 
 /**
- * Synchronize allocated eLive stream keys from elive_stream_key_allocations to the events table
- * if the event row still has legacy or fallback values (e.g. event slug).
+ * Synchronize and auto-repair eLive stream keys & FMS publishsign URLs for existing RTMP events
+ * when eLive backend is active and the event row still has legacy fallback values (e.g. event slug).
  */
 export async function syncEliveAllocationsWithEvents(
   sqlClient?: ReturnType<typeof getDb>
 ): Promise<void> {
   const db = sqlClient || getDb()
   try {
-    const allocations = await db`
-      SELECT a.stream_key, a.channel_id, a.assigned_event_id
-      FROM elive_stream_key_allocations a
-      WHERE a.assigned_event_id IS NOT NULL AND a.assigned_event_id != ''
-    `
-    for (const alloc of allocations) {
-      const eventId = alloc.assigned_event_id as string
-      const streamKey = alloc.stream_key as string
-      const channelId = (alloc.channel_id as string) || "6019"
+    const settings = await getStreamingSettings()
+    if (settings.backendType !== "elive") return
 
-      const existingEvents = await db`
-        SELECT id, stream_key, rtmp_provider FROM events WHERE id = ${eventId}
-      `
-      if (existingEvents.length > 0) {
-        const ev = existingEvents[0]
-        if (ev.stream_key !== streamKey || ev.rtmp_provider !== "elive") {
-          const creds = await fetchEliveCredentials(channelId, streamKey)
+    const poolKeys = (settings.eliveStreamKeys || []).map((k) => String(k).trim()).filter(Boolean)
+    const channelId = settings.eliveChannelId || "6019"
+
+    const rtmpEvents = await db`
+      SELECT id, title, slug, stream_key, rtmp_provider
+      FROM events
+      WHERE stream_type = 'rtmp'
+      ORDER BY created_at ASC
+    `
+
+    for (let i = 0; i < rtmpEvents.length; i++) {
+      const ev = rtmpEvents[i]
+      const currentKey = (ev.stream_key as string | null) || ""
+      const isSlugKey = !currentKey || currentKey === ev.slug || currentKey.startsWith(`${ev.slug}?`) || currentKey.startsWith("sk_live_")
+      const isPoolKey = poolKeys.includes(currentKey)
+
+      if (isSlugKey || !isPoolKey || ev.rtmp_provider !== "elive") {
+        const targetKey = poolKeys.length > 0 ? poolKeys[i % poolKeys.length] : currentKey
+        if (targetKey) {
+          const creds = await fetchEliveCredentials(channelId, targetKey)
           await db`
             UPDATE events
             SET stream_key = ${creds.streamKey},
@@ -197,7 +203,7 @@ export async function syncEliveAllocationsWithEvents(
                 hls_url = ${creds.hlsUrl},
                 rtmp_provider = 'elive',
                 updated_at = NOW()
-            WHERE id = ${eventId}
+            WHERE id = ${ev.id}
           `
         }
       }

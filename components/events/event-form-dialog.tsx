@@ -694,15 +694,6 @@ export function EventFormDialog({
       ? `${crewPageOrigin}/${encodeURIComponent(crewPathSegment)}/crew`
       : ""
 
-  const autoRtmpPlaybackUrl =
-    (event as any)?.hlsUrl ||
-    (event as any)?.hls_url ||
-    (formData.streamKey
-      ? `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${formData.streamKey}/playlist_dvr.m3u8`
-      : slug
-        ? `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${slug}/playlist_dvr.m3u8`
-        : "")
-
   // Field-level errors for mandatory fields
   const [fieldErrors, setFieldErrors] = useState<{
     title?: string
@@ -1708,24 +1699,33 @@ export function EventFormDialog({
   const isFiveCentsCdnRtmp =
     formData.streamType === "rtmp" &&
     (eventRtmpProvider === "fivecentscdn" || (!isEditing && streamingBackendJson?.type === "fivecentscdn"))
+  const isEliveRtmp =
+    formData.streamType === "rtmp" &&
+    (eventRtmpProvider === "elive" || (!isEditing && streamingBackendJson?.type === "elive"))
+
   const autoRtmpStreamKey =
-    isFiveCentsCdnRtmp
+    isFiveCentsCdnRtmp || isEliveRtmp
       ? formData.streamKey
       : formData.streamType === "rtmp"
       ? formData.streamKey && formData.streamKey.startsWith(`${rtmpStreamId}?token=`)
         ? formData.streamKey
         : rtmpStreamId
       : formData.streamKey
+
   const autoRtmpPlaybackUrl =
-    isFiveCentsCdnRtmp
-      ? String((event as any)?.hlsUrl || (event as any)?.hls_url || "")
+    (event as any)?.hlsUrl ||
+    (event as any)?.hls_url ||
+    (isFiveCentsCdnRtmp || isEliveRtmp
+      ? formData.streamKey
+        ? `https://oqgdr774l4rm-hls-live.5centscdn.com/6019/${formData.streamKey}/playlist_dvr.m3u8`
+        : ""
       : rtmpStreamId
         ? `${playbackBaseUrl.replace(/\/$/, "")}/${rtmpStreamId}.m3u8`
-        : ""
+        : "")
 
   useEffect(() => {
     if (!open || formData.streamType !== "rtmp") return
-    if (isFiveCentsCdnRtmp) return
+    if (isFiveCentsCdnRtmp || isEliveRtmp || streamingBackendJson?.type === "elive") return
     setFormData((prev) => {
       const nextStreamKey =
         prev.streamKey && prev.streamKey.startsWith(`${rtmpStreamId}?token=`)
@@ -1734,7 +1734,7 @@ export function EventFormDialog({
       if (prev.rtmpUrl === rtmpBaseUrl && prev.streamKey === nextStreamKey) return prev
       return { ...prev, rtmpUrl: rtmpBaseUrl, streamKey: nextStreamKey }
     })
-  }, [open, formData.streamType, isFiveCentsCdnRtmp, rtmpBaseUrl, rtmpStreamId])
+  }, [open, formData.streamType, isFiveCentsCdnRtmp, isEliveRtmp, streamingBackendJson?.type, rtmpBaseUrl, rtmpStreamId])
 
   // Credit check effect: fires when additionalDates or primary date changes
   useEffect(() => {

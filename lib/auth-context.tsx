@@ -55,23 +55,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const IMPERSONATE_KEY = "sm_impersonate"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { setTheme } = useTheme()
+  const { setTheme, theme } = useTheme()
+  const setThemeRef = useRef(setTheme)
+  const themeRef = useRef(theme)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [originalUser, setOriginalUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isImpersonating, setIsImpersonating] = useState(false)
   const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null)
 
-  const applyThemePreference = useCallback(
-    (raw: AuthUser["themePreference"]) => {
-      if (raw === "dark" || raw === "light" || raw === "system") {
-        setTheme(raw)
-      } else {
-        setTheme("system")
-      }
-    },
-    [setTheme],
-  )
+  useEffect(() => {
+    setThemeRef.current = setTheme
+    themeRef.current = theme
+  }, [setTheme, theme])
+
+  const applyThemePreference = useCallback((raw: AuthUser["themePreference"]) => {
+    const targetTheme = raw === "dark" || raw === "light" || raw === "system" ? raw : "system"
+    if (themeRef.current !== targetTheme) {
+      setThemeRef.current(targetTheme)
+    }
+  }, [])
 
   // Fetch current user from session cookie on mount
   const fetchCurrentUser = useCallback(async () => {

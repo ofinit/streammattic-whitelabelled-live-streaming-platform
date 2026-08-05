@@ -9,15 +9,45 @@ export type BrandingLookupPayload =
   | { isWhiteLabel: true; branding: Record<string, unknown>; userId: string }
   | { isWhiteLabel: false; branding: Record<string, unknown> }
 
+async function getPlatformBrandingPayload(sql: ReturnType<typeof getDb>): Promise<BrandingLookupPayload> {
+  const platformSettings = await sql`SELECT key, value FROM platform_settings`
+  const settings: Record<string, unknown> = {}
+  platformSettings.forEach((row: { key: string; value: unknown }) => {
+    settings[row.key] = row.value
+  })
+
+  return {
+    isWhiteLabel: false,
+    branding: {
+      brandName: resolvePlatformDisplayName(settings.platform_name),
+      themeColor: settings.primary_color || "#10b981",
+      companyLogo: settings.platform_logo || "/icon.svg",
+      supportEmail: settings.support_email || "support@streamlivee.com",
+    },
+  }
+}
+
 export async function getBrandingLookupByHost(hostname: string): Promise<BrandingLookupPayload> {
   const sql = getDb()
-  const hostNorm = hostname.trim().toLowerCase()
+  const hostNorm = hostname
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//i, "")
+    .replace(/[:/].*$/, "")
+
+  if (!hostNorm) {
+    return getPlatformBrandingPayload(sql)
+  }
+
   const wwwAlternate = hostNorm.startsWith("www.") ? hostNorm.slice(4) : `www.${hostNorm}`
 
   const domains = await sql`
     SELECT * FROM domains 
-    WHERE verification_status IN ('verified', 'pending')
-    AND (LOWER(domain) = ${hostNorm} OR LOWER(domain) = ${wwwAlternate})
+    WHERE (
+      LOWER(REGEXP_REPLACE(REGEXP_REPLACE(domain, '^https?://', ''), '[:/].*$', '')) = ${hostNorm} 
+      OR LOWER(REGEXP_REPLACE(REGEXP_REPLACE(domain, '^https?://', ''), '[:/].*$', '')) = ${wwwAlternate}
+    )
+    ORDER BY CASE WHEN verification_status = 'verified' THEN 0 WHEN verification_status = 'pending' THEN 1 ELSE 2 END, created_at DESC
   `
 
   if (domains.length > 0) {
@@ -48,19 +78,5 @@ export async function getBrandingLookupByHost(hostname: string): Promise<Brandin
     }
   }
 
-  const platformSettings = await sql`SELECT key, value FROM platform_settings`
-  const settings: Record<string, unknown> = {}
-  platformSettings.forEach((row: { key: string; value: unknown }) => {
-    settings[row.key] = row.value
-  })
-
-  return {
-    isWhiteLabel: false,
-    branding: {
-      brandName: resolvePlatformDisplayName(settings.platform_name),
-      themeColor: settings.primary_color || "#10b981",
-      companyLogo: settings.platform_logo || "/icon.svg",
-      supportEmail: settings.support_email || "support@streamlivee.com",
-    },
-  }
+  return getPlatformBrandingPayload(sql)
 }

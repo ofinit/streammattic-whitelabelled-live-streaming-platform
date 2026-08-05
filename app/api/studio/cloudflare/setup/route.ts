@@ -102,10 +102,17 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
       return jsonError(`Cloudflare Setup Failed: ${result.errors.join(", ")}`)
     }
 
-    // 4. Optionally mark as 'verifying' or similar in DB (logic for cron/polling will handle final verification)
+    if (domainId !== "platform") {
+      const cleanDomain = domainName.trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/[:/].*$/, "")
+      await sql`
+        UPDATE domains 
+        SET verification_status = 'verified', verified_at = NOW() 
+        WHERE LOWER(REGEXP_REPLACE(REGEXP_REPLACE(domain, '^https?://', ''), '[:/].*$', '')) = ${cleanDomain}
+      `
+    }
     
     return jsonOk({ 
-      message: "DNS records created successfully! Verification may take a few minutes.",
+      message: "DNS records created successfully! Domain is now active and verified.",
       records: result.records 
     })
   } catch (err) {

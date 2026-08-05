@@ -159,13 +159,15 @@ function LoginPageContent() {
               </form>
 
               {!isWhiteLabel && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
-                </p>
+                <>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+                  </p>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Admin? <Link href="/admin/login" className="text-primary hover:underline">Sign in here</Link>
+                  </p>
+                </>
               )}
-              <p className="text-center text-sm text-muted-foreground">
-                Admin? <Link href="/admin/login" className="text-primary hover:underline">Sign in here</Link>
-              </p>
             </CardContent>
           </Card>
 

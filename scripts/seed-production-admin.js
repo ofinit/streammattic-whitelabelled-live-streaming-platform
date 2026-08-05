@@ -27,8 +27,8 @@ const DEMO_EMAILS = [
   "johnson@ofinit.com",
 ]
 
-const DEFAULT_ADMIN_EMAIL = "ofinitsolutions@gmail.com"
-const DEFAULT_ADMIN_PASSWORD = "Html@1234"
+const DEFAULT_ADMIN_EMAIL = "pbollapragada@gmail.com"
+const DEFAULT_ADMIN_PASSWORD = "eLive$777#1%"
 
 async function hashPassword(password) {
   const encoder = new TextEncoder()

@@ -24,9 +24,9 @@ export const LANDING_THEMES: ThemeConfig[] = [
     id: "wedding_royal_arch",
     category: "wedding",
     name: "Royal Arch Wedding",
-    primaryColor: "#6b21a8",
+    primaryColor: "#7e22ce",
     accentColor: "#f3e8ff",
-    fontFamily: "'Great Vibes', cursive",
+    fontFamily: "'Playfair Display', serif",
     description: "Illuminated bokeh background with hanging wisteria, peacocks & wedding arch illustration.",
   },
   {

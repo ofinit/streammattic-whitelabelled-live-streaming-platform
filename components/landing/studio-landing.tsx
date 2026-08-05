@@ -248,12 +248,16 @@ function SiteHeader({ branding }: { branding: Branding }) {
     { label: "Contact", href: "#contact" },
   ]
 
+  const isRoyalArch = branding.selectedTheme === "wedding_royal_arch"
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 shadow-lg shadow-black/20"
-          : "bg-transparent"
+          : isRoyalArch
+            ? "bg-[#180833]/70 backdrop-blur-md border-b border-purple-500/20 shadow-sm"
+            : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
@@ -1687,7 +1691,10 @@ export function StudioLandingPage({
 
   return (
     <div
-      className="min-h-screen bg-slate-950 text-white antialiased"
+      className={cn(
+        "min-h-screen text-white antialiased",
+        branding.selectedTheme === "wedding_royal_arch" ? "bg-[#130726]" : "bg-slate-950"
+      )}
       style={{ fontFamily: theme.fontFamily }}
     >
       <Head>

@@ -43,54 +43,45 @@ export function WeddingRoyalArchLanding({ branding }: WeddingRoyalArchLandingPro
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#f4e8f7] font-sans">
-      {/* 1. Background Bokeh Image */}
+    <div className="relative h-screen w-full overflow-hidden bg-[#f4e8f7] font-sans flex flex-col justify-between select-none">
+      {/* 1. Background Soft Pink/Purple Bokeh Image */}
       <div className="absolute inset-0 z-0">
         <Image
           src="/themes/royal-arch/bg-bokeh.jpg"
-          alt="Bokeh Background"
+          alt="Soft Bokeh Background"
           fill
           priority
           className="object-cover object-center"
         />
       </div>
 
-      {/* 2. Top Right Hanging Wisteria Flowers */}
-      <div className="absolute top-0 right-0 z-10 w-[300px] sm:w-[450px] md:w-[550px] pointer-events-none">
+      {/* 2. Top Right Hanging Floral Wisteria Overlay */}
+      <div className="absolute top-0 right-0 z-20 w-[45vw] max-w-[620px] min-w-[300px] pointer-events-none">
         <Image
           src="/themes/royal-arch/wisteria.png"
           alt="Hanging Floral Wisteria"
-          width={550}
-          height={350}
+          width={620}
+          height={400}
           priority
           className="w-full h-auto object-contain object-right-top"
         />
       </div>
 
-      {/* 3. Header / Brand Logo */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
+      {/* 3. Header Bar with Brand Logo */}
+      <header className="relative z-30 flex items-center justify-between px-6 py-6 max-w-7xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-3">
           <BrandedLogo size="lg" />
         </Link>
-      </header>
 
-      {/* 4. Top Right Floating Login Card */}
-      <div className="relative z-30 max-w-7xl mx-auto px-6 pt-4 md:pt-8 flex justify-end">
-        <div className="w-full max-w-sm sm:max-w-md rounded-3xl bg-purple-900/35 backdrop-blur-md p-6 sm:p-8 border border-purple-300/30 shadow-2xl">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 text-center drop-shadow-sm">
-            Sign In to {branding.brandName}
-          </h2>
-          <p className="text-xs sm:text-sm text-purple-100 text-center mb-6 opacity-90">
-            Enter your credentials to access live events
-          </p>
-
+        {/* 4. Top Right Compact Glass Login Card */}
+        <div className="w-[280px] sm:w-[320px] rounded-2xl bg-[#a855f7]/25 backdrop-blur-md p-4 sm:p-5 border border-[#f472b6]/30 shadow-2xl mr-4 sm:mr-8 mt-2">
           {error && (
-            <div className="mb-4 p-3 text-xs sm:text-sm text-red-200 bg-red-900/50 rounded-xl border border-red-400/30 text-center">
+            <div className="mb-3 p-2 text-xs text-red-100 bg-red-900/60 rounded-lg border border-red-400/30 text-center">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <input
                 type="text"
@@ -98,7 +89,7 @@ export function WeddingRoyalArchLanding({ branding }: WeddingRoyalArchLandingPro
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-purple-950/60 border border-purple-300/40 text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#7e22ce]/60 text-white placeholder-purple-100/70 border border-purple-300/30 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all text-xs sm:text-sm"
               />
             </div>
 
@@ -109,20 +100,14 @@ export function WeddingRoyalArchLanding({ branding }: WeddingRoyalArchLandingPro
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-purple-950/60 border border-purple-300/40 text-white placeholder-purple-200/60 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#7e22ce]/60 text-white placeholder-purple-100/70 border border-purple-300/30 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all text-xs sm:text-sm"
               />
-            </div>
-
-            <div className="flex justify-between items-center text-xs text-purple-200">
-              <Link href="/forgot-password" className="hover:underline transition-all">
-                Forgot password?
-              </Link>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-6 rounded-xl font-semibold text-white shadow-lg bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all flex items-center justify-center gap-2 text-sm"
+              className="w-full py-2.5 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-[#581c87] to-[#3b0764] hover:from-[#6b21a8] hover:to-[#4c1d95] border border-purple-300/30 shadow-md transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -135,18 +120,21 @@ export function WeddingRoyalArchLanding({ branding }: WeddingRoyalArchLandingPro
             </button>
           </form>
         </div>
-      </div>
+      </header>
 
-      {/* 5. Bottom Center Arch with Peacocks & Couple */}
-      <div className="relative z-10 w-full flex justify-center mt-12 md:mt-24 pointer-events-none">
-        <div className="w-[90%] max-w-4xl">
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* 5. Bottom Center Anchored Arch Illustration */}
+      <div className="relative z-10 w-full flex justify-center pointer-events-none pb-0 mb-0">
+        <div className="w-full max-w-[1300px] px-2">
           <Image
             src="/themes/royal-arch/arch-couple.png"
             alt="Wedding Arch Couple Illustration"
-            width={1000}
-            height={500}
+            width={1300}
+            height={650}
             priority
-            className="w-full h-auto object-contain object-bottom"
+            className="w-full h-auto object-contain object-bottom block"
           />
         </div>
       </div>

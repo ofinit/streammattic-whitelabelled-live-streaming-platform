@@ -21,3 +21,21 @@ export async function ensureUsersThemePreferenceColumn(): Promise<void> {
   }
   await themePreferenceColumnPromise
 }
+
+let studioBrandingSchemaPromise: Promise<void> | null = null
+
+export async function ensureStudioBrandingSchema(): Promise<void> {
+  if (!studioBrandingSchemaPromise) {
+    studioBrandingSchemaPromise = (async () => {
+      const sql = getDb()
+      await sql`
+        ALTER TABLE studio_branding
+        ADD COLUMN IF NOT EXISTS selected_theme VARCHAR(50) DEFAULT 'modern_emerald'
+      `
+    })().catch((err: unknown) => {
+      studioBrandingSchemaPromise = null
+      throw err
+    })
+  }
+  await studioBrandingSchemaPromise
+}

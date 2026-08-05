@@ -133,7 +133,7 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
       INSERT INTO studio_branding (
         user_id, logo, favicon, primary_color, secondary_color, 
         platform_name, tagline, support_email, support_phone, address,
-        preferred_gateway, updated_at
+        preferred_gateway, selected_theme, updated_at
       )
       VALUES (
         ${userId}, 
@@ -147,6 +147,7 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
         ${companyData.phone || null}, 
         ${(companyData as { address?: string | null }).address ?? null},
         ${paymentData.gateway || null},
+        ${brandingData.selectedTheme || 'modern_emerald'},
         NOW()
       )
       ON CONFLICT (user_id) DO UPDATE SET
@@ -158,6 +159,7 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
         tagline = COALESCE(${companyData.tagline ?? null}, studio_branding.tagline),
         support_email = COALESCE(${companyData.email ?? null}, studio_branding.support_email),
         support_phone = COALESCE(${companyData.phone ?? null}, studio_branding.support_phone),
+        selected_theme = COALESCE(${brandingData.selectedTheme ?? null}, studio_branding.selected_theme),
         address = COALESCE(${companyData.address ?? null}, studio_branding.address),
         preferred_gateway = COALESCE(${paymentData.gateway ?? null}, studio_branding.preferred_gateway),
         updated_at = NOW()

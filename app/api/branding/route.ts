@@ -3,10 +3,12 @@ import { jsonOk, withAuth } from "@/lib/api-helpers"
 import { withRedisCache, invalidateCache } from "@/lib/redis"
 import { encrypt, decrypt } from "@/lib/encryption"
 import { mapBrandingPutBody, normalizeBrandingRowForClient } from "@/lib/branding-api-map"
+import { ensureStudioBrandingSchema } from "@/lib/ensure-users-schema"
 
 export const dynamic = "force-dynamic"
 
 export const GET = withAuth(async (user, request) => {
+  await ensureStudioBrandingSchema()
   const url = new URL(request.url)
   const userId = url.searchParams.get("userId") || user.id as string
 
@@ -33,6 +35,7 @@ export const GET = withAuth(async (user, request) => {
 })
 
 export const PUT = withAuth(async (user, request) => {
+  await ensureStudioBrandingSchema()
   const bodyRaw = await request.json()
   const body = mapBrandingPutBody(bodyRaw as Record<string, unknown>)
   const sql = getDb()

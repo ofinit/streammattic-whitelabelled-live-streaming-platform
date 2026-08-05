@@ -27,20 +27,40 @@ export const GET = withRole(["studio", "streamer", "admin"], async (user, reques
     const searchUserId = url.searchParams.get("userId")
     const userId = (user.role === "admin" && searchUserId) ? searchUserId : (user.id as string)
     const rows = await sql`
-      SELECT setup_wizard_draft, setup_completed_at
+      SELECT setup_wizard_draft, setup_completed_at, platform_name, tagline, support_email, support_phone, primary_color, secondary_color, logo, favicon
       FROM studio_branding
       WHERE user_id = ${userId}
       LIMIT 1
     `
-    if (rows.length === 0) {
-      return jsonOk({ draft: null, setupCompletedAt: null })
+    const userRows = await sql`
+      SELECT name, email, phone FROM users WHERE id = ${userId} LIMIT 1
+    `
+
+    const userRow = userRows[0] as Record<string, unknown> | undefined
+    const brandingRow = rows[0] as Record<string, unknown> | undefined
+
+    const defaultCompanyData = {
+      companyName: (brandingRow?.platform_name as string) || (userRow?.name as string) || "",
+      tagline: (brandingRow?.tagline as string) || "",
+      email: (brandingRow?.support_email as string) || (userRow?.email as string) || "",
+      phoneLocal: (brandingRow?.support_phone as string) || (userRow?.phone as string) || "",
+      phoneDialCode: "+91",
     }
-    const row = rows[0] as Record<string, unknown>
-    const draft = row.setup_wizard_draft as Record<string, unknown> | null
-    const at = row.setup_completed_at
+
+    const defaultBrandingData = {
+      platformName: (brandingRow?.platform_name as string) || (userRow?.name as string) || "",
+      logo: (brandingRow?.logo as string) || "",
+      favicon: (brandingRow?.favicon as string) || "",
+      primaryColor: (brandingRow?.primary_color as string) || "#10b981",
+      secondaryColor: (brandingRow?.secondary_color as string) || "#059669",
+    }
+
+    const draft = brandingRow?.setup_wizard_draft as Record<string, unknown> | null
+    const at = brandingRow?.setup_completed_at
     const setupCompletedAt =
       at instanceof Date ? at.toISOString() : typeof at === "string" ? at : null
-    return jsonOk({ draft: draft ?? null, setupCompletedAt })
+
+    return jsonOk({ draft: draft ?? null, setupCompletedAt, defaultCompanyData, defaultBrandingData })
   } catch (err) {
     console.error("Studio setup GET Error:", err)
     return jsonError("Failed to load setup draft", 500)

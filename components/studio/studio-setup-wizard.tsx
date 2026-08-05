@@ -248,6 +248,20 @@ export function StudioSetupWizard({
         const data = (await res.json()) as {
           draft?: Record<string, unknown> | null
           setupCompletedAt?: string | null
+          defaultCompanyData?: {
+            companyName?: string
+            tagline?: string
+            email?: string
+            phoneLocal?: string
+            phoneDialCode?: string
+          }
+          defaultBrandingData?: {
+            platformName?: string
+            logo?: string
+            favicon?: string
+            primaryColor?: string
+            secondaryColor?: string
+          }
         }
         const d = data.draft
         if (!cancelled) {
@@ -255,6 +269,26 @@ export function StudioSetupWizard({
             completedAt: data.setupCompletedAt ?? null,
             hadDraft: Boolean(d),
           })
+
+          // Prefill from DB defaults if available
+          if (data.defaultCompanyData) {
+            setCompanyData((prev) => ({
+              companyName: prev.companyName || data.defaultCompanyData?.companyName || "",
+              tagline: prev.tagline || data.defaultCompanyData?.tagline || "",
+              email: prev.email || data.defaultCompanyData?.email || "",
+              phoneDialCode: prev.phoneDialCode || data.defaultCompanyData?.phoneDialCode || "+91",
+              phoneLocal: prev.phoneLocal || data.defaultCompanyData?.phoneLocal || "",
+            }))
+          }
+          if (data.defaultBrandingData) {
+            setBrandingData((prev) => ({
+              platformName: prev.platformName || data.defaultBrandingData?.platformName || "",
+              logo: prev.logo || data.defaultBrandingData?.logo || "",
+              favicon: prev.favicon || data.defaultBrandingData?.favicon || "",
+              primaryColor: prev.primaryColor !== "#10b981" ? prev.primaryColor : (data.defaultBrandingData?.primaryColor || "#10b981"),
+              secondaryColor: prev.secondaryColor !== "#059669" ? prev.secondaryColor : (data.defaultBrandingData?.secondaryColor || "#059669"),
+            }))
+          }
         }
         if (!d || cancelled) return
         if (typeof d.currentStep === "number" && d.currentStep >= 0 && d.currentStep < SETUP_STEPS.length) {
@@ -632,7 +666,7 @@ export function StudioSetupWizard({
                     value={companyData.companyName}
                     onChange={(e) => setCompanyData({ ...companyData, companyName: e.target.value })}
                     autoComplete="organization"
-                    className="bg-secondary border-0"
+                    className="bg-background border-input"
                   />
                 </div>
                 <div className="space-y-2">
@@ -643,7 +677,7 @@ export function StudioSetupWizard({
                     value={companyData.tagline}
                     onChange={(e) => setCompanyData({ ...companyData, tagline: e.target.value })}
                     autoComplete="off"
-                    className="bg-secondary border-0"
+                    className="bg-background border-input"
                   />
                 </div>
               </div>
@@ -660,7 +694,7 @@ export function StudioSetupWizard({
                     value={companyData.email}
                     onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
                     autoComplete="email"
-                    className="bg-secondary border-0"
+                    className="bg-background border-input"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -673,7 +707,7 @@ export function StudioSetupWizard({
                       value={companyData.phoneDialCode}
                       onValueChange={(v) => setCompanyData({ ...companyData, phoneDialCode: v })}
                     >
-                      <SelectTrigger className="w-full sm:w-[200px] bg-secondary border-border shrink-0">
+                      <SelectTrigger className="w-full sm:w-[200px] bg-background border-input shrink-0">
                         <SelectValue placeholder="Country" />
                       </SelectTrigger>
                       <SelectContent>
@@ -697,7 +731,7 @@ export function StudioSetupWizard({
                           phoneLocal: e.target.value.replace(/[^\d\s-]/g, ""),
                         })
                       }
-                      className="bg-secondary border-0 min-w-0 flex-1"
+                      className="bg-background border-input min-w-0 flex-1"
                     />
                   </div>
                 </div>
@@ -712,7 +746,7 @@ export function StudioSetupWizard({
                   Domain step (DNS is configured later). Type the domain only (e.g. live.yourcompany.com)—we add{" "}
                   <span className="font-mono">https://</span>.
                 </p>
-                <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
+                <div className="flex rounded-md border border-input overflow-hidden bg-background">
                   <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
                     https://
                   </span>
@@ -760,7 +794,7 @@ export function StudioSetupWizard({
                   value={brandingData.platformName}
                   onChange={(e) => setBrandingData({ ...brandingData, platformName: e.target.value })}
                   placeholder="e.g., StreamPro, LiveCast, EventHub"
-                  className="bg-secondary border-0"
+                  className="bg-background border-input"
                 />
                 <p className="text-xs text-muted-foreground">
                   This appears in headers, emails, and throughout your platform
@@ -834,12 +868,12 @@ export function StudioSetupWizard({
                       type="color"
                       value={brandingData.primaryColor}
                       onChange={(e) => setBrandingData({ ...brandingData, primaryColor: e.target.value })}
-                      className="w-12 h-10 p-1 bg-secondary border-0 cursor-pointer"
+                      className="w-12 h-10 p-1 bg-background border-input cursor-pointer"
                     />
                     <Input
                       value={brandingData.primaryColor}
                       onChange={(e) => setBrandingData({ ...brandingData, primaryColor: e.target.value })}
-                      className="bg-secondary border-0 font-mono uppercase"
+                      className="bg-background border-input font-mono uppercase"
                     />
                   </div>
                 </div>
@@ -850,12 +884,12 @@ export function StudioSetupWizard({
                       type="color"
                       value={brandingData.secondaryColor}
                       onChange={(e) => setBrandingData({ ...brandingData, secondaryColor: e.target.value })}
-                      className="w-12 h-10 p-1 bg-secondary border-0 cursor-pointer"
+                      className="w-12 h-10 p-1 bg-background border-input cursor-pointer"
                     />
                     <Input
                       value={brandingData.secondaryColor}
                       onChange={(e) => setBrandingData({ ...brandingData, secondaryColor: e.target.value })}
-                      className="bg-secondary border-0 font-mono uppercase"
+                      className="bg-background border-input font-mono uppercase"
                     />
                   </div>
                 </div>
@@ -916,7 +950,7 @@ export function StudioSetupWizard({
               )}
               <div className="space-y-2">
                 <Label htmlFor="customDomain">Your site on the web</Label>
-                <div className="flex rounded-md border border-input overflow-hidden bg-secondary">
+                <div className="flex rounded-md border border-input overflow-hidden bg-background">
                   <span className="px-3 flex items-center text-muted-foreground text-sm shrink-0 border-r border-border">
                     https://
                   </span>

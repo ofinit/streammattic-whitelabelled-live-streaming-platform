@@ -88,15 +88,24 @@ function StudioBrandNameText({
   branding: Branding
   className?: string
 }) {
+  const initial = branding.brandName?.charAt(0).toUpperCase() || "V"
   return (
-    <span
-      className={cn(
-        "text-xl sm:text-2xl font-semibold tracking-[0.02em] text-white antialiased [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]",
-        className
-      )}
-    >
-      {branding.brandName}
-    </span>
+    <div className="flex items-center gap-2.5">
+      <div
+        className="h-8 sm:h-9 w-8 sm:w-9 rounded-lg flex items-center justify-center font-bold text-white shadow-sm shrink-0 text-base sm:text-lg"
+        style={{ backgroundColor: branding.themeColor }}
+      >
+        {initial}
+      </div>
+      <span
+        className={cn(
+          "text-xl sm:text-2xl font-semibold tracking-[0.02em] text-white antialiased [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]",
+          className
+        )}
+      >
+        {branding.brandName}
+      </span>
+    </div>
   )
 }
 

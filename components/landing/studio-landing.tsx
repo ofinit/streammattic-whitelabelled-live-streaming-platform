@@ -252,11 +252,6 @@ function SiteHeader({ branding }: { branding: Branding }) {
             branding={branding}
             imgClassName="h-8 sm:h-10 w-auto max-w-full object-contain object-left"
           />
-          {(branding.companyLogo || branding.companyLogoDark) && (
-            <span className="text-lg sm:text-xl font-bold tracking-tight text-white truncate [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]">
-              {branding.brandName}
-            </span>
-          )}
         </Link>
 
         {/* Desktop Nav */}

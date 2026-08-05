@@ -9,6 +9,7 @@ import {
   isLegacyStudioDefaultAboutImage,
 } from "@/lib/platform-landing-defaults"
 import { getThemeConfig } from "@/lib/landing-themes"
+import { WeddingRoyalArchLanding } from "./themes/wedding-royal-arch-landing"
 import { Button } from "@/components/ui/button"
 import {
   Camera,
@@ -1680,6 +1681,16 @@ export function StudioLandingPage({
   }, [branding])
 
   const theme = getThemeConfig(branding.selectedTheme)
+
+  if (branding.selectedTheme === "wedding_royal_arch") {
+    return (
+      <>
+        {previewBanner}
+        <WeddingRoyalArchLanding branding={branding} />
+      </>
+    )
+  }
+
   const fontName = theme.fontFamily.split(",")[0].replace(/'/g, "")
   const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700&display=swap`
 

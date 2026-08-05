@@ -57,6 +57,7 @@ export type DNSStatus = "pending" | "verified" | "failed"
 export type LandingThemeCategory = "wedding" | "events" | "sports" | "custom"
 
 export type LandingTheme =
+  | "wedding_royal_arch"
   | "modern_emerald"
   | "midnight_royal"
   | "rosewood_elegance"

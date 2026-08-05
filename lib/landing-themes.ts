@@ -21,6 +21,15 @@ export const LANDING_THEME_CATEGORY_TABS: { id: LandingThemeCategory; label: str
 export const LANDING_THEMES: ThemeConfig[] = [
   // —— Wedding ——
   {
+    id: "wedding_royal_arch",
+    category: "wedding",
+    name: "Royal Arch Wedding",
+    primaryColor: "#6b21a8",
+    accentColor: "#f3e8ff",
+    fontFamily: "'Great Vibes', cursive",
+    description: "Illuminated bokeh background with hanging wisteria, peacocks & wedding arch illustration.",
+  },
+  {
     id: "rosewood_elegance",
     category: "wedding",
     name: "Rosewood Elegance",

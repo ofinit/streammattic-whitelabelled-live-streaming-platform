@@ -48,7 +48,6 @@ export default function ForgotPasswordPage() {
           <Link href="/" className="inline-flex justify-center">
             <BrandedLogo size="lg" />
           </Link>
-          <p className="mt-3 text-sm text-muted-foreground">{branding.brandName}</p>
         </div>
 
         <Card className="border-border bg-card">

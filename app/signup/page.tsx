@@ -59,6 +59,12 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [submitAttempted, setSubmitAttempted] = useState(false)
 
+  useEffect(() => {
+    if (isWhiteLabel) {
+      router.replace("/login")
+    }
+  }, [isWhiteLabel, router])
+
   const selectedDial = useMemo(
     () => PHONE_DIAL_OPTIONS.find((o) => o.dial === phoneDial) ?? PHONE_DIAL_OPTIONS[0],
     [phoneDial],

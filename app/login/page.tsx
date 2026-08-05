@@ -79,16 +79,24 @@ function LoginPageContent() {
           <Link href="/" className="flex items-center gap-3">
             <BrandedLogo size="lg" />
           </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Platform</Link>
-            <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it Works</Link>
-            <Link href="/login">
-              <Button variant="outline" size="sm">Sign In</Button>
-            </Link>
-            <Link href="/login">
-              <Button size="sm">Get Started</Button>
-            </Link>
-          </nav>
+          {!isWhiteLabel ? (
+            <nav className="hidden md:flex items-center gap-8">
+              <Link href="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Platform</Link>
+              <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it Works</Link>
+              <Link href="/login">
+                <Button variant="outline" size="sm">Sign In</Button>
+              </Link>
+              <Link href="/login">
+                <Button size="sm">Get Started</Button>
+              </Link>
+            </nav>
+          ) : (
+            <nav className="hidden md:flex items-center gap-4">
+              <Link href="/">
+                <Button variant="outline" size="sm">Back to Site</Button>
+              </Link>
+            </nav>
+          )}
           <button type="button" className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -101,7 +109,11 @@ function LoginPageContent() {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle>Sign in to your account</CardTitle>
-              <CardDescription>Use your email or username with your password. Platform administrators use the admin login.</CardDescription>
+              <CardDescription>
+                {isWhiteLabel
+                  ? `Sign in to access ${branding.brandName}`
+                  : "Use your email or username with your password. Platform administrators use the admin login."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && <p className="text-sm text-destructive">{error}</p>}
@@ -146,9 +158,11 @@ function LoginPageContent() {
                 </Button>
               </form>
 
-              <p className="text-center text-sm text-muted-foreground">
-                Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
-              </p>
+              {!isWhiteLabel && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Don&apos;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+                </p>
+              )}
               <p className="text-center text-sm text-muted-foreground">
                 Admin? <Link href="/admin/login" className="text-primary hover:underline">Sign in here</Link>
               </p>

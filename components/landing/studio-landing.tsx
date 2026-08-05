@@ -114,9 +114,15 @@ function StudioBrandLogo({
   textClassName?: string
   loading?: "eager" | "lazy"
 }) {
+  const isDefaultIcon = (url: string) =>
+    url.includes("icon.svg") || url.includes("placeholder") || url.includes("streamlivee")
+
   const dark = normalizeBrandingImageUrl(branding.companyLogoDark)
   const light = normalizeBrandingImageUrl(branding.companyLogo)
-  const candidates = [dark, light].filter((x): x is string => Boolean(x)).filter((x, i, a) => a.indexOf(x) === i)
+  const candidates = [dark, light]
+    .filter((x): x is string => Boolean(x))
+    .filter((x) => !isDefaultIcon(x))
+    .filter((x, i, a) => a.indexOf(x) === i)
   const [failIndex, setFailIndex] = useState(0)
 
   if (failIndex >= candidates.length || candidates.length === 0) {

@@ -129,12 +129,36 @@ export function BrandingProvider({
 
       root.style.setProperty("--primary", primaryHSL)
       root.style.setProperty("--color-primary", primaryHSL)
+      root.style.setProperty("--secondary", accentHSL)
+      root.style.setProperty("--color-secondary", accentHSL)
       root.style.setProperty("--accent", accentHSL)
       root.style.setProperty("--color-accent", accentHSL)
       root.style.setProperty("--ring", primaryHSL)
       root.style.setProperty("--color-ring", primaryHSL)
       root.style.setProperty("--sidebar-primary", primaryHSL)
       root.style.setProperty("--color-sidebar-primary", primaryHSL)
+
+      const styleId = "branding-dynamic-theme"
+      let styleEl = document.getElementById(styleId) as HTMLStyleElement | null
+      if (!styleEl) {
+        styleEl = document.createElement("style")
+        styleEl.id = styleId
+        document.head.appendChild(styleEl)
+      }
+      styleEl.textContent = `
+        :root, .dark {
+          --primary: ${primaryHSL} !important;
+          --color-primary: ${primaryHSL} !important;
+          --secondary: ${accentHSL} !important;
+          --color-secondary: ${accentHSL} !important;
+          --accent: ${accentHSL} !important;
+          --color-accent: ${accentHSL} !important;
+          --ring: ${primaryHSL} !important;
+          --color-ring: ${primaryHSL} !important;
+          --sidebar-primary: ${primaryHSL} !important;
+          --color-sidebar-primary: ${primaryHSL} !important;
+        }
+      `
     }
   }, [branding])
 

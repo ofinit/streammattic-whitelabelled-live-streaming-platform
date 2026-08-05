@@ -25,12 +25,17 @@ export function BrandedLogo({ size = "md", showText = true, className = "" }: Br
     lg: "text-2xl",
   }
 
+  const isDefaultLogo = (url?: string | null) =>
+    !url || url.includes("icon.svg") || url.includes("placeholder")
+
+  const logoUrl = !isDefaultLogo(branding.companyLogo) ? branding.companyLogo : null
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {branding.companyLogo ? (
+      {logoUrl ? (
         <div className={`relative ${sizeClasses[size]}`}>
           <Image
-            src={branding.companyLogo || "/placeholder.svg"}
+            src={logoUrl}
             alt={branding.brandName}
             fill
             className="object-contain"
@@ -38,10 +43,10 @@ export function BrandedLogo({ size = "md", showText = true, className = "" }: Br
         </div>
       ) : (
         <div
-          className={`${sizeClasses[size]} rounded-lg flex items-center justify-center`}
+          className={`${sizeClasses[size]} rounded-lg flex items-center justify-center font-bold text-white shadow-sm`}
           style={{ backgroundColor: branding.themeColor }}
         >
-          <Radio className="h-1/2 w-1/2 text-white" />
+          {branding.brandName?.charAt(0).toUpperCase() || "V"}
         </div>
       )}
       {showText && <span className={`font-bold ${textSizeClasses[size]}`}>{branding.brandName}</span>}

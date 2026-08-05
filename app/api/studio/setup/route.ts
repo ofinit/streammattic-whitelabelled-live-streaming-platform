@@ -20,10 +20,12 @@ function mergeDraft(prev: Record<string, unknown> | null, patch: StudioSetupDraf
   return base
 }
 
-export const GET = withRole(["studio", "streamer", "admin"], async (user) => {
+export const GET = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
     const sql = getDb()
-    const userId = user.id as string
+    const url = new URL(request.url)
+    const searchUserId = url.searchParams.get("userId")
+    const userId = (user.role === "admin" && searchUserId) ? searchUserId : (user.id as string)
     const rows = await sql`
       SELECT setup_wizard_draft, setup_completed_at
       FROM studio_branding
@@ -47,9 +49,13 @@ export const GET = withRole(["studio", "streamer", "admin"], async (user) => {
 
 export const PATCH = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
-    const body = (await request.json()) as StudioSetupDraft
+    const body = (await request.json()) as StudioSetupDraft & { userId?: string }
     const sql = getDb()
-    const userId = user.id as string
+    const url = new URL(request.url)
+    const searchUserId = url.searchParams.get("userId")
+    const userId = (user.role === "admin" && (body.userId || searchUserId))
+      ? (body.userId || searchUserId)!
+      : (user.id as string)
 
     const existingRows = await sql`
       SELECT setup_wizard_draft FROM studio_branding WHERE user_id = ${userId} LIMIT 1
@@ -78,18 +84,23 @@ export const PATCH = withRole(["studio", "streamer", "admin"], async (user, requ
   }
 })
 
-export const POST = withRole(["studio"], async (user, request) => {
+export const POST = withRole(["studio", "streamer", "admin"], async (user, request) => {
   try {
     const body = await request.json()
     const { 
       companyData, 
       brandingData, 
       domainData, 
-      paymentData 
+      paymentData,
+      userId: bodyUserId
     } = body
 
     const sql = getDb()
-    const userId = user.id as string
+    const url = new URL(request.url)
+    const searchUserId = url.searchParams.get("userId")
+    const userId = (user.role === "admin" && (bodyUserId || searchUserId))
+      ? (bodyUserId || searchUserId)!
+      : (user.id as string)
 
     // 1. Update User Profile (Name)
     if (companyData.companyName) {

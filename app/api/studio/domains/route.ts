@@ -1,12 +1,15 @@
 import { getDb, toCamelRows } from "@/lib/db"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
 
-export const GET = withRole(["studio"], async (user) => {
+export const GET = withRole(["studio", "admin"], async (user, request) => {
   try {
     const sql = getDb()
+    const url = new URL(request.url)
+    const searchUserId = url.searchParams.get("userId")
+    const userId = (user.role === "admin" && searchUserId) ? searchUserId : (user.id as string)
     const rows = await sql`
       SELECT * FROM domains 
-      WHERE user_id = ${user.id} 
+      WHERE user_id = ${userId} 
       ORDER BY created_at DESC
     `
     return jsonOk({ domains: toCamelRows(rows as Record<string, unknown>[]) })
@@ -16,17 +19,24 @@ export const GET = withRole(["studio"], async (user) => {
   }
 })
 
-export const POST = withRole(["studio"], async (user, request) => {
+export const POST = withRole(["studio", "admin"], async (user, request) => {
   try {
-    const { domain } = await request.json()
+    const body = await request.json()
+    const { domain, userId: bodyUserId } = body
     if (!domain) return jsonError("Domain is required")
 
     const sql = getDb()
+    const url = new URL(request.url)
+    const searchUserId = url.searchParams.get("userId")
+    const userId = (user.role === "admin" && (bodyUserId || searchUserId))
+      ? (bodyUserId || searchUserId)!
+      : (user.id as string)
+
     const verificationToken = `streamlivee-verify-${Math.random().toString(36).substring(2, 34)}`
 
     const [newDomain] = await sql`
       INSERT INTO domains (user_id, domain, verification_token, verification_status, is_primary)
-      VALUES (${user.id}, ${domain.trim().toLowerCase()}, ${verificationToken}, 'pending', true)
+      VALUES (${userId}, ${domain.trim().toLowerCase()}, ${verificationToken}, 'pending', true)
       ON CONFLICT (domain)
       DO UPDATE SET
         user_id = EXCLUDED.user_id,

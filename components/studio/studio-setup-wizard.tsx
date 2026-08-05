@@ -220,11 +220,12 @@ export function StudioSetupWizard({
   })()
 
   const saveDraft = useCallback(() => {
-    void fetch("/api/studio/setup", {
+    void fetch(user?.id ? `/api/studio/setup?userId=${encodeURIComponent(user.id)}` : "/api/studio/setup", {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        userId: user?.id,
         currentStep,
         companyData: {
           ...companyData,
@@ -235,13 +236,14 @@ export function StudioSetupWizard({
         paymentData,
       }),
     }).catch(() => {})
-  }, [currentStep, companyData, brandingData, domainData, paymentData])
+  }, [user?.id, currentStep, companyData, brandingData, domainData, paymentData])
 
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
-        const res = await fetch("/api/studio/setup", { credentials: "include" })
+        const setupUrl = user?.id ? `/api/studio/setup?userId=${encodeURIComponent(user.id)}` : "/api/studio/setup"
+        const res = await fetch(setupUrl, { credentials: "include" })
         if (!res.ok || cancelled) return
         const data = (await res.json()) as {
           draft?: Record<string, unknown> | null
@@ -394,11 +396,13 @@ export function StudioSetupWizard({
     }
     setIsSubmitting(true)
     try {
-      const res = await fetch("/api/studio/setup", {
+      const setupPostUrl = user?.id ? `/api/studio/setup?userId=${encodeURIComponent(user.id)}` : "/api/studio/setup"
+      const res = await fetch(setupPostUrl, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user?.id,
           companyData: {
             ...companyData,
             phone: composeInternationalPhone(companyData.phoneDialCode, companyData.phoneLocal),

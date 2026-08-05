@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react"
 import { useTheme } from "next-themes"
 import type { UserRole } from "./types"
 import { getRouteForRole } from "@/lib/role-routes"

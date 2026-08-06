@@ -282,21 +282,21 @@ export default function IntegrationsSettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="rounded-lg bg-secondary/50 p-3 text-sm text-muted-foreground">
+            <div className="rounded-lg bg-muted/50 border border-border/60 p-3 text-sm text-muted-foreground">
               <p className="mb-2 font-medium text-foreground">Setup Instructions:</p>
               <ol className="list-decimal list-inside space-y-1.5">
                 <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink className="h-3 w-3" /></a></li>
                 <li>Create or select a project and enable the <strong>YouTube Data API v3</strong></li>
                 <li>Go to Credentials and create an <strong>OAuth 2.0 Client ID</strong> (Web application)</li>
                 <li>Add this exact URL as an <strong>Authorized redirect URI</strong> in Google Console:
-                  <p className="mt-1.5 font-mono text-xs bg-secondary rounded px-2 py-1.5 text-foreground break-all">
+                  <p className="mt-1.5 font-mono text-xs bg-background border border-border rounded px-2 py-1.5 text-foreground break-all">
                     {typeof window !== "undefined"
                       ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/auth/youtube/callback`
                       : "/api/auth/youtube/callback"}
                   </p>
                   {typeof window !== "undefined" && !process.env.NEXT_PUBLIC_APP_URL && (
                     <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                      For production, set <code className="rounded bg-secondary px-1">NEXT_PUBLIC_APP_URL</code> to your live site (e.g. <code className="rounded bg-secondary px-1">https://www.streamlivee.com</code>) in your hosting environment so this URI matches.
+                      For production, set <code className="rounded bg-muted px-1">NEXT_PUBLIC_APP_URL</code> to your live site (e.g. <code className="rounded bg-muted px-1">https://www.streamlivee.com</code>) in your hosting environment so this URI matches.
                     </p>
                   )}
                 </li>
@@ -313,12 +313,11 @@ export default function IntegrationsSettingsPage() {
                 id="google-client-id"
                 value={displayClientId}
                 onChange={(e) => handleFieldChange("google_client_id", e.target.value)}
-                className="bg-secondary border-0 font-mono text-sm"
+                className="bg-background border-input font-mono text-sm"
                 placeholder="123456789-xxxxxxx.apps.googleusercontent.com"
               />
               <p className="text-xs text-muted-foreground">
                 The OAuth 2.0 Client ID from Google Cloud Console.
-                {data?.has_google_client_id && !hasEdited && " Currently set."}
               </p>
             </div>
 
@@ -331,7 +330,7 @@ export default function IntegrationsSettingsPage() {
                   type={showClientSecret ? "text" : "password"}
                   value={displayClientSecret}
                   onChange={(e) => handleFieldChange("google_client_secret", e.target.value)}
-                  className="bg-secondary border-0 font-mono text-sm pr-10"
+                  className="bg-background border-input font-mono text-sm pr-10"
                   placeholder="GOCSPX-xxxxxxxxxxxxxxxxxxxxxxx"
                 />
                 <Button
@@ -364,7 +363,7 @@ export default function IntegrationsSettingsPage() {
                   type={showEncryptionKey ? "text" : "password"}
                   value={displayEncryptionKey}
                   onChange={(e) => handleFieldChange("encryption_key", e.target.value)}
-                  className="bg-secondary border-0 font-mono text-sm pr-10"
+                  className="bg-background border-input font-mono text-sm pr-10"
                   placeholder="64-character hex key (openssl rand -hex 32)"
                 />
                 <Button
@@ -378,7 +377,7 @@ export default function IntegrationsSettingsPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Used to encrypt/decrypt YouTube OAuth tokens at rest. Generate with: <code className="rounded bg-secondary px-1 py-0.5 text-xs font-mono text-foreground">openssl rand -hex 32</code>.
+                Used to encrypt/decrypt YouTube OAuth tokens at rest. Generate with: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono text-foreground">openssl rand -hex 32</code>.
                 {data?.has_encryption_key && !hasEdited && " Currently set (masked)."}
               </p>
             </div>

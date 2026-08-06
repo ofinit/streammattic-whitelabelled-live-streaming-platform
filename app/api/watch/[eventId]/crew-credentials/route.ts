@@ -4,6 +4,8 @@ import { verifyCrewPin } from "@/lib/crew-pin"
 import { buildRtmpStreamId, ensureRtmpTokenForStream, extractTokenFromSrsParam, hashRtmpToken } from "@/lib/rtmp-auth"
 import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
+import { fetchEliveCredentials, syncEliveAllocationsWithEvents } from "@/lib/streaming/elive-service"
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
@@ -60,7 +62,23 @@ export async function POST(
       }
     }
 
-    if (streamType === "rtmp" && row.rtmp_provider !== "fivecentscdn") {
+    if (streamType === "rtmp" && row.rtmp_provider === "elive") {
+      await syncEliveAllocationsWithEvents(sql).catch(() => {})
+      const refreshed = await sql`
+        SELECT rtmp_url, stream_key FROM events WHERE id = ${(row.id as string)}
+      `
+      if (refreshed.length > 0) {
+        rtmpUrl = (refreshed[0].rtmp_url as string) || rtmpUrl
+        streamKey = (refreshed[0].stream_key as string) || streamKey
+      }
+      if (streamKey) {
+        const creds = await fetchEliveCredentials("6019", streamKey).catch(() => null)
+        if (creds) {
+          if (creds.rtmpUrl) rtmpUrl = creds.rtmpUrl
+          if (creds.streamKey) streamKey = creds.streamKey
+        }
+      }
+    } else if (streamType === "rtmp" && (row.rtmp_provider === "srs" || !row.rtmp_provider)) {
       const currentKey = streamKey || ""
       const canonicalStreamId = buildRtmpStreamId((row.slug as string | null) || (row.id as string))
       const streamId = currentKey.split("?")[0] || canonicalStreamId

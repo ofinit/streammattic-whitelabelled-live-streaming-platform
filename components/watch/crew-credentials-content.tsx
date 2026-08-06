@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, Copy, Check, Loader2 } from "lucide-react"
+import { Lock, Copy, Check, Loader2, Eye, EyeOff } from "lucide-react"
 import { DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE } from "@/lib/event-suspended"
 
 /** eventId may be numeric id or public slug — same as /api/watch/[eventId]/... */
@@ -16,6 +16,7 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
   const [error, setError] = useState("")
   const [credentials, setCredentials] = useState<{ rtmpUrl: string; streamKey: string } | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [showStreamKey, setShowStreamKey] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -143,12 +144,27 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Stream key</Label>
                 <div className="flex gap-2">
-                  <Input value={credentials.streamKey} readOnly type="password" className="font-mono text-sm" />
+                  <Input
+                    value={credentials.streamKey}
+                    readOnly
+                    type={showStreamKey ? "text" : "password"}
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowStreamKey((prev) => !prev)}
+                    title={showStreamKey ? "Hide stream key" : "Show stream key"}
+                  >
+                    {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => copyToClipboard(credentials.streamKey, "key")}
+                    title="Copy stream key"
                   >
                     {copied === "key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>

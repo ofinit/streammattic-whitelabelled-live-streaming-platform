@@ -30,7 +30,7 @@ export async function GET(
     const eventId = rawEventId.toLowerCase()
 
     const sql = getDb()
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL`.catch(() => {})
     await sql`CREATE INDEX IF NOT EXISTS idx_events_studio_id ON events(studio_id)`.catch(() => {})
     await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`.catch(() => {})

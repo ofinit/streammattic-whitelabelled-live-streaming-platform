@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
           ${null}, ${null},
           'scheduled', ${scheduledAt},
           ${false}, ${null},
-          ${true}, ${true},
+          ${false}, ${true},
           ${JSON.stringify({})},
           ${finalSlug},
           ${"UTC"},

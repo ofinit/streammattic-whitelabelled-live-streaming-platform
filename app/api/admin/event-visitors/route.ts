@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     await requireRole(["admin"])
     const sql = getDb()
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`
       CREATE TABLE IF NOT EXISTS event_visitor_registrations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

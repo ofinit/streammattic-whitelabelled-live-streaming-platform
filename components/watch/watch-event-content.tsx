@@ -824,7 +824,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     if (!newMessage.trim() || !event) return
     const ev = event as unknown as Record<string, unknown>
     const captureOn =
-      ev.captureVisitorData !== false && ev.capture_visitor_data !== false
+      ev.captureVisitorData === true || ev.capture_visitor_data === true
     const fromStorage =
       chatVisitorDisplayName?.trim() || readVisitorDisplayName(eventId)?.trim()
     if (!captureOn && !fromStorage) return
@@ -1174,8 +1174,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const evGate = event as unknown as Record<string, unknown>
   const captureVisitorData =
-    evGate.captureVisitorData !== false && evGate.capture_visitor_data !== false
-  const allowChat = evGate.allowChat !== false && evGate.allow_chat !== false
+    evGate.captureVisitorData === true || evGate.capture_visitor_data === true
+  const allowChat = evGate.allowChat === true || evGate.allow_chat === true
   const allowReactions = evGate.allowReactions !== false && evGate.allow_reactions !== false
 
   if (captureVisitorData && !visitorGateComplete) {

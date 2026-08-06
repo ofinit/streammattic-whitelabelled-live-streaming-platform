@@ -47,7 +47,7 @@ export async function POST(
   }
 
   const sql = getDb()
-  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
   await sql`
     CREATE TABLE IF NOT EXISTS event_visitor_registrations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,7 +85,7 @@ export async function POST(
   if (ev.is_suspended === true) {
     return NextResponse.json({ error: "Event unavailable" }, { status: 403 })
   }
-  const capture = ev.capture_visitor_data !== false
+  const capture = ev.capture_visitor_data === true
   if (!capture) {
     return NextResponse.json({ error: "Visitor capture is disabled for this event" }, { status: 403 })
   }

@@ -362,13 +362,13 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS use_custom_domain BOOLEAN DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_stream_id TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider_payload JSONB DEFAULT '{}'::jsonb`.catch(() => {})
 
     const capPost = normalizeBodyBoolean(captureVisitorData)
-    const captureVisitorDataValue = capPost === undefined ? true : capPost
+    const captureVisitorDataValue = capPost === undefined ? false : capPost
 
     const subtitleValue =
       subtitle !== undefined && subtitle !== null ? (String(subtitle).trim() || null) : null
@@ -390,7 +390,7 @@ export async function POST(req: NextRequest) {
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
         ${isPasswordProtected ? (password || null) : null},
-        ${allowChat ?? true}, ${allowReactions ?? true}, ${captureVisitorDataValue},
+        ${allowChat ?? false}, ${allowReactions ?? true}, ${captureVisitorDataValue},
         ${JSON.stringify(insertStreamType === "rtmp" ? (simulcastConfig || {}) : {})},
         ${finalSlug},
         ${timezone || "UTC"},
@@ -528,7 +528,7 @@ export async function PUT(req: NextRequest) {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS description TEXT`.catch(() => {})
@@ -937,10 +937,10 @@ export async function PUT(req: NextRequest) {
     const nextSuspended = isSuspended !== undefined ? Boolean(isSuspended) : prevSuspended
 
     /** Must not use COALESCE($param, col) for booleans: `false` is valid and must persist (PG/drivers can mishandle falsy in COALESCE). */
-    const prevCaptureVisitor = existingRow.capture_visitor_data === false ? false : true
+    const prevCaptureVisitor = existingRow.capture_visitor_data === true ? true : false
     const captureNorm = normalizeBodyBoolean(captureVisitorData)
     const finalCaptureVisitorData = captureNorm !== undefined ? captureNorm : prevCaptureVisitor
-    const prevAllowChat = existingRow.allow_chat === false ? false : true
+    const prevAllowChat = existingRow.allow_chat === true ? true : false
     const allowChatNorm = normalizeBodyBoolean(allowChat)
     const finalAllowChat = allowChatNorm !== undefined ? allowChatNorm : prevAllowChat
     const prevAllowReactions = existingRow.allow_reactions === false ? false : true

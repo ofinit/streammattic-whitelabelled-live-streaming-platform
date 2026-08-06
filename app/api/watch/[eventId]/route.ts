@@ -25,7 +25,7 @@ export async function GET(
   try {
     const sql = getDb()
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
-    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT true`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     console.log(`[api/watch/[eventId]] Fetching event for ID/Slug: ${eventId}`)
 
     // Branding lives on studio_branding, not users. One bind for id OR slug (avoids driver edge cases).

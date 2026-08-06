@@ -7,7 +7,6 @@ export async function GET() {
     status: 200,
     headers: { 
       "Content-Type": "text/plain; charset=utf-8",
-      "x-build-id": "build-v102"
     },
   })
 }

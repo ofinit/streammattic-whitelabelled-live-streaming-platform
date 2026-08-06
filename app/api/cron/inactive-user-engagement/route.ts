@@ -20,8 +20,8 @@ function isAuthorized(request: Request): boolean {
   if (!secret) return process.env.NODE_ENV !== "production"
   const auth = request.headers.get("authorization")
   const headerSecret = request.headers.get("x-cron-secret")
-  const urlSecret = new URL(request.url).searchParams.get("secret")
-  return auth === `Bearer ${secret}` || headerSecret === secret || urlSecret === secret
+  // Note: do NOT accept secret via URL query param — URLs are logged by proxies and servers.
+  return auth === `Bearer ${secret}` || headerSecret === secret
 }
 
 function requestOrigin(req: Request): string {

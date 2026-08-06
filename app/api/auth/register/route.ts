@@ -6,6 +6,7 @@ import { isValidIndianStateCode, normalizeIndianMobile } from "@/lib/indian-stat
 import { normalizeSignupPhoneStorage } from "@/lib/phone-country-codes"
 import { VISITOR_COOKIE_NAME } from "@/lib/visitor-analytics-constants"
 import { insertFunnelEvent } from "@/lib/analytics-funnel"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +32,16 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: "Full name, email, and password are required" }, { status: 400 })
+    }
+
+    // Rate limit: max 5 registrations per IP per hour
+    const ip = extractIp(request)
+    const allowed = await checkRateLimit(`register:${ip}`, 5, 3600)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 },
+      )
     }
 
     let mobileNorm: string | null = null

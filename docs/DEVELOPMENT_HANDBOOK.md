@@ -73,7 +73,7 @@ To include a **Postgres schema snapshot** from a live database, set `DATABASE_UR
 
 | Package | Version |
 | --- | --- |
-| `next` | 16.0.10 |
+| `next` | ^16.3.0 |
 | `react` | 19.2.0 |
 | `react-dom` | 19.2.0 |
 | `pg` | ^8.13.0 |

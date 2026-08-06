@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth"
+import { requireRole, deleteAllUserSessions } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 
 export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -34,6 +34,11 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
            updated_at = NOW() 
          WHERE id = ${id}
        `
+
+       // Immediately invalidate all active sessions when account is suspended or deactivated
+       if (status === "suspended" || status === "deactivated") {
+         await deleteAllUserSessions(id)
+       }
     }
 
     // 2. Update Branding if provided

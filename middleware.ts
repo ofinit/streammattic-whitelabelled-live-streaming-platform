@@ -106,8 +106,6 @@ export function middleware(request: NextRequest) {
     /** Guest viewer: album by public token (no session) */
     pathname.startsWith("/api/client-gallery/public") ||
     pathname.startsWith("/api/auth") ||
-    /** Admin APIs enforce role in route handlers */
-    pathname.startsWith("/api/admin") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/placeholder") ||

@@ -41,8 +41,9 @@ function sanitizeFilename(name: string): string {
 
 function isAllowedImageType(file: File): boolean {
   const t = (file.type || "").trim().toLowerCase()
+  // Check strict MIME allowlist first
   if (t && ALLOWED_TYPES.has(t)) return true
-  if (t.startsWith("image/")) return true
+  // Extension fallback only — do NOT allow generic image/* (covers SVG, XML, etc.)
   if (/\.(jpe?g|png|gif|webp|bmp|heic|heif|avif)$/i.test(file.name)) return true
   return false
 }

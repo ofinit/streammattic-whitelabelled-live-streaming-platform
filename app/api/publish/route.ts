@@ -1,32 +1,43 @@
+import { extractTokenFromSrsParam, findValidRtmpToken } from "@/lib/rtmp-auth"
+import { getDb } from "@/lib/db"
+
 export async function POST(req: Request) {
-  const body = await req.json()
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return Response.json({ code: 400 })
+  }
 
-  const stream = body.stream
-  const raw = body.param || ""
-  const clean = raw.startsWith("?") ? raw.slice(1) : raw
+  const streamId = typeof body.stream === "string" ? body.stream.trim() : ""
+  const token = extractTokenFromSrsParam(body.param)
 
-  const token = new URLSearchParams(clean).get("token")
-
-  console.log("STREAM:", stream)
-  console.log("TOKEN:", token)
-  console.log("PARAM:", raw)
-
-  if (!token) {
+  if (!streamId || !token) {
     return Response.json({ code: 403 })
   }
 
-  // IMPORTANT: temporarily bypass DB to confirm flow
-  return Response.json({ code: 0 })
+  try {
+    const sql = getDb()
+    const valid = await findValidRtmpToken({ sql, streamId, token })
 
-  /*
-  // enable this AFTER testing
-  const isValid = await db.streams.findOne({
-    where: {
-      stream_key: stream,
-      token: token,
-    },
-  });
+    if (!valid) {
+      return Response.json({ code: 403 })
+    }
 
-  return Response.json({ code: isValid ? 0 : 403 });
-  */
+    // Mark the event as live when publishing starts
+    if (valid.event_id) {
+      await sql`
+        UPDATE events
+        SET status = 'live', started_at = COALESCE(started_at, NOW()), updated_at = NOW()
+        WHERE id = ${valid.event_id as string}
+          AND status IN ('scheduled', 'draft')
+      `
+    }
+
+    return Response.json({ code: 0 })
+  } catch (err) {
+    console.error("[publish] DB validation error:", err)
+    // Fail closed — deny on error
+    return Response.json({ code: 500 })
+  }
 }

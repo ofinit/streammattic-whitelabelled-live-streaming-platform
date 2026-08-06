@@ -9,6 +9,7 @@ import {
   isLegacyPasswordHash,
 } from "@/lib/auth"
 import { findUserByIdentifierForLogin } from "@/lib/db-queries"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +20,16 @@ export async function POST(request: NextRequest) {
 
     if (!identifier || !password) {
       return NextResponse.json({ error: "Email (or username) and password are required" }, { status: 400 })
+    }
+
+    // Rate limit: max 10 login attempts per IP per 15 minutes
+    const ip = extractIp(request)
+    const allowed = await checkRateLimit(`login:${ip}`, 10, 900)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429 },
+      )
     }
 
     const dbUser = await findUserByIdentifierForLogin(identifier)

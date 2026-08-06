@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { getCurrentUser, verifyPassword, hashPassword, deleteAllUserSessions, createSession, setSessionCookie } from "@/lib/auth"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const ip = extractIp(request)
+    const allowed = await checkRateLimit(`change_password:${user.id}:${ip}`, 5, 900)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many password change attempts. Please try again later." },
+        { status: 429 },
+      )
     }
 
     const { currentPassword, newPassword } = await request.json()

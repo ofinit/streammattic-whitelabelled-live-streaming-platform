@@ -814,30 +814,44 @@ export default function AdminEventsPage() {
     )
   }
 
+  const { user } = useAuth()
+  const isOperator =
+    user?.role === "elive_operator" ||
+    user?.role === "rtmp_operator" ||
+    user?.email?.toLowerCase() === "pbollapragada@gmail.com"
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Control Center</h1>
-          <p className="text-muted-foreground">Create and manage events (admin — credits not required)</p>
+          <h1 className="text-2xl font-bold">
+            {isOperator ? "eLive RTMP Control Center" : "Control Center"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isOperator
+              ? "Monitor, edit, or suspend active eLive RTMP streams"
+              : "Create and manage events (admin — credits not required)"}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleFixValidity}
-            disabled={isFixingValidity}
-            className="h-9 hidden lg:flex gap-2 border-orange-500/20 hover:bg-orange-500/5 text-orange-500/80"
-            title="Align old mock events with current validity standards"
-          >
-            <ShieldCheck className="h-4 w-4" />
-            {isFixingValidity ? "Fixing..." : "Update Older Events"}
-          </Button>
-          <Button onClick={handleCreateEvent} className="h-9 gap-2">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Create Event</span>
-          </Button>
-        </div>
+        {!isOperator && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFixValidity}
+              disabled={isFixingValidity}
+              className="h-9 hidden lg:flex gap-2 border-orange-500/20 hover:bg-orange-500/5 text-orange-500/80"
+              title="Align old mock events with current validity standards"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              {isFixingValidity ? "Fixing..." : "Update Older Events"}
+            </Button>
+            <Button onClick={handleCreateEvent} className="h-9 gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Event</span>
+            </Button>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {isLoading ? (

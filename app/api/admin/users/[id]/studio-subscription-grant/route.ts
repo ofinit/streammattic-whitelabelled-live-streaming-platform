@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth"
+import { requireRole, deleteAllUserSessions } from "@/lib/auth"
 import { withTransaction } from "@/lib/db"
 
 function jsonError(message: string, status: number) {
@@ -96,6 +96,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         ],
       )
     })
+
+    // Invalidate existing sessions so user re-authenticates with new role permissions
+    await deleteAllUserSessions(id)
 
     return NextResponse.json({
       success: true,

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const sql = getDb()
     await ensureAdminUserEngagementSchema()
     const users = await sql(
-      `SELECT id, email, name, role::text AS role FROM users WHERE id = ANY($1::uuid[])`,
+      `SELECT id, email, name, role::text AS role FROM users WHERE id = ANY($1::uuid[]) AND status = 'active' AND role != 'admin'`,
       [userIds],
     )
     const appUrl = requestOrigin(req)

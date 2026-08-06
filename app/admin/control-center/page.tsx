@@ -814,7 +814,6 @@ export default function AdminEventsPage() {
     )
   }
 
-  const { user } = useAuth()
   const isOperator =
     user?.role === "elive_operator" ||
     user?.role === "rtmp_operator" ||

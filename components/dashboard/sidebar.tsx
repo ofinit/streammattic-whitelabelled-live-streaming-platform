@@ -333,6 +333,7 @@ function AccountBlock({
   isMobileSheet,
   userName,
   userRole,
+  userEmail,
   initials,
   logout,
   studioSetupWizardAction,
@@ -341,12 +342,17 @@ function AccountBlock({
   isMobileSheet: boolean
   userName?: string
   userRole?: string
+  userEmail?: string
   initials?: string
   logout: () => void
   /** Studio: open setup / resume / re-setup in modal from My Account */
   studioSetupWizardAction?: { label: string; badge?: number; onSelect: () => void }
 }) {
   const effectiveCollapsed = isCollapsed && !isMobileSheet
+  const isOperator =
+    userRole === "elive_operator" ||
+    userRole === "rtmp_operator" ||
+    userEmail?.toLowerCase() === "pbollapragada@gmail.com"
 
   return (
     <div className="border-t border-sidebar-border p-2">
@@ -380,14 +386,16 @@ function AccountBlock({
         >
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => {
-            if (userRole === "admin") window.location.href = "/admin/settings"
-            else if (userRole === "studio") window.location.href = "/studio/settings"
-            else if (userRole === "streamer") window.location.href = "/streamer/settings"
-          }}>
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
+          {!isOperator && (
+            <DropdownMenuItem onClick={() => {
+              if (userRole === "admin") window.location.href = "/admin/settings"
+              else if (userRole === "studio") window.location.href = "/studio/settings"
+              else if (userRole === "streamer") window.location.href = "/streamer/settings"
+            }}>
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+          )}
           {studioSetupWizardAction ? (
             <DropdownMenuItem
               onClick={() => studioSetupWizardAction.onSelect()}
@@ -534,6 +542,7 @@ export function Sidebar() {
               isMobileSheet
               userName={user?.name}
               userRole={user?.role}
+              userEmail={user?.email}
               initials={initials}
               logout={logout}
               studioSetupWizardAction={studioSetupWizardAction}
@@ -586,6 +595,7 @@ export function Sidebar() {
             isMobileSheet={false}
             userName={user?.name}
             userRole={user?.role}
+            userEmail={user?.email}
             initials={initials}
             logout={logout}
             studioSetupWizardAction={studioSetupWizardAction}

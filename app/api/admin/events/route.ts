@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     
     const domainSubquery = sql.unsafe(`(
       SELECT domain FROM domains
-      WHERE user_id = COALESCE(e.studio_id, e.user_id, u.id)
+      WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN e.user_id ELSE NULL END)
       ORDER BY
         CASE WHEN verification_status = 'verified' THEN 0 WHEN is_primary = true THEN 1 ELSE 2 END,
         created_at DESC

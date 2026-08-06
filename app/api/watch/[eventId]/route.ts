@@ -36,16 +36,20 @@ export async function GET(
              sb.logo AS logo_url,
              sb.primary_color,
              sb.secondary_color,
-             (
-               SELECT domain FROM domains 
-               WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true 
-               LIMIT 1
-             ) AS primary_domain,
-             (
-               SELECT domain FROM domains 
-               WHERE user_id = u.id AND verification_status = 'verified' AND is_primary = true 
-               LIMIT 1
-             ) AS custom_domain,
+              (
+                SELECT domain FROM domains 
+                WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN u.id ELSE NULL END)
+                  AND (verification_status = 'verified' OR is_primary = true)
+                ORDER BY CASE WHEN verification_status = 'verified' THEN 0 ELSE 1 END, created_at DESC
+                LIMIT 1
+              ) AS primary_domain,
+              (
+                SELECT domain FROM domains 
+                WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN u.id ELSE NULL END)
+                  AND (verification_status = 'verified' OR is_primary = true)
+                ORDER BY CASE WHEN verification_status = 'verified' THEN 0 ELSE 1 END, created_at DESC
+                LIMIT 1
+              ) AS custom_domain,
              (
                SELECT COALESCE(
                  json_agg(

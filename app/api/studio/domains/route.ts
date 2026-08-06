@@ -1,5 +1,6 @@
 import { getDb, toCamelRows } from "@/lib/db"
 import { jsonOk, jsonError, withAuth, withRole } from "@/lib/api-helpers"
+import { invalidateCache } from "@/lib/redis"
 
 export const GET = withRole(["studio", "admin"], async (user, request) => {
   try {
@@ -45,6 +46,8 @@ export const POST = withRole(["studio", "admin"], async (user, request) => {
         is_primary = EXCLUDED.is_primary
       RETURNING *
     `
+
+    await invalidateCache(`studio_branding:${userId}`).catch(() => {})
 
     return jsonOk({ 
       message: "Domain linked successfully", 

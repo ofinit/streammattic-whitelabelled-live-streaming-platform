@@ -687,10 +687,20 @@ export function EventFormDialog({
     (event && typeof (event as any).slug === "string" ? (event as any).slug.trim() : "") ||
     (event && typeof event.id === "string" ? String(event.id).trim() : "") ||
     ""
+  const activeCustomDomain =
+    formData.useCustomDomain && (primaryDomain || (event as any)?.studioCustomDomain)
+      ? primaryDomain || (event as any)?.studioCustomDomain
+      : null
+
   const [crewPageOrigin, setCrewPageOrigin] = useState("")
   useEffect(() => {
-    setCrewPageOrigin(window.location.origin)
-  }, [])
+    if (activeCustomDomain) {
+      const clean = String(activeCustomDomain).replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+      setCrewPageOrigin(`https://${clean}`)
+    } else if (typeof window !== "undefined") {
+      setCrewPageOrigin(window.location.origin)
+    }
+  }, [activeCustomDomain])
   const crewPageUrl =
     crewPageOrigin && crewPathSegment
       ? `${crewPageOrigin}/${encodeURIComponent(crewPathSegment)}/crew`

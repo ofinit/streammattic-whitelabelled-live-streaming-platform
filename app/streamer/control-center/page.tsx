@@ -600,6 +600,11 @@ export default function StreamerEventsPage() {
 
   const getEventPublicUrl = (event: Record<string, unknown>) => {
     const path = `/${(event.slug as string) || event.id}`
+    const customDomain = ((event as any).studioCustomDomain || (event as any).customDomain || (event as any).primaryDomain) as string | undefined
+    if (customDomain) {
+      const cleanDomain = customDomain.replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+      return `https://${cleanDomain}${path}`
+    }
     if (typeof window !== "undefined") {
       return `${window.location.origin}${path}`
     }

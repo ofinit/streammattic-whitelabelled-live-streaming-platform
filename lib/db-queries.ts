@@ -343,7 +343,15 @@ export async function getEvents(filters?: {
   const offset = filters?.offset ?? 0
 
   const rows = await sql(`
-    SELECT e.*, u.name AS user_name, u.email AS user_email
+    SELECT e.*, u.name AS user_name, u.email AS user_email,
+           (
+             SELECT domain FROM domains
+             WHERE user_id = COALESCE(e.studio_id, e.user_id, u.id)
+             ORDER BY
+               CASE WHEN verification_status = 'verified' THEN 0 WHEN is_primary = true THEN 1 ELSE 2 END,
+               created_at DESC
+             LIMIT 1
+           ) AS studio_custom_domain
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
     ${where}
@@ -357,7 +365,15 @@ export async function getEvents(filters?: {
 export async function getEventById(id: string) {
   const sql = getDb()
   const rows = await sql`
-    SELECT e.*, u.name AS user_name, u.email AS user_email, r.platform_name AS studio_name
+    SELECT e.*, u.name AS user_name, u.email AS user_email, r.platform_name AS studio_name,
+           (
+             SELECT domain FROM domains
+             WHERE user_id = COALESCE(e.studio_id, e.user_id, u.id)
+             ORDER BY
+               CASE WHEN verification_status = 'verified' THEN 0 WHEN is_primary = true THEN 1 ELSE 2 END,
+               created_at DESC
+             LIMIT 1
+           ) AS studio_custom_domain
     FROM events e
     LEFT JOIN users u ON e.user_id = u.id
     LEFT JOIN users r ON e.studio_id = r.id

@@ -206,8 +206,10 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
   const getEventWatchUrl = () => {
     if (typeof window === "undefined") return eventWatchPath
     const ev = event as LiveEvent
-    if (ev.useCustomDomain && ev.primaryDomain) {
-      return `https://${ev.primaryDomain}${eventWatchPath}`
+    const customDomain = ev?.studioCustomDomain || ev?.primaryDomain || (ev as any)?.customDomain
+    if (customDomain && ev?.useCustomDomain !== false) {
+      const clean = String(customDomain).replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+      return `https://${clean}${eventWatchPath}`
     }
     return `${window.location.origin}${eventWatchPath}`
   }
@@ -215,8 +217,10 @@ export function EventStreamControlPage({ eventsListHref }: EventStreamControlPag
   const getEventEmbedUrl = () => {
     if (typeof window === "undefined") return `/embed/${eventId}`
     const ev = event as LiveEvent
-    if (ev.useCustomDomain && ev.primaryDomain) {
-      return `https://${ev.primaryDomain}/embed/${eventId}`
+    const customDomain = ev?.studioCustomDomain || ev?.primaryDomain || (ev as any)?.customDomain
+    if (customDomain && ev?.useCustomDomain !== false) {
+      const clean = String(customDomain).replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+      return `https://${clean}/embed/${eventId}`
     }
     return `${window.location.origin}/embed/${eventId}`
   }

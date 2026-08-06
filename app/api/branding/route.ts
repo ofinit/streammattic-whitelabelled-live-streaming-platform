@@ -17,15 +17,28 @@ export const GET = withAuth(async (user, request) => {
     3600, // 1 hour TTL
     async () => {
       const sql = getDb()
-      const rows = await sql`SELECT * FROM studio_branding WHERE user_id = ${userId}`
-      if (rows.length === 0) return null
-      const branding = toCamel(rows[0] as Record<string, unknown>)
-      if (branding.smtpPassword) {
-        branding.smtpPassword = decrypt(branding.smtpPassword as string)
+      const [rows, domainRows] = await Promise.all([
+        sql`SELECT * FROM studio_branding WHERE user_id = ${userId}`,
+        sql`
+          SELECT domain FROM domains
+          WHERE user_id = ${userId}
+          ORDER BY
+            CASE WHEN verification_status = 'verified' THEN 0 WHEN is_primary = true THEN 1 ELSE 2 END,
+            created_at DESC
+          LIMIT 1
+        `,
+      ])
+      if (rows.length === 0 && domainRows.length === 0) return null
+      const rawBranding = rows.length > 0 ? toCamel(rows[0] as Record<string, unknown>) : {}
+      if (rawBranding.smtpPassword) {
+        rawBranding.smtpPassword = decrypt(rawBranding.smtpPassword as string)
       }
+      const primaryDomain = domainRows.length > 0 ? (domainRows[0].domain as string) : null
       const merged = {
-        ...branding,
-        selectedTheme: rows[0].selected_theme || "modern_emerald",
+        ...rawBranding,
+        primaryDomain,
+        primary_domain: primaryDomain,
+        selectedTheme: rows[0]?.selected_theme || "modern_emerald",
       } as Record<string, unknown>
       return normalizeBrandingRowForClient(merged)
     }

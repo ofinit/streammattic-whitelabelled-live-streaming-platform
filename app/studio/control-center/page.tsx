@@ -629,6 +629,11 @@ export default function StudioEventsPage() {
 
   const getEventPublicUrl = (event: any) => {
     const path = `/${(event.slug as string) || event.id}`
+    const customDomain = (event.studioCustomDomain || event.customDomain || event.primaryDomain || primaryDomain) as string | undefined
+    if (customDomain) {
+      const cleanDomain = customDomain.replace(/^https?:\/\//i, "").replace(/\/.*$/, "")
+      return `https://${cleanDomain}${path}`
+    }
     if (typeof window !== "undefined") {
       return `${window.location.origin}${path}`
     }

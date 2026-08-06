@@ -48,13 +48,34 @@ export function StreamPlayer({
   const [playbackBlocked, setPlaybackBlocked] = useState(false)
   const [reloadNonce, setReloadNonce] = useState(0)
 
-  // Timeline seekbar & playback state
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [isSeeking, setIsSeeking] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const [qualities, setQualities] = useState<{ id: number; label: string }[]>([])
-  const [selectedQuality, setSelectedQuality] = useState<number>(-1)
+  // Local floating reaction emojis
+  const [localFloatingEmojis, setLocalFloatingEmojis] = useState<
+    { id: string; emoji: string; x: number; delay: number; size: number }[]
+  >([])
+
+  const handleLocalReaction = (type: string) => {
+    onReaction?.(type)
+    const REACTION_MAP: Record<string, string> = {
+      heart: "❤️",
+      thumbsup: "👍",
+      laugh: "😂",
+      fire: "🔥",
+      clap: "👏",
+    }
+    const emoji = REACTION_MAP[type] ?? "❤️"
+    const now = Date.now()
+    const newEmojis = Array.from({ length: 5 }, (_, i) => ({
+      id: `${now}-${i}-${Math.random().toString(36).substring(2, 7)}`,
+      emoji,
+      x: 15 + Math.random() * 70,
+      delay: i * 0.12,
+      size: 26 + Math.floor(Math.random() * 14),
+    }))
+    setLocalFloatingEmojis((prev) => [...prev, ...newEmojis])
+    setTimeout(() => {
+      setLocalFloatingEmojis((prev) => prev.filter((e) => !newEmojis.some((n) => n.id === e.id)))
+    }, 3000)
+  }
 
   const playVideo = useCallback(() => {
     const video = videoRef.current
@@ -347,6 +368,23 @@ export function StreamPlayer({
         style={{ display: isPlayable && !playerError ? "block" : "none" }}
       />
 
+      {/* Local Floating Reaction Emojis Overlay */}
+      <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+        {localFloatingEmojis.map((e) => (
+          <span
+            key={e.id}
+            className="pointer-events-none absolute bottom-16 select-none animate-[floatUp_2.5s_ease-out_forwards] drop-shadow-md"
+            style={{
+              left: `${e.x}%`,
+              fontSize: `${e.size}px`,
+              animationDelay: `${e.delay}s`,
+            }}
+          >
+            {e.emoji}
+          </span>
+        ))}
+      </div>
+
       {/* Unified Controls Overlay */}
       {isPlayable && !playerError && (
         <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-3 pt-6 transition-opacity duration-200">
@@ -413,7 +451,7 @@ export function StreamPlayer({
                   <button
                     key={type}
                     type="button"
-                    onClick={() => onReaction?.(type)}
+                    onClick={() => handleLocalReaction(type)}
                     className="text-base hover:scale-125 transition-transform px-1 py-0.5 select-none"
                     title={type}
                   >

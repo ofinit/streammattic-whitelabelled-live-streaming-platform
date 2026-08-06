@@ -1795,20 +1795,19 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
           {/* Floating Reaction Emojis Overlay */}
           <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-            {!isEnded &&
-              floatingEmojis.map((e) => (
-                <span
-                  key={e.id}
-                  className="pointer-events-none absolute bottom-16 select-none animate-[floatUp_2.5s_ease-out_forwards] drop-shadow-md"
-                  style={{
-                    left: `${e.x}%`,
-                    fontSize: `${e.size || 32}px`,
-                    animationDelay: `${e.delay || 0}s`,
-                  }}
-                >
-                  {e.emoji}
-                </span>
-              ))}
+            {floatingEmojis.map((e) => (
+              <span
+                key={e.id}
+                className="pointer-events-none absolute bottom-16 select-none animate-[floatUp_2.5s_ease-out_forwards] drop-shadow-md"
+                style={{
+                  left: `${e.x}%`,
+                  fontSize: `${e.size || 32}px`,
+                  animationDelay: `${e.delay || 0}s`,
+                }}
+              >
+                {e.emoji}
+              </span>
+            ))}
           </div>
 
           {!isYouTubePlayer && !(event.streamType === "rtmp" && rtmpPlaybackHlsUrl) && (

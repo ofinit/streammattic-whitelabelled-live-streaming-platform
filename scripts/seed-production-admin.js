@@ -1,5 +1,6 @@
 /**
  * One-time (or repeat-safe) production bootstrap:
+ * - Ensures user_role ENUM values ('rtmp_operator', 'elive_operator') exist
  * - Upserts platform super admin (ofinitsolutions@gmail.com) with full admin role
  * - Upserts eLive operator admin (pbollapragada@gmail.com) with elive_operator role
  */
@@ -63,6 +64,10 @@ async function main() {
   await client.connect()
 
   try {
+    // 1. Ensure user_role ENUM values exist in Postgres
+    await client.query(`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'rtmp_operator'`).catch(() => {})
+    await client.query(`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'elive_operator'`).catch(() => {})
+
     await client.query(
       `ALTER TABLE events ADD COLUMN IF NOT EXISTS is_mock BOOLEAN DEFAULT false`,
     )
@@ -81,7 +86,7 @@ async function main() {
 
       const upsert = await client.query(
         `INSERT INTO users (email, name, password_hash, role, status, email_verified)
-         VALUES ($1, $2, $3, $4, 'active', true)
+         VALUES ($1, $2, $3, $4::user_role, 'active', true)
          ON CONFLICT (email) DO UPDATE SET
            password_hash = EXCLUDED.password_hash,
            name = EXCLUDED.name,

@@ -4,6 +4,9 @@
 ALTER TABLE studio_branding ADD COLUMN IF NOT EXISTS tagline TEXT;
 ALTER TABLE studio_branding ADD COLUMN IF NOT EXISTS selected_theme VARCHAR(50) DEFAULT 'modern_emerald';
 
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'rtmp_operator';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'elive_operator';
+
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS studio_id UUID REFERENCES users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_orders_studio_id ON orders(studio_id);
 

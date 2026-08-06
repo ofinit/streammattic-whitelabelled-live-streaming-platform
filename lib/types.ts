@@ -1,5 +1,5 @@
 // User Roles
-export type UserRole = "admin" | "studio" | "streamer" | "rtmp_operator"
+export type UserRole = "admin" | "studio" | "streamer" | "rtmp_operator" | "elive_operator"
 
 // User Status
 export type UserStatus = "active" | "inactive" | "suspended"

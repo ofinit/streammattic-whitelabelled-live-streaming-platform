@@ -21,8 +21,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     pathname === "/admin/forgot-password" ||
     pathname === "/admin/reset-password"
 
-  /** Effective user must be admin (impersonation swaps `user` to the target). */
-  const hasAdminAccess = user?.role === "admin"
+  const isOperator = user?.role === "elive_operator" || user?.role === "rtmp_operator" || user?.email?.toLowerCase() === "pbollapragada@gmail.com"
+  const hasAdminAccess = user?.role === "admin" || isOperator
 
   useEffect(() => {
     if (isPublicAdminAuthPage || isLoading) return
@@ -36,12 +36,18 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       } else {
         router.replace("/login")
       }
+      return
+    }
+    if (isOperator && pathname !== "/admin/events" && !pathname.startsWith("/admin/events/")) {
+      router.replace("/admin/events")
     }
   }, [
     isPublicAdminAuthPage,
     isLoading,
     isAuthenticated,
     hasAdminAccess,
+    isOperator,
+    pathname,
     user?.role,
     router,
   ])

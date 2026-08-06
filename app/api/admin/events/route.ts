@@ -6,7 +6,10 @@ import { syncEliveAllocationsWithEvents } from "@/lib/streaming/elive-service"
 
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin", "rtmp_operator"])
+    const user = await requireRole(["admin", "rtmp_operator", "elive_operator"])
+    const isEliveOnly =
+      user.role === "elive_operator" ||
+      (user.email as string)?.toLowerCase() === "pbollapragada@gmail.com"
     
     // Parse query params (optional)
     const url = new URL(req.url)
@@ -25,7 +28,32 @@ export async function GET(req: Request) {
     ) AS studio_custom_domain`)
 
     let rows: Record<string, unknown>[]
-    if (status) {
+    if (isEliveOnly) {
+      if (status) {
+        rows = await sql`
+          SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role,
+                 ${domainSubquery}
+          FROM events e
+          LEFT JOIN users u ON e.user_id = u.id
+          WHERE e.status = ${status}
+            AND (LOWER(COALESCE(e.stream_type::text, '')) IN ('rtmp', 'rtmp_server'))
+            AND (LOWER(COALESCE(e.rtmp_provider, '')) = 'elive' OR e.rtmp_url LIKE '%eliveevents%' OR e.hls_url LIKE '%5centscdn%' OR e.hls_url LIKE '%elive%')
+          ORDER BY e.created_at DESC
+          LIMIT 100
+        ` as Record<string, unknown>[]
+      } else {
+        rows = await sql`
+          SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role,
+                 ${domainSubquery}
+          FROM events e
+          LEFT JOIN users u ON e.user_id = u.id
+          WHERE (LOWER(COALESCE(e.stream_type::text, '')) IN ('rtmp', 'rtmp_server'))
+            AND (LOWER(COALESCE(e.rtmp_provider, '')) = 'elive' OR e.rtmp_url LIKE '%eliveevents%' OR e.hls_url LIKE '%5centscdn%' OR e.hls_url LIKE '%elive%')
+          ORDER BY e.created_at DESC
+          LIMIT 100
+        ` as Record<string, unknown>[]
+      }
+    } else if (status) {
       rows = await sql`
         SELECT e.*, u.name AS user_name, u.email AS user_email, u.role AS user_role,
                ${domainSubquery}

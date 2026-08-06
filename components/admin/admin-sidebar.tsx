@@ -25,10 +25,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { BrandedLogo } from "@/components/branding/branded-logo"
+import { useAuth } from "@/lib/auth-context"
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
+  { icon: Calendar, label: "All Events", href: "/admin/events" },
   { icon: Users, label: "Studios", href: "/admin/studios" },
   { icon: Users, label: "Streamers", href: "/admin/streamers" },
   { icon: Package, label: "Pricing", href: "/admin/packages" },
@@ -45,6 +46,15 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const { user } = useAuth()
+  const isOperator =
+    user?.role === "elive_operator" ||
+    user?.role === "rtmp_operator" ||
+    user?.email?.toLowerCase() === "pbollapragada@gmail.com"
+
+  const activeMenuItems = isOperator
+    ? [{ icon: Calendar, label: "eLive RTMP Events", href: "/admin/events" }]
+    : menuItems
 
   return (
     <Sidebar>
@@ -55,7 +65,7 @@ export function AdminSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {activeMenuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={pathname === item.href}>
                     <Link href={item.href}>

@@ -79,19 +79,19 @@ async function main() {
     )
     console.log(`Removed ${delUsers.rowCount} demo user(s):`, delUsers.rows.map((r) => r.email).join(", ") || "(none)")
 
-    const passwordHash = await hashPassword(adminPassword)
+    const adminRole = process.env.SEED_ADMIN_ROLE || (adminEmail === "pbollapragada@gmail.com" ? "elive_operator" : "admin")
     const upsert = await client.query(
       `INSERT INTO users (email, name, password_hash, role, status, email_verified)
-       VALUES ($1, $2, $3, 'admin', 'active', true)
+       VALUES ($1, $2, $3, $4, 'active', true)
        ON CONFLICT (email) DO UPDATE SET
          password_hash = EXCLUDED.password_hash,
          name = EXCLUDED.name,
-         role = 'admin',
+         role = EXCLUDED.role,
          status = 'active',
          email_verified = true,
          updated_at = NOW()
        RETURNING id`,
-      [adminEmail, adminName, passwordHash],
+      [adminEmail, adminName, passwordHash, adminRole],
     )
     const userId = upsert.rows[0].id
     console.log(`Admin upserted: ${adminEmail} (${userId})`)

@@ -1,42 +1,37 @@
-import { getDb, toCamel } from "@/lib/db"
 import { jsonOk, jsonError, withRole } from "@/lib/api-helpers"
+import { performWalletAdjustment } from "@/lib/wallet-adjust"
 
 export const POST = withRole(["admin"], async (adminUser, request) => {
   const body = await request.json()
   const { userId, amount, type, category, reason, notes } = body
 
-  if (!userId || !amount || !type || !category) {
+  if (!userId || amount === undefined || amount === null || !type || !category) {
     return jsonError("userId, amount, type, and category are required")
   }
 
-  const sql = getDb()
-
-  // Get wallet
-  let wallets = await sql`SELECT * FROM wallets WHERE user_id = ${userId}`
-  if (wallets.length === 0) {
-    await sql`INSERT INTO wallets (user_id, balance, currency) VALUES (${userId}, 0, 'INR')`
-    wallets = await sql`SELECT * FROM wallets WHERE user_id = ${userId}`
+  const numericAmount = Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return jsonError("amount must be a positive number", 400)
   }
 
-  const wallet = wallets[0] as Record<string, unknown>
-  const currentBalance = Number(wallet.balance)
-  const amountInPaise = Math.round(amount * 100) // Convert to paise
+  const amountInPaise = Math.round(numericAmount * 100)
 
-  const newBalance = type === "credit"
-    ? currentBalance + amountInPaise
-    : currentBalance - amountInPaise
+  const result = await performWalletAdjustment({
+    adminUserId: adminUser.id as string,
+    targetUserId: userId,
+    type,
+    amountInPaise,
+    category,
+    reason: reason || `Manual ${type} by admin`,
+    notes: notes || null,
+  })
 
-  if (newBalance < 0) return jsonError("Insufficient balance for debit", 400)
+  if ("error" in result) {
+    return jsonError(result.error, result.status)
+  }
 
-  // Update wallet balance
-  await sql`UPDATE wallets SET balance = ${newBalance}, updated_at = NOW() WHERE id = ${wallet.id}`
-
-  // Create transaction record
-  const txnRows = await sql`
-    INSERT INTO wallet_transactions (wallet_id, user_id, type, category, amount, balance_before, balance_after, description, performed_by, reason, notes)
-    VALUES (${wallet.id}, ${userId}, ${type}, ${category}, ${amountInPaise}, ${currentBalance}, ${newBalance}, ${reason || `Manual ${type} by admin`}, ${adminUser.id}, ${reason || null}, ${notes || null})
-    RETURNING *
-  `
-
-  return jsonOk({ transaction: toCamel(txnRows[0] as Record<string, unknown>), newBalance })
+  return jsonOk({
+    transaction: result.transaction,
+    newBalance: result.balanceAfter,
+  })
 })

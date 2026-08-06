@@ -1,70 +1,44 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth"
 import { getDb } from "@/lib/db"
+import { performWalletAdjustment } from "@/lib/wallet-adjust"
 
 export async function POST(req: Request) {
   try {
     const adminUser = await requireRole(["admin"])
-    const { userId, type, amount, reason, category } = await req.json()
+    const body = await req.json()
+    const { userId, type, amount, reason, category, notes } = body
 
-    if (!userId || !type || !amount || !reason || !category) {
+    if (!userId || !type || amount === undefined || amount === null || !reason || !category) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    if (!["credit", "debit"].includes(type)) {
-      return NextResponse.json({ error: "Type must be credit or debit" }, { status: 400 })
+    const numericAmount = parseFloat(amount)
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 })
     }
 
-    const value = Math.round(Math.abs(parseFloat(amount)) * 100) // convert rupees input to paise
-    if (isNaN(value) || value <= 0) {
-      return NextResponse.json({ error: "Amount must be a positive integer" }, { status: 400 })
+    const valueInPaise = Math.round(Math.abs(numericAmount) * 100)
+
+    const result = await performWalletAdjustment({
+      adminUserId: adminUser.id,
+      targetUserId: userId,
+      type,
+      amountInPaise: valueInPaise,
+      category,
+      reason,
+      notes,
+    })
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    const sql = getDb()
-
-    // Process safely inside a transaction hook
-    // Neon Serverless package doesn't have a formal BEGIN/COMMIT, we use the connection
-    let targetWalletQuery = await sql`SELECT id, balance FROM wallets WHERE user_id = ${userId}`
-    if (targetWalletQuery.length === 0) {
-      await sql`INSERT INTO wallets (user_id, balance, currency) VALUES (${userId}, 0, 'INR')`
-      targetWalletQuery = await sql`SELECT id, balance FROM wallets WHERE user_id = ${userId}`
-    }
-
-    const wallet = targetWalletQuery[0]
-    const balanceBefore = Number(wallet.balance)
-    let balanceAfter = balanceBefore
-
-    if (type === "credit") {
-      balanceAfter += value
-    } else {
-      balanceAfter -= value
-      if (balanceAfter < 0) balanceAfter = 0 // prevent negative balance from manual adjustment
-    }
-
-    // Insert the actual transaction
-    const wtxn = await sql`
-      INSERT INTO wallet_transactions 
-        (wallet_id, user_id, type, category, amount, balance_before, balance_after, description, performed_by, reason)
-      VALUES 
-        (${wallet.id}, ${userId}, ${type}, ${category}, ${value}, ${balanceBefore}, ${balanceAfter}, 'Manual Administrator Adjustment', ${adminUser.id}, ${reason})
-      RETURNING id
-    `
-    const transactionId = wtxn[0].id
-
-    // Log the formal adjustment 
-    await sql`
-      INSERT INTO wallet_adjustments
-        (target_user_id, type, amount, reason, category, initiated_by, status, transaction_id)
-      VALUES
-        (${userId}, ${type}, ${value}, ${reason}, ${category}, ${adminUser.id}, 'completed', ${transactionId})
-    `
-
-    // Update wallet balance
-    await sql`
-      UPDATE wallets SET balance = ${balanceAfter}, updated_at = NOW() WHERE id = ${wallet.id}
-    `
-
-    return NextResponse.json({ success: true, balance: balanceAfter, message: "Adjustment successful" })
+    return NextResponse.json({
+      success: true,
+      balance: result.balanceAfter,
+      message: "Adjustment successful",
+    })
   } catch (error: any) {
     console.error("Admin Wallet Adjust API error:", error)
     if (error.message === "Forbidden" || error.message === "Unauthorized") {
@@ -74,11 +48,11 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     await requireRole(["admin"])
     const sql = getDb()
-    
+
     // Join with users for target and initiator names
     const rows = await sql`
       SELECT 
@@ -92,11 +66,14 @@ export async function GET(req: Request) {
       JOIN users u_init ON wa.initiated_by = u_init.id
       ORDER BY wa.created_at DESC
     `
-    
+
     const { toCamelRows } = require("@/lib/db")
     return NextResponse.json({ data: toCamelRows(rows as Record<string, unknown>[]) })
   } catch (error: any) {
     console.error("Admin Wallet Adjust GET API error:", error)
+    if (error.message === "Forbidden" || error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -3245,34 +3245,33 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {isEditing && formData.streamType === "rtmp" && ((event as any)?.hasCrewPin || crewPin.trim()) && (
-                  <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
-                    <Alert className="border-primary/50 bg-primary/5">
-                      <Lock className="h-4 w-4" />
-                      <AlertTitle>Credentials protected by crew PIN</AlertTitle>
-                      <AlertDescription>
-                        Stream URL and key are only visible on the crew page after entering the PIN. Share this link with your crew (do not share on the public event page).
-                      </AlertDescription>
-                    </Alert>
-                    <div className="flex items-center gap-2">
-                      <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!crewPageUrl}
-                        onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
-                      >
-                        {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
+              {isEditing && formData.streamType === "rtmp" && (isCrewPinEnabled || Boolean(crewPin.trim())) && (
+                <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
+                  <Alert className="border-primary/50 bg-primary/5">
+                    <Lock className="h-4 w-4" />
+                    <AlertTitle>Credentials protected by crew PIN</AlertTitle>
+                    <AlertDescription>
+                      Stream URL and key are only visible on the crew page after entering the PIN. Share this link with your crew (do not share on the public event page).
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex items-center gap-2">
+                    <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!crewPageUrl}
+                      onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
+                    >
+                      {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
                   </div>
-                )}
+                </div>
+              )}
 
               {isEditing &&
-                showRtmpCredentials &&
                 formData.streamType === "rtmp" &&
-                !(event as any)?.hasCrewPin &&
+                !isCrewPinEnabled &&
                 !crewPin.trim() && (
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
@@ -3283,12 +3282,12 @@ export function EventFormDialog({
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">RTMP URL (Server)</Label>
                       <div className="flex gap-2">
-                        <Input value={formData.rtmpUrl || ""} readOnly className="font-mono text-sm" />
+                        <Input value={formData.rtmpUrl || event?.rtmpUrl || ""} readOnly className="font-mono text-sm" />
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => copyToClipboard(formData.rtmpUrl!, "rtmp")}
+                          onClick={() => copyToClipboard(formData.rtmpUrl || event?.rtmpUrl || "", "rtmp")}
                         >
                           {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
@@ -3299,7 +3298,7 @@ export function EventFormDialog({
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Input
-                            value={formData.streamKey || ""}
+                            value={formData.streamKey || event?.streamKey || ""}
                             readOnly
                             type={showStreamKey ? "text" : "password"}
                             className="font-mono text-sm pr-10"
@@ -3318,7 +3317,7 @@ export function EventFormDialog({
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => copyToClipboard(formData.streamKey!, "key")}
+                          onClick={() => copyToClipboard(formData.streamKey || event?.streamKey || "", "key")}
                         >
                           {copied === "key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
@@ -3401,7 +3400,7 @@ export function EventFormDialog({
                           <Youtube className="h-4 w-4 text-red-500" />
                           YouTube API – Stream credentials
                         </h4>
-                        {((event as any)?.hasCrewPin || crewPin.trim()) ? (
+                        {(isCrewPinEnabled || Boolean(crewPin.trim())) ? (
                           <>
                             <Alert className="border-primary/50 bg-primary/5">
                               <Lock className="h-4 w-4" />

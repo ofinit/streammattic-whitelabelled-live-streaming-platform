@@ -48,6 +48,14 @@ export function StreamPlayer({
   const [playbackBlocked, setPlaybackBlocked] = useState(false)
   const [reloadNonce, setReloadNonce] = useState(0)
 
+  // Timeline seekbar & playback state
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [isSeeking, setIsSeeking] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [qualities, setQualities] = useState<{ id: number; label: string }[]>([])
+  const [selectedQuality, setSelectedQuality] = useState<number>(-1)
+
   // Local floating reaction emojis
   const [localFloatingEmojis, setLocalFloatingEmojis] = useState<
     { id: string; emoji: string; x: number; delay: number; size: number }[]

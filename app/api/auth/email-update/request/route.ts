@@ -3,12 +3,22 @@ import { getCurrentUser } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { redis } from "@/lib/redis"
 import { sendVerificationOTP } from "@/lib/email"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser()
     if (!user || !user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const ip = extractIp(req)
+    const allowed = await checkRateLimit(`email_update_req:${user.id}:${ip}`, 3, 900)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many verification requests. Please try again in 15 minutes." },
+        { status: 429 },
+      )
     }
 
     const { newEmail } = await req.json()

@@ -2,12 +2,22 @@ import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { redis } from "@/lib/redis"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser()
     if (!user || !user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const ip = extractIp(req)
+    const allowed = await checkRateLimit(`email_update_verify:${user.id}:${ip}`, 10, 900)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please try again later." },
+        { status: 429 },
+      )
     }
 
     const { otp } = await req.json()
@@ -23,6 +33,7 @@ export async function POST(req: Request) {
     }
 
     const key = `email_update_otp:${user.id}`
+    const attemptsKey = `email_update_otp_attempts:${user.id}`
     const payload = await redis.get<{ newEmail: string; otp: string }>(key)
 
     if (!payload || !payload.newEmail || !payload.otp) {
@@ -30,8 +41,23 @@ export async function POST(req: Request) {
     }
 
     if (payload.otp !== otp.trim()) {
-      return NextResponse.json({ error: "Incorrect verification code." }, { status: 400 })
+      const attempts = await redis.incr(attemptsKey)
+      if (attempts === 1) await redis.expire(attemptsKey, 600)
+      if (attempts >= 5) {
+        await redis.del(key)
+        await redis.del(attemptsKey)
+        return NextResponse.json(
+          { error: "Too many incorrect attempts. Verification code invalidated. Please request a new code." },
+          { status: 400 },
+        )
+      }
+      return NextResponse.json(
+        { error: `Incorrect verification code. ${5 - attempts} attempts remaining.` },
+        { status: 400 },
+      )
     }
+
+    await redis.del(attemptsKey)
 
     // OTP matches! Update the database
     const sql = getDb()

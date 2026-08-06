@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
       await sql`UPDATE users SET password_hash = ${newHash}, updated_at = NOW() WHERE id = ${dbUser.id as string}`
     }
 
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
     const userAgent = request.headers.get("user-agent") || "unknown"
     const { token, expiresAt } = await createSession(dbUser.id as string, ip, userAgent)
 

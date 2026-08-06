@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     await deleteAllUserSessions(user.id as string)
 
     // Create a new session
-    const ip = request.headers.get("x-forwarded-for") || "unknown"
     const userAgent = request.headers.get("user-agent") || "unknown"
     const { token, expiresAt } = await createSession(user.id as string, ip, userAgent)
     await setSessionCookie(token, expiresAt)

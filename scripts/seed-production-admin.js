@@ -1,18 +1,7 @@
 /**
  * One-time (or repeat-safe) production bootstrap:
- * - Deletes legacy demo accounts and template-seeded mock events
- * - Upserts platform admin with pbkdf2 password hash (matches lib/auth.ts verifyPassword)
- *
- * Usage (needs Node — run on your PC or the **app** container, not the Postgres container):
- *   DATABASE_URL=... node scripts/seed-production-admin.js
- *   node --env-file=.env.production scripts/seed-production-admin.js
- *
- * If `node` is not installed (e.g. only `psql` in the DB shell), generate a hash with:
- *   node scripts/print-password-hash.js "YourPassword"
- *   then run the printed UPDATE in psql.
- *
- * Optional overrides:
- *   SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD
+ * - Upserts platform super admin (ofinitsolutions@gmail.com) with full admin role
+ * - Upserts eLive operator admin (pbollapragada@gmail.com) with elive_operator role
  */
 /* eslint-disable no-console */
 const { Client } = require("pg")
@@ -23,12 +12,23 @@ const DEMO_EMAILS = [
   "admin@streamlivee.com",
   "alice@example.com",
   "john@livestream.pro",
-  /** Legacy seed admin email (same row as fixed UUID …0001 in some DBs) */
   "johnson@ofinit.com",
 ]
 
-const DEFAULT_ADMIN_EMAIL = "pbollapragada@gmail.com"
-const DEFAULT_ADMIN_PASSWORD = "eLive$777#1%"
+const ADMIN_ACCOUNTS = [
+  {
+    email: process.env.PRIMARY_ADMIN_EMAIL || "ofinitsolutions@gmail.com",
+    password: process.env.PRIMARY_ADMIN_PASSWORD || "Html@1234",
+    name: "Platform Admin",
+    role: "admin",
+  },
+  {
+    email: process.env.OPERATOR_ADMIN_EMAIL || "pbollapragada@gmail.com",
+    password: process.env.OPERATOR_ADMIN_PASSWORD || "eLive$777#1%",
+    name: "eLive Operator",
+    role: "elive_operator",
+  },
+]
 
 async function hashPassword(password) {
   const encoder = new TextEncoder()
@@ -59,10 +59,6 @@ async function main() {
     process.exit(1)
   }
 
-  const adminEmail = (process.env.SEED_ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).toLowerCase().trim()
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD
-  const adminName = process.env.SEED_ADMIN_NAME || "Platform Admin"
-
   const client = new Client({ connectionString: url })
   await client.connect()
 
@@ -79,30 +75,34 @@ async function main() {
     )
     console.log(`Removed ${delUsers.rowCount} demo user(s):`, delUsers.rows.map((r) => r.email).join(", ") || "(none)")
 
-    const adminRole = process.env.SEED_ADMIN_ROLE || (adminEmail === "pbollapragada@gmail.com" ? "elive_operator" : "admin")
-    const upsert = await client.query(
-      `INSERT INTO users (email, name, password_hash, role, status, email_verified)
-       VALUES ($1, $2, $3, $4, 'active', true)
-       ON CONFLICT (email) DO UPDATE SET
-         password_hash = EXCLUDED.password_hash,
-         name = EXCLUDED.name,
-         role = EXCLUDED.role,
-         status = 'active',
-         email_verified = true,
-         updated_at = NOW()
-       RETURNING id`,
-      [adminEmail, adminName, passwordHash, adminRole],
-    )
-    const userId = upsert.rows[0].id
-    console.log(`Admin upserted: ${adminEmail} (${userId})`)
+    for (const acc of ADMIN_ACCOUNTS) {
+      const email = acc.email.toLowerCase().trim()
+      const passwordHash = await hashPassword(acc.password)
 
-    await client.query(
-      `INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0, 'INR') ON CONFLICT (user_id) DO NOTHING`,
-      [userId],
-    )
-    await client.query(`INSERT INTO user_credits (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [userId])
+      const upsert = await client.query(
+        `INSERT INTO users (email, name, password_hash, role, status, email_verified)
+         VALUES ($1, $2, $3, $4, 'active', true)
+         ON CONFLICT (email) DO UPDATE SET
+           password_hash = EXCLUDED.password_hash,
+           name = EXCLUDED.name,
+           role = EXCLUDED.role,
+           status = 'active',
+           email_verified = true,
+           updated_at = NOW()
+         RETURNING id`,
+        [email, acc.name, passwordHash, acc.role],
+      )
+      const userId = upsert.rows[0].id
+      console.log(`Admin user upserted: ${email} (${acc.role}) -> ID: ${userId}`)
 
-    console.log("Done. Sign in with the admin email and password (rotate password after first login).")
+      await client.query(
+        `INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0, 'INR') ON CONFLICT (user_id) DO NOTHING`,
+        [userId],
+      )
+      await client.query(`INSERT INTO user_credits (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [userId])
+    }
+
+    console.log("Done. Sign in with the admin email and password.")
   } finally {
     await client.end()
   }

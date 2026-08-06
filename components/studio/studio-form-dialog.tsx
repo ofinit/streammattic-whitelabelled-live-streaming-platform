@@ -129,7 +129,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                       value={formData.companyName}
                       onChange={(e) => updateField("companyName", e.target.value)}
                       placeholder="e.g., LiveStream Pro Media"
-                      className="bg-secondary border-0"
+                      className="bg-background border-input"
                       required
                     />
                   </div>
@@ -143,7 +143,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                         value={formData.email}
                         onChange={(e) => updateField("email", e.target.value)}
                         placeholder="admin@company.com"
-                        className="bg-secondary border-0"
+                        className="bg-background border-input"
                         required
                         disabled={mode === "edit"}
                       />
@@ -156,7 +156,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                         value={formData.phone}
                         onChange={(e) => updateField("phone", e.target.value)}
                         placeholder="+91 98765 43210"
-                        className="bg-secondary border-0"
+                        className="bg-background border-input"
                       />
                     </div>
                   </div>
@@ -170,7 +170,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                         value={formData.password}
                         onChange={(e) => updateField("password", e.target.value)}
                         placeholder="Minimum 8 characters"
-                        className="bg-secondary border-0"
+                        className="bg-background border-input"
                         required
                         minLength={8}
                       />
@@ -195,7 +195,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                     <div className="space-y-2">
                       <Label htmlFor="status">Account Status</Label>
                       <Select value={formData.status} onValueChange={(value) => updateField("status", value)}>
-                        <SelectTrigger className="bg-secondary border-0">
+                        <SelectTrigger className="bg-background border-input">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -225,7 +225,7 @@ export function StudioFormDialog({ open, onOpenChange, mode, initialData, onSubm
                       value={formData.platformName}
                       onChange={(e) => updateField("platformName", e.target.value)}
                       placeholder="e.g., StreamPro, LiveCast, EventHub"
-                      className="bg-secondary border-0"
+                      className="bg-background border-input"
                       required
                     />
                     <p className="text-xs text-muted-foreground">

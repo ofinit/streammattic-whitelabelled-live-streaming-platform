@@ -2232,7 +2232,7 @@ export function EventFormDialog({
                   Event URL <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
-                  <div className="flex items-center rounded-md border border-input bg-secondary overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                  <div className="flex items-center rounded-md border border-input bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring">
                     <span className="hidden sm:inline-block px-3 py-2 text-xs text-muted-foreground bg-muted/50 border-r border-input whitespace-nowrap select-none">
                       {formData.useCustomDomain && primaryDomain ? primaryDomain : (typeof window !== "undefined" ? window.location.host : "streamlivee.com")}/
                     </span>

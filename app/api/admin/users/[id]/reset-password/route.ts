@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth"
-import { hashPassword } from "@/lib/auth"
+import { requireRole, hashPassword, deleteAllUserSessions } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -34,8 +33,8 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       WHERE id = ${id}
     `
 
-    // Invalidate all existing sessions so the user must log in with the new password.
-    await sql`DELETE FROM sessions WHERE user_id = ${id}`
+    // Invalidate all existing sessions (clears DB + Redis caches)
+    await deleteAllUserSessions(id)
 
     const user = userRows[0] as { id: string; email: string; status: string }
     return NextResponse.json({

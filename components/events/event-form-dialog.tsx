@@ -3322,41 +3322,39 @@ export function EventFormDialog({
                       </div>
                     </div>
                   )}
+
+                  {/* Encoder Settings Card */}
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                    <h5 className="font-medium text-sm flex items-center justify-between">
+                      <span>StreamLivee Recommended Encoder Settings</span>
+                      <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
+                    </h5>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded bg-background/50 border border-border/50">
+                        <span className="text-muted-foreground block text-[10px]">Max Video Bitrate</span>
+                        <span className="font-semibold text-foreground">1,500 Kbps</span>
+                      </div>
+                      <div className="p-2 rounded bg-background/50 border border-border/50">
+                        <span className="text-muted-foreground block text-[10px]">Audio Bitrate</span>
+                        <span className="font-semibold text-foreground">128 Kbps (AAC)</span>
+                      </div>
+                      <div className="p-2 rounded bg-background/50 border border-border/50">
+                        <span className="text-muted-foreground block text-[10px]">Resolution</span>
+                        <span className="font-semibold text-foreground">1280 × 720 (720p 30fps)</span>
+                      </div>
+                      <div className="p-2 rounded bg-background/50 border border-border/50">
+                        <span className="text-muted-foreground block text-[10px]">Keyframe Interval</span>
+                        <span className="font-semibold text-foreground">2.0 Seconds</span>
+                      </div>
+                    </div>
+                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-1 border-t border-border/40">
+                      <li>Open OBS Studio → Settings → Stream (Set Service to Custom, paste Server & Stream Key)</li>
+                      <li>In Settings → Output: Set Video Bitrate to <strong>1500 Kbps</strong></li>
+                      <li>Click &quot;Apply&quot; and start streaming!</li>
+                    </ol>
+                  </div>
                 </>
               )}
-
-                    {/* Encoder Settings Card */}
-                    <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                      <h5 className="font-medium text-sm flex items-center justify-between">
-                        <span>StreamLivee Recommended Encoder Settings</span>
-                        <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
-                      </h5>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2 rounded bg-background/50 border border-border/50">
-                          <span className="text-muted-foreground block text-[10px]">Max Video Bitrate</span>
-                          <span className="font-semibold text-foreground">1,500 Kbps</span>
-                        </div>
-                        <div className="p-2 rounded bg-background/50 border border-border/50">
-                          <span className="text-muted-foreground block text-[10px]">Audio Bitrate</span>
-                          <span className="font-semibold text-foreground">128 Kbps (AAC)</span>
-                        </div>
-                        <div className="p-2 rounded bg-background/50 border border-border/50">
-                          <span className="text-muted-foreground block text-[10px]">Resolution</span>
-                          <span className="font-semibold text-foreground">1280 × 720 (720p 30fps)</span>
-                        </div>
-                        <div className="p-2 rounded bg-background/50 border border-border/50">
-                          <span className="text-muted-foreground block text-[10px]">Keyframe Interval</span>
-                          <span className="font-semibold text-foreground">2.0 Seconds</span>
-                        </div>
-                      </div>
-                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-1 border-t border-border/40">
-                        <li>Open OBS Studio → Settings → Stream (Set Service to Custom, paste Server & Stream Key)</li>
-                        <li>In Settings → Output: Set Video Bitrate to <strong>1500 Kbps</strong></li>
-                        <li>Click &quot;Apply&quot; and start streaming!</li>
-                      </ol>
-                    </div>
-                  </div>
-                )}
 
               {formData.streamType === "rtmp" && (
                 <SimulcastDestinations

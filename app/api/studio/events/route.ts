@@ -26,6 +26,7 @@ import { sanitizeEventForClient } from "@/lib/sanitize-event-for-client"
 import {
   thirdPartyEmbedCodeContainsYouTube,
   THIRD_PARTY_YOUTUBE_IFRAME_ERROR,
+  sanitizeEmbedCode,
 } from "@/lib/third-party-embed-validation"
 import { insertDeletedEventLog } from "@/lib/server/deleted-events-log"
 import { enqueueSrsRecordingDeletion } from "@/lib/server/srs-recording-deletion"
@@ -203,11 +204,12 @@ export async function POST(req: NextRequest) {
       if (simPol0) return NextResponse.json({ error: simPol0.error }, { status: simPol0.status })
     }
 
+    const cleanEmbedCode = typeof embedCode === "string" ? sanitizeEmbedCode(embedCode) : null
+
     if (
       insertStreamType === "third_party" &&
-      typeof embedCode === "string" &&
-      embedCode.trim() &&
-      thirdPartyEmbedCodeContainsYouTube(embedCode)
+      cleanEmbedCode &&
+      thirdPartyEmbedCodeContainsYouTube(cleanEmbedCode)
     ) {
       return NextResponse.json({ error: THIRD_PARTY_YOUTUBE_IFRAME_ERROR }, { status: 400 })
     }
@@ -384,7 +386,7 @@ export async function POST(req: NextRequest) {
         ${user.id as string}, ${title.trim()}, ${subtitleValue}, ${description || null},
         ${insertStreamType}, ${streamKey},
         ${!isPendingCreate && (["rtmp", "youtube_api"].includes(insertStreamType || "") || !!providedRtmpUrl) ? rtmpUrl : null},
-        ${youtubeUrl || null}, ${embedCode || null},
+        ${youtubeUrl || null}, ${cleanEmbedCode || null},
         'scheduled', ${scheduledAt || null},
         ${isPasswordProtected ?? false},
         ${isPasswordProtected ? (password || null) : null},
@@ -926,7 +928,10 @@ export async function PUT(req: NextRequest) {
       simulcastConfig !== undefined || streamTypeForUpdate !== undefined ? storedSimulcastJson : existingSim
 
     const youtubeUrlParam = youtubeUrl === undefined ? null : youtubeUrl ?? null
-    const embedCodeParam = embedCode === undefined ? null : embedCode ?? null
+    const embedCodeParam =
+      embedCode === undefined
+        ? null
+        : (typeof embedCode === "string" ? sanitizeEmbedCode(embedCode) : null)
 
     const prevSuspended = Boolean(existingRow.is_suspended ?? false)
     const nextSuspended = isSuspended !== undefined ? Boolean(isSuspended) : prevSuspended

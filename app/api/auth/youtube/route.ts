@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server"
 import { getYouTubeOAuthUrl } from "@/lib/youtube-service"
+import { getCurrentUser } from "@/lib/auth"
+
+function safeReturnUrl(url: unknown): string {
+  if (typeof url === "string" && url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) {
+    return url
+  }
+  return "/streamer/settings/youtube"
+}
 
 /**
  * POST /api/auth/youtube
@@ -8,6 +16,11 @@ import { getYouTubeOAuthUrl } from "@/lib/youtube-service"
  */
 export async function POST(request: Request) {
   try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await request.json()
     const { ownerId, ownerType, returnUrl } = body
 
@@ -15,16 +28,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ownerId and ownerType are required" }, { status: 400 })
     }
 
+    if (user.role !== "admin" && user.id !== ownerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     if (!["admin", "studio", "streamer"].includes(ownerType)) {
       return NextResponse.json({ error: "ownerType must be admin, studio, or streamer" }, { status: 400 })
     }
+
+    const cleanReturnUrl = safeReturnUrl(returnUrl)
 
     // Encode state as base64url JSON
     const state = Buffer.from(
       JSON.stringify({
         ownerId,
         ownerType,
-        returnUrl: returnUrl || "/streamer/settings/youtube",
+        returnUrl: cleanReturnUrl,
       })
     ).toString("base64url")
 

@@ -38,3 +38,26 @@ export function thirdPartyEmbedCodeContainsYouTube(html: string): boolean {
 
   return false
 }
+
+/**
+ * Sanitizes third-party embed code to prevent stored XSS attacks.
+ * Strips out script tags, inline event handlers (on*), and dangerous pseudo-protocols (javascript:, data:text/html).
+ */
+export function sanitizeEmbedCode(html: string): string {
+  if (!html || typeof html !== "string") return ""
+  let clean = html
+
+  // Remove all <script>...</script> tags and contents (case-insensitive)
+  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+
+  // Remove <object>, <embed>, <applet>, <form>, <input>, <button>, <base>, <meta>
+  clean = clean.replace(/<\/?(object|embed|applet|form|input|button|base|meta)\b[^>]*>/gi, "")
+
+  // Remove inline event handlers like onload=, onerror=, onclick= etc.
+  clean = clean.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+
+  // Remove dangerous src attributes (javascript:, vbscript:, data:text/html)
+  clean = clean.replace(/(src\s*=\s*["']?)\s*(?:javascript|vbscript|data\s*:\s*text\/html):[^"'>\s]*/gi, "$1about:blank")
+
+  return clean.trim()
+}

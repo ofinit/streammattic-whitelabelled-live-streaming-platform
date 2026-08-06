@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createHmac, timingSafeEqual } from "crypto"
 
 /**
  * Nimble Streamer Webhook Handler
@@ -22,17 +23,23 @@ interface NimbleWebhookPayload {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as NimbleWebhookPayload
+    const rawBody = await request.text()
 
     // Validate webhook signature if NIMBLE_WEBHOOK_SECRET is set
     const webhookSecret = process.env.NIMBLE_WEBHOOK_SECRET
     if (webhookSecret) {
-      const signature = request.headers.get("x-nimble-signature")
+      const signature = request.headers.get("x-nimble-signature") || ""
       if (!signature) {
         return NextResponse.json({ error: "Missing webhook signature" }, { status: 401 })
       }
-      // In production: validate HMAC signature
+      const hmac = createHmac("sha256", webhookSecret).update(rawBody).digest("hex")
+      const expectedSig = signature.startsWith("sha256=") ? `sha256=${hmac}` : hmac
+      if (signature.length !== expectedSig.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+        return NextResponse.json({ error: "Invalid webhook signature" }, { status: 401 })
+      }
     }
+
+    const payload = JSON.parse(rawBody) as NimbleWebhookPayload
 
     const eventId = payload.application?.replace("event-", "")
 

@@ -4,6 +4,7 @@ import type { FormEvent } from "react"
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import type { LiveEvent } from "@/lib/types"
 import { DEFAULT_EVENT_SUSPENDED_PUBLIC_MESSAGE } from "@/lib/event-suspended"
+import { sanitizeEmbedCode } from "@/lib/third-party-embed-validation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -1770,7 +1771,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
               <div
                 className="h-full w-full [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
                 // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: evRawTop.embedCode as string }}
+                dangerouslySetInnerHTML={{ __html: sanitizeEmbedCode(evRawTop.embedCode as string) }}
               />
             ) : (
               renderMockPlayerContent()

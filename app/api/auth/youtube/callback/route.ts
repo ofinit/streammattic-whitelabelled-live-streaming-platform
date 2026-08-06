@@ -12,6 +12,13 @@ import { getDb } from "@/lib/db"
  * Exchanges the authorization code for tokens, fetches channel info,
  * encrypts tokens, stores in DB, and redirects back to the app.
  */
+function safeReturnUrl(url: unknown): string {
+  if (typeof url === "string" && url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) {
+    return url
+  }
+  return "/streamer/settings/youtube"
+}
+
 export async function GET(request: Request) {
   await initEncryptionKeyFromDb()
   const url = new URL(request.url)
@@ -27,7 +34,7 @@ export async function GET(request: Request) {
     stateData = null
   }
 
-  const returnUrl = stateData?.returnUrl || "/streamer/settings/youtube"
+  const returnUrl = safeReturnUrl(stateData?.returnUrl)
 
   if (error) {
     const errorUrl = new URL(returnUrl, url.origin)

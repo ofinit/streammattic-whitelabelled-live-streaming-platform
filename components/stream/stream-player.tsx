@@ -408,7 +408,7 @@ export function StreamPlayer({
 
             {/* Center: Reactions */}
             {allowReactions && (
-              <div className="hidden sm:flex items-center gap-0.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 border border-white/10 shrink-0">
+              <div className="flex items-center gap-0.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 border border-white/10 shrink-0">
                 {REACTION_TYPES.map(({ type, emoji }) => (
                   <button
                     key={type}

@@ -561,7 +561,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const [viewerCount, setViewerCount] = useState(0)
   const [shareCopied, setShareCopied] = useState(false)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-  const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; emoji: string; x: number }[]>([])
+  const [floatingEmojis, setFloatingEmojis] = useState<{ id: number | string; emoji: string; x: number; delay?: number; size?: number }[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [quality, setQuality] = useState("Auto")
@@ -1131,15 +1131,18 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const handleReaction = (type: string) => {
     const emoji = REACTION_EMOJIS[type] ?? "❤️"
-    const newEmojis = Array.from({ length: 3 }, (_, i) => ({
-      id: Date.now() + i,
+    const now = Date.now()
+    const newEmojis = Array.from({ length: 5 }, (_, i) => ({
+      id: `${now}-${i}-${Math.random().toString(36).substring(2, 7)}`,
       emoji,
-      x: 10 + Math.random() * 80,
+      x: 15 + Math.random() * 70,
+      delay: i * 0.12,
+      size: 26 + Math.floor(Math.random() * 14),
     }))
-    setFloatingEmojis(prev => [...prev, ...newEmojis])
+    setFloatingEmojis((prev) => [...prev, ...newEmojis])
     setTimeout(() => {
-      setFloatingEmojis(prev => prev.filter(e => !newEmojis.find(n => n.id === e.id)))
-    }, 2500)
+      setFloatingEmojis((prev) => prev.filter((e) => !newEmojis.some((n) => n.id === e.id)))
+    }, 3000)
   }
 
   if (loading) {
@@ -1790,15 +1793,23 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
             ) : null}
           </div>
 
-          {!isEnded && floatingEmojis.map((e) => (
-            <span
-              key={e.id}
-              className="pointer-events-none absolute bottom-16 text-2xl select-none animate-[floatUp_2.5s_ease-out_forwards]"
-              style={{ left: `${e.x}%` }}
-            >
-              {e.emoji}
-            </span>
-          ))}
+          {/* Floating Reaction Emojis Overlay */}
+          <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+            {!isEnded &&
+              floatingEmojis.map((e) => (
+                <span
+                  key={e.id}
+                  className="pointer-events-none absolute bottom-16 select-none animate-[floatUp_2.5s_ease-out_forwards] drop-shadow-md"
+                  style={{
+                    left: `${e.x}%`,
+                    fontSize: `${e.size || 32}px`,
+                    animationDelay: `${e.delay || 0}s`,
+                  }}
+                >
+                  {e.emoji}
+                </span>
+              ))}
+          </div>
 
           {!isYouTubePlayer && !(event.streamType === "rtmp" && rtmpPlaybackHlsUrl) && (
             <div

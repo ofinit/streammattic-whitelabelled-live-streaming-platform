@@ -289,9 +289,10 @@
   }
 
   @keyframes floatUp {
-    0%   { transform: translateY(0)   scale(1);   opacity: 1; }
-    60%  { transform: translateY(-120px) scale(1.3); opacity: 0.9; }
-    100% { transform: translateY(-200px) scale(0.8); opacity: 0; }
+    0%   { transform: translateY(0) scale(0.7) rotate(0deg); opacity: 1; }
+    40%  { transform: translateY(-140px) scale(1.3) rotate(-8deg); opacity: 0.95; }
+    80%  { transform: translateY(-260px) scale(1.1) rotate(6deg); opacity: 0.7; }
+    100% { transform: translateY(-340px) scale(0.9) rotate(0deg); opacity: 0; }
   }
 
   /* Midnight Elegance (tpl-wedding-midnight) — global keyframes so animations work outside styled-jsx */

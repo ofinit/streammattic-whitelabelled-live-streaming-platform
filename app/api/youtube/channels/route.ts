@@ -6,6 +6,7 @@ import {
   revokeAccess,
 } from "@/lib/youtube-service"
 import { decrypt, initEncryptionKeyFromDb } from "@/lib/encryption"
+import { getCurrentUser } from "@/lib/auth"
 
 /**
  * GET /api/youtube/channels?ownerId=xxx&ownerType=admin|studio|user
@@ -13,12 +14,19 @@ import { decrypt, initEncryptionKeyFromDb } from "@/lib/encryption"
  */
 export async function GET(request: Request) {
   await initEncryptionKeyFromDb()
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const url = new URL(request.url)
   const ownerId = url.searchParams.get("ownerId")
   const ownerType = url.searchParams.get("ownerType")
 
   if (!ownerId || !ownerType) {
     return NextResponse.json({ error: "ownerId and ownerType are required" }, { status: 400 })
+  }
+
+  if (user.role !== "admin" && user.id !== ownerId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   try {
@@ -60,8 +68,11 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-  await initEncryptionKeyFromDb()
-  const body = await request.json()
+    await initEncryptionKeyFromDb()
+    const user = await getCurrentUser()
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const body = await request.json()
     const { action, channelDbId } = body
 
     if (!channelDbId) {
@@ -80,6 +91,10 @@ export async function POST(request: Request) {
     }
 
     const channel = toCamel(rows[0]) as Record<string, unknown>
+
+    if (user.role !== "admin" && user.id !== channel.ownerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     switch (action) {
       case "refresh": {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { verifyCrewPin } from "@/lib/crew-pin"
 import { buildRtmpStreamId, ensureRtmpTokenForStream, extractTokenFromSrsParam, hashRtmpToken } from "@/lib/rtmp-auth"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(
   req: NextRequest,
@@ -10,6 +11,12 @@ export async function POST(
   const { eventId: rawEventId } = await params
   if (!rawEventId) return NextResponse.json({ error: "Missing event id" }, { status: 400 })
   const eventId = rawEventId.toLowerCase()
+
+  const ip = extractIp(req)
+  const allowed = await checkRateLimit(`crew_pin:${ip}:${eventId}`, 5, 900)
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many PIN attempts. Please try again later." }, { status: 429 })
+  }
 
   try {
     const body = await req.json().catch(() => ({}))

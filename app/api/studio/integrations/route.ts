@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server"
 import { getPlatformSetting, setPlatformSetting } from "@/lib/db-queries"
+import { getCurrentUser } from "@/lib/auth"
+
+async function authorizeStudioAccess(targetStudioId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  const isSelf = user.id === targetStudioId && (user.role === "studio" || user.role === "admin")
+  const isAdmin = user.role === "admin"
+  if (!isSelf && !isAdmin) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+  }
+  return { user }
+}
 
 /** GET: Fetch studio-specific integration settings (masked secrets) */
 export async function GET(request: Request) {
@@ -9,6 +21,9 @@ export async function GET(request: Request) {
   if (!studioId) {
     return NextResponse.json({ error: "studioId is required" }, { status: 400 })
   }
+
+  const auth = await authorizeStudioAccess(studioId)
+  if (auth.error) return auth.error
 
   try {
     const [clientId, clientSecret] = await Promise.all([
@@ -55,6 +70,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "studioId is required" }, { status: 400 })
     }
 
+    const auth = await authorizeStudioAccess(studioId)
+    if (auth.error) return auth.error
+
     // Save with studio-namespaced keys
     if (google_client_id !== undefined && google_client_id !== "") {
       await setPlatformSetting(`google_client_id:${studioId}`, google_client_id)
@@ -79,6 +97,9 @@ export async function DELETE(request: Request) {
     if (!studioId) {
       return NextResponse.json({ error: "studioId is required" }, { status: 400 })
     }
+
+    const auth = await authorizeStudioAccess(studioId)
+    if (auth.error) return auth.error
 
     const sql = (await import("@/lib/db")).getDb()
     await sql`DELETE FROM platform_settings WHERE key IN (${`google_client_id:${studioId}`}, ${`google_client_secret:${studioId}`})`

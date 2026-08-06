@@ -3245,34 +3245,8 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {isEditing && formData.streamType === "rtmp" && (isCrewPinEnabled || Boolean(crewPin.trim())) && (
-                <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
-                  <Alert className="border-primary/50 bg-primary/5">
-                    <Lock className="h-4 w-4" />
-                    <AlertTitle>Credentials protected by crew PIN</AlertTitle>
-                    <AlertDescription>
-                      Stream URL and key are only visible on the crew page after entering the PIN. Share this link with your crew (do not share on the public event page).
-                    </AlertDescription>
-                  </Alert>
-                  <div className="flex items-center gap-2">
-                    <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!crewPageUrl}
-                      onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
-                    >
-                      {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {isEditing &&
-                formData.streamType === "rtmp" &&
-                !isCrewPinEnabled &&
-                !crewPin.trim() && (
+              {isEditing && formData.streamType === "rtmp" && (
+                <>
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
                       <Video className="h-4 w-4" />
@@ -3280,7 +3254,7 @@ export function EventFormDialog({
                       <AlertDescription>Use these credentials in OBS, Wirecast, or any RTMP encoder.</AlertDescription>
                     </Alert>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">RTMP URL (Server)</Label>
+                      <Label className="text-xs text-muted-foreground">RTMP URL (Server / FMS)</Label>
                       <div className="flex gap-2">
                         <Input value={formData.rtmpUrl || event?.rtmpUrl || ""} readOnly className="font-mono text-sm" />
                         <Button
@@ -3323,6 +3297,33 @@ export function EventFormDialog({
                         </Button>
                       </div>
                     </div>
+                  </div>
+
+                  {(isCrewPinEnabled || Boolean(crewPin.trim())) && (
+                    <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
+                      <Alert className="border-primary/50 bg-primary/5">
+                        <Lock className="h-4 w-4" />
+                        <AlertTitle>Crew PIN Protection Active</AlertTitle>
+                        <AlertDescription>
+                          Share this link with your crew. They can enter the PIN on this page to view the stream URL and key.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="flex items-center gap-2">
+                        <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!crewPageUrl}
+                          onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
+                        >
+                          {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
                     {/* Encoder Settings Card */}
                     <div className="space-y-3 p-4 rounded-lg border bg-muted/30">

@@ -74,6 +74,11 @@ async function main() {
     const delMock = await client.query(`DELETE FROM events WHERE is_mock = true RETURNING id`)
     console.log(`Removed ${delMock.rowCount} mock template events (is_mock).`)
 
+    const delDomains = await client.query(
+      `DELETE FROM domains WHERE domain IN ('abc.com', 'example.com', 'test.com') OR verification_status != 'verified' RETURNING domain`,
+    )
+    console.log(`Removed ${delDomains.rowCount} unverified/dummy domain(s).`)
+
     const delUsers = await client.query(
       `DELETE FROM users WHERE lower(email) = ANY($1::text[]) RETURNING email`,
       [DEMO_EMAILS.map((e) => e.toLowerCase())],

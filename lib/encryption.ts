@@ -1,9 +1,19 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypto"
 
 const ALGORITHM = "aes-256-gcm"
-// Use a 32-byte key derived from ENCRYPTION_SECRET env var
-const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || "sm-default-enc-secret-1234567890123456"
-const KEY = scryptSync(ENCRYPTION_SECRET, "salt", 32)
+
+function getEncryptionSecret(): string {
+  const secret = process.env.ENCRYPTION_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[CRITICAL SECURITY WARNING] ENCRYPTION_SECRET is not set in production environment!")
+    }
+    return "sm-default-enc-secret-1234567890123456"
+  }
+  return secret
+}
+
+const KEY = scryptSync(getEncryptionSecret(), "salt", 32)
 
 /**
  * Encrypts a string using AES-256-GCM.
@@ -20,7 +30,7 @@ export function encrypt(text: string | null | undefined): string | null {
     return `${iv.toString("hex")}:${authTag}:${encrypted}`
   } catch (error) {
     console.error("Encryption failed:", error)
-    return text // Fallback to plain text on error (not ideal, but safer for migration)
+    throw new Error("Encryption failed")
   }
 }
 
@@ -30,7 +40,7 @@ export function encrypt(text: string | null | undefined): string | null {
 export function decrypt(hash: string | null | undefined): string | null {
   if (!hash) return null
   const parts = hash.split(":")
-  if (parts.length !== 3) return hash // Not an encrypted string or legacy format
+  if (parts.length !== 3) return hash // Legacy unencrypted string
 
   try {
     const [ivHex, authTagHex, encryptedText] = parts
@@ -43,7 +53,7 @@ export function decrypt(hash: string | null | undefined): string | null {
     return decrypted
   } catch (error) {
     console.error("Decryption failed:", error)
-    return hash // Fallback to original
+    return null
   }
 }
 

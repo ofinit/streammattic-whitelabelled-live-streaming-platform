@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { verifyInstamojoPayment, processSuccessfulPayment } from "@/lib/payment-service"
+import { checkRateLimit, extractIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
   try {
+    const ip = extractIp(request)
+    const allowed = await checkRateLimit(`payment_verify:${ip}`, 15, 900)
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many verification requests. Please try again later." }, { status: 429 })
+    }
+
     const body = await request.json()
     const { paymentRequestId, paymentId, orderId } = body as {
       paymentRequestId?: string

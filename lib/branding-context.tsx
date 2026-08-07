@@ -125,14 +125,9 @@ export function BrandingProvider({
       }
 
       const primaryHSL = hexToHSL(branding.themeColor)
-      const accentHSL = hexToHSL(branding.accentColor || branding.themeColor)
 
       root.style.setProperty("--primary", primaryHSL)
       root.style.setProperty("--color-primary", primaryHSL)
-      root.style.setProperty("--secondary", accentHSL)
-      root.style.setProperty("--color-secondary", accentHSL)
-      root.style.setProperty("--accent", accentHSL)
-      root.style.setProperty("--color-accent", accentHSL)
       root.style.setProperty("--ring", primaryHSL)
       root.style.setProperty("--color-ring", primaryHSL)
       root.style.setProperty("--sidebar-primary", primaryHSL)
@@ -149,10 +144,6 @@ export function BrandingProvider({
         :root, .dark {
           --primary: ${primaryHSL} !important;
           --color-primary: ${primaryHSL} !important;
-          --secondary: ${accentHSL} !important;
-          --color-secondary: ${accentHSL} !important;
-          --accent: ${accentHSL} !important;
-          --color-accent: ${accentHSL} !important;
           --ring: ${primaryHSL} !important;
           --color-ring: ${primaryHSL} !important;
           --sidebar-primary: ${primaryHSL} !important;

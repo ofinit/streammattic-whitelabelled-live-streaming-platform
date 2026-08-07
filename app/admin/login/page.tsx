@@ -34,8 +34,13 @@ function AdminLoginContent() {
     setError("")
     const user = await login(email, password)
     if (user) {
-      if (user.role === "admin") {
-        const redirect = searchParams.get("redirect") || "/admin"
+      const isOperator =
+        user.role === "elive_operator" ||
+        user.role === "rtmp_operator" ||
+        user.email?.toLowerCase() === "pbollapragada@gmail.com"
+      if (user.role === "admin" || isOperator) {
+        const defaultDest = isOperator ? "/admin/events" : "/admin"
+        const redirect = searchParams.get("redirect") || defaultDest
         window.setTimeout(() => router.push(redirect), 0)
         return
       }

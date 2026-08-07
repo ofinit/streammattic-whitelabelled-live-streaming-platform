@@ -131,7 +131,11 @@ export async function GET(req: Request) {
         ) eng ON true
         LEFT JOIN LATERAL (
           SELECT
-            MIN(l.created_at) FILTER (WHERE l.created_at >= ${sinceIso}) AS first_contacted_at,
+            (
+              SELECT MIN(l1.created_at)
+              FROM admin_user_engagement_logs l1
+              WHERE l1.user_id = u.id AND l1.created_at >= ${sinceIso}
+            ) AS first_contacted_at,
             EXISTS (
               SELECT 1 FROM admin_user_engagement_logs l2
               WHERE l2.user_id = u.id
@@ -152,8 +156,7 @@ export async function GET(req: Request) {
             (
               SELECT COUNT(*)::int
               FROM wallet_transactions wt
-              JOIN wallets w2 ON w2.id = wt.wallet_id
-              WHERE w2.user_id = u.id
+              WHERE wt.user_id = u.id
                 AND wt.created_at > (
                   SELECT MIN(l4.created_at)
                   FROM admin_user_engagement_logs l4

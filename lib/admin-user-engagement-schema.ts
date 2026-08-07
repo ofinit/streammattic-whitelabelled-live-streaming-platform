@@ -45,6 +45,9 @@ export async function ensureAdminUserEngagementSchema() {
     ON admin_user_engagement_logs(user_id, created_at DESC)
   `
   await sql`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ
+  `
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_admin_user_engagement_logs_follow_up
     ON admin_user_engagement_logs(follow_up_at)
     WHERE follow_up_at IS NOT NULL

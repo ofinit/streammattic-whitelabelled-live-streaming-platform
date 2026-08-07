@@ -15,6 +15,7 @@
 
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { hashPassword } from "@/lib/auth"
 
 export const runtime = "nodejs"
 export const maxDuration = 300 // 5 minutes
@@ -369,6 +370,30 @@ export async function POST(req: Request) {
   ]
   for (const [name, cat, ord] of templates) {
     await tryExec(`SEED template:${name}`, `INSERT INTO event_templates (name,category,is_active,sort_order) VALUES ('${name}','${cat}',true,${ord}) ON CONFLICT DO NOTHING`)
+  }
+
+  // Seed operator pbollapragada@gmail.com with password eLive$777#1%
+  try {
+    const opEmail = "pbollapragada@gmail.com"
+    const opPasswordHash = await hashPassword("eLive$777#1%")
+    const existingOp = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${opEmail}) LIMIT 1`
+    if (existingOp.length === 0) {
+      await sql`
+        INSERT INTO users (email, name, password_hash, role, status, email_verified)
+        VALUES (${opEmail}, 'eLive Operator', ${opPasswordHash}, 'elive_operator'::user_role, 'active'::user_status, true)
+      `
+      results.push({ step: "SEED operator:pbollapragada@gmail.com", status: "ok" })
+    } else {
+      await sql`
+        UPDATE users
+        SET password_hash = ${opPasswordHash}, role = 'elive_operator'::user_role, updated_at = NOW()
+        WHERE id = ${(existingOp[0] as { id: string }).id}
+      `
+      results.push({ step: "SEED operator:pbollapragada@gmail.com", status: "ok" })
+    }
+  } catch (err: unknown) {
+    const msg = (err instanceof Error ? err.message : String(err)).trim()
+    results.push({ step: "SEED operator:pbollapragada@gmail.com", status: "fail", message: msg })
   }
 
   // Summary

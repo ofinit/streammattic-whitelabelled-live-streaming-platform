@@ -3208,8 +3208,12 @@ export function EventFormDialog({
                       Template watch pages use this player URL automatically while live. SRS events fall back to final DVR MP4 playback after the merge worker completes.
                     </p>
                   </div>
+                </div>
+              )}
 
-                  <div className="flex items-center justify-between pt-2 border-t">
+              {(formData.streamType === "rtmp" || formData.streamType === "youtube_api") && (
+                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="h-5 w-5 text-muted-foreground" />
                       <div>

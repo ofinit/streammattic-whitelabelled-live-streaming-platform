@@ -38,6 +38,13 @@ export async function performWalletAdjustment(
 
   try {
     return await withTransaction(async (tx) => {
+      // Get target user role if available
+      const userRes = await tx.query("SELECT role FROM users WHERE id = $1", [targetUserId])
+      if (userRes.rows.length === 0) {
+        return { error: "Target user not found", status: 404 }
+      }
+      const targetUserRole = userRes.rows[0].role as string | null
+
       // Lock or create wallet atomically inside transaction
       let walletRes = await tx.query(
         "SELECT id, balance FROM wallets WHERE user_id = $1 FOR UPDATE",
@@ -71,6 +78,50 @@ export async function performWalletAdjustment(
         }
       }
 
+      // Valid enum values in Postgres for wallet_transactions.category (txn_category):
+      const validTxnCategories = [
+        "top_up",
+        "credit_purchase",
+        "service_charge",
+        "order_refund",
+        "adjustment",
+        "manual_adjustment",
+        "payment_recovery",
+        "compensation",
+        "correction",
+        "goodwill",
+        "ai_image_generation",
+        "whitelabel_hosting",
+        "domain_registration",
+        "studio_upgrade",
+        "annual_subscription",
+        "photo_gallery_subscription",
+        "photo_gallery_usage",
+      ]
+
+      // Valid enum values in Postgres for wallet_adjustments.category (adjustment_category):
+      const validAdjCategories = [
+        "goodwill",
+        "compensation",
+        "correction",
+        "manual_top_up",
+        "manual_debit",
+        "promotional",
+        "penalty",
+      ]
+
+      // Safely map category for wallet_transactions (requires txn_category enum)
+      const txnCategory = validTxnCategories.includes(category)
+        ? category
+        : "manual_adjustment"
+
+      // Safely map category for wallet_adjustments (requires adjustment_category enum)
+      const adjCategory = validAdjCategories.includes(category)
+        ? category
+        : type === "credit"
+          ? "manual_top_up"
+          : "manual_debit"
+
       // Update wallet balance
       await tx.query(
         "UPDATE wallets SET balance = $1, updated_at = NOW() WHERE id = $2",
@@ -89,7 +140,7 @@ export async function performWalletAdjustment(
           wallet.id,
           targetUserId,
           type,
-          category,
+          txnCategory,
           amountInPaise,
           balanceBefore,
           balanceAfter,
@@ -104,10 +155,20 @@ export async function performWalletAdjustment(
       // Insert wallet_adjustments audit log
       await tx.query(
         `INSERT INTO wallet_adjustments
-          (target_user_id, type, amount, reason, category, initiated_by, status, transaction_id)
+          (target_user_id, target_user_role, type, amount, reason, category, initiated_by, status, transaction_id, notes)
          VALUES
-          ($1, $2, $3, $4, $5, $6, 'completed', $7)`,
-        [targetUserId, type, amountInPaise, reason, category, adminUserId, txnId],
+          ($1, $2, $3, $4, $5, $6, $7, 'completed', $8, $9)`,
+        [
+          targetUserId,
+          targetUserRole,
+          type,
+          amountInPaise,
+          reason,
+          adjCategory,
+          adminUserId,
+          txnId,
+          notes || null,
+        ],
       )
 
       return {

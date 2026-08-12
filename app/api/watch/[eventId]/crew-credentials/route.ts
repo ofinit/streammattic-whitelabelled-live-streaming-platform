@@ -27,7 +27,7 @@ export async function POST(
 
     const sql = getDb()
     const rows = await sql`
-      SELECT e.id, e.user_id, e.slug, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key, e.rtmp_provider
+      SELECT e.id, e.user_id, e.slug, e.crew_pin_hash, e.stream_type, e.rtmp_url, e.stream_key, e.rtmp_provider, e.youtube_url, e.embed_code
       FROM events e
       WHERE e.id::text = ${eventId} OR e.slug = ${eventId}
     `
@@ -111,6 +111,8 @@ export async function POST(
     return NextResponse.json({
       rtmpUrl: rtmpUrl || "",
       streamKey: streamKey || "",
+      youtubeUrl: (row.youtube_url as string) || "",
+      embedCode: (row.embed_code as string) || "",
     })
   } catch (err) {
     console.error("[crew-credentials] Error:", err)

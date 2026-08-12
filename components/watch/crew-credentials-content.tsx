@@ -14,7 +14,7 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
   const [pin, setPin] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [credentials, setCredentials] = useState<{ rtmpUrl: string; streamKey: string } | null>(null)
+  const [credentials, setCredentials] = useState<{ rtmpUrl: string; streamKey: string; youtubeUrl?: string; embedCode?: string } | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [showStreamKey, setShowStreamKey] = useState(false)
 
@@ -64,7 +64,12 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
         setCredentials(null)
         return
       }
-      setCredentials({ rtmpUrl: data.rtmpUrl || "", streamKey: data.streamKey || "" })
+      setCredentials({
+        rtmpUrl: data.rtmpUrl || "",
+        streamKey: data.streamKey || "",
+        youtubeUrl: data.youtubeUrl || "",
+        embedCode: data.embedCode || "",
+      })
     } catch {
       setError("Network error")
       setCredentials(null)
@@ -97,10 +102,10 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Crew stream credentials
+            Crew stream details
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Enter the PIN shared by the event organizer to view the stream URL and key.
+            Enter the PIN shared by the event organizer to view stream details.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -122,56 +127,95 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "View credentials"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "View details"}
               </Button>
             </form>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">RTMP URL (FMS / Server)</Label>
-                <div className="flex gap-2">
-                  <Input value={credentials.rtmpUrl} readOnly className="font-mono text-sm" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(credentials.rtmpUrl, "rtmp")}
-                  >
-                    {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
+              {(credentials.rtmpUrl || credentials.streamKey) ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">RTMP URL (FMS / Server)</Label>
+                    <div className="flex gap-2">
+                      <Input value={credentials.rtmpUrl} readOnly className="font-mono text-sm" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(credentials.rtmpUrl, "rtmp")}
+                      >
+                        {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Stream key</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={credentials.streamKey}
+                        readOnly
+                        type={showStreamKey ? "text" : "password"}
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowStreamKey((prev) => !prev)}
+                        title={showStreamKey ? "Hide stream key" : "Show stream key"}
+                      >
+                        {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(credentials.streamKey, "key")}
+                        title="Copy stream key"
+                      >
+                        {copied === "key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
+              {credentials.youtubeUrl ? (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">YouTube Live URL</Label>
+                  <div className="flex gap-2">
+                    <Input value={credentials.youtubeUrl} readOnly className="font-mono text-sm" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(credentials.youtubeUrl!, "yt")}
+                    >
+                      {copied === "yt" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Stream key</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={credentials.streamKey}
-                    readOnly
-                    type={showStreamKey ? "text" : "password"}
-                    className="font-mono text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowStreamKey((prev) => !prev)}
-                    title={showStreamKey ? "Hide stream key" : "Show stream key"}
-                  >
-                    {showStreamKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(credentials.streamKey, "key")}
-                    title="Copy stream key"
-                  >
-                    {copied === "key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
+              ) : null}
+
+              {credentials.embedCode ? (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Embed Code / Source</Label>
+                  <div className="flex gap-2">
+                    <Input value={credentials.embedCode} readOnly className="font-mono text-sm" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(credentials.embedCode!, "embed")}
+                    >
+                      {copied === "embed" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
+
               <Button variant="ghost" size="sm" onClick={() => { setCredentials(null); setPin(""); setError("") }}>
-                Hide credentials
+                Hide details
               </Button>
             </div>
           )}

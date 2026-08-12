@@ -3211,7 +3211,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {(formData.streamType === "rtmp" || formData.streamType === "youtube_api") && (
+              {Boolean(formData.streamType) && (
                 <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -3243,7 +3243,7 @@ export function EventFormDialog({
                         className="max-w-xs font-mono"
                       />
                       <p className="text-[11px] text-muted-foreground">
-                        RTMP URL and stream key are only visible after entering this PIN on the crew page.
+                        Stream credentials and details are only visible after entering this PIN on the crew page.
                       </p>
                       {fieldErrors.crewPin && (
                         <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.crewPin}</p>

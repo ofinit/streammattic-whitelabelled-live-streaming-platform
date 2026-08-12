@@ -146,6 +146,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applyThemePreference])
 
+  // Automatically attach x-impersonate-user-id header on client API calls when impersonating
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const originalFetch = window.fetch
+    window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+      if (typeof url === "string" && url.startsWith("/api/") && !url.startsWith("/api/auth/impersonate")) {
+        const stored = sessionStorage.getItem(IMPERSONATE_KEY)
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            const targetId = parsed?.impersonatedUser?.id
+            if (targetId) {
+              init = init || {}
+              const headers = new Headers(init.headers || {})
+              if (!headers.has("x-impersonate-user-id")) {
+                headers.set("x-impersonate-user-id", targetId)
+              }
+              init.headers = headers
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return originalFetch(input, init)
+    }
+    return () => {
+      window.fetch = originalFetch
+    }
+  }, [])
+
   useEffect(() => {
     fetchCurrentUser().finally(() => setIsLoading(false))
   }, [fetchCurrentUser])
@@ -286,16 +318,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!originalUser) return null
 
     const route = getRouteForRole(originalUser.role)
-    try {
-      await fetch("/api/auth/impersonate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stop: true, originalUserId: originalUser.id }),
-      })
-    } catch {
-      // ignore
-    }
-
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(IMPERSONATE_KEY)
     }

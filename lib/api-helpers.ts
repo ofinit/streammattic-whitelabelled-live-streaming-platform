@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "./auth"
+import { getDb, toCamel } from "./db"
 
 export function jsonOk(data: unknown, status = 200) {
   return NextResponse.json(data, { status })
@@ -15,8 +16,26 @@ export function withAuth(
 ) {
   return async (request: Request) => {
     try {
-      const user = await getCurrentUser()
+      let user = await getCurrentUser()
       if (!user) return jsonError("Unauthorized", 401)
+
+      // Support Admin Impersonation without modifying session cookies:
+      // If the authenticated session is an admin and an impersonation header is passed,
+      // load the target user's profile for the request handler.
+      if (user.role === "admin") {
+        const impersonateId = request.headers.get("x-impersonate-user-id")
+        if (impersonateId && impersonateId !== user.id) {
+          const sql = getDb()
+          const rows = await sql`
+            SELECT id, email, name, phone, role, status, avatar, theme_preference, email_verified, created_at, updated_at, studio_subscription_expires_at
+            FROM users WHERE id = ${impersonateId}
+          `
+          if (rows.length > 0) {
+            user = toCamel(rows[0] as Record<string, unknown>)
+          }
+        }
+      }
+
       // Must await: otherwise handler rejections (e.g. DB errors) become unhandled and surface as opaque 500s.
       return await handler(user as Record<string, unknown>, request)
     } catch (e) {
@@ -32,7 +51,20 @@ export function withOptionalAuth(
 ) {
   return async (request: Request) => {
     try {
-      const user = await getCurrentUser()
+      let user = await getCurrentUser()
+      if (user?.role === "admin") {
+        const impersonateId = request.headers.get("x-impersonate-user-id")
+        if (impersonateId && impersonateId !== user.id) {
+          const sql = getDb()
+          const rows = await sql`
+            SELECT id, email, name, phone, role, status, avatar, theme_preference, email_verified, created_at, updated_at, studio_subscription_expires_at
+            FROM users WHERE id = ${impersonateId}
+          `
+          if (rows.length > 0) {
+            user = toCamel(rows[0] as Record<string, unknown>)
+          }
+        }
+      }
       return await handler(user as Record<string, unknown> | null, request)
     } catch (e) {
       console.error("[withOptionalAuth]", e)

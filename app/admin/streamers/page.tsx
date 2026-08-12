@@ -195,7 +195,7 @@ export default function AdminStreamersPage() {
   const handleImpersonate = async (item: any) => {
     const targetRoute = await impersonate(item.id)
     if (targetRoute) {
-      router.push(targetRoute)
+      window.location.href = targetRoute
     }
   }
 

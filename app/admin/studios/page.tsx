@@ -299,7 +299,12 @@ export default function AdminStudiosPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => impersonate(item.id)}>
+            <DropdownMenuItem
+              onClick={async () => {
+                const targetRoute = await impersonate(item.id)
+                if (targetRoute) window.location.href = targetRoute
+              }}
+            >
               <Eye className="mr-2 h-4 w-4" />
               View as Studio
             </DropdownMenuItem>

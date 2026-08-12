@@ -286,6 +286,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!originalUser) return null
 
     const route = getRouteForRole(originalUser.role)
+    try {
+      await fetch("/api/auth/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stop: true, originalUserId: originalUser.id }),
+      })
+    } catch {
+      // ignore
+    }
+
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(IMPERSONATE_KEY)
     }

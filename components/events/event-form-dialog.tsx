@@ -3212,48 +3212,6 @@ export function EventFormDialog({
               )}
 
               {Boolean(formData.streamType) && (
-                <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <ShieldAlert className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">Crew PIN</p>
-                        <p className="text-xs text-muted-foreground">Require PIN to see stream credentials on the crew page</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={isCrewPinEnabled}
-                      onCheckedChange={(checked) => {
-                        setIsCrewPinEnabled(checked)
-                        if (!checked) setCrewPin("")
-                      }}
-                    />
-                  </div>
-                  {isCrewPinEnabled && (
-                    <div className="space-y-2 pl-8">
-                      <Label htmlFor="crewPin">Crew PIN</Label>
-                      <Input
-                        id="crewPin"
-                        type="password"
-                        inputMode="numeric"
-                        value={crewPin}
-                        onChange={(e) => setCrewPin(e.target.value)}
-                        placeholder="Enter 4–8 digit PIN"
-                        maxLength={12}
-                        className="max-w-xs font-mono"
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        Stream credentials and details are only visible after entering this PIN on the crew page.
-                      </p>
-                      {fieldErrors.crewPin && (
-                        <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.crewPin}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {Boolean(formData.streamType) && (
                 <>
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
@@ -3315,29 +3273,71 @@ export function EventFormDialog({
                     </div>
                   </div>
 
-                  {(isCrewPinEnabled || Boolean(crewPin.trim())) && (
-                    <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
-                      <Alert className="border-primary/50 bg-primary/5">
-                        <Lock className="h-4 w-4" />
-                        <AlertTitle>Crew PIN Protection Active</AlertTitle>
-                        <AlertDescription>
-                          Share this link with your crew. They can enter the PIN on this page to view the stream URL and key.
-                        </AlertDescription>
-                      </Alert>
-                      <div className="flex items-center gap-2">
-                        <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={!crewPageUrl}
-                          onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
-                        >
-                          {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
+                  <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm">Crew PIN</p>
+                          <p className="text-xs text-muted-foreground">Require PIN to see stream credentials on the crew page</p>
+                        </div>
                       </div>
+                      <Switch
+                        checked={isCrewPinEnabled}
+                        onCheckedChange={(checked) => {
+                          setIsCrewPinEnabled(checked)
+                          if (!checked) setCrewPin("")
+                        }}
+                      />
                     </div>
-                  )}
+                    {isCrewPinEnabled && (
+                      <div className="space-y-4 pl-8">
+                        <div className="space-y-2">
+                          <Label htmlFor="crewPin">Crew PIN</Label>
+                          <Input
+                            id="crewPin"
+                            type="password"
+                            inputMode="numeric"
+                            value={crewPin}
+                            onChange={(e) => setCrewPin(e.target.value)}
+                            placeholder="Enter 4–8 digit PIN"
+                            maxLength={12}
+                            className="max-w-xs font-mono"
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            Stream credentials and details are only visible after entering this PIN on the crew page.
+                          </p>
+                          {fieldErrors.crewPin && (
+                            <p className="text-xs text-destructive font-medium mt-1">{fieldErrors.crewPin}</p>
+                          )}
+                        </div>
+
+                        {(isCrewPinEnabled || Boolean(crewPin.trim())) && (
+                          <div className="space-y-2 pt-2 border-t border-border/40">
+                            <Alert className="border-primary/50 bg-primary/5">
+                              <Lock className="h-4 w-4" />
+                              <AlertTitle>Crew PIN Protection Active</AlertTitle>
+                              <AlertDescription>
+                                Share this link with your crew. They can enter the PIN on this page to view the stream URL and key.
+                              </AlertDescription>
+                            </Alert>
+                            <div className="flex items-center gap-2">
+                              <Input readOnly value={crewPageUrl} className="font-mono text-sm" placeholder="/your-event-slug/crew" />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={!crewPageUrl}
+                                onClick={() => crewPageUrl && copyToClipboard(crewPageUrl, "rtmp")}
+                              >
+                                {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   {formData.streamType === "rtmp" && (
                     <div className="space-y-3 p-4 rounded-lg border bg-muted/30">

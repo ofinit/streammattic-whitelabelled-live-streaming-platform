@@ -1953,8 +1953,8 @@ export function EventFormDialog({
       subtitle: formData.subtitle.trim(),
       description: formData.description,
       streamType: formData.streamType.trim() ? formData.streamType : undefined,
-      rtmpUrl: formData.rtmpUrl.trim() ? formData.rtmpUrl.trim() : undefined,
-      streamKey: formData.streamKey.trim() ? formData.streamKey.trim() : undefined,
+      rtmpUrl: formData.rtmpUrl.trim() ? formData.rtmpUrl.trim() : null,
+      streamKey: formData.streamKey.trim() ? formData.streamKey.trim() : null,
       slug: slug || undefined,
       scheduledAt: scheduledAtUtc,
       timezone: formData.scheduledAt ? timezone : undefined,
@@ -3253,36 +3253,43 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {isEditing && formData.streamType === "rtmp" && (
+              {Boolean(formData.streamType) && (
                 <>
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">
                       <Video className="h-4 w-4" />
-                      <AlertTitle>Your Streaming Credentials</AlertTitle>
-                      <AlertDescription>Use these credentials in OBS, Wirecast, or any RTMP encoder.</AlertDescription>
+                      <AlertTitle>FMS Server & Streaming Credentials</AlertTitle>
+                      <AlertDescription>Enter or copy RTMP / FMS ingest server credentials for OBS, Wirecast, or any RTMP encoder.</AlertDescription>
                     </Alert>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">RTMP URL (Server / FMS)</Label>
+                      <Label className="text-xs font-medium">RTMP URL (Server / FMS)</Label>
                       <div className="flex gap-2">
-                        <Input value={formData.rtmpUrl || event?.rtmpUrl || ""} readOnly className="font-mono text-sm" />
+                        <Input
+                          value={formData.rtmpUrl}
+                          onChange={(e) => setFormData({ ...formData, rtmpUrl: e.target.value })}
+                          placeholder="rtmp://live.streamlivee.com/live"
+                          className="font-mono text-sm"
+                        />
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => copyToClipboard(formData.rtmpUrl || event?.rtmpUrl || "", "rtmp")}
+                          disabled={!formData.rtmpUrl}
+                          onClick={() => formData.rtmpUrl && copyToClipboard(formData.rtmpUrl, "rtmp")}
                         >
                           {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Stream Key</Label>
+                      <Label className="text-xs font-medium">Stream Key</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Input
-                            value={formData.streamKey || event?.streamKey || ""}
-                            readOnly
+                            value={formData.streamKey}
+                            onChange={(e) => setFormData({ ...formData, streamKey: e.target.value })}
                             type={showStreamKey ? "text" : "password"}
+                            placeholder="Enter stream key"
                             className="font-mono text-sm pr-10"
                           />
                           <Button
@@ -3299,7 +3306,8 @@ export function EventFormDialog({
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => copyToClipboard(formData.streamKey || event?.streamKey || "", "key")}
+                          disabled={!formData.streamKey}
+                          onClick={() => formData.streamKey && copyToClipboard(formData.streamKey, "key")}
                         >
                           {copied === "key" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
@@ -3331,36 +3339,37 @@ export function EventFormDialog({
                     </div>
                   )}
 
-                  {/* Encoder Settings Card */}
-                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                    <h5 className="font-medium text-sm flex items-center justify-between">
-                      <span>StreamLivee Recommended Encoder Settings</span>
-                      <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
-                    </h5>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 rounded bg-background/50 border border-border/50">
-                        <span className="text-muted-foreground block text-[10px]">Max Video Bitrate</span>
-                        <span className="font-semibold text-foreground">1,500 Kbps</span>
+                  {formData.streamType === "rtmp" && (
+                    <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                      <h5 className="font-medium text-sm flex items-center justify-between">
+                        <span>StreamLivee Recommended Encoder Settings</span>
+                        <Badge variant="outline" className="text-[10px] text-primary border-primary/40">720p Recommended</Badge>
+                      </h5>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 rounded bg-background/50 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">Max Video Bitrate</span>
+                          <span className="font-semibold text-foreground">1,500 Kbps</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">Audio Bitrate</span>
+                          <span className="font-semibold text-foreground">128 Kbps (AAC)</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">Resolution</span>
+                          <span className="font-semibold text-foreground">1280 × 720 (720p 30fps)</span>
+                        </div>
+                        <div className="p-2 rounded bg-background/50 border border-border/50">
+                          <span className="text-muted-foreground block text-[10px]">Keyframe Interval</span>
+                          <span className="font-semibold text-foreground">2.0 Seconds</span>
+                        </div>
                       </div>
-                      <div className="p-2 rounded bg-background/50 border border-border/50">
-                        <span className="text-muted-foreground block text-[10px]">Audio Bitrate</span>
-                        <span className="font-semibold text-foreground">128 Kbps (AAC)</span>
-                      </div>
-                      <div className="p-2 rounded bg-background/50 border border-border/50">
-                        <span className="text-muted-foreground block text-[10px]">Resolution</span>
-                        <span className="font-semibold text-foreground">1280 × 720 (720p 30fps)</span>
-                      </div>
-                      <div className="p-2 rounded bg-background/50 border border-border/50">
-                        <span className="text-muted-foreground block text-[10px]">Keyframe Interval</span>
-                        <span className="font-semibold text-foreground">2.0 Seconds</span>
-                      </div>
+                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-1 border-t border-border/40">
+                        <li>Open OBS Studio → Settings → Stream (Set Service to Custom, paste Server & Stream Key)</li>
+                        <li>In Settings → Output: Set Video Bitrate to <strong>1500 Kbps</strong></li>
+                        <li>Click &quot;Apply&quot; and start streaming!</li>
+                      </ol>
                     </div>
-                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside pt-1 border-t border-border/40">
-                      <li>Open OBS Studio → Settings → Stream (Set Service to Custom, paste Server & Stream Key)</li>
-                      <li>In Settings → Output: Set Video Bitrate to <strong>1500 Kbps</strong></li>
-                      <li>Click &quot;Apply&quot; and start streaming!</li>
-                    </ol>
-                  </div>
+                  )}
                 </>
               )}
 

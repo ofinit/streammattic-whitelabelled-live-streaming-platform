@@ -15,22 +15,32 @@ async function checkSchema() {
     `);
     console.log('Tables:', tablesRes.rows.map(r => r.table_name).join(', '));
 
-    const columnsRes = await client.query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'events'
-      ORDER BY ordinal_position
+    const userRes = await client.query(`
+      SELECT id, email, name, role FROM users WHERE email = 'meghaevents999@gmail.com'
     `);
-    console.log('\nEvents Column Schema:');
-    columnsRes.rows.forEach(r => console.log(`- ${r.column_name}: ${r.data_type}`));
+    console.log('USER:', userRes.rows);
+    if (userRes.rows.length === 0) return;
+    const userId = userRes.rows[0].id;
 
-    const countRes = await client.query('SELECT count(*) FROM events');
-    console.log('\nTotal Events:', countRes.rows[0].count);
+    const creditsRes = await client.query(`
+      SELECT * FROM user_credits WHERE user_id = $1
+    `, [userId]);
+    console.log('\nUSER CREDITS:', creditsRes.rows);
 
-    if (countRes.rows[0].count > 0) {
-      const sampleRes = await client.query('SELECT id, slug, user_id FROM events LIMIT 5');
-      console.log('\nSample Events:', JSON.stringify(sampleRes.rows, null, 2));
-    }
+    const walletTxRes = await client.query(`
+      SELECT * FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id = $1) ORDER BY created_at DESC
+    `, [userId]);
+    console.log('\nWALLET TRANSACTIONS:', walletTxRes.rows);
+
+    const creditTxRes = await client.query(`
+      SELECT * FROM credit_transactions WHERE user_id = $1 ORDER BY created_at DESC
+    `, [userId]);
+    console.log('\nCREDIT TRANSACTIONS:', creditTxRes.rows);
+
+    const eventsRes = await client.query(`
+      SELECT id, title, stream_type, status, created_at FROM events WHERE user_id = $1 ORDER BY created_at DESC
+    `, [userId]);
+    console.log('\nUSER EVENTS:', eventsRes.rows);
 
   } catch (err) {
     console.error('Error:', err);

@@ -23,7 +23,7 @@ const statusFilters = [
 ]
 
 export default function StudioCalendarPage() {
-  const { user } = useAuth()
+  const { user, isImpersonating } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   
@@ -46,7 +46,6 @@ export default function StudioCalendarPage() {
     })
   }, [relevantEvents, activeFilters])
 
-  const { user, isImpersonating } = useAuth()
   const studioSubExpired =
     !isImpersonating &&
     user?.role === "studio" &&

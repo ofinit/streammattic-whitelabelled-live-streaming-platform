@@ -46,8 +46,11 @@ export default function StudioCalendarPage() {
     })
   }, [relevantEvents, activeFilters])
 
+  const { user, isImpersonating } = useAuth()
   const studioSubExpired =
-    user?.role === "studio" && studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
+    !isImpersonating &&
+    user?.role === "studio" &&
+    studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
 
   const toggleFilter = (id: string, checked: boolean) => {
     setActiveFilters(prev => ({ ...prev, [id]: checked }))

@@ -76,10 +76,12 @@ const EVENTS_PAGE_SIZE = 20
 
 export default function StudioEventsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isImpersonating } = useAuth()
   const studioId = user?.id || "b0000000-0000-0000-0000-000000000001"
   const studioSubExpired =
-    user?.role === "studio" && studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
+    !isImpersonating &&
+    user?.role === "studio" &&
+    studioSubscriptionExpiredForEvents(user?.studioSubscriptionExpiresAt)
 
   const [searchQuery, setSearchQuery] = useState("")
   const { data: brandingData } = useSWR(studioId ? "/api/studio/branding" : null, fetcher)
@@ -105,7 +107,7 @@ export default function StudioEventsPage() {
     const tabParam = params.get("tab")
     url.searchParams.delete("tab")
     window.history.replaceState({}, "", url.toString())
-    if (user.role === "studio" && studioSubscriptionExpiredForEvents(user.studioSubscriptionExpiresAt)) {
+    if (!isImpersonating && user.role === "studio" && studioSubscriptionExpiredForEvents(user.studioSubscriptionExpiresAt)) {
       toast.error("Renew your Studio subscription in Settings to create events.")
       return
     }

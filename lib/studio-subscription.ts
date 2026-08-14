@@ -60,7 +60,9 @@ export async function checkStudioSubscriptionActiveForEventManagement(
   sql: SqlFn,
   userId: string,
   userRole: string,
+  isImpersonatedByAdmin?: boolean,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (isImpersonatedByAdmin) return { ok: true }
   if (userRole !== "studio") return { ok: true }
   const rows = await sql`
     SELECT studio_subscription_expires_at

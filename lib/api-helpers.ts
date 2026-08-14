@@ -31,7 +31,11 @@ export function withAuth(
             FROM users WHERE id = ${impersonateId}
           `
           if (rows.length > 0) {
-            user = toCamel(rows[0] as Record<string, unknown>)
+            user = {
+              ...toCamel(rows[0] as Record<string, unknown>),
+              isImpersonatedByAdmin: true,
+              realUserRole: "admin",
+            }
           }
         }
       }
@@ -61,7 +65,11 @@ export function withOptionalAuth(
             FROM users WHERE id = ${impersonateId}
           `
           if (rows.length > 0) {
-            user = toCamel(rows[0] as Record<string, unknown>)
+            user = {
+              ...toCamel(rows[0] as Record<string, unknown>),
+              isImpersonatedByAdmin: true,
+              realUserRole: "admin",
+            }
           }
         }
       }

@@ -1296,8 +1296,8 @@ export function EventFormDialog({
           allowReactions: event.allowReactions !== false,
           showScheduledPage: (event as any).show_scheduled_page === true || (event as any).showScheduledPage === true,
           templateId: ((event as any).templateId ?? (event as any).template_id ?? (event as any).templateData?.templateId) || "tpl-default",
-          rtmpUrl: event.rtmpUrl || "",
-          streamKey: event.streamKey || "",
+          rtmpUrl: (event as any).rtmpUrl || (event as any).rtmp_url || "",
+          streamKey: (event as any).streamKey || (event as any).stream_key || "",
           useCustomDomain: (event as any).use_custom_domain === true || (event as any).useCustomDomain === true,
         })
         if (event.simulcastConfig) {
@@ -3211,7 +3211,7 @@ export function EventFormDialog({
                 </div>
               )}
 
-              {Boolean(formData.streamType) && (
+              {(Boolean(formData.streamType) || isEditing) && (
                 <>
                   <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                     <Alert className="border-primary/50 bg-primary/5">

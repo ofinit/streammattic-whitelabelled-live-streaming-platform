@@ -2524,28 +2524,26 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           </div>
           {inlineCrewCredentials ? (
             <div className="space-y-2">
-              {inlineCrewCredentials.rtmpUrl && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">RTMP URL</span>
-                  <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs font-mono">
-                    {inlineCrewCredentials.rtmpUrl}
-                  </code>
-                  <button
-                    type="button"
-                    className="shrink-0 rounded p-1 hover:bg-muted transition-colors"
-                    onClick={() => {
-                      navigator.clipboard.writeText(inlineCrewCredentials!.rtmpUrl!)
-                      setInlineCrewKeyCopied("rtmp")
-                      setTimeout(() => setInlineCrewKeyCopied(null), 2000)
-                    }}
-                  >
-                    {inlineCrewKeyCopied === "rtmp" ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-28 shrink-0">FMS / RTMP URL</span>
+                <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs font-mono">
+                  {inlineCrewCredentials.rtmpUrl || "rtmp://rtmplive.in/live"}
+                </code>
+                <button
+                  type="button"
+                  className="shrink-0 rounded p-1 hover:bg-muted transition-colors"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inlineCrewCredentials.rtmpUrl || "rtmp://rtmplive.in/live")
+                    setInlineCrewKeyCopied("rtmp")
+                    setTimeout(() => setInlineCrewKeyCopied(null), 2000)
+                  }}
+                >
+                  {inlineCrewKeyCopied === "rtmp" ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                </button>
+              </div>
               {inlineCrewCredentials.streamKey && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Stream Key</span>
+                  <span className="text-xs text-muted-foreground w-28 shrink-0">Stream Key</span>
                   <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs font-mono">
                     {inlineCrewCredentials.streamKey}
                   </code>

@@ -108,8 +108,14 @@ export async function POST(
       }
     }
 
+    const finalRtmpUrl =
+      rtmpUrl ||
+      ((row.rtmp_url as string)?.trim() || null) ||
+      process.env.RTMP_SERVER_URL ||
+      "rtmp://rtmplive.in/live"
+
     return NextResponse.json({
-      rtmpUrl: rtmpUrl || "",
+      rtmpUrl: finalRtmpUrl,
       streamKey: streamKey || "",
       youtubeUrl: (row.youtube_url as string) || "",
       embedCode: (row.embed_code as string) || "",

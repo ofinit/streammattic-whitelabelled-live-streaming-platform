@@ -137,12 +137,12 @@ export function CrewCredentialsContent({ eventId }: { eventId: string }) {
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">RTMP URL (FMS / Server)</Label>
                     <div className="flex gap-2">
-                      <Input value={credentials.rtmpUrl} readOnly className="font-mono text-sm" />
+                      <Input value={credentials.rtmpUrl || "rtmp://rtmplive.in/live"} readOnly className="font-mono text-sm" />
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={() => copyToClipboard(credentials.rtmpUrl, "rtmp")}
+                        onClick={() => copyToClipboard(credentials.rtmpUrl || "rtmp://rtmplive.in/live", "rtmp")}
                       >
                         {copied === "rtmp" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       </Button>

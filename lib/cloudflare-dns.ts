@@ -3,6 +3,7 @@ import {
   getPlatformCnameTarget,
   getCameraIngestDnsRecordForDomain,
   getVerificationTxtNameForCloudflare,
+  getVerificationTxtPrefix,
   parseDomainLayout,
   PLATFORM_DNS_CONFIGURE_ENV_HINT,
 } from "@/lib/platform-dns"
@@ -57,7 +58,22 @@ async function cfFetch<T>(
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`Cloudflare API ${res.status}: ${text}`)
+    let errorMsg = `Cloudflare API ${res.status}`
+    try {
+      const parsed = JSON.parse(text)
+      if (Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+        errorMsg = parsed.errors
+          .map((e: { code?: number; message?: string }) => e.message || `Code ${e.code}`)
+          .filter(Boolean)
+          .join(", ") || errorMsg
+      }
+    } catch {
+      // ignore
+    }
+    if (res.status === 403) {
+      errorMsg = `${errorMsg}. Please ensure the Cloudflare API Token has "Zone.DNS:Edit" permission.`
+    }
+    throw new Error(errorMsg)
   }
 
   return res.json()
@@ -168,116 +184,162 @@ export async function autoConfigureDomain(
   const createdRecords: CloudflareDnsRecord[] = []
   const errors: string[] = []
 
-  const { isSubdomain, subdomain } = parseDomainLayout(domain)
+  // 1. Fetch zone details from Cloudflare to obtain the authoritative zone apex name
+  let zoneName = ""
+  try {
+    const zoneData = await cfFetch<CloudflareZone>(`/zones/${zoneId}`, apiToken)
+    if (zoneData?.result?.name) {
+      zoneName = zoneData.result.name.toLowerCase().trim()
+    }
+  } catch (e) {
+    console.warn("[Cloudflare] Could not fetch zone info directly:", e)
+  }
 
-  if (isSubdomain && !cnameTarget) {
-    errors.push(`Missing CNAME target for subdomains.`)
+  const cleanDomain = domain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+
+  if (!zoneName) {
+    // Fallback: Infer zone name from cleanDomain by stripping www. if present
+    const parts = cleanDomain.split(".").filter(Boolean)
+    if (parts.length > 2 && parts[0] === "www") {
+      zoneName = parts.slice(1).join(".")
+    } else {
+      zoneName = cleanDomain
+    }
+  }
+
+  // Determine whether this is the zone's apex domain or a subdomain
+  // e.g. "mactiveevents1.com" or "www.mactiveevents1.com" are both apex configuration for that zone
+  const isApex = cleanDomain === zoneName || cleanDomain === `www.${zoneName}`
+  const isSubdomain = !isApex && cleanDomain.endsWith(`.${zoneName}`)
+  const subdomain = isSubdomain
+    ? cleanDomain.slice(0, -(zoneName.length + 1))
+    : parseDomainLayout(cleanDomain).subdomain
+
+  if (isSubdomain && !cnameTarget && !platformIp) {
+    errors.push(`Missing routing target (CNAME or A-Record IP) for subdomains.`)
     return { success: false, records: [], errors }
   }
-  if (!isSubdomain && !platformIp) {
+  if (isApex && !platformIp) {
     errors.push(`Missing Platform A-Record IP for apex domains.`)
     return { success: false, records: [], errors }
   }
 
-  try {
-    // 1. Create routing record (A record for subdomain, or A for root + www for apex)
-    if (isSubdomain) {
-      // Check/Delete existing A or CNAME records on this subdomain
-      const existing = await listDnsRecords(apiToken, zoneId, {
-        name: domain,
-      })
-      if (existing.length > 0) {
-        for (const rec of existing) {
-          if (rec.type === "A" || rec.type === "CNAME") {
-            await deleteDnsRecord(apiToken, zoneId, rec.id)
-          }
+  // Helper to delete any conflicting existing records (A, AAAA, CNAME) by exact FQDN
+  const deleteConflictingRecords = async (fqdn: string, typesToDelete: string[]) => {
+    try {
+      const existing = await listDnsRecords(apiToken, zoneId, { name: fqdn })
+      for (const rec of existing) {
+        if (typesToDelete.includes(rec.type.toUpperCase())) {
+          await deleteDnsRecord(apiToken, zoneId, rec.id)
         }
       }
+    } catch (err) {
+      console.warn(`[Cloudflare] Failed to delete conflicting records for ${fqdn}:`, err)
+    }
+  }
 
-      const aRecord = await createDnsRecord(apiToken, zoneId, {
+  const prefix = getVerificationTxtPrefix()
+
+  try {
+    if (isApex) {
+      // 1. Root apex record (@ -> platformIp)
+      // Delete conflicting A, AAAA, CNAME records on the apex FQDN
+      await deleteConflictingRecords(zoneName, ["A", "AAAA", "CNAME"])
+      const rootRecord = await createDnsRecord(apiToken, zoneId, {
         type: "A",
-        name: subdomain,
+        name: "@",
         content: platformIp,
         proxied: false,
       })
-      createdRecords.push(aRecord)
+      createdRecords.push(rootRecord)
+
+      // 2. www record (www -> platformIp)
+      // Delete conflicting A, AAAA, CNAME records on www.zone FQDN
+      await deleteConflictingRecords(`www.${zoneName}`, ["A", "AAAA", "CNAME"])
+      const wwwRecord = await createDnsRecord(apiToken, zoneId, {
+        type: "A",
+        name: "www",
+        content: platformIp,
+        proxied: false,
+      })
+      createdRecords.push(wwwRecord)
+
+      // 3. Verification TXT record (_verify -> verificationToken)
+      const txtFqdn = `${prefix}.${zoneName}`
+      await deleteConflictingRecords(txtFqdn, ["TXT"])
+      const txtRecord = await createDnsRecord(apiToken, zoneId, {
+        type: "TXT",
+        name: prefix,
+        content: verificationToken,
+        proxied: false,
+      })
+      createdRecords.push(txtRecord)
+
+      // 4. Camera Ingest SFTP record (optional)
+      if (options?.includeCameraIngest && options.cameraIngestTarget) {
+        const cameraRecordInfo = getCameraIngestDnsRecordForDomain(zoneName, options.cameraIngestTarget)
+        if (cameraRecordInfo) {
+          await deleteConflictingRecords(cameraRecordInfo.fullHost, ["A", "AAAA", "CNAME"])
+          const cameraRecord = await createDnsRecord(apiToken, zoneId, {
+            type: cameraRecordInfo.type,
+            name: cameraRecordInfo.host,
+            content: cameraRecordInfo.value,
+            proxied: false,
+          })
+          createdRecords.push(cameraRecord)
+        }
+      }
     } else {
-      // APEX DOMAIN: Create A records for both @ and www
-      const targets = ["@", "www"]
-      
-      for (const target of targets) {
-        const recordName = target === "@" ? domain : `${target}.${domain}`
-        
-        // 1a. Check/Delete existing A records
-        const existing = await listDnsRecords(apiToken, zoneId, {
-          name: recordName,
-          type: "A",
-        })
-        if (existing.length > 0) {
-          for (const rec of existing) {
-            await deleteDnsRecord(apiToken, zoneId, rec.id)
-          }
+      // SUBDOMAIN: e.g. live.example.com
+      const subFqdn = `${subdomain}.${zoneName}`
+      await deleteConflictingRecords(subFqdn, ["A", "AAAA", "CNAME"])
+
+      const routingRecord = await createDnsRecord(apiToken, zoneId, {
+        type: cnameTarget ? "CNAME" : "A",
+        name: subdomain,
+        content: cnameTarget || platformIp,
+        proxied: false,
+      })
+      createdRecords.push(routingRecord)
+
+      // Verification TXT: _verify.<subdomain>
+      const txtHost = `${prefix}.${subdomain}`
+      const txtFqdn = `${txtHost}.${zoneName}`
+      await deleteConflictingRecords(txtFqdn, ["TXT"])
+      const txtRecord = await createDnsRecord(apiToken, zoneId, {
+        type: "TXT",
+        name: txtHost,
+        content: verificationToken,
+        proxied: false,
+      })
+      createdRecords.push(txtRecord)
+
+      if (options?.includeCameraIngest && options.cameraIngestTarget) {
+        const cameraRecordInfo = getCameraIngestDnsRecordForDomain(cleanDomain, options.cameraIngestTarget)
+        if (cameraRecordInfo) {
+          await deleteConflictingRecords(cameraRecordInfo.fullHost, ["A", "AAAA", "CNAME"])
+          const cameraRecord = await createDnsRecord(apiToken, zoneId, {
+            type: cameraRecordInfo.type,
+            name: cameraRecordInfo.host,
+            content: cameraRecordInfo.value,
+            proxied: false,
+          })
+          createdRecords.push(cameraRecord)
         }
-
-        // 1b. Create new A record
-        const aRecord = await createDnsRecord(apiToken, zoneId, {
-          type: "A",
-          name: target,
-          content: platformIp,
-          proxied: false,
-        })
-        createdRecords.push(aRecord)
-      }
-    }
-
-    // 2. Create TXT verification record
-    const txtHost = getVerificationTxtNameForCloudflare(domain)
-
-    // Remove existing TXT if present (same relative name as create)
-    const existingTxt = await listDnsRecords(apiToken, zoneId, {
-      name: txtHost,
-      type: "TXT",
-    })
-    if (existingTxt.length > 0) {
-      for (const rec of existingTxt) {
-        await deleteDnsRecord(apiToken, zoneId, rec.id)
-      }
-    }
-
-    const txt = await createDnsRecord(apiToken, zoneId, {
-      type: "TXT",
-      name: txtHost,
-      content: verificationToken,
-      proxied: false,
-    })
-    createdRecords.push(txt)
-
-    if (options?.includeCameraIngest) {
-      const cameraRecord = getCameraIngestDnsRecordForDomain(domain, options.cameraIngestTarget)
-      if (cameraRecord) {
-        const existingCameraRecords = await listDnsRecords(apiToken, zoneId, {
-          name: cameraRecord.fullHost,
-        })
-        for (const rec of existingCameraRecords) {
-          if (rec.type === "A" || rec.type === "CNAME") {
-            await deleteDnsRecord(apiToken, zoneId, rec.id)
-          }
-        }
-        const record = await createDnsRecord(apiToken, zoneId, {
-          type: cameraRecord.type,
-          name: cameraRecord.host,
-          content: cameraRecord.value,
-          proxied: false,
-        })
-        createdRecords.push(record)
       }
     }
   } catch (err) {
     errors.push(err instanceof Error ? err.message : "Unknown error creating DNS records")
   }
 
+  const requiredCount = isApex ? 3 : 2
   return {
-    success: errors.length === 0 && createdRecords.length >= (isSubdomain ? 2 : 3),
+    success: errors.length === 0 && createdRecords.length >= requiredCount,
     records: createdRecords,
     errors,
   }

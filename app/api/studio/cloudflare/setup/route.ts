@@ -104,10 +104,11 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
 
     if (domainId !== "platform") {
       const cleanDomain = domainName.trim().toLowerCase().replace(/^https?:\/\//i, "").replace(/[:/].*$/, "")
+      const altDomain = cleanDomain.startsWith("www.") ? cleanDomain.slice(4) : `www.${cleanDomain}`
       await sql`
         UPDATE domains 
         SET verification_status = 'verified', verified_at = NOW() 
-        WHERE LOWER(REGEXP_REPLACE(REGEXP_REPLACE(domain, '^https?://', ''), '[:/].*$', '')) = ${cleanDomain}
+        WHERE LOWER(REGEXP_REPLACE(REGEXP_REPLACE(domain, '^https?://', ''), '[:/].*$', '')) IN (${cleanDomain}, ${altDomain})
       `
     }
     
@@ -119,10 +120,7 @@ export const POST = withRole(["studio", "streamer", "admin"], async (user, reque
     console.error("Cloudflare Setup API Error:", err)
     const detail =
       err instanceof Error ? err.message : "Internal server error during Cloudflare setup"
-    return jsonError(
-      process.env.NODE_ENV === "development" ? detail : "Internal server error during Cloudflare setup",
-      500,
-    )
+    return jsonError(detail, 500)
   }
 })
 

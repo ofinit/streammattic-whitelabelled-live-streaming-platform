@@ -81,9 +81,8 @@ export function WeddingOrnateFloralDuoTemplate({
   couple1ImageUrl,
   couple2ImageUrl,
 }: TemplateProps) {
-  const fallback = getDefaultTemplateHeroBackdropUrl("tpl-wedding-ornate-floral-duo") || "/templates/wedding-ornate-couple.png"
-  const c1Img = couple1ImageUrl?.trim() || heroImageUrl?.trim() || fallback
-  const c2Img = couple2ImageUrl?.trim() || heroImageUrl?.trim() || fallback
+  const c1Img = couple1ImageUrl?.trim() || "/templates/wedding-ornate-groom.jpg"
+  const c2Img = couple2ImageUrl?.trim() || "/templates/wedding-ornate-bride.jpg"
   const coupleParts = useMemo(() => splitCoupleTitle(eventTitle), [eventTitle])
   const c1Name = coupleParts?.first || "Groom"
   const c2Name = coupleParts?.second || "Bride"

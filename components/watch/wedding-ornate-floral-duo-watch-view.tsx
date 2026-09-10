@@ -133,8 +133,8 @@ export function WeddingOrnateFloralDuoWatchView({
           .join(" · ")
       : eventDescription || "Live ceremony · Watch from anywhere"
 
-  const c1Img = couple1ImageUrl?.trim() || heroImageUrl?.trim() || "/templates/wedding-ornate-couple.png"
-  const c2Img = couple2ImageUrl?.trim() || heroImageUrl?.trim() || "/templates/wedding-ornate-couple.png"
+  const c1Img = couple1ImageUrl?.trim() || "/templates/wedding-ornate-groom.jpg"
+  const c2Img = couple2ImageUrl?.trim() || "/templates/wedding-ornate-bride.jpg"
   const c1Name = coupleParts?.[0] || "Groom"
   const c2Name = coupleParts?.[1] || "Bride"
 
@@ -217,13 +217,13 @@ export function WeddingOrnateFloralDuoWatchView({
 
           {primaryDateFormatted ? (
             <div className="ornate-date-box">
-              {primaryDateFormatted.toUpperCase()}
+              {primaryDateFormatted}
             </div>
           ) : null}
 
           {showCountdown ? (
             <div className="ornate-countdown-container">
-              <p className="ornate-countdown-title">COUNTDOWN TO CEREMONY</p>
+              <p className="ornate-countdown-title">COUNTDOWN</p>
               <div className="ornate-countdown-timer">
                 <div className="ornate-countdown-item">
                   <span className="ornate-countdown-num">{String(countdown.days).padStart(2, "0")}</span>
@@ -248,99 +248,115 @@ export function WeddingOrnateFloralDuoWatchView({
             </div>
           ) : null}
 
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={scrollToStream}
-              className="ornate-btn"
-            >
+          <div className="mt-10">
+            <button type="button" className="ornate-btn" onClick={scrollToStream}>
               Watch Live Stream
             </button>
           </div>
 
-          <div className="mt-6 flex justify-center">
-            <button
-              type="button"
-              onClick={scrollToStream}
-              className="ornate-scroll-hint"
-              aria-label="Scroll to live stream"
-            >
-              <ChevronDown className="h-6 w-6" />
-            </button>
-          </div>
+          <button type="button" className="ornate-scroll-down" onClick={scrollToStream} aria-label="Scroll to content">
+            <ChevronDown className="w-8 h-8" />
+          </button>
         </div>
       </section>
 
-      {/* Marquee Ticker */}
-      <div className="ornate-ticker">
-        <div className="ornate-ticker-track">
-          <div className="ornate-ticker-content">
-            {tickerMessage} &nbsp;&nbsp;✦&nbsp;&nbsp; {tickerMessage} &nbsp;&nbsp;✦&nbsp;&nbsp;
-          </div>
-          <div className="ornate-ticker-content" aria-hidden="true">
-            {tickerMessage} &nbsp;&nbsp;✦&nbsp;&nbsp; {tickerMessage} &nbsp;&nbsp;✦&nbsp;&nbsp;
-          </div>
+      {/* Marquee ticker message */}
+      <div className="ornate-marquee">
+        <div className="ornate-marquee-track">
+          <span className="px-8">{tickerMessage} · </span>
+          <span className="px-8" aria-hidden>{tickerMessage} · </span>
+          <span className="px-8" aria-hidden>{tickerMessage} · </span>
         </div>
       </div>
 
-      {/* Invitation card section */}
-      <section className="ornate-invitation-section">
-        <div className="ornate-invitation-card">
-          <p className="ornate-invitation-text">{invitationLine}</p>
+      {/* Live Stream Section */}
+      <section id="ornate-stream-section" className="ornate-section">
+        <div className="ornate-container">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+            {/* Stream Player block */}
+            <div className={cn("lg:col-span-12", allowChat && showChat && "lg:col-span-8")}>
+              <div className="ornate-section-heading">
+                <h2>Watch Live</h2>
+                <p>Welcome! Scroll down to write your wishes, view schedule details, and check the wedding photo gallery.</p>
+              </div>
+
+              <div className="ornate-stream-card">
+                <div className="ornate-stream-wrapper bg-black">
+                  {streamPlayer}
+                </div>
+                <p className="ornate-card-text">{invitationLine}</p>
+              </div>
+            </div>
+
+            {/* Chat panel block */}
+            {allowChat && showChat ? (
+              <div className="lg:col-span-4 lg:sticky lg:top-4">
+                <div className="ornate-section-heading text-left lg:mb-4">
+                  <h2 className="text-xl">Live Wishes</h2>
+                  <p className="text-xs">Express your greetings to the couple in real time</p>
+                </div>
+                <div className="ornate-chat-panel h-[480px]">
+                  {liveChat}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      {/* Teaser Video (optional) */}
-      {teaserEmbed ? (
-        <section className="ornate-container my-12">
-          <div className="ornate-section-heading">
-            <h2>Pre-Wedding Highlights</h2>
+      {/* Event Details info panel */}
+      <section className="ornate-section bg-[#fff0f3]/30">
+        <div className="ornate-container">
+          <div className="mx-auto max-w-4xl">
+            {detailsPanel}
           </div>
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border-4 border-[#d4af37]/30 shadow-2xl bg-black aspect-video">
-            <iframe
-              src={teaserEmbed}
-              title="Pre-wedding highlight"
-              className="h-full w-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+        </div>
+      </section>
+
+      {/* Teaser Section */}
+      {teaserEmbed ? (
+        <section className="ornate-section">
+          <div className="ornate-container">
+            <div className="ornate-section-heading">
+              <h2>Watch Teaser</h2>
+              <p>A quick sneak peek of our beautiful moments</p>
+            </div>
+            <div className="ornate-teaser-frame">
+              <iframe
+                title="Wedding teaser video"
+                src={`${teaserEmbed}?rel=0`}
+                className="w-full h-full border-none"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           </div>
         </section>
       ) : null}
 
-      {/* Live Stream / Player Section */}
-      <section id="ornate-stream-section" className="ornate-container py-12 scroll-mt-6">
-        <div className="ornate-section-heading">
-          <h2>Live Stream</h2>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
-          <div className={cn("space-y-6", allowChat && showChat ? "lg:col-span-8" : "lg:col-span-12")}>
-            <div className="overflow-hidden rounded-2xl border-2 border-[#d4af37]/40 shadow-2xl bg-black">
-              {streamPlayer}
+      {/* Gallery Section */}
+      {gallerySection ? (
+        <section className="ornate-section bg-[#fff0f3]/30">
+          <div className="ornate-container">
+            <div className="ornate-gallery-wrap">
+              {gallerySection}
             </div>
-            {detailsPanel}
           </div>
+        </section>
+      ) : null}
 
-          {allowChat && showChat && liveChat ? (
-            <div className="lg:col-span-4">
-              <div className="sticky top-20 rounded-2xl border-2 border-[#d4af37]/40 bg-white/80 p-4 shadow-xl backdrop-blur-md">
-                {liveChat}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
+      {/* Photographer credits & footer */}
+      {photographerCredit ? (
+        <section className="ornate-footer py-12 border-t border-amber-500/10">
+          <div className="ornate-container">
+            {photographerCredit}
+          </div>
+        </section>
+      ) : null}
 
-      {/* Photo Gallery Section */}
-      {gallerySection}
-
-      {/* Footer & Photographer Credit */}
       <footer className="ornate-footer">
-        {photographerCredit}
-        <p className="mt-8 text-xs text-[#3f2028]/50">
-          Streamed with love · White-label live broadcast
-        </p>
+        <h2>Thank You</h2>
+        <p>Copyright © All Rights Reserved</p>
       </footer>
     </div>
   )

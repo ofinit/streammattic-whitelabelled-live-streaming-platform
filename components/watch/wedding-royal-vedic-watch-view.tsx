@@ -373,7 +373,8 @@ export function WeddingRoyalVedicWatchView({
       </button>
 
       {/* ----------------------------------------------------------------------
-          3. Hero Banner: Monogram, Sacred Quote, Couple Names & Countdown
+          3. Hero Banner & Live Stream Stage:
+             Vedic Temple Courtyard extending down to and behind the Player
           ---------------------------------------------------------------------- */}
       <section className="invitation-hero" aria-label={`Wedding celebration of ${groomName} and ${brideName}`}>
         <picture>
@@ -387,9 +388,6 @@ export function WeddingRoyalVedicWatchView({
             decoding="sync"
           />
         </picture>
-
-        {/* Ornate Inset Double Gold Frame */}
-        <div className="invitation-hero__frame" aria-hidden="true" />
 
         {/* Falling Leaves / Petals Micro-animation */}
         <div className="hero-falling-leaves is-active" aria-hidden="true">
@@ -454,9 +452,9 @@ export function WeddingRoyalVedicWatchView({
             {brideRest}
           </h2>
 
-          {/* Mobile Countdown (visible on mobile viewports inside header) */}
+          {/* Countdown (when enabled) */}
           {showCountdown ? (
-            <div className="hero-countdown hero-countdown--mobile" aria-label="Time remaining until the wedding day">
+            <div className="hero-countdown" aria-label="Time remaining until the wedding day">
               {[
                 ["Days", effectiveCountdown.days],
                 ["Hours", effectiveCountdown.hours],
@@ -472,47 +470,28 @@ export function WeddingRoyalVedicWatchView({
           ) : null}
         </header>
 
-        {/* Desktop Countdown (positioned at bottom center above temple courtyard) */}
-        {showCountdown ? (
-          <div className="hero-countdown hero-countdown--desktop" aria-label="Time remaining until the wedding day">
-            {[
-              ["Days", effectiveCountdown.days],
-              ["Hours", effectiveCountdown.hours],
-              ["Mins", effectiveCountdown.minutes],
-              ["Secs", effectiveCountdown.seconds],
-            ].map(([label, value]) => (
-              <div key={label} className="hero-countdown__item">
-                <strong>{String(value).padStart(2, "0")}</strong>
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
+        {/* Live Stream Player Stage (Inside the Temple Courtyard) */}
+        <div className="vedic-stream-container">
+          <div className="vedic-stream-card">
+            {/* Ornate Corner Accents */}
+            <div className="vedic-stream-corner vedic-stream-corner-tl"><VedicCornerOrnament /></div>
+            <div className="vedic-stream-corner vedic-stream-corner-tr"><VedicCornerOrnament /></div>
+            <div className="vedic-stream-corner vedic-stream-corner-bl"><VedicCornerOrnament /></div>
+            <div className="vedic-stream-corner vedic-stream-corner-br"><VedicCornerOrnament /></div>
 
-      {/* ----------------------------------------------------------------------
-          4. Live Stream Player Stage (The Centerpiece)
-          ---------------------------------------------------------------------- */}
-      <section className="vedic-stream-container">
-        <div className="vedic-stream-card">
-          {/* Ornate Corner Accents */}
-          <div className="vedic-stream-corner vedic-stream-corner-tl"><VedicCornerOrnament /></div>
-          <div className="vedic-stream-corner vedic-stream-corner-tr"><VedicCornerOrnament /></div>
-          <div className="vedic-stream-corner vedic-stream-corner-bl"><VedicCornerOrnament /></div>
-          <div className="vedic-stream-corner vedic-stream-corner-br"><VedicCornerOrnament /></div>
-
-          {/* Stream Player Embed */}
-          <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-black aspect-video flex items-center justify-center">
-            {streamPlayer}
+            {/* Stream Player Embed */}
+            <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-black aspect-video flex items-center justify-center">
+              {streamPlayer}
+            </div>
           </div>
+
+          {/* Live Chat or Details beneath the player */}
+          {allowChat && showChat && liveChat && (
+            <div className="mt-4 rounded-xl border border-[#c9a46a]/30 bg-[#fdfbf7]/90 p-4 shadow-sm backdrop-blur-sm">
+              {liveChat}
+            </div>
+          )}
         </div>
-
-        {/* Live Chat or Details beneath the player */}
-        {allowChat && showChat && liveChat && (
-          <div className="mt-4 rounded-xl border border-[#c9a46a]/30 bg-[#fdfbf7]/90 p-4 shadow-sm backdrop-blur-sm">
-            {liveChat}
-          </div>
-        )}
       </section>
 
       {/* ----------------------------------------------------------------------

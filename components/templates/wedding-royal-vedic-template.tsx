@@ -250,9 +250,6 @@ export function WeddingRoyalVedicTemplate({
           />
         </picture>
 
-        {/* Ornate Inset Double Gold Frame */}
-        <div className="invitation-hero__frame" aria-hidden="true" />
-
         {/* Falling Leaves / Petals Micro-animation */}
         <div className="hero-falling-leaves is-active" aria-hidden="true">
           {[
@@ -316,8 +313,8 @@ export function WeddingRoyalVedicTemplate({
             {brideRest}
           </h2>
 
-          {/* Mobile Countdown */}
-          <div className="hero-countdown hero-countdown--mobile" aria-label="Time remaining until the wedding day">
+          {/* Countdown */}
+          <div className="hero-countdown" aria-label="Time remaining until the wedding day">
             {[
               ["Days", 157],
               ["Hours", 4],
@@ -332,35 +329,20 @@ export function WeddingRoyalVedicTemplate({
           </div>
         </header>
 
-        {/* Desktop Countdown (positioned at bottom center above temple courtyard) */}
-        <div className="hero-countdown hero-countdown--desktop" aria-label="Time remaining until the wedding day">
-          {[
-            ["Days", 157],
-            ["Hours", 4],
-            ["Mins", 30],
-            ["Secs", 42],
-          ].map(([label, value]) => (
-            <div key={label} className="hero-countdown__item">
-              <strong>{String(value).padStart(2, "0")}</strong>
-              <span>{label}</span>
+        {/* Stream Video Player Mockup (Inside the Temple Courtyard) */}
+        <div className="vedic-stream-container">
+          <div className="vedic-stream-card">
+            <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-neutral-900 aspect-video flex flex-col items-center justify-center text-white">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#ba8933] flex items-center justify-center shadow-lg mb-3">
+                <Play className="w-7 h-7 text-stone-900 ml-1 fill-stone-900" />
+              </div>
+              <p className="font-vedic-cinzel text-sm uppercase tracking-widest text-[#e6c075]">
+                Live Stream Broadcast
+              </p>
+              <span className="text-xs text-stone-300 mt-1">
+                Crystal Clear HD Video &bull; Multi-Camera View
+              </span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Stream Video Player Mockup */}
-      <section className="vedic-stream-container">
-        <div className="vedic-stream-card">
-          <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-neutral-900 aspect-video flex flex-col items-center justify-center text-white">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#ba8933] flex items-center justify-center shadow-lg mb-3">
-              <Play className="w-7 h-7 text-stone-900 ml-1 fill-stone-900" />
-            </div>
-            <p className="font-vedic-cinzel text-sm uppercase tracking-widest text-[#e6c075]">
-              Live Stream Broadcast
-            </p>
-            <span className="text-xs text-stone-300 mt-1">
-              Crystal Clear HD Video &bull; Multi-Camera View
-            </span>
           </div>
         </div>
       </section>

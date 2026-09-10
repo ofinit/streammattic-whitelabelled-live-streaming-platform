@@ -265,25 +265,21 @@
 }
 
 /* --------------------------------------------------------------------------
-   Hero Section with Temple Panorama, Sacred Knot Quote & Countdown
+   Hero Section with Temple Panorama, Sacred Knot Quote & Live Stream
    -------------------------------------------------------------------------- */
 .invitation-hero,
 .vedic-hero {
   position: relative;
   width: 100%;
-  height: 100svh;
-  min-height: 720px;
+  min-height: 100vh;
   overflow: hidden;
   color: #352317;
   background-color: #eadbc5;
-}
-
-@media (min-width: 900px) {
-  .invitation-hero,
-  .vedic-hero {
-    height: min(100vh, 960px);
-    min-height: 820px;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: max(3.5rem, 7vh);
+  padding-bottom: 3.5rem;
 }
 
 .invitation-hero__photo,
@@ -294,39 +290,24 @@
   height: 100%;
   object-fit: cover;
   object-position: center top !important;
+  z-index: 0;
 }
 
+/* Bottom fade: extends the background image down to the player and smoothly dissolves into the page */
 .invitation-hero:after {
   content: "";
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 220px;
-  background: linear-gradient(to bottom, transparent 0%, rgba(250, 246, 240, 0.45) 45%, rgba(250, 246, 240, 0.9) 80%, #faf6f0 100%);
+  height: 340px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(250, 246, 240, 0.4) 40%, rgba(250, 246, 240, 0.92) 80%, #faf6f0 100%);
   pointer-events: none;
   z-index: 2;
 }
 
 .invitation-hero__frame {
-  position: absolute;
-  inset: 11px;
-  z-index: 3;
-  pointer-events: none;
-  border: 1px solid rgba(166, 119, 50, 0.64);
-}
-
-.invitation-hero__frame:before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 1px solid rgba(202, 166, 109, 0.18);
-}
-
-@media (min-width: 900px) {
-  .invitation-hero__frame {
-    inset: 18px;
-  }
+  display: none;
 }
 
 .vedic-hero-vignette {
@@ -334,26 +315,16 @@
   inset: 0;
   background: linear-gradient(180deg, rgba(42, 8, 12, 0.22) 0%, transparent 35%);
   pointer-events: none;
+  z-index: 1;
 }
 
 /* Center Hero Heading: Monogram, Sacred Knot Quote, Couple Names */
 .invitation-hero__heading {
   z-index: 4;
   text-align: center;
-  position: absolute;
-  top: 7%;
-  left: 20px;
-  right: 20px;
-}
-
-@media (min-width: 900px) {
-  .invitation-hero__heading {
-    width: min(760px, 62vw);
-    top: 9%;
-    left: 50%;
-    transform: translateX(-50%);
-    right: auto;
-  }
+  position: relative;
+  width: min(760px, 92vw);
+  margin: 0 auto;
 }
 
 .invitation-hero__monogram {
@@ -516,36 +487,15 @@
   z-index: 4;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   column-gap: 6px;
-  margin: 14px auto 0;
+  margin: 1.25rem auto 0;
   padding: 0;
-  width: 280px;
+  width: min(320px, 92vw);
   display: grid;
+  position: relative;
 }
 
 .hero-countdown--desktop {
-  z-index: 4;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: 300px;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  position: absolute;
-  bottom: 8%;
-  left: calc(50% - 150px);
-  right: auto;
-}
-
-@media (max-width: 899px) {
-  .hero-countdown--desktop {
-    display: none;
-  }
-}
-
-@media (min-width: 900px) {
-  .hero-countdown--mobile {
-    display: none;
-  }
+  display: none !important;
 }
 
 .hero-countdown__item {
@@ -592,7 +542,7 @@
   z-index: 10;
   width: 100%;
   max-width: 1080px;
-  margin: -3rem auto 2.5rem;
+  margin: 2.25rem auto 0;
   padding: 0 1rem;
 }
 

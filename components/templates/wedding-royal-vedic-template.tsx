@@ -282,7 +282,7 @@ export function WeddingRoyalVedicTemplate({
           ))}
         </div>
 
-        {/* Center Hero Heading: Photographer Logo (if provided), Sacred Knot Quote, Couple Names */}
+        {/* Center Hero Heading: Photographer Logo (if provided), Couple Names */}
         <header className="invitation-hero__heading">
           {photographerLogoUrl ? (
             <img
@@ -292,12 +292,6 @@ export function WeddingRoyalVedicTemplate({
               loading="eager"
             />
           ) : null}
-
-          <p className="invitation-hero__quote">
-            “Three sacred knots, one for love,<br />
-            one for trust, and one for a lifetime<br />
-            of togetherness.”
-          </p>
 
           <h1 className="invitation-hero__name invitation-hero__groom">
             <span className="hero-name__initial">{groomInitial}</span>
@@ -369,15 +363,9 @@ export function WeddingRoyalVedicTemplate({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative">
             <div className="vedic-card text-center">
-              <p className="font-vedic-cinzel text-[11px] uppercase tracking-[0.2em] text-[#8b6508] font-semibold">
-                The Groom
-              </p>
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c] mt-1">
+              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {groomName}
               </h3>
-              <p className="text-xs text-[#796657] mt-2">
-                Beloved son of family &amp; friends
-              </p>
             </div>
 
             <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-vedic-script text-4xl text-[#8b6508] bg-[#fdfbf7] w-12 h-12 rounded-full border border-[#c9a46a]/40 items-center justify-center shadow-sm">
@@ -385,15 +373,9 @@ export function WeddingRoyalVedicTemplate({
             </div>
 
             <div className="vedic-card text-center">
-              <p className="font-vedic-cinzel text-[11px] uppercase tracking-[0.2em] text-[#8b6508] font-semibold">
-                The Bride
-              </p>
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c] mt-1">
+              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {brideName}
               </h3>
-              <p className="text-xs text-[#796657] mt-2">
-                Beloved daughter of family &amp; friends
-              </p>
             </div>
           </div>
         </div>
@@ -401,9 +383,9 @@ export function WeddingRoyalVedicTemplate({
 
       {/* Wedding Details */}
       <section className="py-12 px-4 max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="vedic-card">
-            <div className="flex items-center gap-3 text-[#8b6508] mb-2">
+        <div className="max-w-xl mx-auto">
+          <div className="vedic-card text-center">
+            <div className="flex items-center justify-center gap-3 text-[#8b6508] mb-2">
               <Calendar className="w-5 h-5 shrink-0" />
               <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
                 Auspicious Date
@@ -414,21 +396,6 @@ export function WeddingRoyalVedicTemplate({
             </h4>
             <p className="font-vedic-cormorant italic text-sm text-[#796657] mt-1">
               Muhurtham Ceremony: 9:30 AM – 11:30 AM
-            </p>
-          </div>
-
-          <div className="vedic-card">
-            <div className="flex items-center gap-3 text-[#8b6508] mb-2">
-              <MapPin className="w-5 h-5 shrink-0" />
-              <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
-                Wedding Venue
-              </span>
-            </div>
-            <h4 className="font-vedic-bodoni text-2xl font-bold text-[#2b120b]">
-              The Grand Heritage Palace
-            </h4>
-            <p className="text-xs text-[#4a392f] mt-1 leading-relaxed">
-              Palace Road, Bengaluru, Karnataka &bull; Virtual Live Stream
             </p>
           </div>
         </div>

@@ -421,7 +421,7 @@ export function WeddingRoyalVedicWatchView({
           ))}
         </div>
 
-        {/* Center Hero Heading: Photographer Logo (if provided), Sacred Knot Quote, Couple Names */}
+        {/* Center Hero Heading: Photographer Logo (if provided), Couple Names */}
         <header className="invitation-hero__heading">
           {photographerLogoUrl ? (
             <img
@@ -431,12 +431,6 @@ export function WeddingRoyalVedicWatchView({
               loading="eager"
             />
           ) : null}
-
-          <p className="invitation-hero__quote">
-            “Three sacred knots, one for love,<br />
-            one for trust, and one for a lifetime<br />
-            of togetherness.”
-          </p>
 
           <h1 className="invitation-hero__name invitation-hero__groom">
             <span className="hero-name__initial">{groomInitial}</span>
@@ -531,18 +525,9 @@ export function WeddingRoyalVedicWatchView({
                   <img src={couple1ImageUrl} alt={groomName} className="w-full h-full object-cover" />
                 </div>
               ) : null}
-              <p className="font-vedic-cinzel text-[11px] uppercase tracking-[0.2em] text-[#8b6508] font-semibold">
-                The Groom
-              </p>
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c] mt-1">
+              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {groomName}
               </h3>
-              <div className="my-2 opacity-60">
-                <VedicFiligree />
-              </div>
-              <p className="text-xs text-[#796657] leading-relaxed">
-                Beloved son of family & friends
-              </p>
             </div>
 
             {/* Center Calligraphic '&' on Desktop */}
@@ -557,18 +542,9 @@ export function WeddingRoyalVedicWatchView({
                   <img src={couple2ImageUrl} alt={brideName} className="w-full h-full object-cover" />
                 </div>
               ) : null}
-              <p className="font-vedic-cinzel text-[11px] uppercase tracking-[0.2em] text-[#8b6508] font-semibold">
-                The Bride
-              </p>
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c] mt-1">
+              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {brideName}
               </h3>
-              <div className="my-2 opacity-60">
-                <VedicFiligree />
-              </div>
-              <p className="text-xs text-[#796657] leading-relaxed">
-                Beloved daughter of family & friends
-              </p>
             </div>
           </div>
         </div>
@@ -592,81 +568,117 @@ export function WeddingRoyalVedicWatchView({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Date Card */}
-          <div className="vedic-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3 text-[#8b6508] mb-2">
-                <Calendar className="w-5 h-5 shrink-0" />
-                <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
-                  Auspicious Date
-                </span>
-              </div>
-              <h4 className="font-vedic-bodoni text-2xl font-bold text-[#2b120b]">
-                {primaryDateFormatted || "Special Wedding Day"}
-              </h4>
-              <p className="font-vedic-cormorant italic text-sm text-[#796657] mt-1">
-                Two hearts, one beautiful beginning.
-              </p>
-            </div>
-
-            {/* Additional Dates / Functions Timeline if any */}
-            {eventDates && eventDates.length > 0 ? (
-              <div className="mt-6 pt-4 border-t border-[#c9a46a]/25 space-y-3">
-                <p className="font-vedic-cinzel text-[10px] tracking-[0.2em] uppercase text-[#8b6508] font-semibold">
-                  Wedding Functions
-                </p>
-                <div className="space-y-2">
-                  {eventDates.map((d) => (
-                    <div key={d.id} className="flex justify-between items-center text-xs py-1 border-b border-[#c9a46a]/15 last:border-none">
-                      <span className="font-medium text-[#2b120b]">{d.label}</span>
-                      <span className="text-[#8b6508] font-mono">{d.formatted}</span>
-                    </div>
-                  ))}
+        {Boolean(venueName?.trim() || venueAddress?.trim()) ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Date Card */}
+            <div className="vedic-card flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3 text-[#8b6508] mb-2">
+                  <Calendar className="w-5 h-5 shrink-0" />
+                  <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
+                    Auspicious Date
+                  </span>
                 </div>
+                <h4 className="font-vedic-bodoni text-2xl font-bold text-[#2b120b]">
+                  {primaryDateFormatted || "Special Wedding Day"}
+                </h4>
+                <p className="font-vedic-cormorant italic text-sm text-[#796657] mt-1">
+                  Two hearts, one beautiful beginning.
+                </p>
               </div>
-            ) : null}
-          </div>
 
-          {/* Venue Card */}
-          <div className="vedic-card flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3 text-[#8b6508] mb-2">
-                <MapPin className="w-5 h-5 shrink-0" />
-                <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
-                  Wedding Venue
-                </span>
-              </div>
-              <h4 className="font-vedic-bodoni text-2xl font-bold text-[#2b120b]">
-                {venueName || "Sacred Celebration Pavilion"}
-              </h4>
-              <p className="text-xs text-[#4a392f] mt-1 leading-relaxed">
-                {venueAddress || "Join us virtually live from anywhere around the globe."}
-              </p>
+              {/* Additional Dates / Functions Timeline if any */}
+              {eventDates && eventDates.length > 0 ? (
+                <div className="mt-6 pt-4 border-t border-[#c9a46a]/25 space-y-3">
+                  <p className="font-vedic-cinzel text-[10px] tracking-[0.2em] uppercase text-[#8b6508] font-semibold">
+                    Wedding Functions
+                  </p>
+                  <div className="space-y-2">
+                    {eventDates.map((d) => (
+                      <div key={d.id} className="flex justify-between items-center text-xs py-1 border-b border-[#c9a46a]/15 last:border-none">
+                        <span className="font-medium text-[#2b120b]">{d.label}</span>
+                        <span className="text-[#8b6508] font-mono">{d.formatted}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            {venueAddress ? (
-              <div className="mt-6 pt-4">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="vedic-gold-btn w-full text-center"
-                >
-                  <MapPin className="w-3.5 h-3.5" />
-                  Get Directions
-                </a>
+            {/* Venue Card */}
+            <div className="vedic-card flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3 text-[#8b6508] mb-2">
+                  <MapPin className="w-5 h-5 shrink-0" />
+                  <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
+                    Wedding Venue
+                  </span>
+                </div>
+                {venueName ? (
+                  <h4 className="font-vedic-bodoni text-2xl font-bold text-[#2b120b]">
+                    {venueName}
+                  </h4>
+                ) : null}
+                {venueAddress ? (
+                  <p className="text-xs text-[#4a392f] mt-1 leading-relaxed">
+                    {venueAddress}
+                  </p>
+                ) : null}
               </div>
-            ) : (
-              <div className="mt-6 pt-4">
-                <span className="vedic-gold-btn w-full text-center pointer-events-none opacity-80">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Virtual Live Stream
-                </span>
-              </div>
-            )}
+
+              {venueAddress ? (
+                <div className="mt-6 pt-4">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="vedic-gold-btn w-full text-center"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    Get Directions
+                  </a>
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Single Centered Date Card when no physical venue is configured */
+          <div className="max-w-xl mx-auto">
+            <div className="vedic-card flex flex-col justify-between text-center">
+              <div>
+                <div className="flex items-center justify-center gap-3 text-[#8b6508] mb-2">
+                  <Calendar className="w-5 h-5 shrink-0" />
+                  <span className="font-vedic-cinzel text-xs tracking-wider uppercase font-semibold">
+                    Auspicious Date
+                  </span>
+                </div>
+                <h4 className="font-vedic-bodoni text-2xl sm:text-3xl font-bold text-[#2b120b]">
+                  {primaryDateFormatted || "Special Wedding Day"}
+                </h4>
+                <p className="font-vedic-cormorant italic text-sm sm:text-base text-[#796657] mt-1">
+                  Two hearts, one beautiful beginning.
+                </p>
+              </div>
+
+              {/* Additional Dates / Functions Timeline if any */}
+              {eventDates && eventDates.length > 0 ? (
+                <div className="mt-6 pt-4 border-t border-[#c9a46a]/25 space-y-3 text-left">
+                  <p className="font-vedic-cinzel text-[10px] tracking-[0.2em] uppercase text-[#8b6508] font-semibold text-center">
+                    Wedding Functions
+                  </p>
+                  <div className="space-y-2">
+                    {eventDates.map((d) => (
+                      <div key={d.id} className="flex justify-between items-center text-xs py-1 border-b border-[#c9a46a]/15 last:border-none">
+                        <span className="font-medium text-[#2b120b]">{d.label}</span>
+                        <span className="text-[#8b6508] font-mono">{d.formatted}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ----------------------------------------------------------------------

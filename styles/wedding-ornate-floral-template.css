@@ -203,23 +203,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(2.5rem, 6vw, 3.75rem);
-  height: clamp(2.5rem, 6vw, 3.75rem);
-  border-radius: 50%;
-  background: radial-gradient(circle, #fffaf0 0%, #ffe5ec 100%);
-  border: 2px solid var(--ornate-gold);
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
   z-index: 6;
   position: relative;
   flex-shrink: 0;
+  padding: 0 clamp(0.25rem, 1vw, 0.75rem);
 }
 
 .wedding-ornate-floral-skin .ornate-duo-badge-ampersand {
   font-family: "Great Vibes", cursive;
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
   color: var(--ornate-rose);
   line-height: 1;
-  margin-top: -2px;
+  user-select: none;
+  filter: drop-shadow(0 2px 8px rgba(200, 76, 97, 0.2));
 }
 
 .wedding-ornate-floral-skin .ornate-duo-caption {

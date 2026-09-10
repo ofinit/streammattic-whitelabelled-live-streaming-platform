@@ -91,6 +91,14 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     sortOrder: 2.5907,
   },
   {
+    id: "tpl-wedding-ornate-floral-duo",
+    name: "Ornate Floral Wedding (Couple Duo)",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-ornate-floral-duo"] ?? "",
+    category: "Wedding",
+    isActive: true,
+    sortOrder: 2.59075,
+  },
+  {
     id: "tpl-corporate-tech-forward",
     name: "Tech Forward Summit",
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-corporate-tech-forward"] ?? "",

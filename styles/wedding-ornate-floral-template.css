@@ -148,6 +148,100 @@
   pointer-events: none;
 }
 
+/* Duo Couple Portrait Layout */
+.wedding-ornate-floral-skin .ornate-duo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 3vw, 2.5rem);
+  margin-bottom: 2rem;
+  animation: ornate-fade-in-up 0.9s ease-out;
+  position: relative;
+  max-width: 100%;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-circle-wrapper {
+  position: relative;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-circle {
+  position: relative;
+  width: min(38vw, 195px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  box-shadow: 0 12px 30px rgba(63, 32, 40, 0.18);
+  overflow: hidden;
+  z-index: 2;
+  background-color: var(--ornate-pink);
+}
+
+.wedding-ornate-floral-skin .ornate-duo-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-wreath {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(48vw, 240px);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(2.5rem, 6vw, 3.75rem);
+  height: clamp(2.5rem, 6vw, 3.75rem);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffaf0 0%, #ffe5ec 100%);
+  border: 2px solid var(--ornate-gold);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+  z-index: 6;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-badge-ampersand {
+  font-family: "Great Vibes", cursive;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  color: var(--ornate-rose);
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.wedding-ornate-floral-skin .ornate-duo-caption {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(0.9rem, 2.2vw, 1.25rem);
+  font-weight: 600;
+  color: var(--ornate-rose-dark);
+  margin-top: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+@media (max-width: 480px) {
+  .wedding-ornate-floral-skin .ornate-duo-circle {
+    width: 38vw;
+    border-width: 3.5px;
+  }
+  .wedding-ornate-floral-skin .ornate-duo-wrapper {
+    gap: 0.5rem;
+  }
+}
+
 /* Typography elements */
 .wedding-ornate-floral-skin .ornate-kicker {
   font-family: "Great Vibes", cursive;

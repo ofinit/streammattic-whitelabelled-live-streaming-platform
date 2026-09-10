@@ -335,6 +335,13 @@ export interface LiveEvent {
   }
   crewPinHash?: string
   hasCrewPin?: boolean
+  templateId?: string
+  templateData?: Record<string, unknown>
+  heroImageUrl?: string | null
+  headerImageUrl?: string | null
+  playerImageUrl?: string | null
+  couple1ImageUrl?: string | null
+  couple2ImageUrl?: string | null
 }
 
 // Event Analytics

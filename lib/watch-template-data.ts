@@ -63,6 +63,13 @@ export function normalizeWatchEventTemplateFields(ev: Record<string, unknown>): 
   } else {
     ev.templateData = {}
   }
+  const td = ev.templateData as Record<string, unknown>
+  if (!ev.couple1ImageUrl && td && typeof td === "object" && typeof td.couple1ImageUrl === "string") {
+    ev.couple1ImageUrl = td.couple1ImageUrl
+  }
+  if (!ev.couple2ImageUrl && td && typeof td === "object" && typeof td.couple2ImageUrl === "string") {
+    ev.couple2ImageUrl = td.couple2ImageUrl
+  }
 }
 
 export function resolveWatchTemplateId(event: unknown): string {

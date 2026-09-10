@@ -15,6 +15,7 @@ const ALLOWED_SUBDIRS = [
   "event-player",
   "event-gallery",
   "event-photographer",
+  "event-couple",
   "branding",
   "gallery",
 ]

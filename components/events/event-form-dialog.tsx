@@ -41,6 +41,7 @@ import {
   ImageIcon,
   Wand2,
   X,
+  Sparkles,
   ShieldAlert,
   ClipboardList,
 } from "lucide-react"
@@ -945,6 +946,8 @@ export function EventFormDialog({
   const [photoGalleryUrls, setPhotoGalleryUrls] = useState<string[]>([])
   const [photographerLogoUrl, setPhotographerLogoUrl] = useState("")
   const [ogShareImageUrl, setOgShareImageUrl] = useState("")
+  const [couple1ImageUrl, setCouple1ImageUrl] = useState("")
+  const [couple2ImageUrl, setCouple2ImageUrl] = useState("")
   const [photographerContact, setPhotographerContact] = useState<PhotographerContact>({})
   const [validityExtSettings, setValidityExtSettings] = useState<ParsedValidityExtensions>(() =>
     parseValidityExtensionsSetting(null),
@@ -1312,6 +1315,16 @@ export function EventFormDialog({
         setPhotoGalleryUrls(parsePhotoGalleryUrls(ev.photoGalleryUrls))
         setPhotographerLogoUrl((ev.photographerLogoUrl as string) || "")
         setOgShareImageUrl((ev.ogShareImageUrl as string) || "")
+        setCouple1ImageUrl(
+          (ev.couple1ImageUrl as string) ||
+            ((ev.templateData as any)?.couple1ImageUrl as string) ||
+            "",
+        )
+        setCouple2ImageUrl(
+          (ev.couple2ImageUrl as string) ||
+            ((ev.templateData as any)?.couple2ImageUrl as string) ||
+            "",
+        )
         setPhotographerContact(parsePhotographerContact(ev.photographerContact))
         setCrewPin("") // never load PIN
         setIsCrewPinEnabled(!!(ev.hasCrewPin ?? ev.crew_pin_hash))
@@ -1357,6 +1370,8 @@ export function EventFormDialog({
         setPhotoGalleryUrls([])
         setPhotographerLogoUrl("")
         setOgShareImageUrl("")
+        setCouple1ImageUrl("")
+        setCouple2ImageUrl("")
         setPhotographerContact({})
         {
           const hasTier90 = hasEnabled90DayTier(validityExtSettings)
@@ -1837,7 +1852,7 @@ export function EventFormDialog({
   }
 
   const postEventUpload = async (
-    subdir: "event-hero" | "event-player" | "event-gallery" | "event-photographer",
+    subdir: "event-hero" | "event-player" | "event-gallery" | "event-photographer" | "event-couple",
     file: File,
   ): Promise<string> => {
     const form = new FormData()
@@ -1855,12 +1870,17 @@ export function EventFormDialog({
     return data.url
   }
 
-  const handleStandardUpload = async (field: "event-hero" | "event-player" | "event-photographer", file: File) => {
+  const handleStandardUpload = async (
+    field: "event-hero" | "event-player" | "event-photographer" | "event-couple-1" | "event-couple-2",
+    file: File,
+  ) => {
     setStandardUploading(field)
     try {
-      const url = await postEventUpload(field, file)
+      const url = await postEventUpload(field.startsWith("event-couple") ? "event-couple" : (field as any), file)
       if (field === "event-hero") setHeroImageUrl(url)
       else if (field === "event-player") setPlayerImageUrl(url)
+      else if (field === "event-couple-1") setCouple1ImageUrl(url)
+      else if (field === "event-couple-2") setCouple2ImageUrl(url)
       else setPhotographerLogoUrl(url)
     } catch (e) {
       console.error(e)
@@ -1879,7 +1899,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string; password?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string; password?: string; crewPin?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1976,7 +1996,18 @@ export function EventFormDialog({
       youtubeBroadcastSettings: formData.streamType === "youtube_api" ? youtubeBroadcastSettings : undefined,
       templateId: formData.templateId || "tpl-default",
       // Always send templateData with templateId so PUT/POST persist the selection (JSON drops undefined keys).
-      templateData: { ...templateData, templateId: formData.templateId || "tpl-default" },
+      templateData: {
+        ...templateData,
+        templateId: formData.templateId || "tpl-default",
+        ...(formData.templateId === "tpl-wedding-ornate-floral-duo"
+          ? {
+              couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
+              couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
+            }
+          : {}),
+      },
+      couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
+      couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
       // Send null (not omit) when cleared so PUT can persist clearing — COALESCE no longer blocks NULL.
       heroImageUrl: heroImageUrl.trim() ? heroImageUrl.trim() : null,
       headerImageUrl: headerImageUrl.trim() ? headerImageUrl.trim() : null,
@@ -3648,6 +3679,118 @@ export function EventFormDialog({
                       )}
                     </div>
                   </div>
+                  {formData.templateId === "tpl-wedding-ornate-floral-duo" && (
+                    <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div>
+                            <Label className="text-sm font-semibold text-foreground">Couple Portraits (Ornate Floral Duo)</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Upload individual photos for Couple 1 and Couple 2 to display in side-by-side golden circular frames on the watch page.
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
+                          Ornate Floral Duo
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                        <div className="space-y-2 min-w-0">
+                          <Label className="text-xs font-medium">Couple 1 photo</Label>
+                          {couple1ImageUrl ? (
+                            <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
+                              <img src={couple1ImageUrl} alt="Couple 1" className="w-full h-full object-cover" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() => setCouple1ImageUrl("")}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                              <AiImagePickerDialog
+                                nestedInDialog
+                                dialogTitle="Couple 1 photo"
+                                uploadSubdir="event-couple"
+                                circularHeroCrop={true}
+                                walletUserId={creditsUserId}
+                                onImageUrl={(url) => setCouple1ImageUrl(url)}
+                              >
+                                <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                                  Change
+                                </Button>
+                              </AiImagePickerDialog>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <AiImagePickerDialog
+                                nestedInDialog
+                                dialogTitle="Couple 1 photo"
+                                uploadSubdir="event-couple"
+                                circularHeroCrop={true}
+                                walletUserId={creditsUserId}
+                                onImageUrl={(url) => setCouple1ImageUrl(url)}
+                              >
+                                <Button type="button" variant="outline" size="sm" className="gap-2">
+                                  <ImageIcon className="h-4 w-4" />
+                                  Add Couple 1 photo
+                                </Button>
+                              </AiImagePickerDialog>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2 min-w-0">
+                          <Label className="text-xs font-medium">Couple 2 photo</Label>
+                          {couple2ImageUrl ? (
+                            <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
+                              <img src={couple2ImageUrl} alt="Couple 2" className="w-full h-full object-cover" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6"
+                                onClick={() => setCouple2ImageUrl("")}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                              <AiImagePickerDialog
+                                nestedInDialog
+                                dialogTitle="Couple 2 photo"
+                                uploadSubdir="event-couple"
+                                circularHeroCrop={true}
+                                walletUserId={creditsUserId}
+                                onImageUrl={(url) => setCouple2ImageUrl(url)}
+                              >
+                                <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                                  Change
+                                </Button>
+                              </AiImagePickerDialog>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <AiImagePickerDialog
+                                nestedInDialog
+                                dialogTitle="Couple 2 photo"
+                                uploadSubdir="event-couple"
+                                circularHeroCrop={true}
+                                walletUserId={creditsUserId}
+                                onImageUrl={(url) => setCouple2ImageUrl(url)}
+                              >
+                                <Button type="button" variant="outline" size="sm" className="gap-2">
+                                  <ImageIcon className="h-4 w-4" />
+                                  Add Couple 2 photo
+                                </Button>
+                              </AiImagePickerDialog>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="event-marquee-above-video">Marquee message (above video)</Label>
                     <Input
@@ -3882,6 +4025,119 @@ export function EventFormDialog({
                   )
                 })}
               </div>
+
+              {formData.templateId === "tpl-wedding-ornate-floral-duo" && (
+                <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5 mt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                      <div>
+                        <Label className="text-sm font-semibold text-foreground">Ornate Floral Duo: Couple Portraits</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Upload individual photos for Couple 1 and Couple 2 to display in side-by-side golden circular frames on the watch page.
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
+                      Selected Template
+                    </Badge>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-xs font-medium">Couple 1 photo</Label>
+                      {couple1ImageUrl ? (
+                        <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
+                          <img src={couple1ImageUrl} alt="Couple 1" className="w-full h-full object-cover" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => setCouple1ImageUrl("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <AiImagePickerDialog
+                            nestedInDialog
+                            dialogTitle="Couple 1 photo"
+                            uploadSubdir="event-couple"
+                            circularHeroCrop={true}
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setCouple1ImageUrl(url)}
+                          >
+                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                              Change
+                            </Button>
+                          </AiImagePickerDialog>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <AiImagePickerDialog
+                            nestedInDialog
+                            dialogTitle="Couple 1 photo"
+                            uploadSubdir="event-couple"
+                            circularHeroCrop={true}
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setCouple1ImageUrl(url)}
+                          >
+                            <Button type="button" variant="outline" size="sm" className="gap-2">
+                              <ImageIcon className="h-4 w-4" />
+                              Add Couple 1 photo
+                            </Button>
+                          </AiImagePickerDialog>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-xs font-medium">Couple 2 photo</Label>
+                      {couple2ImageUrl ? (
+                        <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
+                          <img src={couple2ImageUrl} alt="Couple 2" className="w-full h-full object-cover" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => setCouple2ImageUrl("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <AiImagePickerDialog
+                            nestedInDialog
+                            dialogTitle="Couple 2 photo"
+                            uploadSubdir="event-couple"
+                            circularHeroCrop={true}
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setCouple2ImageUrl(url)}
+                          >
+                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
+                              Change
+                            </Button>
+                          </AiImagePickerDialog>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <AiImagePickerDialog
+                            nestedInDialog
+                            dialogTitle="Couple 2 photo"
+                            uploadSubdir="event-couple"
+                            circularHeroCrop={true}
+                            walletUserId={creditsUserId}
+                            onImageUrl={(url) => setCouple2ImageUrl(url)}
+                          >
+                            <Button type="button" variant="outline" size="sm" className="gap-2">
+                              <ImageIcon className="h-4 w-4" />
+                              Add Couple 2 photo
+                            </Button>
+                          </AiImagePickerDialog>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4 mt-4">
@@ -4010,7 +4266,7 @@ export function EventFormDialog({
                               formStreamTypeToCanonical(formData.streamType),
                               t.days,
                               validityExtSettings.defaultDays,
-                              t.label,
+                              t.label || "",
                             )}
                           </SelectItem>
                         ))}

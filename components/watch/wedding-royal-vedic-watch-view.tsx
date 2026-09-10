@@ -455,7 +455,26 @@ export function WeddingRoyalVedicWatchView({
           </h2>
 
           {/* Mobile Countdown (visible on mobile viewports inside header) */}
-          <div className="hero-countdown hero-countdown--mobile" aria-label="Time remaining until the wedding day">
+          {showCountdown ? (
+            <div className="hero-countdown hero-countdown--mobile" aria-label="Time remaining until the wedding day">
+              {[
+                ["Days", effectiveCountdown.days],
+                ["Hours", effectiveCountdown.hours],
+                ["Mins", effectiveCountdown.minutes],
+                ["Secs", effectiveCountdown.seconds],
+              ].map(([label, value]) => (
+                <div key={label} className="hero-countdown__item">
+                  <strong>{String(value).padStart(2, "0")}</strong>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </header>
+
+        {/* Desktop Countdown (positioned at bottom center above temple courtyard) */}
+        {showCountdown ? (
+          <div className="hero-countdown hero-countdown--desktop" aria-label="Time remaining until the wedding day">
             {[
               ["Days", effectiveCountdown.days],
               ["Hours", effectiveCountdown.hours],
@@ -468,22 +487,7 @@ export function WeddingRoyalVedicWatchView({
               </div>
             ))}
           </div>
-        </header>
-
-        {/* Desktop Countdown (positioned at bottom center above temple courtyard) */}
-        <div className="hero-countdown hero-countdown--desktop" aria-label="Time remaining until the wedding day">
-          {[
-            ["Days", effectiveCountdown.days],
-            ["Hours", effectiveCountdown.hours],
-            ["Mins", effectiveCountdown.minutes],
-            ["Secs", effectiveCountdown.seconds],
-          ].map(([label, value]) => (
-            <div key={label} className="hero-countdown__item">
-              <strong>{String(value).padStart(2, "0")}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
+        ) : null}
       </section>
 
       {/* ----------------------------------------------------------------------

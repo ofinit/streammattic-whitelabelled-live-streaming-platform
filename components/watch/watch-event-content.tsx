@@ -1495,7 +1495,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         const tz = tzForDate !== "UTC" ? tzForDate : undefined
         const dateStr = d.toLocaleDateString("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric", year: "numeric" })
         const timeStr = d.toLocaleTimeString("en-US", { timeZone: tz, hour: "2-digit", minute: "2-digit" })
-        const tzLabel = tz ? new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortGeneric" }).formatToParts(d).find(p => p.type === "timeZoneName")?.value ?? tz : "UTC"
+        const rawTz = tz ? new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortGeneric" }).formatToParts(d).find(p => p.type === "timeZoneName")?.value ?? tz : "UTC"
+        const tzLabel = rawTz === "India Time" || rawTz === "India Standard Time" ? "IST" : rawTz
         return `${dateStr} · ${timeStr} ${tzLabel}`
       })()
     : ""
@@ -3317,6 +3318,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : null
         }
         photographerCredit={vedicPhotographerCredit}
+        photographerLogoUrl={photographerLogoUrl}
         venueName={((event as any).venueName as string | undefined) || ""}
         venueAddress={((event as any).venueAddress as string | undefined) || ""}
       />

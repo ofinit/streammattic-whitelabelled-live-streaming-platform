@@ -31,6 +31,7 @@ export interface WeddingRoyalVedicWatchViewProps {
   audioUrl?: string | null
   venueName?: string
   venueAddress?: string
+  photographerLogoUrl?: string | null
 }
 
 function VedicCornerOrnament() {
@@ -91,6 +92,7 @@ export function WeddingRoyalVedicWatchView({
   audioUrl,
   venueName,
   venueAddress,
+  photographerLogoUrl,
 }: WeddingRoyalVedicWatchViewProps) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false)
   const [envelopeOpening, setEnvelopeOpening] = useState(false)
@@ -149,7 +151,8 @@ export function WeddingRoyalVedicWatchView({
 
   const displayDate = useMemo(() => {
     if (!primaryDateFormatted) return "14 FEB 2027"
-    const cleaned = primaryDateFormatted.replace(/^[a-zA-Z]+,\s*/, "").trim()
+    let cleaned = primaryDateFormatted.replace(/^[a-zA-Z]+,\s*/, "").trim()
+    cleaned = cleaned.replace(/India\s+(Standard\s+)?Time/gi, "IST")
     return cleaned.toUpperCase() || "14 FEB 2027"
   }, [primaryDateFormatted])
 
@@ -271,42 +274,44 @@ export function WeddingRoyalVedicWatchView({
                 willChange: "transform, opacity",
               }}
             >
-              {/* Monogram Logo */}
-              <div className="flex items-center justify-center pt-1 pb-1 z-30 pointer-events-none transform-gpu">
-                <img
-                  src="/templates/vedic-heritage/logo.webp"
-                  alt="Monogram Logo"
-                  className="intro-monogram h-16 sm:h-20 w-auto object-contain"
-                />
-              </div>
+              {/* Monogram / Photographer Logo */}
+              {photographerLogoUrl ? (
+                <div className="flex items-center justify-center pt-1 pb-1 z-30 pointer-events-none transform-gpu">
+                  <img
+                    src={photographerLogoUrl}
+                    alt="Photographer Logo"
+                    className="intro-monogram h-14 sm:h-16 w-auto max-w-[140px] object-contain"
+                  />
+                </div>
+              ) : null}
 
               {/* Date with Gold flanking dividers & Couple Names */}
               <div className="flex flex-col items-center space-y-3 w-full transform-gpu">
-                <div className="flex items-center justify-center gap-3 w-full px-4">
-                  <span className="w-6 h-px bg-[#B77D27]/65" />
-                  <span className="font-cinzel text-xs sm:text-sm tracking-[0.42em] text-[#95601A] uppercase font-bold">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 w-full px-2 max-w-full">
+                  <span className="w-4 sm:w-6 h-px bg-[#B77D27]/65 shrink-0" />
+                  <span className="font-cinzel text-[10.5px] sm:text-xs tracking-[0.22em] sm:tracking-[0.3em] text-[#95601A] uppercase font-bold text-center whitespace-nowrap overflow-hidden text-ellipsis">
                     {displayDate}
                   </span>
-                  <span className="w-6 h-px bg-[#B77D27]/65" />
+                  <span className="w-4 sm:w-6 h-px bg-[#B77D27]/65 shrink-0" />
                 </div>
 
-                <div className="flex flex-col items-center justify-center space-y-0.5 pt-2 w-full">
-                  <h1 className="font-cormorant text-5xl sm:text-6xl text-[#68401A] font-semibold tracking-[0.015em] leading-none text-center w-full">
+                <div className="flex flex-col items-center justify-center pt-2 w-full">
+                  <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl text-[#68401A] font-semibold tracking-[0.02em] leading-tight text-center w-full pb-1">
                     {groomName}
                   </h1>
-                  <div className="w-full flex justify-center items-center -my-1">
-                    <span className="font-cinzel text-[10px] sm:text-xs tracking-[0.34em] text-[#A56B18] font-semibold uppercase">
+                  <div className="w-full flex justify-center items-center my-1 sm:my-1.5">
+                    <span className="font-cinzel text-[11px] sm:text-xs tracking-[0.34em] text-[#A56B18] font-semibold uppercase">
                       And
                     </span>
                   </div>
-                  <h1 className="font-cormorant text-5xl sm:text-6xl text-[#68401A] font-semibold tracking-[0.015em] leading-none text-center w-full">
+                  <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl text-[#68401A] font-semibold tracking-[0.02em] leading-tight text-center w-full pt-0.5">
                     {brideName}
                   </h1>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Block: Invitation Line & Botanical Leaf - Slides down on open */}
+            {/* Bottom Block: Subtitle & Botanical Leaf - Slides down on open */}
             <div
               className="flex flex-col items-center pb-6 sm:pb-8 origin-bottom w-full transform-gpu"
               style={{
@@ -315,12 +320,9 @@ export function WeddingRoyalVedicWatchView({
                 willChange: "transform, opacity",
               }}
             >
-              <div className="space-y-1 text-center">
-                <p className="font-cormorant text-sm sm:text-base tracking-[0.32em] text-[#95601A] uppercase font-bold">
-                  INVITE YOU TO CELEBRATE
-                </p>
-                <p className="font-cinzel text-[10px] sm:text-[11px] tracking-[0.32em] text-[#59402E] uppercase font-semibold">
-                  OUR WEDDING DAY
+              <div className="space-y-1 text-center px-4 max-w-sm">
+                <p className="font-cinzel text-[11px] sm:text-xs md:text-sm tracking-[0.22em] sm:tracking-[0.28em] text-[#845217] uppercase font-semibold leading-relaxed">
+                  {eventSubtitle?.trim() || invitationLine?.trim() || "Invite you to celebrate our wedding day"}
                 </p>
               </div>
 
@@ -421,14 +423,16 @@ export function WeddingRoyalVedicWatchView({
           ))}
         </div>
 
-        {/* Center Hero Heading: Monogram, Sacred Knot Quote, Couple Names */}
+        {/* Center Hero Heading: Photographer Logo (if provided), Sacred Knot Quote, Couple Names */}
         <header className="invitation-hero__heading">
-          <img
-            src="/templates/vedic-heritage/logo.webp"
-            alt="Royal Vedic Monogram"
-            className="invitation-hero__monogram"
-            loading="eager"
-          />
+          {photographerLogoUrl ? (
+            <img
+              src={photographerLogoUrl}
+              alt="Photographer Logo"
+              className="invitation-hero__monogram max-h-16 sm:max-h-20 w-auto object-contain"
+              loading="eager"
+            />
+          ) : null}
 
           <p className="invitation-hero__quote">
             “Three sacred knots, one for love,<br />

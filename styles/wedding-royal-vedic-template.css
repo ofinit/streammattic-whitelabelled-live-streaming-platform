@@ -65,7 +65,7 @@
   justify-content: center;
   overflow: hidden;
   isolation: isolate;
-  background: #2f2118 !important;
+  background: #1c1109 !important;
   color: #3b281a;
   user-select: none;
   cursor: pointer;
@@ -83,8 +83,9 @@
 .vedic-envelope-overlay:before {
   content: "";
   z-index: -2;
-  filter: blur(12px) saturate(0.75);
-  background: linear-gradient(#311f1352, #311f1385), url('/templates/vedic-heritage/intro-desktop-bg.webp') 50%/cover no-repeat;
+  filter: blur(14px) saturate(0.65);
+  opacity: 0.18;
+  background: linear-gradient(#150c06ba, #0d0704e6), url('/templates/vedic-heritage/intro-desktop-bg.webp') 50%/cover no-repeat;
   position: absolute;
   inset: -30px;
   transform: scale(1.04);

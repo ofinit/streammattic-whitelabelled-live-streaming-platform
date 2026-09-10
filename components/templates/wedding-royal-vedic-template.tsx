@@ -36,7 +36,7 @@ export function WeddingRoyalVedicTemplate({
     setEnvelopeOpening(true)
     setTimeout(() => {
       setEnvelopeOpened(true)
-    }, 750)
+    }, 1900)
   }
 
   return (
@@ -56,7 +56,10 @@ export function WeddingRoyalVedicTemplate({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setEnvelopeOpened(false)}
+            onClick={() => {
+              setEnvelopeOpened(false)
+              setEnvelopeOpening(false)
+            }}
             className="border-[#c9a46a]/40 text-xs text-[#fdfbf7] hover:bg-[#c9a46a]/20"
           >
             Replay Envelope
@@ -64,64 +67,143 @@ export function WeddingRoyalVedicTemplate({
         </div>
       </div>
 
-      {/* Opening Envelope Overlay */}
-      <div className={`vedic-envelope-overlay ${envelopeOpened ? "is-opened" : ""}`}>
-        <div className="vedic-envelope-backdrop" />
-
+      {/* Opening Envelope Overlay (Vedic Heritage Intro) */}
+      <div
+        className={`intro-splash fixed inset-0 z-50 flex w-full appearance-none items-center justify-center overflow-hidden border-0 p-0 text-[#3B281A] select-none cursor-pointer ${
+          envelopeOpened ? "is-opened" : ""
+        }`}
+        onClick={handleOpenEnvelope}
+        role="button"
+        tabIndex={0}
+        aria-label="Open Invitation"
+      >
         <div
-          className={`vedic-envelope-stage ${envelopeOpening ? "opening" : ""}`}
-          onClick={handleOpenEnvelope}
-          role="button"
-          tabIndex={0}
-          aria-label="Open Invitation"
+          className="intro-envelope-stage relative w-full h-full flex flex-col justify-between items-center bg-transparent overflow-hidden shadow-2xl"
+          style={{ perspective: "1400px" }}
         >
-          <div className="vedic-envelope-flap-top" />
-          <div className="vedic-envelope-flap-bottom" />
-          <div className="vedic-envelope-split" />
+          {/* Layer 1: Split Envelope with Center Wax Seal - Fades out on open */}
+          <div
+            className="intro-envelope-art absolute inset-0 z-20 pointer-events-none bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/templates/vedic-heritage/envelope-split.webp')",
+              opacity: envelopeOpening ? 0 : 1,
+              transition: "opacity 0.14s ease-out" + (envelopeOpening ? " 0.06s" : ""),
+              willChange: "opacity",
+            }}
+          />
 
-          <div className="vedic-envelope-content">
-            <div className="pt-2">
-              <div className="w-14 h-14 mx-auto rounded-full border border-[#c9a46a]/40 bg-[#fffaf2]/80 flex items-center justify-center shadow-sm">
-                <span className="font-vedic-bodoni text-2xl font-semibold tracking-wider text-[#68401a]">
-                  {monogram}
-                </span>
+          {/* Layer 2: Top Flap with upper half seal - Slides up on open */}
+          <div
+            className="intro-envelope-art absolute inset-0 z-10 pointer-events-none bg-cover bg-center transform-gpu"
+            style={{
+              backgroundImage: "url('/templates/vedic-heritage/envelope-top-v.webp')",
+              transform: envelopeOpening ? "translateY(-108%)" : "translateY(0%)",
+              transition: envelopeOpening ? "transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s" : "none",
+              willChange: "transform",
+            }}
+          />
+
+          {/* Layer 3: Bottom Flap - Slides down on open */}
+          <div
+            className="intro-envelope-art absolute inset-0 z-10 pointer-events-none bg-cover bg-center transform-gpu"
+            style={{
+              backgroundImage: "url('/templates/vedic-heritage/envelope-bottom-v.webp')",
+              transform: envelopeOpening ? "translateY(108%)" : "translateY(0%)",
+              transition: envelopeOpening ? "transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s" : "none",
+              willChange: "transform",
+            }}
+          />
+
+          {/* Layer 4: Warm Wash */}
+          <div
+            className="intro-warm-wash absolute inset-0 z-[25] pointer-events-none"
+            style={{
+              opacity: envelopeOpening ? 0 : 1,
+              transition: "opacity 0.16s ease-out",
+            }}
+          />
+
+          {/* Layer 5: Envelope Content - z-30 Above flaps with transparent background */}
+          <div className="intro-envelope-content relative z-30 w-full h-full pt-10 pb-6 px-6 flex flex-col justify-between items-center text-center pointer-events-none bg-transparent">
+            {/* Top Block: Monogram, Date, Names - Slides up on open */}
+            <div
+              className="flex flex-col items-center space-y-3 pt-1 origin-top w-full transform-gpu"
+              style={{
+                transform: envelopeOpening ? "translateY(-108vh)" : "translateY(0)",
+                transition: envelopeOpening ? "transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s" : "none",
+                willChange: "transform, opacity",
+              }}
+            >
+              {/* Monogram Logo */}
+              <div className="flex items-center justify-center pt-1 pb-1 z-30 pointer-events-none transform-gpu">
+                <img
+                  src="/templates/vedic-heritage/logo.webp"
+                  alt="Monogram Logo"
+                  className="intro-monogram h-16 sm:h-20 w-auto object-contain"
+                />
               </div>
-              <p className="font-vedic-cinzel text-[10px] tracking-[0.3em] uppercase text-[#8b6508] mt-3 font-semibold">
-                — Royal Wedding Celebration —
-              </p>
+
+              {/* Date with Gold flanking dividers & Couple Names */}
+              <div className="flex flex-col items-center space-y-3 w-full transform-gpu">
+                <div className="flex items-center justify-center gap-3 w-full px-4">
+                  <span className="w-6 h-px bg-[#B77D27]/65" />
+                  <span className="font-cinzel text-xs sm:text-sm tracking-[0.42em] text-[#95601A] uppercase font-bold">
+                    14 FEB 2027
+                  </span>
+                  <span className="w-6 h-px bg-[#B77D27]/65" />
+                </div>
+
+                <div className="flex flex-col items-center justify-center space-y-0.5 pt-2 w-full">
+                  <h1 className="font-cormorant text-5xl sm:text-6xl text-[#68401A] font-semibold tracking-[0.015em] leading-none text-center w-full">
+                    {groomName}
+                  </h1>
+                  <div className="w-full flex justify-center items-center -my-1">
+                    <span className="font-cinzel text-[10px] sm:text-xs tracking-[0.34em] text-[#A56B18] font-semibold uppercase">
+                      And
+                    </span>
+                  </div>
+                  <h1 className="font-cormorant text-5xl sm:text-6xl text-[#68401A] font-semibold tracking-[0.015em] leading-none text-center w-full">
+                    {brideName}
+                  </h1>
+                </div>
+              </div>
             </div>
 
-            <div className="my-auto py-4">
-              <p className="font-vedic-cinzel text-xs uppercase tracking-[0.25em] text-[#95601a] mb-2 font-medium">
-                The Wedding of
-              </p>
-              <h1 className="font-vedic-bodoni text-[#2b120b]">{groomName}</h1>
-              <div className="my-1 font-vedic-script text-3xl text-[#8b6508] leading-none">
-                and
+            {/* Bottom Block: Invitation Line & Botanical Leaf - Slides down on open */}
+            <div
+              className="flex flex-col items-center pb-6 sm:pb-8 origin-bottom w-full transform-gpu"
+              style={{
+                transform: envelopeOpening ? "translateY(108vh)" : "translateY(0)",
+                transition: envelopeOpening ? "transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s" : "none",
+                willChange: "transform, opacity",
+              }}
+            >
+              <div className="space-y-1 text-center">
+                <p className="font-cormorant text-sm sm:text-base tracking-[0.32em] text-[#95601A] uppercase font-bold">
+                  INVITE YOU TO CELEBRATE
+                </p>
+                <p className="font-cinzel text-[10px] sm:text-[11px] tracking-[0.32em] text-[#59402E] uppercase font-semibold">
+                  OUR WEDDING DAY
+                </p>
               </div>
-              <h1 className="font-vedic-bodoni text-[#2b120b]">{brideName}</h1>
-            </div>
 
-            <div className="relative z-30 my-2">
-              <div className="vedic-wax-seal">
-                <svg viewBox="0 0 40 24" fill="currentColor" className="w-8 h-5 text-[#4a2e0c]">
-                  <path d="M20,2 C22,7 28,9 34,7 C31,12 26,14 20,13 C14,14 9,12 6,7 C12,9 18,7 20,2 Z" />
-                </svg>
+              <div className="mt-4 pt-2 flex items-center justify-center">
+                <img
+                  src="/templates/vedic-heritage/leaf.webp"
+                  alt="Botanical Leaf Accent"
+                  className="intro-leaf w-28 sm:w-36 h-auto object-contain opacity-90"
+                />
               </div>
-              <p className="vedic-tap-hint">Tap to Open</p>
-            </div>
-
-            <div className="pb-3 text-center">
-              <p className="font-vedic-cinzel text-[9px] tracking-[0.28em] uppercase text-[#77543c] font-semibold">
-                Invite you to celebrate our wedding day
-              </p>
             </div>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={handleOpenEnvelope}
+          onClick={(e) => {
+            e.stopPropagation()
+            setEnvelopeOpened(true)
+          }}
           className="absolute bottom-6 z-40 rounded-full border border-[#c9a46a]/40 bg-[#1a100b]/80 backdrop-blur-md px-5 py-2 text-xs font-medium tracking-wider text-[#fdfbf7] shadow-lg transition hover:bg-[#2b1911]"
         >
           Skip to Live Stream &rarr;

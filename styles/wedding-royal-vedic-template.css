@@ -278,8 +278,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: max(4.5rem, 8.5vh);
+  padding-top: max(6.5rem, 12vh);
   padding-bottom: 3.5rem;
+}
+
+@media (min-width: 900px) {
+  .invitation-hero,
+  .vedic-hero {
+    padding-top: max(8.5rem, 15.5vh);
+  }
 }
 
 .invitation-hero__photo,

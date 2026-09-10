@@ -477,6 +477,22 @@ export function WeddingRoyalVedicWatchView({
             <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-black aspect-video flex items-center justify-center">
               {streamPlayer}
             </div>
+
+            {/* Event Subtitle & Description */}
+            {eventSubtitle || eventDescription ? (
+              <div className="relative z-10 pt-4 pb-2 px-3 sm:px-6 text-center">
+                {eventSubtitle ? (
+                  <p className="font-vedic-cinzel text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#8b6508] font-semibold mb-1">
+                    {eventSubtitle}
+                  </p>
+                ) : null}
+                {eventDescription ? (
+                  <p className="font-vedic-cormorant text-base sm:text-lg text-[#3b2314] italic leading-relaxed max-w-2xl mx-auto">
+                    {eventDescription}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {/* Live Chat or Details beneath the player */}

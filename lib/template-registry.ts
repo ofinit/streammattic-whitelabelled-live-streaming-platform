@@ -59,6 +59,15 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     sortOrder: 2.58,
   },
   {
+    id: "tpl-wedding-royal-vedic",
+    name: "Royal Vedic Heritage Wedding",
+    thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-royal-vedic"] ?? "",
+    category: "Wedding",
+    extraCategories: ["Religious"],
+    isActive: true,
+    sortOrder: 2.585,
+  },
+  {
     id: "tpl-wedding-the-heart",
     name: "The Heart Wedding",
     thumbnail: TEMPLATE_DEFAULT_HERO_BACKDROP["tpl-wedding-the-heart"] ?? "",

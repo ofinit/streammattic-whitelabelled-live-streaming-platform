@@ -15,6 +15,7 @@ export type WatchPageSkin =
   | "weddingPapercut"
   | "weddingOrnateFloral"
   | "weddingOrnateFloralDuo"
+  | "weddingRoyalVedic"
   | "christianWeddingRose"
   | "muslimWeddingNikah"
   | "birthdayParty"
@@ -38,6 +39,7 @@ export const WATCH_TEMPLATE_SKIN_BY_ID: Partial<Record<string, WatchPageSkin>> =
   /** Wedding Ornate Floral — custom peach/pink traditional style */
   "tpl-wedding-ornate-floral": "weddingOrnateFloral",
   "tpl-wedding-ornate-floral-duo": "weddingOrnateFloralDuo",
+  "tpl-wedding-royal-vedic": "weddingRoyalVedic",
   "tpl-christian-wedding-rose": "christianWeddingRose",
   "tpl-muslim-wedding-nikah": "muslimWeddingNikah",
   "tpl-birthday-party": "birthdayParty",

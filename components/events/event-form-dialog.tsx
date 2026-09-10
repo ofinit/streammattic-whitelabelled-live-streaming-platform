@@ -4026,13 +4026,17 @@ export function EventFormDialog({
                 })}
               </div>
 
-              {formData.templateId === "tpl-wedding-ornate-floral-duo" && (
+              {(formData.templateId === "tpl-wedding-ornate-floral-duo" || formData.templateId === "tpl-wedding-royal-vedic") && (
                 <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5 mt-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
                       <div>
-                        <Label className="text-sm font-semibold text-foreground">Ornate Floral Duo: Couple Portraits</Label>
+                        <Label className="text-sm font-semibold text-foreground">
+                          {formData.templateId === "tpl-wedding-royal-vedic"
+                            ? "Royal Vedic Heritage: Bride & Groom Portraits"
+                            : "Ornate Floral Duo: Couple Portraits"}
+                        </Label>
                         <p className="text-xs text-muted-foreground">
                           Upload individual photos for Couple 1 and Couple 2 to display in side-by-side golden circular frames on the watch page.
                         </p>

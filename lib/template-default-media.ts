@@ -32,6 +32,8 @@ export const TEMPLATE_DEFAULT_HERO_BACKDROP: Partial<Record<string, string>> = {
   "tpl-wedding-ornate-floral": "/templates/wedding-ornate-couple.png",
   /** Ornate Floral Wedding (Couple Duo) — dual couple portrait */
   "tpl-wedding-ornate-floral-duo": "/templates/wedding-ornate-couple.png",
+  /** Royal Vedic Heritage Hindu Wedding — golden temple panorama */
+  "tpl-wedding-royal-vedic": "/templates/vedic-heritage/hero-desktop.webp",
   /** Tech Forward Summit — dark grid + blue/cyan/neon orbs (matches watch skin `#0a0a0a` palette) */
   "tpl-corporate-tech-forward": "/templates/corporate-tech-forward-hero.svg",
   /** Classic corporate — same bundled hero as Tech Forward */

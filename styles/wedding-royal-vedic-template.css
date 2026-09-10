@@ -265,98 +265,286 @@
 }
 
 /* --------------------------------------------------------------------------
-   Hero Section with Temple Panorama & Falling Leaves
+   Hero Section with Temple Panorama, Sacred Knot Quote & Countdown
    -------------------------------------------------------------------------- */
+.invitation-hero,
 .vedic-hero {
   position: relative;
   width: 100%;
-  min-height: 80vh;
+  height: 100svh;
+  min-height: 720px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 2rem;
   color: #352317;
   background-color: #eadbc5;
 }
 
+@media (min-width: 900px) {
+  .invitation-hero,
+  .vedic-hero {
+    height: min(100vh, 960px);
+    min-height: 820px;
+  }
+}
+
+.invitation-hero__photo,
 .vedic-hero-bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center bottom;
+  object-position: center;
+}
+
+.invitation-hero__frame {
+  position: absolute;
+  inset: 11px;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid rgba(166, 119, 50, 0.64);
+}
+
+.invitation-hero__frame:before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(202, 166, 109, 0.18);
+}
+
+@media (min-width: 900px) {
+  .invitation-hero__frame {
+    inset: 18px;
+  }
 }
 
 .vedic-hero-vignette {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(42, 8, 12, 0.35) 0%, rgba(0, 0, 0, 0.1) 40%, rgba(250, 246, 240, 0.95) 96%, #faf6f0 100%);
+  background: linear-gradient(180deg, rgba(42, 8, 12, 0.22) 0%, transparent 35%);
   pointer-events: none;
 }
 
-/* Falling Leaves / Petals Micro-Animation */
-.vedic-falling-leaves {
+/* Center Hero Heading: Monogram, Sacred Knot Quote, Couple Names */
+.invitation-hero__heading {
+  z-index: 4;
+  text-align: center;
+  position: absolute;
+  top: 7%;
+  left: 20px;
+  right: 20px;
+}
+
+@media (min-width: 900px) {
+  .invitation-hero__heading {
+    width: min(760px, 62vw);
+    top: 9%;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+  }
+}
+
+.invitation-hero__monogram {
+  object-fit: contain;
+  opacity: 0.86;
+  mix-blend-mode: multiply;
+  width: 86px;
+  height: 72px;
+  margin: 0 auto 6px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(61, 27, 9, 0.15));
+}
+
+@media (min-width: 900px) {
+  .invitation-hero__monogram {
+    width: 96px;
+    height: 78px;
+    margin-bottom: 8px;
+  }
+}
+
+.invitation-hero__quote {
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  color: #2d1913;
+  text-shadow: 0 1px 2px rgba(48, 23, 10, 0.18);
+  max-width: 520px;
+  margin: 8px auto 14px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+@media (min-width: 900px) {
+  .invitation-hero__quote {
+    font-size: 19px;
+    margin: 10px auto 16px;
+  }
+}
+
+.invitation-hero__name {
+  letter-spacing: -0.025em;
+  color: #2b120b;
+  text-align: center;
+  text-transform: none;
+  text-shadow: 0 2px 4px rgba(61, 27, 9, 0.22);
+  margin: 0;
+  font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+  font-size: clamp(32px, 5.2vw, 56px);
+  font-weight: 600;
+  line-height: 1.08;
+}
+
+.hero-name__initial {
+  -webkit-text-stroke: 0.35px currentColor;
+  text-shadow: 0 0 0.4px, 0 2px 4px rgba(61, 27, 9, 0.25);
+  font-weight: 700;
+  display: inline-block;
+}
+
+.invitation-hero__groom {
+  margin-top: 10px;
+}
+
+.invitation-hero__ampersand {
+  color: #7c3900;
+  text-shadow: 0 1px 3px rgba(65, 30, 5, 0.22);
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  margin: 6px 0;
+  font-family: 'Great Vibes', 'Alex Brush', cursive;
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1;
+  display: flex;
+}
+
+@media (min-width: 900px) {
+  .invitation-hero__ampersand {
+    height: 48px;
+    margin: 8px 0;
+    font-size: 46px;
+  }
+}
+
+.invitation-hero__bride {
+  white-space: normal;
+  text-wrap: balance;
+}
+
+/* Falling Leaves Animation */
+.hero-falling-leaves {
+  z-index: 2;
+  pointer-events: none;
   position: absolute;
   inset: 0;
-  pointer-events: none;
   overflow: hidden;
-  z-index: 5;
 }
 
-.vedic-falling-leaf {
-  position: absolute;
+.hero-falling-leaves i {
   top: -8%;
-  color: rgba(201, 164, 106, 0.8);
+  left: var(--leaf-left);
+  opacity: 0;
+  transform-origin: 65%;
+  color: rgba(166, 111, 37, 0.82);
   width: 22px;
   height: 16px;
-  opacity: 0;
-  animation: vedic-leaf-fall var(--leaf-duration, 10s) linear var(--leaf-delay, 0s) infinite;
+  position: absolute;
+  animation: hero-leaf-fall var(--leaf-duration) linear var(--leaf-delay) infinite;
 }
 
-@keyframes vedic-leaf-fall {
+.hero-falling-leaves i:nth-child(3n+2) {
+  color: rgba(116, 87, 43, 0.7);
+}
+
+.hero-falling-leaves i:nth-child(3n) {
+  color: rgba(202, 151, 67, 0.76);
+}
+
+.hero-falling-leaves svg {
+  filter: drop-shadow(0 1px 2px rgba(61, 36, 12, 0.2));
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+@keyframes hero-leaf-fall {
   0% {
     opacity: 0;
-    transform: translate3d(0, -5vh, 0) rotate(0deg) scale(0.8);
+    transform: translate3d(0, -8vh, 0) rotate(0deg) scale(var(--leaf-scale, 1));
   }
-  15% {
-    opacity: 0.75;
+  9% {
+    opacity: 0.72;
   }
-  50% {
-    transform: translate3d(var(--leaf-drift, 40px), 50vh, 0) rotate(180deg) scale(1);
+  28% {
+    transform: translate3d(var(--leaf-drift, 30px), 28vh, 0) rotate(115deg) scale(var(--leaf-scale, 1));
   }
-  85% {
-    opacity: 0.6;
+  52% {
+    transform: translate3d(0, 52vh, 0) rotate(235deg) scale(var(--leaf-scale, 1));
+  }
+  74% {
+    transform: translate3d(var(--leaf-drift, 30px), 78vh, 0) rotate(355deg) scale(var(--leaf-scale, 1));
+  }
+  92% {
+    opacity: 0.58;
   }
   100% {
     opacity: 0;
-    transform: translate3d(calc(var(--leaf-drift, 40px) * -0.5), 105vh, 0) rotate(360deg) scale(0.9);
+    transform: translate3d(0, 110vh, 0) rotate(510deg) scale(var(--leaf-scale, 1));
   }
 }
 
-/* Countdown Pill Container */
-.vedic-countdown-bar {
-  position: relative;
-  z-index: 10;
-  display: grid;
+/* Frosted Glass Countdown Pills */
+.hero-countdown {
+  z-index: 4;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-  max-width: 380px;
-  width: 90%;
-  margin: 0 auto;
-  padding: 0.4rem;
+  column-gap: 6px;
+  margin: 14px auto 0;
+  padding: 0;
+  width: 280px;
+  display: grid;
 }
 
-.vedic-countdown-item {
-  background: rgba(253, 251, 247, 0.92);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(132, 82, 24, 0.35);
-  box-shadow: 0 4px 16px rgba(55, 32, 15, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  padding: 0.5rem 0.25rem;
+.hero-countdown--desktop {
+  z-index: 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 300px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  position: absolute;
+  bottom: 8%;
+  left: calc(50% - 150px);
+  right: auto;
+}
+
+@media (max-width: 899px) {
+  .hero-countdown--desktop {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-countdown--mobile {
+    display: none;
+  }
+}
+
+.hero-countdown__item {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  background: linear-gradient(145deg, rgba(255, 250, 240, 0.74), rgba(244, 216, 174, 0.58));
+  border: 1px solid rgba(126, 76, 21, 0.32);
+  border-radius: 10px;
+  min-height: 52px;
+  padding: 4px 0;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.7), 0 4px 12px rgba(55, 32, 15, 0.12);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -364,22 +552,24 @@
   text-align: center;
 }
 
-.vedic-countdown-item strong {
-  font-family: 'Bodoni Moda', 'Playfair Display', serif;
-  font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+.hero-countdown__item strong {
+  color: #321a0b;
+  text-shadow: none;
+  font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+  font-size: 19px;
   font-weight: 700;
-  color: #3f2412;
   line-height: 1;
 }
 
-.vedic-countdown-item span {
+.hero-countdown__item span {
+  color: #4d2a10;
+  text-shadow: none;
   font-family: 'Cinzel', serif;
-  font-size: 0.58rem;
+  font-size: 7px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  color: #8b5b18;
-  margin-top: 0.25rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  margin-top: 3px;
 }
 
 /* --------------------------------------------------------------------------

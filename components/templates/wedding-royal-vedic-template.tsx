@@ -27,8 +27,12 @@ export function WeddingRoyalVedicTemplate({
     getDefaultTemplateHeroBackdropUrl("tpl-wedding-royal-vedic") ||
     "/templates/vedic-heritage/hero-desktop.webp"
 
-  const groomName = eventTitle.split(/&|weds|and/i)[0]?.trim() || "Aarav"
-  const brideName = eventTitle.split(/&|weds|and/i)[1]?.trim() || "Kavya"
+  const groomName = eventTitle.split(/&|weds|and/i)[0]?.trim() || "Aarav Mehta"
+  const brideName = eventTitle.split(/&|weds|and/i)[1]?.trim() || "Kavya Rao"
+  const groomInitial = groomName ? groomName[0] : "A"
+  const groomRest = groomName ? groomName.slice(1) : "arav Mehta"
+  const brideInitial = brideName ? brideName[0] : "K"
+  const brideRest = brideName ? brideName.slice(1) : "avya Rao"
   const monogram = `${groomName[0] || "A"}${brideName[0] || "K"}`
 
   const handleOpenEnvelope = () => {
@@ -229,28 +233,113 @@ export function WeddingRoyalVedicTemplate({
         )}
       </button>
 
-      {/* Hero Banner & Live Countdown */}
-      <section className="vedic-hero">
-        <img src={hero} alt="" className="vedic-hero-bg" />
-        <div className="vedic-hero-vignette" />
+      {/* Hero Banner: Monogram, Sacred Quote, Couple Names & Countdown */}
+      <section className="invitation-hero" aria-label={`Wedding celebration of ${groomName} and ${brideName}`}>
+        <picture>
+          <source media="(min-width: 900px)" srcSet={hero} />
+          <img
+            src={hero}
+            alt="Royal Vedic Temple"
+            className="invitation-hero__photo"
+            fetchPriority="high"
+            loading="eager"
+            decoding="sync"
+          />
+        </picture>
 
-        <div className="vedic-countdown-bar">
-          <div className="vedic-countdown-item">
-            <strong>12</strong>
-            <span>Days</span>
+        {/* Ornate Inset Double Gold Frame */}
+        <div className="invitation-hero__frame" aria-hidden="true" />
+
+        {/* Falling Leaves / Petals Micro-animation */}
+        <div className="hero-falling-leaves is-active" aria-hidden="true">
+          {[
+            { left: "7%", delay: "0s", duration: "11s", drift: "36px", scale: 0.72 },
+            { left: "16%", delay: "-5s", duration: "14s", drift: "-28px", scale: 0.5 },
+            { left: "27%", delay: "-9s", duration: "12s", drift: "44px", scale: 0.62 },
+            { left: "39%", delay: "-2s", duration: "15s", drift: "-38px", scale: 0.46 },
+            { left: "51%", delay: "-7s", duration: "13s", drift: "32px", scale: 0.66 },
+            { left: "63%", delay: "-11s", duration: "16s", drift: "-42px", scale: 0.52 },
+            { left: "74%", delay: "-4s", duration: "12s", drift: "38px", scale: 0.7 },
+            { left: "86%", delay: "-8s", duration: "15s", drift: "-30px", scale: 0.48 },
+            { left: "94%", delay: "-1s", duration: "13s", drift: "24px", scale: 0.6 },
+          ].map((l, idx) => (
+            <i
+              key={idx}
+              style={{
+                // @ts-ignore
+                "--leaf-left": l.left,
+                "--leaf-delay": l.delay,
+                "--leaf-duration": l.duration,
+                "--leaf-drift": l.drift,
+                "--leaf-scale": l.scale,
+              }}
+            >
+              <svg viewBox="0 0 30 22">
+                <path className="hero-leaf__body" d="M3 18C6 7 14 2 26 3C24 12 17 19 6 19C5 19 4 19 3 18Z" fill="currentColor" fillOpacity="0.85" />
+                <path className="hero-leaf__vein" d="M3 19C9 14 15 10 24 5M10 14L9 9M15 11L15 6M11 14L17 16M16 10L21 12" stroke="currentColor" strokeWidth="0.8" fill="none" />
+              </svg>
+            </i>
+          ))}
+        </div>
+
+        {/* Center Hero Heading: Monogram, Sacred Knot Quote, Couple Names */}
+        <header className="invitation-hero__heading">
+          <img
+            src="/templates/vedic-heritage/logo.webp"
+            alt="Royal Vedic Monogram"
+            className="invitation-hero__monogram"
+            loading="eager"
+          />
+
+          <p className="invitation-hero__quote">
+            “Three sacred knots, one for love,<br />
+            one for trust, and one for a lifetime<br />
+            of togetherness.”
+          </p>
+
+          <h1 className="invitation-hero__name invitation-hero__groom">
+            <span className="hero-name__initial">{groomInitial}</span>
+            {groomRest}
+          </h1>
+
+          <div className="invitation-hero__ampersand">
+            Weds
           </div>
-          <div className="vedic-countdown-item">
-            <strong>08</strong>
-            <span>Hours</span>
+
+          <h2 className="invitation-hero__name invitation-hero__bride">
+            <span className="hero-name__initial">{brideInitial}</span>
+            {brideRest}
+          </h2>
+
+          {/* Mobile Countdown */}
+          <div className="hero-countdown hero-countdown--mobile" aria-label="Time remaining until the wedding day">
+            {[
+              ["Days", 157],
+              ["Hours", 4],
+              ["Mins", 30],
+              ["Secs", 42],
+            ].map(([label, value]) => (
+              <div key={label} className="hero-countdown__item">
+                <strong>{String(value).padStart(2, "0")}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
-          <div className="vedic-countdown-item">
-            <strong>45</strong>
-            <span>Mins</span>
-          </div>
-          <div className="vedic-countdown-item">
-            <strong>20</strong>
-            <span>Secs</span>
-          </div>
+        </header>
+
+        {/* Desktop Countdown (positioned at bottom center above temple courtyard) */}
+        <div className="hero-countdown hero-countdown--desktop" aria-label="Time remaining until the wedding day">
+          {[
+            ["Days", 157],
+            ["Hours", 4],
+            ["Mins", 30],
+            ["Secs", 42],
+          ].map(([label, value]) => (
+            <div key={label} className="hero-countdown__item">
+              <strong>{String(value).padStart(2, "0")}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
         </div>
       </section>
 

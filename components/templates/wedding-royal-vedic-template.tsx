@@ -299,17 +299,28 @@ export function WeddingRoyalVedicTemplate({
 
       {/* Hero Banner: Monogram, Sacred Quote, Couple Names & Countdown */}
       <section className="invitation-hero" aria-label={`Wedding celebration of ${groomName} and ${brideName}`}>
-        <picture>
-          <source media="(min-width: 900px)" srcSet={hero} />
-          <img
-            src={hero}
-            alt="Royal Vedic Temple"
-            className="invitation-hero__photo"
-            fetchPriority="high"
-            loading="eager"
-            decoding="sync"
-          />
-        </picture>
+        {/* Vedic Temple Panorama backdrop */}
+        {(() => {
+          const isDefaultHero =
+            !heroImageUrl ||
+            heroImageUrl === "/templates/vedic-heritage/hero-desktop.webp" ||
+            heroImageUrl === "/templates/vedic-heritage/hero-mobile.webp"
+          const desktopHeroSrc = isDefaultHero ? "/templates/vedic-heritage/hero-desktop.webp" : hero
+          const mobileHeroSrc = isDefaultHero ? "/templates/vedic-heritage/hero-mobile.webp" : hero
+          return (
+            <picture>
+              <source media="(min-width: 900px)" srcSet={desktopHeroSrc} />
+              <img
+                src={mobileHeroSrc}
+                alt="Royal Vedic Temple"
+                className="invitation-hero__photo"
+                fetchPriority="high"
+                loading="eager"
+                decoding="sync"
+              />
+            </picture>
+          )
+        })()}
 
         {/* Falling Leaves / Petals Micro-animation */}
         <div className="hero-falling-leaves is-active" aria-hidden="true">

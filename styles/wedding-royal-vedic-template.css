@@ -574,6 +574,37 @@
   padding: 0 1rem;
 }
 
+/* Mobile View: Reveal full temple panorama and move stream player stage down */
+@media (max-width: 899px) {
+  .invitation-hero,
+  .vedic-hero {
+    min-height: 100svh;
+    padding-top: max(4.5rem, 8vh);
+    padding-bottom: 2.5rem;
+    position: relative;
+    background-color: var(--vedic-parchment, #faf6f0);
+  }
+
+  .invitation-hero__photo,
+  .vedic-hero-bg {
+    height: 100svh;
+    max-height: 100svh;
+    object-fit: cover;
+    object-position: center top !important;
+  }
+
+  .invitation-hero:after {
+    top: calc(100svh - 140px);
+    bottom: auto;
+    height: 140px;
+    background: linear-gradient(to bottom, transparent 0%, rgba(250, 246, 240, 0.45) 40%, rgba(250, 246, 240, 0.95) 85%, #faf6f0 100%);
+  }
+
+  .vedic-stream-container {
+    margin-top: clamp(320px, 48vh, 460px);
+  }
+}
+
 .vedic-stream-card {
   position: relative;
   background: var(--vedic-parchment-card);

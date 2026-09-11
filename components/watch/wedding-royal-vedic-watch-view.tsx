@@ -418,17 +418,28 @@ export function WeddingRoyalVedicWatchView({
              Vedic Temple Courtyard extending down to and behind the Player
           ---------------------------------------------------------------------- */}
       <section className="invitation-hero" aria-label={`Wedding celebration of ${groomName} and ${brideName}`}>
-        <picture>
-          <source media="(min-width: 900px)" srcSet={heroImageUrl || "/templates/vedic-heritage/hero-desktop.webp"} />
-          <img
-            src={heroImageUrl || "/templates/vedic-heritage/hero-mobile.webp"}
-            alt="Royal Vedic Temple"
-            className="invitation-hero__photo"
-            fetchPriority="high"
-            loading="eager"
-            decoding="sync"
-          />
-        </picture>
+        {/* Vedic Temple Panorama backdrop */}
+        {(() => {
+          const isDefaultHero =
+            !heroImageUrl ||
+            heroImageUrl === "/templates/vedic-heritage/hero-desktop.webp" ||
+            heroImageUrl === "/templates/vedic-heritage/hero-mobile.webp"
+          const desktopHeroSrc = isDefaultHero ? "/templates/vedic-heritage/hero-desktop.webp" : heroImageUrl
+          const mobileHeroSrc = isDefaultHero ? "/templates/vedic-heritage/hero-mobile.webp" : heroImageUrl
+          return (
+            <picture>
+              <source media="(min-width: 900px)" srcSet={desktopHeroSrc} />
+              <img
+                src={mobileHeroSrc}
+                alt="Royal Vedic Temple"
+                className="invitation-hero__photo"
+                fetchPriority="high"
+                loading="eager"
+                decoding="sync"
+              />
+            </picture>
+          )
+        })()}
 
         {/* Falling Leaves / Petals Micro-animation */}
         <div className="hero-falling-leaves is-active" aria-hidden="true">

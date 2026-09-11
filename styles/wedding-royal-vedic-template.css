@@ -102,35 +102,63 @@
 .intro-envelope-stage,
 .vedic-envelope-stage {
   position: relative;
-  width: min(570px, 52.875vh) !important;
-  max-width: none !important;
-  height: min(94vh, 1013px) !important;
-  margin: auto;
-  border: 1px solid #fff4e080;
-  border-radius: 5px;
-  box-shadow: 0 36px 100px #0d07037a, 0 0 0 8px #fff4e00f, inset 0 0 0 1px #a870233d;
   background-color: transparent;
   overflow: hidden;
   perspective: 1400px;
   cursor: pointer;
-  transform: translateY(0);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
-.intro-envelope-stage:hover,
-.vedic-envelope-stage:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 42px 110px #0d070395, 0 0 0 8px #fff4e015, inset 0 0 0 1px #a870234f;
-}
-
-@media (min-width: 449px) and (max-width: 899px) {
+@media (max-width: 899px) {
   .intro-envelope-stage,
   .vedic-envelope-stage {
-    box-shadow: none;
-    margin-left: 0;
-    margin-right: 0;
     width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .intro-envelope-stage,
+  .vedic-envelope-stage {
+    width: min(570px, 52.875vh) !important;
     max-width: none !important;
+    height: min(94vh, 1013px) !important;
+    margin: auto;
+    border: 1px solid #fff4e080;
+    border-radius: 5px;
+    box-shadow: 0 36px 100px #0d07037a, 0 0 0 8px #fff4e00f, inset 0 0 0 1px #a870233d;
+    transform: translateY(0);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .intro-envelope-stage:hover,
+  .vedic-envelope-stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 42px 110px #0d070395, 0 0 0 8px #fff4e015, inset 0 0 0 1px #a870234f;
+  }
+
+  .intro-envelope-content {
+    padding: 42px 34px 30px;
+  }
+
+  .intro-envelope-content .intro-monogram {
+    height: 78px;
+  }
+
+  .intro-envelope-content h1 {
+    font-size: 58px;
+  }
+
+  .intro-envelope-content > div:last-child {
+    padding-bottom: 22px;
   }
 }
 
@@ -147,23 +175,10 @@
 .intro-monogram {
   opacity: 0.86;
   filter: sepia(0.24) saturate(0.82) drop-shadow(0 2px 3px #5c38181f);
-  height: 78px;
 }
 
 .intro-leaf {
   filter: sepia(0.38) saturate(0.72) brightness(0.72);
-}
-
-.intro-envelope-content {
-  padding: 42px 34px 30px;
-}
-
-.intro-envelope-content h1 {
-  font-size: 58px;
-}
-
-.intro-envelope-content > div:last-child {
-  padding-bottom: 22px;
 }
 
 @keyframes rsvp-spin {

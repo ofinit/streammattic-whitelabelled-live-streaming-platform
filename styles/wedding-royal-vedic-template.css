@@ -65,7 +65,7 @@
   justify-content: center;
   overflow: hidden;
   isolation: isolate;
-  background: #2f2118 !important;
+  background: #1a0f08 !important;
   color: #3b281a;
   user-select: none;
   cursor: pointer;
@@ -83,18 +83,18 @@
 .vedic-envelope-overlay:before {
   content: "";
   z-index: -2;
-  filter: blur(12px) saturate(0.75);
-  background: linear-gradient(#311f1352, #311f1385), url('/templates/vedic-heritage/intro-desktop-bg.webp') center top/cover no-repeat;
+  filter: blur(4px) saturate(0.92);
+  background: linear-gradient(180deg, rgba(26, 14, 8, 0.28) 0%, rgba(26, 14, 8, 0.38) 100%), var(--intro-bg, url('/templates/vedic-heritage/intro-desktop-bg.webp')) center top/cover no-repeat;
   position: absolute;
-  inset: -30px;
-  transform: scale(1.04);
+  inset: -20px;
+  transform: scale(1.03);
 }
 
 .intro-splash:after,
 .vedic-envelope-overlay:after {
   content: "";
   z-index: -1;
-  background: radial-gradient(circle, #fff7e824, #21140c6b 72%), linear-gradient(90deg, #180e083d, transparent 34% 66%, #180e083d);
+  background: radial-gradient(circle at center, transparent 35%, rgba(20, 10, 5, 0.35) 95%);
   position: absolute;
   inset: 0;
 }

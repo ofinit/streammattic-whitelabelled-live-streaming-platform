@@ -80,6 +80,10 @@ export function WeddingRoyalVedicTemplate({
         className={`intro-splash fixed inset-0 z-50 flex w-full appearance-none items-center justify-center overflow-hidden border-0 p-0 text-[#3B281A] select-none cursor-pointer ${
           envelopeOpened ? "is-opened" : ""
         }`}
+        style={{
+          // @ts-ignore
+          "--intro-bg": `url('${hero}')`,
+        }}
         onClick={handleOpenEnvelope}
         role="button"
         tabIndex={0}

@@ -455,7 +455,7 @@ export function WeddingRoyalVedicTemplate({
               </h3>
             </div>
 
-            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-vedic-script text-4xl text-[#8b6508] bg-[#fdfbf7] w-12 h-12 rounded-full border border-[#c9a46a]/40 items-center justify-center shadow-sm">
+            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-vedic-script text-4xl sm:text-5xl text-[#8b6508] items-center justify-center pointer-events-none select-none">
               &amp;
             </div>
 

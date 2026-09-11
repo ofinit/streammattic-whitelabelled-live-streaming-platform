@@ -191,7 +191,7 @@ export function WeddingRoyalVedicTemplate({
 
             {/* Bottom Block: Subtitle & Botanical Leaf - Slides down on open */}
             <div
-              className="flex flex-col items-center pb-6 sm:pb-8 origin-bottom w-full transform-gpu"
+              className="flex flex-col items-center pb-16 sm:pb-20 origin-bottom w-full transform-gpu"
               style={{
                 transform: envelopeOpening ? "translateY(108vh)" : "translateY(0)",
                 transition: envelopeOpening ? "transform 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s" : "none",
@@ -204,11 +204,11 @@ export function WeddingRoyalVedicTemplate({
                 </p>
               </div>
 
-              <div className="mt-4 pt-2 flex items-center justify-center">
+              <div className="mt-2.5 flex items-center justify-center">
                 <img
                   src="/templates/vedic-heritage/leaf.webp"
                   alt="Botanical Leaf Accent"
-                  className="intro-leaf w-28 sm:w-36 h-auto object-contain opacity-90"
+                  className="intro-leaf w-24 sm:w-32 h-auto object-contain opacity-90"
                 />
               </div>
             </div>
@@ -221,7 +221,7 @@ export function WeddingRoyalVedicTemplate({
             e.stopPropagation()
             setEnvelopeOpened(true)
           }}
-          className="absolute bottom-6 z-40 rounded-full border border-[#c9a46a]/40 bg-[#1a100b]/80 backdrop-blur-md px-5 py-2 text-xs font-medium tracking-wider text-[#fdfbf7] shadow-lg transition hover:bg-[#2b1911]"
+          className="absolute bottom-5 sm:bottom-6 z-40 rounded-full border border-[#c9a46a]/40 bg-[#1a100b]/80 backdrop-blur-md px-5 py-2 text-xs font-medium tracking-wider text-[#fdfbf7] shadow-lg transition hover:bg-[#2b1911]"
         >
           Skip to Live Stream &rarr;
         </button>

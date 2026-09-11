@@ -3675,20 +3675,26 @@ export function EventFormDialog({
                       )}
                     </div>
                   </div>
-                  {formData.templateId === "tpl-wedding-ornate-floral-duo" && (
+                  {(formData.templateId === "tpl-wedding-ornate-floral-duo" || formData.templateId === "tpl-wedding-royal-vedic") && (
                     <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
                           <div>
-                            <Label className="text-sm font-semibold text-foreground">Couple Portraits (Ornate Floral Duo)</Label>
+                            <Label className="text-sm font-semibold text-foreground">
+                              {formData.templateId === "tpl-wedding-royal-vedic"
+                                ? "Royal Vedic Heritage: Bride & Groom Portraits"
+                                : "Couple Portraits (Ornate Floral Duo)"}
+                            </Label>
                             <p className="text-xs text-muted-foreground">
                               Upload individual photos for Couple 1 and Couple 2 to display in side-by-side golden circular frames on the watch page.
                             </p>
                           </div>
                         </div>
                         <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
-                          Ornate Floral Duo
+                          {formData.templateId === "tpl-wedding-royal-vedic"
+                            ? "Royal Vedic Heritage"
+                            : "Ornate Floral Duo"}
                         </Badge>
                       </div>
 
@@ -4021,123 +4027,6 @@ export function EventFormDialog({
                   )
                 })}
               </div>
-
-              {(formData.templateId === "tpl-wedding-ornate-floral-duo" || formData.templateId === "tpl-wedding-royal-vedic") && (
-                <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5 mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                      <div>
-                        <Label className="text-sm font-semibold text-foreground">
-                          {formData.templateId === "tpl-wedding-royal-vedic"
-                            ? "Royal Vedic Heritage: Bride & Groom Portraits"
-                            : "Ornate Floral Duo: Couple Portraits"}
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Upload individual photos for Couple 1 and Couple 2 to display in side-by-side golden circular frames on the watch page.
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400 text-[10px]">
-                      Selected Template
-                    </Badge>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 pt-1">
-                    <div className="space-y-2 min-w-0">
-                      <Label className="text-xs font-medium">Couple 1 photo</Label>
-                      {couple1ImageUrl ? (
-                        <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
-                          <img src={couple1ImageUrl} alt="Couple 1" className="w-full h-full object-cover" />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => setCouple1ImageUrl("")}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          <AiImagePickerDialog
-                            nestedInDialog
-                            dialogTitle="Couple 1 photo"
-                            uploadSubdir="event-couple"
-                            circularHeroCrop={true}
-                            walletUserId={creditsUserId}
-                            onImageUrl={(url) => setCouple1ImageUrl(url)}
-                          >
-                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
-                              Change
-                            </Button>
-                          </AiImagePickerDialog>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <AiImagePickerDialog
-                            nestedInDialog
-                            dialogTitle="Couple 1 photo"
-                            uploadSubdir="event-couple"
-                            circularHeroCrop={true}
-                            walletUserId={creditsUserId}
-                            onImageUrl={(url) => setCouple1ImageUrl(url)}
-                          >
-                            <Button type="button" variant="outline" size="sm" className="gap-2">
-                              <ImageIcon className="h-4 w-4" />
-                              Add Couple 1 photo
-                            </Button>
-                          </AiImagePickerDialog>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 min-w-0">
-                      <Label className="text-xs font-medium">Couple 2 photo</Label>
-                      {couple2ImageUrl ? (
-                        <div className="relative h-24 w-full rounded border overflow-hidden bg-muted/20">
-                          <img src={couple2ImageUrl} alt="Couple 2" className="w-full h-full object-cover" />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6"
-                            onClick={() => setCouple2ImageUrl("")}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          <AiImagePickerDialog
-                            nestedInDialog
-                            dialogTitle="Couple 2 photo"
-                            uploadSubdir="event-couple"
-                            circularHeroCrop={true}
-                            walletUserId={creditsUserId}
-                            onImageUrl={(url) => setCouple2ImageUrl(url)}
-                          >
-                            <Button type="button" variant="secondary" size="sm" className="absolute bottom-1 left-1 h-7 px-2 text-xs">
-                              Change
-                            </Button>
-                          </AiImagePickerDialog>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <AiImagePickerDialog
-                            nestedInDialog
-                            dialogTitle="Couple 2 photo"
-                            uploadSubdir="event-couple"
-                            circularHeroCrop={true}
-                            walletUserId={creditsUserId}
-                            onImageUrl={(url) => setCouple2ImageUrl(url)}
-                          >
-                            <Button type="button" variant="outline" size="sm" className="gap-2">
-                              <ImageIcon className="h-4 w-4" />
-                              Add Couple 2 photo
-                            </Button>
-                          </AiImagePickerDialog>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4 mt-4">

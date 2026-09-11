@@ -12,6 +12,8 @@ interface TemplateProps {
   eventSubtitle?: string
   eventDescription?: string
   heroImageUrl?: string
+  couple1ImageUrl?: string | null
+  couple2ImageUrl?: string | null
   photographerLogoUrl?: string | null
 }
 
@@ -20,6 +22,8 @@ export function WeddingRoyalVedicTemplate({
   eventSubtitle,
   eventDescription = "With the blessings of our families, we invite you to celebrate our sacred wedding.",
   heroImageUrl,
+  couple1ImageUrl,
+  couple2ImageUrl,
   photographerLogoUrl,
 }: TemplateProps) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false)
@@ -383,6 +387,15 @@ export function WeddingRoyalVedicTemplate({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative">
             <div className="vedic-card text-center">
+              {couple1ImageUrl ? (
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
+                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
+                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
+                    <img src={couple1ImageUrl} alt={groomName} className="w-full h-full object-cover rounded-full" />
+                  </div>
+                </div>
+              ) : null}
               <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {groomName}
               </h3>
@@ -393,6 +406,15 @@ export function WeddingRoyalVedicTemplate({
             </div>
 
             <div className="vedic-card text-center">
+              {couple2ImageUrl ? (
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
+                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
+                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
+                    <img src={couple2ImageUrl} alt={brideName} className="w-full h-full object-cover rounded-full" />
+                  </div>
+                </div>
+              ) : null}
               <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
                 {brideName}
               </h3>

@@ -1999,12 +1999,8 @@ export function EventFormDialog({
       templateData: {
         ...templateData,
         templateId: formData.templateId || "tpl-default",
-        ...(formData.templateId === "tpl-wedding-ornate-floral-duo"
-          ? {
-              couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
-              couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
-            }
-          : {}),
+        couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
+        couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
       },
       couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
       couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,

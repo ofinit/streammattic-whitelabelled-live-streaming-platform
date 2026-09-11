@@ -880,6 +880,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
                   ? "theHeart"
                   : watchSkin === "weddingRoyalCircle" ||
                       watchSkin === "weddingPapercut" ||
+                      watchSkin === "weddingRoyalVedic" ||
+                      watchSkin === "weddingOrnateFloralDuo" ||
+                      watchSkin === "weddingOrnateFloral" ||
                       watchSkin === "christianWeddingRose" ||
                       watchSkin === "muslimWeddingNikah"
                     ? "wedding"

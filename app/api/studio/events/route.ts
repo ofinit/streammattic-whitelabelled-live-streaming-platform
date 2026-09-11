@@ -323,6 +323,12 @@ export async function POST(req: NextRequest) {
       rawTemplateData && typeof rawTemplateData === "object" && !Array.isArray(rawTemplateData)
         ? { ...(rawTemplateData as Record<string, unknown>) }
         : {}
+    if (body.couple1ImageUrl !== undefined) {
+      mergedRaw.couple1ImageUrl = body.couple1ImageUrl ? String(body.couple1ImageUrl).trim() : null
+    }
+    if (body.couple2ImageUrl !== undefined) {
+      mergedRaw.couple2ImageUrl = body.couple2ImageUrl ? String(body.couple2ImageUrl).trim() : null
+    }
     const finalPostTemplateId = resolvedTemplateId ?? templateIdFromTemplateDataRecord(mergedRaw)
     const templateDataJson =
       finalPostTemplateId || Object.keys(mergedRaw).length > 0
@@ -749,7 +755,11 @@ export async function PUT(req: NextRequest) {
     }
 
     const existingTemplateData = parseExistingTemplateDataJsonb(existingRow.template_data)
-    const hasTemplateUpdate = templateId !== undefined || (rawTemplateData !== undefined && rawTemplateData !== null)
+    const hasTemplateUpdate =
+      templateId !== undefined ||
+      (rawTemplateData !== undefined && rawTemplateData !== null) ||
+      body.couple1ImageUrl !== undefined ||
+      body.couple2ImageUrl !== undefined
     const fromBodyPut =
       templateId !== undefined && templateId != null && String(templateId).trim() !== ""
         ? String(templateId).trim()
@@ -762,6 +772,12 @@ export async function PUT(req: NextRequest) {
       ...existingTemplateData,
       ...(typeof rawTemplateData === "object" && rawTemplateData ? rawTemplateData : {}),
     } as Record<string, unknown>
+    if (body.couple1ImageUrl !== undefined) {
+      mergedWithoutFinalId.couple1ImageUrl = body.couple1ImageUrl ? String(body.couple1ImageUrl).trim() : null
+    }
+    if (body.couple2ImageUrl !== undefined) {
+      mergedWithoutFinalId.couple2ImageUrl = body.couple2ImageUrl ? String(body.couple2ImageUrl).trim() : null
+    }
     const resolvedTemplateIdPut =
       fromBodyPut ??
       fromRawPut ??

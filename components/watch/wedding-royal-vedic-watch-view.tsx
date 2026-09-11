@@ -478,7 +478,7 @@ export function WeddingRoyalVedicWatchView({
             <div className="vedic-stream-corner vedic-stream-corner-br"><VedicCornerOrnament /></div>
 
             {/* Stream Player Embed */}
-            <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-black aspect-video flex items-center justify-center">
+            <div className="relative z-10 w-full">
               {streamPlayer}
             </div>
 
@@ -541,8 +541,12 @@ export function WeddingRoyalVedicWatchView({
             {/* Groom Card */}
             <div className="vedic-card text-center">
               {couple1ImageUrl ? (
-                <div className="w-24 h-24 mx-auto mb-4 rounded-full border-2 border-[#c9a46a] overflow-hidden shadow-md">
-                  <img src={couple1ImageUrl} alt={groomName} className="w-full h-full object-cover" />
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
+                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
+                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
+                    <img src={couple1ImageUrl} alt={groomName} className="w-full h-full object-cover rounded-full" />
+                  </div>
                 </div>
               ) : null}
               <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
@@ -558,8 +562,12 @@ export function WeddingRoyalVedicWatchView({
             {/* Bride Card */}
             <div className="vedic-card text-center">
               {couple2ImageUrl ? (
-                <div className="w-24 h-24 mx-auto mb-4 rounded-full border-2 border-[#c9a46a] overflow-hidden shadow-md">
-                  <img src={couple2ImageUrl} alt={brideName} className="w-full h-full object-cover" />
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
+                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
+                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
+                    <img src={couple2ImageUrl} alt={brideName} className="w-full h-full object-cover rounded-full" />
+                  </div>
                 </div>
               ) : null}
               <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">

@@ -614,7 +614,6 @@
     position: absolute;
     top: calc(100vh - 88px);
     top: calc(100svh - 88px);
-    top: calc(100dvh - 88px);
     left: 50%;
     transform: translateX(-50%);
     margin: 0 auto;
@@ -682,6 +681,12 @@
     background-color: var(--vedic-parchment, #faf6f0);
   }
 
+  /* Make hero heading fill the initial 100svh viewport so that content below starts on parchment */
+  .invitation-hero__heading {
+    min-height: calc(100vh - max(4.5rem, 8vh));
+    min-height: calc(100svh - max(4.5rem, 8vh));
+  }
+
   .invitation-hero__photo,
   .vedic-hero-bg {
     height: 100svh;
@@ -697,8 +702,9 @@
     background: linear-gradient(to bottom, transparent 0%, rgba(250, 246, 240, 0.45) 40%, rgba(250, 246, 240, 0.95) 85%, #faf6f0 100%);
   }
 
+  /* Sits cleanly below 100svh with generous breathing room below the courtyard countdown pills */
   .vedic-stream-container {
-    margin-top: clamp(360px, 52vh, 480px);
+    margin-top: 1.5rem;
   }
 }
 

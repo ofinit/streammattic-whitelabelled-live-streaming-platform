@@ -558,7 +558,7 @@ export function WeddingRoyalVedicWatchView({
         <div className="vedic-stream-container">
           {/* Marquee Above Player Card */}
           {marqueeAbovePlayer ? (
-            <div className="w-full mb-1.5 sm:mb-2 px-1">
+            <div className="w-full mb-3 sm:mb-3.5 px-1">
               {marqueeAbovePlayer}
             </div>
           ) : null}

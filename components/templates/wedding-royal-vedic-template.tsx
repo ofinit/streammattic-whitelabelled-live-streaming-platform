@@ -430,6 +430,9 @@ export function WeddingRoyalVedicTemplate({
 
         {/* Stream Video Player Mockup (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">
+          <h2 className="font-vedic-bodoni text-3xl sm:text-4xl text-[#2b120b] text-center mb-3 sm:mb-4">
+            Watch Live
+          </h2>
           <div className="vedic-stream-card">
             <div className="relative z-10 w-full rounded-xl overflow-hidden shadow-sm bg-neutral-900 aspect-video flex flex-col items-center justify-center text-white">
               <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#ba8933] flex items-center justify-center shadow-lg mb-3">

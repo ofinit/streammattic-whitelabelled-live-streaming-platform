@@ -558,6 +558,10 @@ export function WeddingRoyalVedicWatchView({
 
         {/* Live Stream Player Stage (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">
+          <h2 className="font-vedic-bodoni text-3xl sm:text-4xl text-[#2b120b] text-center mb-3 sm:mb-4">
+            Watch Live
+          </h2>
+
           {/* Marquee Above Player Card */}
           {marqueeAbovePlayer ? (
             <div className="w-full mb-3 sm:mb-3.5 px-1">

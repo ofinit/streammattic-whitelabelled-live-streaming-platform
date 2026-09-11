@@ -304,6 +304,21 @@ export function WeddingRoyalVedicWatchView({
             }}
           />
 
+          {/* Animated Blinking Wax Seal "Tap To Open" Text */}
+          <div
+            className="intro-seal-tap-badge"
+            style={{
+              opacity: envelopeOpening ? 0 : 1,
+              transition: "opacity 0.18s ease-out",
+            }}
+          >
+            <div className="intro-seal-tap-text">
+              <span>TAP</span>
+              <span>TO</span>
+              <span>OPEN</span>
+            </div>
+          </div>
+
           {/* Layer 5: Envelope Content - z-30 Above flaps with transparent background */}
           <div className="intro-envelope-content relative z-30 w-full h-full pt-10 pb-6 px-6 flex flex-col justify-between items-center text-center pointer-events-none bg-transparent">
             {/* Top Block: Monogram, Date, Names - Slides up on open */}
@@ -378,17 +393,7 @@ export function WeddingRoyalVedicWatchView({
           </div>
         </div>
 
-        {/* Quick Skip Button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            setEnvelopeOpened(true)
-          }}
-          className="absolute bottom-5 sm:bottom-6 z-40 rounded-full border border-[#c9a46a]/40 bg-[#1a100b]/80 backdrop-blur-md px-5 py-2 text-xs font-medium tracking-wider text-[#fdfbf7] shadow-lg transition hover:bg-[#2b1911]"
-        >
-          Skip to Live Stream &rarr;
-        </button>
+
       </div>
 
       {/* ----------------------------------------------------------------------

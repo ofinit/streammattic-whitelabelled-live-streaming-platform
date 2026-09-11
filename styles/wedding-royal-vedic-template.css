@@ -683,8 +683,8 @@
 
   /* Make hero heading fill the initial 100svh viewport so that content below starts on parchment */
   .invitation-hero__heading {
-    min-height: calc(100vh - max(4.5rem, 8vh));
-    min-height: calc(100svh - max(4.5rem, 8vh));
+    min-height: calc(100vh - max(4.5rem, 8vh)) !important;
+    min-height: calc(100svh - max(4.5rem, 8vh)) !important;
   }
 
   .invitation-hero__photo,
@@ -704,7 +704,7 @@
 
   /* Sits cleanly below 100svh with generous breathing room below the courtyard countdown pills */
   .vedic-stream-container {
-    margin-top: 1.5rem;
+    margin-top: 2.5rem !important;
   }
 }
 

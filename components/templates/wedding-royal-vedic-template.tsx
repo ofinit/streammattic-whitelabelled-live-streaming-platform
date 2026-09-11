@@ -361,7 +361,7 @@ export function WeddingRoyalVedicTemplate({
         </div>
 
         {/* Center Hero Heading: Photographer Logo (if provided), Couple Names */}
-        <header className="invitation-hero__heading">
+        <header className="invitation-hero__heading min-h-[calc(100vh-max(4.5rem,8vh))] min-h-[calc(100svh-max(4.5rem,8vh))] md:min-h-0">
           {photographerLogoUrl ? (
             <img
               src={photographerLogoUrl}

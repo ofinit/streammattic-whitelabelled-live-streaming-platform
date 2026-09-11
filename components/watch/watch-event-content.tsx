@@ -1491,7 +1491,10 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const photographerMarqueeAbovePlayer =
     typeof photographerContact.marqueeAbovePlayer === "string" ? photographerContact.marqueeAbovePlayer.trim() : ""
   const photographerMarqueeBelowPlayer =
-    typeof photographerContact.marqueeBelowPlayer === "string" ? photographerContact.marqueeBelowPlayer.trim() : ""
+    (typeof photographerContact.marqueeBelowPlayer === "string" ? photographerContact.marqueeBelowPlayer.trim() : "") ||
+    (typeof (templateData as any)?.marqueeBelowPlayer === "string" ? (templateData as any).marqueeBelowPlayer.trim() : "") ||
+    (typeof (evRawTop as any).marqueeBelowPlayer === "string" ? (evRawTop as any).marqueeBelowPlayer.trim() : "") ||
+    photographerMarqueeMessage
   const photographerWebsiteRaw =
     typeof photographerContact.website === "string" ? photographerContact.website.trim() : ""
   const photographerWebsitePublicUrl =
@@ -1674,9 +1677,9 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   const streamMarqueeTheme = streamChrome as WatchPhotographerMarqueeTheme
 
-  const renderStreamPlayer = (shellClassName: string) => (
+  const renderStreamPlayer = (shellClassName: string, options?: { excludeMarquees?: boolean }) => (
     <div className="w-full">
-      {photographerMarqueeAbovePlayer ? (
+      {!options?.excludeMarquees && photographerMarqueeAbovePlayer ? (
         <WatchPhotographerMarquee
           message={photographerMarqueeAbovePlayer}
           theme={streamMarqueeTheme}
@@ -1936,7 +1939,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           )}
       </div>
       {renderViewerCountBelowPlayer()}
-      {photographerMarqueeBelowPlayer ? (
+      {!options?.excludeMarquees && photographerMarqueeBelowPlayer ? (
         <WatchPhotographerMarquee
           message={photographerMarqueeBelowPlayer}
           theme={streamMarqueeTheme}
@@ -3306,7 +3309,25 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         eventDates={vedicEventDates}
         showCountdown={event.status === "scheduled" && !!event.scheduledAt && showScheduledPageEnabled}
         countdown={countdown}
-        streamPlayer={renderStreamPlayer(WEDDING_STREAM_SHELL)}
+        streamPlayer={renderStreamPlayer(WEDDING_STREAM_SHELL, { excludeMarquees: true })}
+        marqueeAbovePlayer={
+          photographerMarqueeAbovePlayer ? (
+            <WatchPhotographerMarquee
+              message={photographerMarqueeAbovePlayer}
+              theme={streamMarqueeTheme}
+              className="w-full"
+            />
+          ) : null
+        }
+        marqueeBelowPlayer={
+          photographerMarqueeBelowPlayer ? (
+            <WatchPhotographerMarquee
+              message={photographerMarqueeBelowPlayer}
+              theme={streamMarqueeTheme}
+              className="w-full"
+            />
+          ) : null
+        }
         liveChat={renderLiveChatBody()}
         detailsPanel={renderDetailsPanel("wedding")}
         allowChat={allowChat}

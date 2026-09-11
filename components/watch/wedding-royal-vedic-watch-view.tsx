@@ -32,6 +32,8 @@ export interface WeddingRoyalVedicWatchViewProps {
   venueName?: string
   venueAddress?: string
   photographerLogoUrl?: string | null
+  marqueeAbovePlayer?: ReactNode
+  marqueeBelowPlayer?: ReactNode
 }
 
 function VedicCornerOrnament() {
@@ -93,6 +95,8 @@ export function WeddingRoyalVedicWatchView({
   venueName,
   venueAddress,
   photographerLogoUrl,
+  marqueeAbovePlayer,
+  marqueeBelowPlayer,
 }: WeddingRoyalVedicWatchViewProps) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false)
   const [envelopeOpening, setEnvelopeOpening] = useState(false)
@@ -433,23 +437,39 @@ export function WeddingRoyalVedicWatchView({
             {brideRest}
           </h2>
 
+          {/* Event Subtitle right below Raju Weds Avantika */}
+          {eventSubtitle ? (
+            <p className="font-vedic-cinzel text-xs sm:text-sm uppercase tracking-[0.25em] text-[#8b6508] font-semibold mt-4 mb-2 text-center max-w-xl mx-auto">
+              {eventSubtitle}
+            </p>
+          ) : null}
+
           {/* Countdown (when enabled) */}
           {showCountdown ? (
             <div className="hero-countdown" aria-label="Time remaining until the wedding day">
-              {[
-                ["Days", effectiveCountdown.days],
-                ["Hours", effectiveCountdown.hours],
-                ["Mins", effectiveCountdown.minutes],
-                ["Secs", effectiveCountdown.seconds],
-              ].map(([label, value]) => (
+              {(
+                [
+                  ["Days", effectiveCountdown.days],
+                  ["Hours", effectiveCountdown.hours],
+                  ["Mins", effectiveCountdown.minutes],
+                  ["Secs", effectiveCountdown.seconds],
+                ] as const
+              ).map(([label, value]) => (
                 <div key={label} className="hero-countdown__item">
-                  <strong>{String(Math.max(0, value ?? 0)).padStart(2, "0")}</strong>
+                  <strong>{String(Math.max(0, Number(value ?? 0))).padStart(2, "0")}</strong>
                   <span>{label}</span>
                 </div>
               ))}
             </div>
           ) : null}
         </header>
+
+        {/* Marquee Above Player Card */}
+        {marqueeAbovePlayer ? (
+          <div className="w-full max-w-4xl mx-auto mb-4 px-2 sm:px-4">
+            {marqueeAbovePlayer}
+          </div>
+        ) : null}
 
         {/* Live Stream Player Stage (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">
@@ -464,23 +484,14 @@ export function WeddingRoyalVedicWatchView({
             <div className="relative z-10 w-full">
               {streamPlayer}
             </div>
-
-            {/* Event Subtitle & Description */}
-            {eventSubtitle || eventDescription ? (
-              <div className="relative z-10 pt-4 pb-2 px-3 sm:px-6 text-center">
-                {eventSubtitle ? (
-                  <p className="font-vedic-cinzel text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#8b6508] font-semibold mb-1">
-                    {eventSubtitle}
-                  </p>
-                ) : null}
-                {eventDescription ? (
-                  <p className="font-vedic-cormorant text-base sm:text-lg text-[#3b2314] italic leading-relaxed max-w-2xl mx-auto">
-                    {eventDescription}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
           </div>
+
+          {/* Marquee Below Player Card */}
+          {marqueeBelowPlayer ? (
+            <div className="w-full max-w-4xl mx-auto mt-4 px-2 sm:px-4">
+              {marqueeBelowPlayer}
+            </div>
+          ) : null}
 
           {/* Live Chat or Details beneath the player */}
           {allowChat && showChat && liveChat && (

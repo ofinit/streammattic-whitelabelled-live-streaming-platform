@@ -74,6 +74,7 @@ import {
 import { THE_HEART_GALLERY_BG_URL } from "@/lib/the-heart-template-assets"
 import { parseWatchTemplateData, resolveWatchTemplateId } from "@/lib/watch-template-data"
 import { resolveScheduledEpochMs } from "@/lib/datetime-local-timezone"
+import { resolveStudioDomain } from "@/lib/studio-domain-resolve"
 import "@/styles/the-heart-template.css"
 
 const YOUTUBE_VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
@@ -1519,6 +1520,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         ? photographerWebsiteRaw
         : `https://${photographerWebsiteRaw}`
       : ""
+  const resolvedStudioDomain = resolveStudioDomain(event)
   const tzForDate = (evRawTop.timezone as string) || "UTC"
   const primaryDateFormatted = event.scheduledAt
     ? (() => {
@@ -2323,12 +2325,18 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       watchSkin === "weddingTheHeart" ||
       watchSkin === "weddingRoyalCircle" ||
       watchSkin === "weddingPapercut" ||
-      watchSkin === "memorialService"
+      watchSkin === "memorialService" ||
+      watchSkin === "weddingOrnateFloral" ||
+      watchSkin === "weddingOrnateFloralDuo" ||
+      watchSkin === "weddingRoyalVedic"
     /** Logo / credit block already shown in the watch template above the footer */
     const photographerCreditRenderedInTemplate =
       watchSkin === "weddingTheHeart" ||
       watchSkin === "weddingRoyalCircle" ||
-      watchSkin === "weddingPapercut"
+      watchSkin === "weddingPapercut" ||
+      watchSkin === "weddingOrnateFloral" ||
+      watchSkin === "weddingOrnateFloralDuo" ||
+      watchSkin === "weddingRoyalVedic"
 
     const hideGenericHeader =
       detailsTheme === "wedding" ||
@@ -3160,6 +3168,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : null
         }
         photographerCredit={ornatePhotographerCredit}
+        studioDomain={resolvedStudioDomain}
       />
     )
   }
@@ -3253,6 +3262,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           ) : null
         }
         photographerCredit={ornatePhotographerCredit}
+        studioDomain={resolvedStudioDomain}
       />
     )
   }
@@ -3372,6 +3382,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         photographerLogoUrl={photographerLogoUrl}
         venueName={((event as any).venueName as string | undefined) || ""}
         venueAddress={((event as any).venueAddress as string | undefined) || ""}
+        studioDomain={resolvedStudioDomain}
       />
     )
   }
@@ -5779,6 +5790,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
         )}
         {renderStreamPlayer(DEFAULT_STREAM_SHELL)}
         {renderDetailsPanel("default")}
+        <footer className="mt-auto border-t border-border py-6 text-center text-xs text-muted-foreground">
+          Copyright &copy; {new Date().getFullYear()} All Rights Reserved to{" "}
+          <a
+            href={`https://${resolvedStudioDomain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-foreground hover:underline"
+          >
+            {resolvedStudioDomain}
+          </a>
+        </footer>
       </div>
 
       {allowChat && showChat && (

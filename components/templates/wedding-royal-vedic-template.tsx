@@ -511,6 +511,13 @@ export function WeddingRoyalVedicTemplate({
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-4 text-center border-t border-[#c9a46a]/20 bg-[#faf6f0]">
+        <div className="text-xs font-medium tracking-wide text-[#796657]">
+          Copyright &copy; {new Date().getFullYear()} All Rights Reserved
+        </div>
+      </footer>
     </div>
   )
 }

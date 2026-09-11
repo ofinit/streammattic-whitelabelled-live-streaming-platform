@@ -25,6 +25,7 @@ interface WeddingOrnateFloralWatchViewProps {
   teaserEmbed?: string | null
   gallerySection?: ReactNode
   photographerCredit?: ReactNode
+  studioDomain?: string
 }
 
 function OrnateCornerOrnament() {
@@ -114,6 +115,7 @@ export function WeddingOrnateFloralWatchView({
   teaserEmbed,
   gallerySection,
   photographerCredit,
+  studioDomain,
 }: WeddingOrnateFloralWatchViewProps) {
   const scrollToStream = () =>
     document.getElementById("ornate-stream-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -318,7 +320,17 @@ export function WeddingOrnateFloralWatchView({
 
       <footer className="ornate-footer">
         <h2>Thank You</h2>
-        <p>Copyright © All Rights Reserved</p>
+        <p>
+          Copyright &copy; {new Date().getFullYear()} All Rights Reserved
+          {studioDomain ? (
+            <>
+              {" to "}
+              <a href={`https://${studioDomain}`} target="_blank" rel="noopener noreferrer" className="hover:underline font-medium">
+                {studioDomain}
+              </a>
+            </>
+          ) : null}
+        </p>
       </footer>
     </div>
   )

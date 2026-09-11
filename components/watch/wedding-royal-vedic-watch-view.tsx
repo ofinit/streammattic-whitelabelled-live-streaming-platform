@@ -34,6 +34,7 @@ export interface WeddingRoyalVedicWatchViewProps {
   photographerLogoUrl?: string | null
   marqueeAbovePlayer?: ReactNode
   marqueeBelowPlayer?: ReactNode
+  studioDomain?: string
 }
 
 function VedicCornerOrnament() {
@@ -147,6 +148,7 @@ export function WeddingRoyalVedicWatchView({
   photographerLogoUrl,
   marqueeAbovePlayer,
   marqueeBelowPlayer,
+  studioDomain,
 }: WeddingRoyalVedicWatchViewProps) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false)
   const [envelopeOpening, setEnvelopeOpening] = useState(false)
@@ -821,11 +823,28 @@ export function WeddingRoyalVedicWatchView({
       {/* ----------------------------------------------------------------------
           9. Photographer Credits & Footer
           ---------------------------------------------------------------------- */}
-      {photographerCredit && (
-        <footer className="py-8 px-4 text-center border-t border-[#c9a46a]/20 bg-[#faf6f0]">
-          {photographerCredit}
-        </footer>
-      )}
+      <footer className="py-8 px-4 text-center border-t border-[#c9a46a]/20 bg-[#faf6f0]">
+        {photographerCredit ? (
+          <div className="mb-6">
+            {photographerCredit}
+          </div>
+        ) : null}
+        <div className="pt-2 text-xs font-medium tracking-wide text-[#796657]">
+          Copyright &copy; {new Date().getFullYear()} All Rights Reserved to{" "}
+          {studioDomain ? (
+            <a
+              href={`https://${studioDomain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#8b6508] font-semibold hover:underline"
+            >
+              {studioDomain}
+            </a>
+          ) : (
+            "All Rights Reserved"
+          )}
+        </div>
+      </footer>
     </div>
   )
 }

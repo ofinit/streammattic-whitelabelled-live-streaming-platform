@@ -39,21 +39,22 @@ export async function GET(
               (
                 SELECT domain FROM domains 
                 WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN u.id ELSE e.user_id END)
-                ORDER BY CASE WHEN verification_status = 'verified' THEN 0 WHEN is_primary = true THEN 1 ELSE 2 END, created_at DESC
+                  AND verification_status = 'verified'
+                ORDER BY CASE WHEN is_primary = true THEN 0 ELSE 1 END, created_at DESC
                 LIMIT 1
               ) AS studio_custom_domain,
               (
                 SELECT domain FROM domains 
                 WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN u.id ELSE e.user_id END)
-                  AND (verification_status = 'verified' OR is_primary = true)
-                ORDER BY CASE WHEN verification_status = 'verified' THEN 0 ELSE 1 END, created_at DESC
+                  AND verification_status = 'verified'
+                ORDER BY CASE WHEN is_primary = true THEN 0 ELSE 1 END, created_at DESC
                 LIMIT 1
               ) AS primary_domain,
               (
                 SELECT domain FROM domains 
                 WHERE user_id = COALESCE(e.studio_id, CASE WHEN u.role = 'studio' THEN u.id ELSE e.user_id END)
-                  AND (verification_status = 'verified' OR is_primary = true)
-                ORDER BY CASE WHEN verification_status = 'verified' THEN 0 ELSE 1 END, created_at DESC
+                  AND verification_status = 'verified'
+                ORDER BY CASE WHEN is_primary = true THEN 0 ELSE 1 END, created_at DESC
                 LIMIT 1
               ) AS custom_domain,
              (

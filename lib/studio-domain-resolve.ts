@@ -22,6 +22,14 @@ export function resolveStudioDomain(
   fallbackHost?: string,
 ): string {
   if (event) {
+    // 1. Domain the event was created with / published under
+    const publicUrl = (event as any).publicUrl || (event as any).public_url
+    const fromPublicUrl = cleanDomainName(publicUrl)
+    if (fromPublicUrl && fromPublicUrl.includes(".")) {
+      return fromPublicUrl
+    }
+
+    // 2. Verified custom domain linked to the studio
     const candidateStudio =
       (event as any).studioCustomDomain ||
       (event as any).primaryDomain ||
@@ -32,6 +40,7 @@ export function resolveStudioDomain(
       return fromStudio
     }
 
+    // 3. Photographer contact website
     const website = (event as any).photographerContact?.website
     const fromWebsite = cleanDomainName(website)
     if (fromWebsite && fromWebsite.includes(".")) {

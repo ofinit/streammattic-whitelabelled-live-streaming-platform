@@ -508,16 +508,16 @@ export function WeddingRoyalVedicWatchView({
             <p
               className={cn(
                 "font-vedic-cinzel text-xs sm:text-sm uppercase tracking-[0.25em] text-[#8b6508] font-semibold mt-4 text-center max-w-xl mx-auto",
-                showCountdown ? "mb-16 sm:mb-20" : "mb-6"
+                showCountdown ? "mb-4 md:mb-16" : "mb-6"
               )}
             >
               {eventSubtitle}
             </p>
           ) : null}
 
-          {/* Countdown (when enabled) */}
+          {/* Desktop Countdown (inside header, hidden on mobile) */}
           {showCountdown ? (
-            <div className="hero-countdown" aria-label="Time remaining until the wedding day">
+            <div className="hero-countdown hero-countdown--desktop hidden md:grid" aria-label="Time remaining until the wedding day">
               {(
                 [
                   ["Days", effectiveCountdown.days],
@@ -534,6 +534,25 @@ export function WeddingRoyalVedicWatchView({
             </div>
           ) : null}
         </header>
+
+        {/* Mobile Countdown (positioned in courtyard red-box area, hidden on desktop) */}
+        {showCountdown ? (
+          <div className="hero-countdown hero-countdown--mobile md:hidden" aria-label="Time remaining until the wedding day">
+            {(
+              [
+                ["Days", effectiveCountdown.days],
+                ["Hours", effectiveCountdown.hours],
+                ["Mins", effectiveCountdown.minutes],
+                ["Secs", effectiveCountdown.seconds],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="hero-countdown__item">
+                <strong>{String(Math.max(0, Number(value ?? 0))).padStart(2, "0")}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {/* Live Stream Player Stage (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">

@@ -390,15 +390,15 @@ export function WeddingRoyalVedicTemplate({
             <p
               className={cn(
                 "font-vedic-cinzel text-xs sm:text-sm uppercase tracking-[0.25em] text-[#8b6508] font-semibold mt-4 text-center max-w-xl mx-auto",
-                countdown ? "mb-16 sm:mb-20" : "mb-6"
+                countdown ? "mb-4 md:mb-16" : "mb-6"
               )}
             >
               {eventSubtitle}
             </p>
           ) : null}
 
-          {/* Countdown */}
-          <div className="hero-countdown" aria-label="Time remaining until the wedding day">
+          {/* Desktop Countdown (inside header, hidden on mobile) */}
+          <div className="hero-countdown hero-countdown--desktop hidden md:grid" aria-label="Time remaining until the wedding day">
             {[
               ["Days", Math.max(0, countdown?.days ?? 0)],
               ["Hours", Math.max(0, countdown?.hours ?? 0)],
@@ -412,6 +412,21 @@ export function WeddingRoyalVedicTemplate({
             ))}
           </div>
         </header>
+
+        {/* Mobile Countdown (positioned in courtyard red-box area, hidden on desktop) */}
+        <div className="hero-countdown hero-countdown--mobile md:hidden" aria-label="Time remaining until the wedding day">
+          {[
+            ["Days", Math.max(0, countdown?.days ?? 0)],
+            ["Hours", Math.max(0, countdown?.hours ?? 0)],
+            ["Mins", Math.max(0, countdown?.minutes ?? 0)],
+            ["Secs", Math.max(0, countdown?.seconds ?? 0)],
+          ].map(([label, value]) => (
+            <div key={label} className="hero-countdown__item">
+              <strong>{String(value).padStart(2, "0")}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Stream Video Player Mockup (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">

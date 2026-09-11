@@ -595,7 +595,32 @@
 }
 
 .hero-countdown--desktop {
-  display: none !important;
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .hero-countdown--desktop {
+    display: grid !important;
+  }
+}
+
+.hero-countdown--mobile {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .hero-countdown--mobile {
+    display: grid !important;
+    position: absolute;
+    top: calc(100vh - 88px);
+    top: calc(100svh - 88px);
+    top: calc(100dvh - 88px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0 auto;
+    z-index: 12;
+    width: min(320px, 90vw);
+  }
 }
 
 .hero-countdown__item {
@@ -673,7 +698,7 @@
   }
 
   .vedic-stream-container {
-    margin-top: clamp(320px, 48vh, 460px);
+    margin-top: clamp(360px, 52vh, 480px);
   }
 }
 

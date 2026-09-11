@@ -116,24 +116,7 @@ export function WeddingRoyalVedicWatchView({
     return `${g}${b}`
   }, [groomName, brideName])
 
-  const effectiveCountdown = useMemo(() => {
-    if (countdown && (countdown.days > 0 || countdown.hours > 0 || countdown.minutes > 0 || countdown.seconds > 0)) {
-      return countdown
-    }
-    if (primaryDateFormatted) {
-      const target = new Date(primaryDateFormatted).getTime()
-      if (!isNaN(target) && target > Date.now()) {
-        const diff = target - Date.now()
-        return {
-          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((diff / (1000 * 60)) % 60),
-          seconds: Math.floor((diff / 1000) % 60),
-        }
-      }
-    }
-    return { days: 157, hours: 4, minutes: 30, seconds: 42 }
-  }, [countdown, primaryDateFormatted])
+  const effectiveCountdown = countdown || { days: 0, hours: 0, minutes: 0, seconds: 0 }
 
   // Initialize audio element
   useEffect(() => {
@@ -460,7 +443,7 @@ export function WeddingRoyalVedicWatchView({
                 ["Secs", effectiveCountdown.seconds],
               ].map(([label, value]) => (
                 <div key={label} className="hero-countdown__item">
-                  <strong>{String(value).padStart(2, "0")}</strong>
+                  <strong>{String(Math.max(0, value ?? 0)).padStart(2, "0")}</strong>
                   <span>{label}</span>
                 </div>
               ))}

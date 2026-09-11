@@ -90,3 +90,48 @@ export function utcIsoToDatetimeLocal(utcIso: string, timeZone: string): string 
 
   return `${year}-${month}-${day}T${hour}:${minute}`
 }
+
+/**
+ * Safely parse scheduled time into epoch ms irrespective of visitor browser timezone.
+ * If scheduledAt is an ISO string with timezone (e.g. ends with Z or offset), parses as UTC.
+ * If scheduledAt lacks timezone information, interprets it in the event's configured timezone.
+ */
+export function resolveScheduledEpochMs(scheduledAt: unknown, eventTimezone?: string): number | null {
+  if (!scheduledAt) return null
+  if (scheduledAt instanceof Date) {
+    const t = scheduledAt.getTime()
+    return Number.isNaN(t) ? null : t
+  }
+  if (typeof scheduledAt === "number") {
+    return Number.isNaN(scheduledAt) ? null : scheduledAt
+  }
+  const str = String(scheduledAt).trim()
+  if (!str) return null
+
+  // Has explicit timezone: Z or +HH:mm or -HH:mm
+  if (/(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(str)) {
+    const ms = new Date(str).getTime()
+    if (!Number.isNaN(ms)) return ms
+  }
+
+  // Without timezone: e.g. "2026-09-15T22:53:00" or "2026-09-15 22:53:00"
+  const normalized = str.replace(" ", "T")
+  if (eventTimezone && eventTimezone.trim()) {
+    try {
+      const utcIso = datetimeLocalToUtcIso(normalized, eventTimezone.trim())
+      const ms = new Date(utcIso).getTime()
+      if (!Number.isNaN(ms)) return ms
+    } catch {
+      // fallback
+    }
+  }
+
+  // Treat as UTC by appending Z if missing
+  const withZ = normalized.endsWith("Z") ? normalized : `${normalized}Z`
+  const msZ = new Date(withZ).getTime()
+  if (!Number.isNaN(msZ)) return msZ
+
+  const fallback = new Date(str).getTime()
+  return Number.isNaN(fallback) ? null : fallback
+}
+

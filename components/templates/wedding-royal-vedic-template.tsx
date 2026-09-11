@@ -15,6 +15,7 @@ interface TemplateProps {
   couple1ImageUrl?: string | null
   couple2ImageUrl?: string | null
   photographerLogoUrl?: string | null
+  countdown?: { days: number; hours: number; minutes: number; seconds: number }
 }
 
 export function WeddingRoyalVedicTemplate({
@@ -25,6 +26,7 @@ export function WeddingRoyalVedicTemplate({
   couple1ImageUrl,
   couple2ImageUrl,
   photographerLogoUrl,
+  countdown,
 }: TemplateProps) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false)
   const [envelopeOpening, setEnvelopeOpening] = useState(false)
@@ -318,10 +320,10 @@ export function WeddingRoyalVedicTemplate({
           {/* Countdown */}
           <div className="hero-countdown" aria-label="Time remaining until the wedding day">
             {[
-              ["Days", 157],
-              ["Hours", 4],
-              ["Mins", 30],
-              ["Secs", 42],
+              ["Days", Math.max(0, countdown?.days ?? 0)],
+              ["Hours", Math.max(0, countdown?.hours ?? 0)],
+              ["Mins", Math.max(0, countdown?.minutes ?? 0)],
+              ["Secs", Math.max(0, countdown?.seconds ?? 0)],
             ].map(([label, value]) => (
               <div key={label} className="hero-countdown__item">
                 <strong>{String(value).padStart(2, "0")}</strong>

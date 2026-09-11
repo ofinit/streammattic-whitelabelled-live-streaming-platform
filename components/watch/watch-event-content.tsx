@@ -73,6 +73,7 @@ import {
 } from "@/components/watch/visitor-gate-form"
 import { THE_HEART_GALLERY_BG_URL } from "@/lib/the-heart-template-assets"
 import { parseWatchTemplateData, resolveWatchTemplateId } from "@/lib/watch-template-data"
+import { resolveScheduledEpochMs } from "@/lib/datetime-local-timezone"
 import "@/styles/the-heart-template.css"
 
 const YOUTUBE_VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
@@ -630,9 +631,17 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
 
   // Countdown only when "scheduled page" is enabled (matches event settings / generic countdown page).
   useEffect(() => {
-    if (event?.status !== "scheduled" || !event.scheduledAt || !showScheduledPageEnabled) return
+    if (event?.status !== "scheduled" || !event.scheduledAt || !showScheduledPageEnabled) {
+      setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
     countdownZeroRefetchSentRef.current = false
-    const targetMs = new Date(event.scheduledAt as unknown as string).getTime()
+    const targetMs = resolveScheduledEpochMs(event.scheduledAt, (event as any).timezone)
+    if (!targetMs) {
+      setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
+
     const tick = () => {
       const diff = targetMs - Date.now()
       if (diff <= 0) {
@@ -656,7 +665,7 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [event?.status, event?.scheduledAt, showScheduledPageEnabled, fetchWatchEvent, applyPolledEvent])
+  }, [event?.status, event?.scheduledAt, (event as any)?.timezone, showScheduledPageEnabled, fetchWatchEvent, applyPolledEvent])
 
   const handleShare = async () => {
     const url = window.location.href

@@ -464,15 +464,15 @@ export function WeddingRoyalVedicWatchView({
           ) : null}
         </header>
 
-        {/* Marquee Above Player Card */}
-        {marqueeAbovePlayer ? (
-          <div className="w-full max-w-4xl mx-auto mb-4 px-2 sm:px-4">
-            {marqueeAbovePlayer}
-          </div>
-        ) : null}
-
         {/* Live Stream Player Stage (Inside the Temple Courtyard) */}
         <div className="vedic-stream-container">
+          {/* Marquee Above Player Card */}
+          {marqueeAbovePlayer ? (
+            <div className="w-full mb-1.5 sm:mb-2 px-1">
+              {marqueeAbovePlayer}
+            </div>
+          ) : null}
+
           <div className="vedic-stream-card">
             {/* Ornate Corner Accents */}
             <div className="vedic-stream-corner vedic-stream-corner-tl"><VedicCornerOrnament /></div>
@@ -488,7 +488,7 @@ export function WeddingRoyalVedicWatchView({
 
           {/* Marquee Below Player Card */}
           {marqueeBelowPlayer ? (
-            <div className="w-full max-w-4xl mx-auto mt-4 px-2 sm:px-4">
+            <div className="w-full mt-2 sm:mt-2.5 px-1">
               {marqueeBelowPlayer}
             </div>
           ) : null}

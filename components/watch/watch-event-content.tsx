@@ -3314,7 +3314,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           photographerMarqueeAbovePlayer ? (
             <WatchPhotographerMarquee
               message={photographerMarqueeAbovePlayer}
-              theme={streamMarqueeTheme}
+              theme="transparentBrown"
+              durationSeconds={18}
               className="w-full"
             />
           ) : null
@@ -3323,7 +3324,8 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
           photographerMarqueeBelowPlayer ? (
             <WatchPhotographerMarquee
               message={photographerMarqueeBelowPlayer}
-              theme={streamMarqueeTheme}
+              theme="transparentBrown"
+              durationSeconds={18}
               className="w-full"
             />
           ) : null

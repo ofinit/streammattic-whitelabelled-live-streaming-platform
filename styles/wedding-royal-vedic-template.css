@@ -515,7 +515,7 @@
   z-index: 4;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   column-gap: 6px;
-  margin: 1.25rem auto 0;
+  margin: 1.25rem auto 1.5rem;
   padding: 0;
   width: min(320px, 92vw);
   display: grid;
@@ -570,7 +570,7 @@
   z-index: 10;
   width: 100%;
   max-width: 1080px;
-  margin: 2.25rem auto 0;
+  margin: 1.5rem auto 0;
   padding: 0 1rem;
 }
 

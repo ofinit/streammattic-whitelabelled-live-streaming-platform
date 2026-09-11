@@ -13,9 +13,12 @@ export type WatchPhotographerMarqueeTheme =
   | "traditionalHindu"
   | "corporateTech"
   | "memorial"
+  | "transparentBrown"
 
 function marqueeBarClass(theme: WatchPhotographerMarqueeTheme): string {
   switch (theme) {
+    case "transparentBrown":
+      return "border-none bg-transparent text-[#4a2211] shadow-none"
     case "wedding":
       return "border border-amber-800/70 bg-amber-950 text-amber-50 shadow-lg"
     case "theHeart":
@@ -44,13 +47,18 @@ export function WatchPhotographerMarquee({
   message,
   theme,
   className,
+  durationSeconds = 20,
 }: {
   message: string
   theme: WatchPhotographerMarqueeTheme
   className?: string
+  durationSeconds?: number
 }) {
   const text = message.trim()
   if (!text) return null
+
+  const repeats = text.length < 30 ? 4 : text.length < 60 ? 3 : 2
+  const items = Array.from({ length: repeats }, (_, i) => i)
 
   return (
     <div
@@ -74,7 +82,7 @@ export function WatchPhotographerMarquee({
         .watch-photographer-marquee-track {
           display: flex;
           width: max-content;
-          animation: watchPhotographerMarqueeSlide 52s linear infinite;
+          animation: watchPhotographerMarqueeSlide 20s linear infinite;
         }
         @media (prefers-reduced-motion: reduce) {
           .watch-photographer-marquee-track {
@@ -95,16 +103,35 @@ export function WatchPhotographerMarquee({
           animation-play-state: paused;
         }
       `}</style>
-      <div className="watch-photographer-marquee-track py-3">
-        <span className="inline-block whitespace-nowrap px-10 text-center font-sans text-base font-semibold leading-snug tracking-wide md:text-lg">
-          {text}
-        </span>
-        <span
+      <div
+        className="watch-photographer-marquee-track py-2"
+        style={{
+          animationDuration: `${durationSeconds}s`,
+        }}
+      >
+        <div className="flex shrink-0 items-center">
+          {items.map((i) => (
+            <span
+              key={i}
+              className="inline-block whitespace-nowrap px-8 text-center font-sans text-base font-semibold leading-snug tracking-wide md:text-lg"
+            >
+              {text}
+            </span>
+          ))}
+        </div>
+        <div
           aria-hidden
-          className="watch-photographer-marquee-duplicate inline-block whitespace-nowrap px-10 text-center font-sans text-base font-semibold leading-snug tracking-wide md:text-lg"
+          className="watch-photographer-marquee-duplicate flex shrink-0 items-center"
         >
-          {text}
-        </span>
+          {items.map((i) => (
+            <span
+              key={i}
+              className="inline-block whitespace-nowrap px-8 text-center font-sans text-base font-semibold leading-snug tracking-wide md:text-lg"
+            >
+              {text}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   )

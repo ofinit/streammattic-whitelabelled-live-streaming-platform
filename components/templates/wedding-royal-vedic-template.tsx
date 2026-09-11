@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Play, Volume2, VolumeX, Calendar, MapPin, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { getDefaultTemplateHeroBackdropUrl } from "@/lib/template-default-media"
 import "@/styles/wedding-royal-vedic-template.css"
 
@@ -319,7 +320,12 @@ export function WeddingRoyalVedicTemplate({
 
           {/* Event Subtitle right below Raju Weds Avantika */}
           {eventSubtitle ? (
-            <p className="font-vedic-cinzel text-xs sm:text-sm uppercase tracking-[0.25em] text-[#8b6508] font-semibold mt-4 mb-2 text-center max-w-xl mx-auto">
+            <p
+              className={cn(
+                "font-vedic-cinzel text-xs sm:text-sm uppercase tracking-[0.25em] text-[#8b6508] font-semibold mt-4 text-center max-w-xl mx-auto",
+                countdown ? "mb-16 sm:mb-20" : "mb-6"
+              )}
+            >
               {eventSubtitle}
             </p>
           ) : null}

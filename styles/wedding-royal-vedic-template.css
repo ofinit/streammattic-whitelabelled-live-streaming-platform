@@ -361,7 +361,7 @@
   mix-blend-mode: multiply;
   width: 86px;
   height: 72px;
-  margin: 0 auto 6px;
+  margin: 1.5rem auto 1.5rem;
   display: block;
   filter: drop-shadow(0 2px 4px rgba(61, 27, 9, 0.15));
 }
@@ -370,7 +370,8 @@
   .invitation-hero__monogram {
     width: 96px;
     height: 78px;
-    margin-bottom: 8px;
+    margin-top: 2.75rem;
+    margin-bottom: 2.25rem;
   }
 }
 

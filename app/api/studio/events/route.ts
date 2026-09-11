@@ -187,6 +187,7 @@ export async function POST(req: NextRequest) {
       youtubeUrl, embedCode, simulcastConfig, timezone, showScheduledPage,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, ogShareImageUrl, photographerContact,
+      couple1ImageUrl, couple2ImageUrl,
       validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
     } = body
 
@@ -358,6 +359,8 @@ export async function POST(req: NextRequest) {
 
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS couple1_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS couple2_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS player_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photo_gallery_urls JSONB DEFAULT '[]'`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_logo_url TEXT`.catch(() => {})
@@ -385,7 +388,7 @@ export async function POST(req: NextRequest) {
         youtube_url, embed_code, status, scheduled_at,
         is_password_protected, event_password, allow_chat, allow_reactions, capture_visitor_data,
         simulcast_config, slug, timezone, show_scheduled_page, template_data,
-        validity_expires_at, hero_image_url, header_image_url, player_image_url, photo_gallery_urls,
+        validity_expires_at, hero_image_url, header_image_url, couple1_image_url, couple2_image_url, player_image_url, photo_gallery_urls,
         photographer_logo_url, og_share_image_url, photographer_contact, crew_pin_hash, use_custom_domain,
         rtmp_provider, rtmp_provider_stream_id, rtmp_provider_payload
       ) VALUES (
@@ -403,7 +406,9 @@ export async function POST(req: NextRequest) {
         ${showScheduledPage ?? false},
         ${templateDataJson}::jsonb,
         ${validityExpiresAtValue},
-        ${heroImageUrl || null}, ${headerImageUrl || null}, ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
+        ${heroImageUrl || null}, ${headerImageUrl || null},
+        ${couple1ImageUrl ? String(couple1ImageUrl).trim() : null}, ${couple2ImageUrl ? String(couple2ImageUrl).trim() : null},
+        ${playerImageUrl || null}, ${photoGalleryJson}::jsonb,
         ${photographerLogoUrl || null}, ${ogShareImageUrl || null}, ${photographerContactJson}::jsonb, ${crewPinHash},
         ${user.role === 'studio'},
         ${rtmpProvider ?? "srs"},
@@ -524,6 +529,7 @@ export async function PUT(req: NextRequest) {
       isPasswordProtected, password, allowChat, allowReactions, captureVisitorData, timezone, showScheduledPage, showRecording,
       additionalDates, templateId, templateData: rawTemplateData,
       heroImageUrl, headerImageUrl, playerImageUrl, photoGalleryUrls, photographerLogoUrl, ogShareImageUrl, photographerContact,
+      couple1ImageUrl, couple2ImageUrl,
       validityExpiresAt, validityDays, crewPin, rtmpUrl: bodyRtmpUrl, streamKey: bodyStreamKey,
       streamType, youtubeUrl, embedCode, simulcastConfig,
       isSuspended,
@@ -536,6 +542,8 @@ export async function PUT(req: NextRequest) {
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS show_recording BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS capture_visitor_data BOOLEAN NOT NULL DEFAULT false`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS header_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS couple1_image_url TEXT`.catch(() => {})
+    await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS couple2_image_url TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS description TEXT`.catch(() => {})
     await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS rtmp_provider TEXT NOT NULL DEFAULT 'srs'`.catch(() => {})
@@ -838,6 +846,8 @@ export async function PUT(req: NextRequest) {
 
     const finalHeroImageUrl = resolveImageUrlColumn(heroImageUrl, prev.hero_image_url)
     const finalHeaderImageUrl = resolveImageUrlColumn(headerImageUrl, prev.header_image_url)
+    const finalCouple1ImageUrl = resolveImageUrlColumn(couple1ImageUrl, prev.couple1_image_url)
+    const finalCouple2ImageUrl = resolveImageUrlColumn(couple2ImageUrl, prev.couple2_image_url)
     const finalPlayerImageUrl = resolveImageUrlColumn(playerImageUrl, prev.player_image_url)
     const finalPhotographerLogoUrl = resolveImageUrlColumn(photographerLogoUrl, prev.photographer_logo_url)
     const finalOgShareImageUrl = resolveImageUrlColumn(ogShareImageUrl, prev.og_share_image_url)
@@ -989,6 +999,8 @@ export async function PUT(req: NextRequest) {
         validity_expires_at = COALESCE(${validityExpiresAtValue ?? null}, validity_expires_at),
         hero_image_url = ${finalHeroImageUrl},
         header_image_url = ${finalHeaderImageUrl},
+        couple1_image_url = ${finalCouple1ImageUrl},
+        couple2_image_url = ${finalCouple2ImageUrl},
         player_image_url = ${finalPlayerImageUrl},
         photo_gallery_urls = ${finalPhotoGallery}::jsonb,
         photographer_logo_url = ${finalPhotographerLogoUrl},

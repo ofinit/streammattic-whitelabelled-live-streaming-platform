@@ -69,6 +69,56 @@ function VedicLeafMotif() {
   )
 }
 
+function VedicPortraitFrame({
+  src,
+  alt,
+}: {
+  src: string
+  alt: string
+}) {
+  return (
+    <div className="relative w-28 h-28 sm:w-36 sm:h-36 mx-auto mb-4 flex items-center justify-center">
+      {/* Warm Ambient Gold Glow */}
+      <div className="absolute -inset-2 rounded-full bg-gradient-to-tr from-[#f3db9f] via-[#d4a853] to-[#8c6218] opacity-35 blur-md pointer-events-none" />
+
+      {/* Ornate Gold Filigree Halo SVG Ring */}
+      <svg
+        viewBox="0 0 160 160"
+        className="absolute -inset-2.5 w-[calc(100%+20px)] h-[calc(100%+20px)] text-[#c9a46a] pointer-events-none"
+        fill="none"
+      >
+        <circle cx="80" cy="80" r="76" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 3.5" opacity="0.85" />
+        <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
+        {/* Cardinal Gold Jewels */}
+        <circle cx="80" cy="4" r="3" fill="#8b6508" stroke="#fdfbf7" strokeWidth="1" />
+        <circle cx="80" cy="156" r="3" fill="#8b6508" stroke="#fdfbf7" strokeWidth="1" />
+        <circle cx="4" cy="80" r="3" fill="#8b6508" stroke="#fdfbf7" strokeWidth="1" />
+        <circle cx="156" cy="80" r="3" fill="#8b6508" stroke="#fdfbf7" strokeWidth="1" />
+        {/* Diagonal Minor Accent Beads */}
+        <circle cx="26" cy="26" r="1.8" fill="#8b6508" opacity="0.75" />
+        <circle cx="134" cy="26" r="1.8" fill="#8b6508" opacity="0.75" />
+        <circle cx="26" cy="134" r="1.8" fill="#8b6508" opacity="0.75" />
+        <circle cx="134" cy="134" r="1.8" fill="#8b6508" opacity="0.75" />
+      </svg>
+
+      {/* Triple Layered Metallic Royal Frame */}
+      <div className="relative w-full h-full rounded-full p-[3px] bg-gradient-to-tr from-[#8a5b12] via-[#f7df9e] via-40% to-[#7a4c0a] shadow-[0_8px_24px_rgba(70,40,15,0.22)]">
+        <div className="w-full h-full rounded-full p-[2px] bg-[#fffaf1]">
+          <div className="w-full h-full rounded-full p-[2px] bg-gradient-to-br from-[#c99a42] to-[#7c5011]">
+            <div className="w-full h-full rounded-full overflow-hidden relative shadow-[inset_0_2px_6px_rgba(0,0,0,0.25)] bg-[#f7f0e3]">
+              <img
+                src={src}
+                alt={alt}
+                className="w-full h-full object-cover rounded-full transform transition-transform duration-500 hover:scale-105"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function WeddingRoyalVedicWatchView({
   globalHeaderImage,
   heroImageUrl,
@@ -538,17 +588,11 @@ export function WeddingRoyalVedicWatchView({
           {/* Dual Column: Bride & Groom */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative">
             {/* Groom Card */}
-            <div className="vedic-card text-center">
+            <div className="vedic-card text-center p-6 sm:p-8">
               {couple1ImageUrl ? (
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
-                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
-                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
-                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
-                    <img src={couple1ImageUrl} alt={groomName} className="w-full h-full object-cover rounded-full" />
-                  </div>
-                </div>
+                <VedicPortraitFrame src={couple1ImageUrl} alt={groomName} />
               ) : null}
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
+              <h3 className="font-vedic-bodoni text-2xl sm:text-3xl font-bold text-[#2a080c]">
                 {groomName}
               </h3>
             </div>
@@ -559,17 +603,11 @@ export function WeddingRoyalVedicWatchView({
             </div>
 
             {/* Bride Card */}
-            <div className="vedic-card text-center">
+            <div className="vedic-card text-center p-6 sm:p-8">
               {couple2ImageUrl ? (
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-4">
-                  <div className="absolute inset-0 rounded-full border-2 border-[#c9a46a] shadow-md" />
-                  <div className="absolute inset-1 rounded-full border border-[#e8d3a7]" />
-                  <div className="w-full h-full p-1.5 rounded-full overflow-hidden">
-                    <img src={couple2ImageUrl} alt={brideName} className="w-full h-full object-cover rounded-full" />
-                  </div>
-                </div>
+                <VedicPortraitFrame src={couple2ImageUrl} alt={brideName} />
               ) : null}
-              <h3 className="font-vedic-bodoni text-2xl font-bold text-[#2a080c]">
+              <h3 className="font-vedic-bodoni text-2xl sm:text-3xl font-bold text-[#2a080c]">
                 {brideName}
               </h3>
             </div>

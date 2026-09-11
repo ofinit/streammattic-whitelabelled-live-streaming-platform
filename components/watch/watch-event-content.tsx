@@ -1463,16 +1463,32 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
   const heroImageUrl =
     (evRawTop.heroImageUrl as string | undefined) ||
     (evRawTop.heroImage as string | undefined)
-  const couple1ImageUrl =
-    (evRawTop.couple1ImageUrl as string | undefined) ||
-    ((templateData as Record<string, unknown> | undefined)?.couple1ImageUrl as string | undefined) ||
-    (evRawTop.couple1_image_url as string | undefined) ||
-    null
-  const couple2ImageUrl =
-    (evRawTop.couple2ImageUrl as string | undefined) ||
-    ((templateData as Record<string, unknown> | undefined)?.couple2ImageUrl as string | undefined) ||
-    (evRawTop.couple2_image_url as string | undefined) ||
-    null
+  const getFirstValidUrl = (...candidates: unknown[]): string | null => {
+    for (const c of candidates) {
+      if (typeof c === "string" && c.trim().length > 0) return c.trim()
+    }
+    return null
+  }
+  const couple1ImageUrl = getFirstValidUrl(
+    evRawTop.couple1ImageUrl,
+    evRawTop.couple1_image_url,
+    (templateData as any)?.couple1ImageUrl,
+    (templateData as any)?.couple1_image_url,
+    (templateData as any)?.couple1Photo,
+    (evRawTop as any)?.couple1Photo,
+    (event as any)?.couple1ImageUrl,
+    (event as any)?.couple1_image_url
+  )
+  const couple2ImageUrl = getFirstValidUrl(
+    evRawTop.couple2ImageUrl,
+    evRawTop.couple2_image_url,
+    (templateData as any)?.couple2ImageUrl,
+    (templateData as any)?.couple2_image_url,
+    (templateData as any)?.couple2Photo,
+    (evRawTop as any)?.couple2Photo,
+    (event as any)?.couple2ImageUrl,
+    (event as any)?.couple2_image_url
+  )
   const playerImageUrl = evRawTop.playerImageUrl as string | undefined
   const photoGalleryUrls = (evRawTop.photoGalleryUrls as string[] | undefined) || []
   const photographerLogoUrl = evRawTop.photographerLogoUrl as string | undefined

@@ -56,8 +56,42 @@ async function sql(
     }
   }
 
+  if (params.length === 0 && IDEMPOTENT_DDL.test(text)) {
+    return runIdempotentDdl(text)
+  }
+
   const result = await getPool().query(text, params)
   return (result.rows || []) as Record<string, unknown>[]
+}
+
+/**
+ * Routes call `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` / `CREATE ... IF NOT EXISTS` per request.
+ * Even when nothing changes, ALTER TABLE takes an ACCESS EXCLUSIVE lock; if any session holds a lock on
+ * the table (e.g. an open psql transaction), the ALTER waits and every later query on that table queues
+ * behind it — freezing the whole app. So: run each such statement once per process, with a short
+ * lock_timeout so it fails fast instead of queueing. Failures are not cached and retry next call.
+ */
+const IDEMPOTENT_DDL =
+  /^\s*(ALTER\s+TABLE\b[\s\S]*\bIF\s+NOT\s+EXISTS\b|CREATE\s+(UNIQUE\s+)?(TABLE|INDEX)\s+IF\s+NOT\s+EXISTS\b)/i
+const DDL_LOCK_TIMEOUT = process.env.PG_DDL_LOCK_TIMEOUT || "3s"
+const completedDdl = new Set<string>()
+
+async function runIdempotentDdl(text: string): Promise<Record<string, unknown>[]> {
+  if (completedDdl.has(text)) return []
+  const client = await getPool().connect()
+  try {
+    await client.query("BEGIN")
+    await client.query("SELECT set_config('lock_timeout', $1, true)", [DDL_LOCK_TIMEOUT])
+    await client.query(text)
+    await client.query("COMMIT")
+    completedDdl.add(text)
+    return []
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {})
+    throw e
+  } finally {
+    client.release()
+  }
 }
 
 /** 

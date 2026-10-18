@@ -1,6 +1,22 @@
 import { getDb } from "@/lib/db"
 
-export async function ensureAdminUserEngagementSchema() {
+let schemaPromise: Promise<void> | null = null
+
+/**
+ * Runs once per process. Schema drift is non-fatal: if the DDL can't get its locks (lock_timeout),
+ * log and let the caller's queries proceed rather than failing the admin page.
+ */
+export async function ensureAdminUserEngagementSchema(): Promise<void> {
+  if (!schemaPromise) {
+    schemaPromise = applyAdminUserEngagementSchema().catch((err: unknown) => {
+      schemaPromise = null
+      console.warn("[admin-user-engagement-schema] ensure failed; will retry", err)
+    })
+  }
+  await schemaPromise
+}
+
+async function applyAdminUserEngagementSchema() {
   const sql = getDb()
 
   await sql`

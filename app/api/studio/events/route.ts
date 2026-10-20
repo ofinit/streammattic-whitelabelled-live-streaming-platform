@@ -759,6 +759,10 @@ export async function PUT(req: NextRequest) {
             error: `Insufficient ${resolvedStreamType} credits for this update. Required: ${incrementalNeed}.`,
           }, { status: 400 })
         }
+        await sql`
+          INSERT INTO credit_deductions (user_id, event_id, stream_type, amount, reason)
+          VALUES (${targetUserId}, ${id}, ${resolvedStreamType}, ${incrementalNeed}, 'Event update')
+        `
       }
     }
 

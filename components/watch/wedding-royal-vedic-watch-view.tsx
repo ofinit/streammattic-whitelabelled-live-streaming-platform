@@ -157,20 +157,17 @@ export function WeddingRoyalVedicWatchView({
 
   const effectiveAudioUrl = audioUrl?.trim() || "/templates/vedic-heritage/music.mp3"
 
-  // Couple names parsing
-  const groomName = coupleParts && coupleParts.length > 0 ? coupleParts[0].trim() : coupleHero.split(/&|weds|and/i)[0]?.trim() || "Aarav Mehta"
-  const brideName = coupleParts && coupleParts.length > 1 ? coupleParts[1].trim() : coupleHero.split(/&|weds|and/i)[1]?.trim() || "Kavya Rao"
+  // Couple names: only from the event. Split on whole-word separators ("Anand weds Priya" must not split
+  // inside "Anand"); a title with no separator (e.g. "Srivats with Valli Sudha") renders as a single name.
+  const coupleSplit = coupleHero.trim().match(/^(.+?)(?:\s*&\s*|\s+(?:weds|and|\+)\s+)(.+)$/i)
+  const groomName =
+    coupleParts && coupleParts.length > 1 ? coupleParts[0].trim() : coupleSplit ? coupleSplit[1].trim() : coupleHero.trim()
+  const brideName = coupleParts && coupleParts.length > 1 ? coupleParts[1].trim() : coupleSplit ? coupleSplit[2].trim() : ""
 
-  const groomInitial = groomName ? groomName[0] : "A"
-  const groomRest = groomName ? groomName.slice(1) : "arav Mehta"
-  const brideInitial = brideName ? brideName[0] : "K"
-  const brideRest = brideName ? brideName.slice(1) : "avya Rao"
-
-  const monogram = useMemo(() => {
-    const g = groomName ? groomName[0].toUpperCase() : "A"
-    const b = brideName ? brideName[0].toUpperCase() : "K"
-    return `${g}${b}`
-  }, [groomName, brideName])
+  const groomInitial = groomName.charAt(0)
+  const groomRest = groomName.slice(1)
+  const brideInitial = brideName.charAt(0)
+  const brideRest = brideName.slice(1)
 
   const effectiveCountdown = countdown || { days: 0, hours: 0, minutes: 0, seconds: 0 }
 
@@ -357,14 +354,18 @@ export function WeddingRoyalVedicWatchView({
                   <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl text-[#68401A] font-semibold tracking-[0.02em] leading-tight text-center w-full pb-1">
                     {groomName}
                   </h1>
-                  <div className="w-full flex justify-center items-center my-1 sm:my-1.5">
-                    <span className="font-cinzel text-[11px] sm:text-xs tracking-[0.34em] text-[#A56B18] font-semibold uppercase">
-                      And
-                    </span>
-                  </div>
-                  <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl text-[#68401A] font-semibold tracking-[0.02em] leading-tight text-center w-full pt-0.5">
-                    {brideName}
-                  </h1>
+                  {brideName ? (
+                    <>
+                      <div className="w-full flex justify-center items-center my-1 sm:my-1.5">
+                        <span className="font-cinzel text-[11px] sm:text-xs tracking-[0.34em] text-[#A56B18] font-semibold uppercase">
+                          And
+                        </span>
+                      </div>
+                      <h1 className="font-cormorant text-4xl sm:text-5xl md:text-6xl text-[#68401A] font-semibold tracking-[0.02em] leading-tight text-center w-full pt-0.5">
+                        {brideName}
+                      </h1>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -424,7 +425,7 @@ export function WeddingRoyalVedicWatchView({
           3. Hero Banner & Live Stream Stage:
              Vedic Temple Courtyard extending down to and behind the Player
           ---------------------------------------------------------------------- */}
-      <section className="invitation-hero" aria-label={`Wedding celebration of ${groomName} and ${brideName}`}>
+      <section className="invitation-hero" aria-label={brideName ? `Wedding celebration of ${groomName} and ${brideName}` : groomName}>
         {/* Vedic Temple Panorama backdrop */}
         {(() => {
           const isDefaultHero =
@@ -496,14 +497,18 @@ export function WeddingRoyalVedicWatchView({
             {groomRest}
           </h1>
 
-          <div className="invitation-hero__ampersand">
-            Weds
-          </div>
+          {brideName ? (
+            <>
+              <div className="invitation-hero__ampersand">
+                Weds
+              </div>
 
-          <h2 className="invitation-hero__name invitation-hero__bride">
-            <span className="hero-name__initial">{brideInitial}</span>
-            {brideRest}
-          </h2>
+              <h2 className="invitation-hero__name invitation-hero__bride">
+                <span className="hero-name__initial">{brideInitial}</span>
+                {brideRest}
+              </h2>
+            </>
+          ) : null}
 
           {/* Event Subtitle right below Raju Weds Avantika */}
           {eventSubtitle ? (
@@ -627,7 +632,7 @@ export function WeddingRoyalVedicWatchView({
           </p>
 
           {/* Dual Column: Bride & Groom */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative">
+          <div className={`grid grid-cols-1 ${brideName ? "md:grid-cols-2" : "max-w-xl mx-auto"} gap-8 md:gap-12 items-center relative`}>
             {/* Groom Card */}
             <div className="vedic-card text-center p-6 sm:p-8">
               {couple1ImageUrl ? (
@@ -638,20 +643,24 @@ export function WeddingRoyalVedicWatchView({
               </h3>
             </div>
 
-            {/* Center Calligraphic '&' on Desktop */}
-            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-vedic-script text-4xl sm:text-5xl text-[#8b6508] items-center justify-center pointer-events-none select-none">
-              &amp;
-            </div>
+            {brideName ? (
+              <>
+                {/* Center Calligraphic '&' on Desktop */}
+                <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 font-vedic-script text-4xl sm:text-5xl text-[#8b6508] items-center justify-center pointer-events-none select-none">
+                  &amp;
+                </div>
 
-            {/* Bride Card */}
-            <div className="vedic-card text-center p-6 sm:p-8">
-              {couple2ImageUrl ? (
-                <VedicPortraitFrame src={couple2ImageUrl} alt={brideName} />
-              ) : null}
-              <h3 className="font-vedic-bodoni text-2xl sm:text-3xl font-bold text-[#2a080c]">
-                {brideName}
-              </h3>
-            </div>
+                {/* Bride Card */}
+                <div className="vedic-card text-center p-6 sm:p-8">
+                  {couple2ImageUrl ? (
+                    <VedicPortraitFrame src={couple2ImageUrl} alt={brideName} />
+                  ) : null}
+                  <h3 className="font-vedic-bodoni text-2xl sm:text-3xl font-bold text-[#2a080c]">
+                    {brideName}
+                  </h3>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </section>

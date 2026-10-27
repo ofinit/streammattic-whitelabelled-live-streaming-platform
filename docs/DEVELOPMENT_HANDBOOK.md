@@ -173,6 +173,7 @@ These files define HTTP handlers; URL shape follows Next.js dynamic segments.
 | `app/api/events/[id]/analytics/route.ts` | `/api/events/[id]/analytics` |
 | `app/api/events/[id]/route.ts` | `/api/events/[id]` |
 | `app/api/events/route.ts` | `/api/events` |
+| `app/api/events/whatsapp-default/route.ts` | `/api/events/whatsapp-default` |
 | `app/api/favicon/resolve/route.ts` | `/api/favicon/resolve` |
 | `app/api/generate-image/route.ts` | `/api/generate-image` |
 | `app/api/generate-token/route.ts` | `/api/generate-token` |

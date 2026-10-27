@@ -25,6 +25,7 @@ import {
   Calendar,
   Lock,
   MessageSquare,
+  MessageCircle,
   Heart,
   Copy,
   Check,
@@ -94,6 +95,12 @@ import { datetimeLocalToUtcIso, utcIsoToDatetimeLocal } from "@/lib/datetime-loc
 import { formatDateTime } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
+import {
+  DEFAULT_WHATSAPP_COUNTRY_CODE,
+  WHATSAPP_COUNTRY_CODES,
+  parseEventWhatsAppConfig,
+  whatsAppNumberError,
+} from "@/lib/event-whatsapp"
 
 /** Validity + distinct extra event days — must stay in sync with the credit-check effect. */
 function computeCreditPreviewNeed(
@@ -715,7 +722,16 @@ export function EventFormDialog({
     embedCode?: string
     password?: string
     crewPin?: string
+    whatsapp?: string
   }>({})
+
+  // Floating WhatsApp button on the watch page (saved in template_data.whatsapp)
+  const [whatsApp, setWhatsApp] = useState({
+    enabled: true,
+    countryCode: DEFAULT_WHATSAPP_COUNTRY_CODE,
+    number: "",
+  })
+  const whatsAppPrefillKeyRef = useRef<string | null>(null)
 
   // Multi-date state
   type ExtraDate = { id: string; label: string; scheduledAt: string; timezone?: string }
@@ -1326,6 +1342,14 @@ export function EventFormDialog({
             "",
         )
         setPhotographerContact(parsePhotographerContact(ev.photographerContact))
+        {
+          const wa = parseEventWhatsAppConfig((ev.templateData as Record<string, unknown> | undefined)?.whatsapp)
+          setWhatsApp({
+            enabled: wa.enabled !== false,
+            countryCode: wa.countryCode || DEFAULT_WHATSAPP_COUNTRY_CODE,
+            number: wa.number || "",
+          })
+        }
         setCrewPin("") // never load PIN
         setIsCrewPinEnabled(!!(ev.hasCrewPin ?? ev.crew_pin_hash))
         // Pre-fill slug when editing
@@ -1373,6 +1397,7 @@ export function EventFormDialog({
         setCouple1ImageUrl("")
         setCouple2ImageUrl("")
         setPhotographerContact({})
+        setWhatsApp({ enabled: true, countryCode: DEFAULT_WHATSAPP_COUNTRY_CODE, number: "" })
         {
           const hasTier90 = hasEnabled90DayTier(validityExtSettings)
           if (isYoutubeEmbedFormType(initialStreamType) && hasTier90) {
@@ -1430,6 +1455,34 @@ export function EventFormDialog({
         : String((initialStreamType ?? "") ?? "")
       prevValidityStreamGroupRef.current = streamValidityGroup(hydratedStreamTypeForRef)
   }, [open, event, showCredentialsScreen, initialStreamType, initialTab])
+
+  // Pre-fill the WhatsApp number with the owner's studio/streamer number when the event has none saved.
+  useEffect(() => {
+    if (!open) {
+      whatsAppPrefillKeyRef.current = null
+      return
+    }
+    const ownerId = (event as { userId?: string } | null | undefined)?.userId || creditsUserId || ""
+    const key = `${event?.id ?? "new"}:${ownerId}`
+    if (whatsAppPrefillKeyRef.current === key) return
+    whatsAppPrefillKeyRef.current = key
+    let cancelled = false
+    const qs = ownerId ? `?userId=${encodeURIComponent(ownerId)}` : ""
+    fetch(`/api/events/whatsapp-default${qs}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { countryCode?: string | null; number?: string | null } | null) => {
+        if (cancelled || !data?.number) return
+        setWhatsApp((prev) =>
+          prev.number.trim()
+            ? prev
+            : { ...prev, countryCode: data.countryCode || DEFAULT_WHATSAPP_COUNTRY_CODE, number: data.number as string },
+        )
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open, event, creditsUserId])
 
   // When stream type crosses ingest ↔ embed, reset validity (rules differ; avoids stale dates)
   useEffect(() => {
@@ -1899,7 +1952,7 @@ export function EventFormDialog({
     e.preventDefault()
 
     // Validate mandatory fields
-    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string; password?: string; crewPin?: string } = {}
+    const errors: { title?: string; slug?: string; scheduledAt?: string; embedCode?: string; password?: string; crewPin?: string; whatsapp?: string } = {}
     if (!formData.title.trim()) errors.title = "Event title is required"
     if (!slug.trim()) errors.slug = "Event URL is required"
     else if (slugStatus === "taken" || slugStatus === "invalid") errors.slug = slugError
@@ -1936,13 +1989,17 @@ export function EventFormDialog({
     if (isCrewPinEnabled && !crewPin.trim() && !(event as any)?.hasCrewPin) {
       errors.crewPin = "Enter a crew PIN"
     }
+    if (whatsApp.enabled) {
+      const waError = whatsAppNumberError(whatsApp.countryCode, whatsApp.number)
+      if (waError) errors.whatsapp = waError
+    }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       if (errors.title || errors.slug || errors.scheduledAt) {
         setActiveTab("details")
       } else if (errors.embedCode || errors.crewPin) {
         setActiveTab("stream")
-      } else if (errors.password) {
+      } else if (errors.password || errors.whatsapp) {
         setActiveTab("settings")
       } else {
         setActiveTab("details")
@@ -2001,6 +2058,11 @@ export function EventFormDialog({
         templateId: formData.templateId || "tpl-default",
         couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
         couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
+        whatsapp: {
+          enabled: whatsApp.enabled,
+          countryCode: whatsApp.countryCode,
+          number: whatsApp.number.trim(),
+        },
       },
       couple1ImageUrl: couple1ImageUrl.trim() ? couple1ImageUrl.trim() : null,
       couple2ImageUrl: couple2ImageUrl.trim() ? couple2ImageUrl.trim() : null,
@@ -4080,6 +4142,75 @@ export function EventFormDialog({
                     ) : null}
                   </div>
                 )}
+
+                <div className="p-3 rounded-lg border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">WhatsApp button</p>
+                        <p className="text-xs text-muted-foreground">
+                          Floating button on the event page — viewers message this number with the event link
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={whatsApp.enabled}
+                      onCheckedChange={(checked) => {
+                        setWhatsApp((prev) => ({ ...prev, enabled: checked }))
+                        if (fieldErrors.whatsapp) setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }))
+                      }}
+                      aria-label="Show WhatsApp button"
+                    />
+                  </div>
+                  {whatsApp.enabled && (
+                    <div className="space-y-2 pl-8">
+                      <Label htmlFor="whatsapp-number">WhatsApp number</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={whatsApp.countryCode}
+                          onValueChange={(code) => {
+                            setWhatsApp((prev) => ({ ...prev, countryCode: code }))
+                            if (fieldErrors.whatsapp) setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }))
+                          }}
+                        >
+                          <SelectTrigger className="w-[110px] shrink-0" aria-label="Country code">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {WHATSAPP_COUNTRY_CODES.map((c) => (
+                              <SelectItem key={c.code} value={c.code}>
+                                +{c.code} {c.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          id="whatsapp-number"
+                          type="tel"
+                          inputMode="tel"
+                          value={whatsApp.number}
+                          onChange={(e) => {
+                            setWhatsApp((prev) => ({ ...prev, number: e.target.value }))
+                            if (fieldErrors.whatsapp) setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }))
+                          }}
+                          placeholder="98765 43210"
+                          className={fieldErrors.whatsapp ? "border-destructive bg-destructive/5" : undefined}
+                        />
+                      </div>
+                      {fieldErrors.whatsapp ? (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3 shrink-0" />
+                          {fieldErrors.whatsapp}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Pre-filled from your studio/profile number. Leave empty to use it automatically.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-3">

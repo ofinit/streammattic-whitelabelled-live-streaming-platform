@@ -3,6 +3,7 @@ import { getDb, toCamel } from "@/lib/db"
 import { resolveFaviconForWatchEvent, resolveStudioUserIdForEventOwner } from "@/lib/favicon-resolve"
 import { normalizeWatchEventTemplateFields } from "@/lib/watch-template-data"
 import { getPlatformSetting } from "@/lib/db-queries"
+import { getOwnerWhatsAppRaw, resolveEventWhatsAppDigits } from "@/lib/event-whatsapp"
 
 /** Crawlers and misrouted probes hit `/api/watch/robots.txt` etc. — not event slugs. */
 const WATCH_EVENT_ID_SKIP = new Set(
@@ -143,6 +144,15 @@ export async function GET(
     const crewPinDisplayMode =
       crewPinDisplayRaw === "template_bottom" ? "template_bottom" : "crew_page"
     eventRow.crewPinDisplayMode = crewPinDisplayMode
+
+    // Floating WhatsApp button: event's own number, else the owner's default. Only final digits are exposed.
+    const ownerWhatsAppRaw = ownerId
+      ? await getOwnerWhatsAppRaw(sql, String(ownerId)).catch((e) => {
+          console.warn(`[api/watch/[eventId]] WhatsApp owner lookup failed:`, e instanceof Error ? e.message : e)
+          return null
+        })
+      : null
+    eventRow.whatsappDigits = resolveEventWhatsAppDigits(eventRow.templateData?.whatsapp, ownerWhatsAppRaw)
 
     const jsonHeaders = {
       "Cache-Control": "private, no-store, max-age=0, must-revalidate",

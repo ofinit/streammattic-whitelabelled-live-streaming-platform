@@ -75,6 +75,7 @@ import { THE_HEART_GALLERY_BG_URL } from "@/lib/the-heart-template-assets"
 import { parseWatchTemplateData, resolveWatchTemplateId } from "@/lib/watch-template-data"
 import { resolveScheduledEpochMs } from "@/lib/datetime-local-timezone"
 import { resolveStudioDomain } from "@/lib/studio-domain-resolve"
+import { FloatingWhatsAppButton, type FloatingWhatsAppTarget } from "./floating-whatsapp-button"
 import "@/styles/the-heart-template.css"
 
 const YOUTUBE_VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
@@ -547,7 +548,24 @@ interface BirthdayConfettiPiece {
   color: string
 }
 
+/** Every template renders inside this wrapper, so the floating WhatsApp button lives in one place. */
 export function WatchEventContent({ eventId }: { eventId: string }) {
+  const [whatsAppTarget, setWhatsAppTarget] = useState<FloatingWhatsAppTarget | null>(null)
+  return (
+    <>
+      <WatchEventContentInner eventId={eventId} onWhatsAppTargetChange={setWhatsAppTarget} />
+      <FloatingWhatsAppButton target={whatsAppTarget} />
+    </>
+  )
+}
+
+function WatchEventContentInner({
+  eventId,
+  onWhatsAppTargetChange,
+}: {
+  eventId: string
+  onWhatsAppTargetChange: (target: FloatingWhatsAppTarget | null) => void
+}) {
   const [event, setEvent] = useState<LiveEvent | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPasswordProtected, setIsPasswordProtected] = useState(false)
@@ -1159,6 +1177,21 @@ export function WatchEventContent({ eventId }: { eventId: string }) {
       setFloatingEmojis((prev) => prev.filter((e) => !newEmojis.some((n) => n.id === e.id)))
     }, 3000)
   }
+
+  // Floating WhatsApp button: hidden while loading, for suspended events, and behind visitor/password gates.
+  const whatsAppEv = event as unknown as Record<string, unknown> | null
+  const whatsAppDigits = typeof whatsAppEv?.whatsappDigits === "string" ? whatsAppEv.whatsappDigits : ""
+  const whatsAppTitle = typeof whatsAppEv?.title === "string" ? whatsAppEv.title : ""
+  const whatsAppGated =
+    !whatsAppEv ||
+    whatsAppEv.isSuspended === true ||
+    ((whatsAppEv.captureVisitorData === true || whatsAppEv.capture_visitor_data === true) && !visitorGateComplete) ||
+    (isPasswordProtected && !isAuthenticated)
+  useEffect(() => {
+    onWhatsAppTargetChange(
+      loading || whatsAppGated || !whatsAppDigits ? null : { digits: whatsAppDigits, title: whatsAppTitle },
+    )
+  }, [loading, whatsAppGated, whatsAppDigits, whatsAppTitle, onWhatsAppTargetChange])
 
   if (loading) {
     return (
